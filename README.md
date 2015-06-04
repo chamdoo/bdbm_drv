@@ -29,6 +29,7 @@ Installation
 2. Install the kernel module and mount the EXT4 file system:
 
 	cd run
+
 	./mount_ext4.sh
 
 3. Run a test benchmark:
