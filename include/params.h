@@ -25,39 +25,34 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_PARAMS_H
 #define _BLUEDBM_PARAMS_H
 
-/* default parameters for a BlueDBM device */
 
-/* NAND parameters */
+/* default NAND parameters (just for convenience purpose) */
 #define NAND_PAGE_SIZE         			4096
-/*#define NAND_PAGE_SIZE         			8192*/
-/*#define NAND_PAGE_SIZE         			4096*/
-/*#define NAND_PAGE_SIZE         			16384*/
 #define NAND_PAGE_OOB_SIZE     			64
-/*#define NAND_PAGE_OOB_SIZE     			0*/
-/*#define NR_PAGES_PER_BLOCK      		128*/
-/*#define NR_BLOCKS_PER_CHIP      		1024*/
-/*#define NR_CHIPS_PER_CHANNEL			8*/
-/*#define NR_CHANNELS						8*/
-
-/* 8-bus / 4-chip / 2 GB */
 #define NR_PAGES_PER_BLOCK      		128
 #define NR_BLOCKS_PER_CHIP      		32*4
 #define NR_CHIPS_PER_CHANNEL			4
 #define NR_CHANNELS						8
-
-#define BLKOFS							256
-
 #define NAND_HOST_BUS_TRANS_TIME_US		0		/* assume to be 0 */
 #define NAND_CHIP_BUS_TRANS_TIME_US		100		/* 100us */
 #define NAND_PAGE_PROG_TIME_US			1300	/* 1.3ms */	
 #define NAND_PAGE_READ_TIME_US			100		/* 100us */
 #define NAND_BLOCK_ERASE_TIME_US		3000	/* 3ms */
+#define BLKOFS							256
+
+
+enum RAMSSD_TIMING {
+	RAMSSD_TIMING_DISABLE = 1,
+	RAMSSD_TIMING_ENABLE_TASKLET,
+	RAMSSD_TIMING_ENABLE_HRTIMER,
+};
 
 /* device-type parameters */
 #define DEVICE_TYPE_RAMDRIVE       		0
 #define DEVICE_TYPE_BLUESIM				1
 #define DEVICE_TYPE_BLUEDBM_EMUL		2
 #define DEVICE_TYPE_BLUEDBM				3
+#define DEVICE_TYPE_NOTSET       		0xFF
 
 
 /* default parameters for a device driver */
@@ -91,23 +86,6 @@ THE SOFTWARE.
 #define HLM_NO_BUFFER					1
 #define HLM_BUFFER						2
 #define HLM_RSD							3
-
-
-/* Parameters for Kernel Modules */
-extern int _param_nr_channels;
-extern int _param_nr_chips_per_channel;
-extern int _param_nr_blocks_per_chip;
-extern int _param_nr_pages_per_block;
-extern int _param_page_main_size;
-extern int _param_page_oob_size;
-extern int _param_ssd_type;
-extern int _param_kernel_sector_size;	/* 512 Bytes */
-
-extern int _param_mapping_policy;
-extern int _param_gc_policy;
-extern int _param_wl_policy;
-extern int _param_queuing_policy;
-extern int _param_trim;
 
 
 /* parameter structures */
@@ -148,8 +126,5 @@ struct bdbm_params {
 	struct driver_params driver;
 	struct nand_params nand;
 };
-
-void display_default_params (void);
-struct bdbm_params* read_default_params (void);
 
 #endif /* _BLUEDBM_PARAMS_H */

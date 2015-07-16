@@ -34,12 +34,13 @@ THE SOFTWARE.
 #include "params.h"
 #include "utils/time.h"
 
-
+/*
 enum RAMSSD_TIMING {
 	RAMSSD_TIMING_DISABLE = 1,
 	RAMSSD_TIMING_ENABLE_TASKLET,
 	RAMSSD_TIMING_ENABLE_HRTIMER,
 };
+*/
 
 struct dev_ramssd_punit {
 	void* ptr_req;

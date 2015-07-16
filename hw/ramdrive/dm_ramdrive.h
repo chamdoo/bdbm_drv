@@ -26,10 +26,11 @@ THE SOFTWARE.
 #define _BLUEDBM_DEV_RAMDRV_H
 
 #include "bdbm_drv.h"
+#include "params.h"
 
 extern struct bdbm_dm_inf_t _dm_ramdrive_inf;
 
-uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi);
+uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi, struct nand_params* param);
 uint32_t dm_ramdrive_open (struct bdbm_drv_info* bdi);
 void dm_ramdrive_close (struct bdbm_drv_info* bdi);
 uint32_t dm_ramdrive_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);

@@ -26,10 +26,10 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
+#include "params.h"
 
 /* It must be exported by the device implementation module */
-/*extern struct bdbm_dm_inf_t _dm_bluedbm_inf; */
-extern struct bdbm_dm_inf_t _bdbm_dm_inf_t; 
+extern struct bdbm_dm_inf_t _bdbm_dm_inf; 
 
 /* It is used by the device implementation module */
 struct bdbm_drv_info* _bdi = NULL;
@@ -60,7 +60,7 @@ struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)
 	_bdi = bdi;
 
 	/* return bdbm_dm_inf_t */
-	return &_bdbm_dm_inf_t;
+	return &_bdbm_dm_inf;
 }
 
 EXPORT_SYMBOL (setup_risa_device);

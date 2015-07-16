@@ -31,76 +31,36 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "params.h"
+#include "kparams.h"
 #include "debug.h"
 #include "host_block.h"
-/*#include "dm_ramdrive.h"*/
-/*#include "dm_bluesim.h"*/
-/*#include "dm_bdbme.h"*/
-/*#include "dm_bluedbm.h"*/
+
 #include "llm_noq.h"
 #include "llm_mq.h"
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
 #include "hlm_rsd.h"
+#include "hw.h"
 
 #include "ftl/no_ftl.h"
 #include "ftl/block_ftl.h"
 #include "ftl/page_ftl.h"
 #include "utils/file.h"
 
-/* for test */
-#ifdef BOARD_BSIM
-#include "test/nandsim.h"
-#endif
-
-
 /* main data structure */
 struct bdbm_drv_info* _bdi = NULL;
-
-struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi);
-
 
 static int init_func_pointers (struct bdbm_drv_info* bdi)
 {
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
-#if 0
 	/* set functions for device manager (dm) */
-	switch (p->nand.device_type) {
-	case DEVICE_TYPE_RAMDRIVE:
-		bdi->ptr_dm_inf = &_dm_ramdrive_inf;
-		break;
-	case DEVICE_TYPE_BLUESIM:
-#ifdef BOARD_BSIM
-		bdi->ptr_dm_inf = &_dm_bluesim_inf;
-#else
-		bdbm_bug_on (1);
-#endif
-		break;
-	case DEVICE_TYPE_BLUEDBM_EMUL:
-#ifdef BOARD_BLUEDBM
-		bdi->ptr_dm_inf = &_dm_bdbme_inf;
-#else
-		bdbm_bug_on (1);
-#endif
-		break;
-	case DEVICE_TYPE_BLUEDBM:
-#ifdef BOARD_VC707
-		bdi->ptr_dm_inf = &_dm_bluedbm_inf;
-#else
-		bdbm_bug_on (1);
-#endif
-		break;
-	default:
-		bdbm_error ("invalid NAND device");
-		bdbm_bug_on (1);
-		break;
-	}
-#endif
-
-	bdbm_msg ("call setup_risa_device begins");
 	bdi->ptr_dm_inf = setup_risa_device (bdi);
-	bdbm_msg ("call setup_risa_device ends");
+	if (bdi->ptr_dm_inf == NULL) {
+		bdbm_error ("invalid device interfaces");
+		bdbm_bug_on (1);
+		return -1;
+	}
 
 	/* set functions for host */
 	switch (p->driver.host_type) {
@@ -179,6 +139,7 @@ static int __init bdbm_drv_init (void)
 	struct bdbm_hlm_inf_t* hlm = NULL;
 	struct bdbm_llm_inf_t* llm = NULL;
 	struct bdbm_ftl_inf_t* ftl = NULL;
+	/*struct bdbm_params* ptr_params = NULL;*/
 #ifdef SNAPSHOT_ENABLE
 	uint32_t load = 0;
 #endif
@@ -199,8 +160,8 @@ static int __init bdbm_drv_init (void)
 	}
 	_bdi = bdi;
 
-	/* get default paramters */
-	if ((bdi->ptr_bdbm_params = read_default_params ()) == NULL) {
+	/* get default driver paramters */
+	if ((bdi->ptr_bdbm_params = read_driver_params ()) == NULL) {
 		bdbm_error ("failed to read the default parameters");
 		goto fail;
 	}
@@ -211,15 +172,13 @@ static int __init bdbm_drv_init (void)
 		goto fail;
 	}
 
-	/* init performance monitor */
-	pmu_create (bdi);
-
-	/* open a flash device */
+	/* probe a device to get its geometry information */
 	dm = bdi->ptr_dm_inf;
-	if (dm->probe (bdi) != 0) {
+	if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
 		bdbm_error ("failed to probe a flash device");
 		goto fail;
 	}
+	/* open a flash device */
 	if (dm->open (bdi) != 0) {
 		bdbm_error ("failed to open a flash device");
 		goto fail;
@@ -274,11 +233,13 @@ static int __init bdbm_drv_init (void)
 		goto fail;
 	}
 
-	bdbm_msg ("[blueDBM is registered]");
+	/* display default parameters */
+	display_default_params (bdi);
 
-#ifdef BOARD_BSIM
-	/*bdbm_nandsim_thread_init ();*/
-#endif
+	/* init performance monitor */
+	pmu_create (bdi);
+
+	bdbm_msg ("[blueDBM is registered]");
 
 	return 0;
 
@@ -307,10 +268,6 @@ static void __exit bdbm_drv_exit(void)
 	/* display performance results */
 	pmu_display (_bdi);
 	pmu_destory (_bdi);
-
-#ifdef BOARD_BSIM
-	/*bdbm_nandsim_thread_cleanup ();*/
-#endif
 
 	if (_bdi->ptr_host_inf != NULL)
 		_bdi->ptr_host_inf->close (_bdi);

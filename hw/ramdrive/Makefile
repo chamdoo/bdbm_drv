@@ -4,6 +4,7 @@
 EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \
 	-I$(PWD)/../../include/utils \
+	-I$(PWD)/../cpp \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
@@ -13,6 +14,7 @@ risa_dev_ramdrive-y := \
 	../../include/utils/file.o \
 	../../include/utils/time.o \
 	../cpp/dm_main.o \
+	../cpp/dm_params.o \
 	dev_ramssd.o \
 	dm_ramdrive.o \
 

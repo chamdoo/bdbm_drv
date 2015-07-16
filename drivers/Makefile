@@ -17,7 +17,9 @@ EXTRA_CFLAGS += -D USE_KTIMER
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 
 bdbm_drv-y := \
-	params.o \
+	../include/utils/time.o \
+	../include/utils/file.o \
+	kparams.o \
 	ioctl.o \
 	kmain.o \
 	pmu.o \
@@ -27,8 +29,6 @@ bdbm_drv-y := \
 	hlm_rsd.o \
 	llm_noq.o \
 	llm_mq.o \
-	../include/utils/time.o \
-	../include/utils/file.o \
 	ftl/abm.o \
 	ftl/no_ftl.o \
 	ftl/block_ftl.o \
@@ -38,7 +38,7 @@ bdbm_drv-y := \
 
 obj-m := bdbm_drv.o
 
-ccflags-y := -I$(src)/$(CPPDIR) -I$(src)/$(BOARDDIR) $(HARDWARE_FLAGS) -DBOARD_$(BOARD)
+ccflags-y := -I$(src)
 
 export KROOT=/lib/modules/$(shell uname -r)/build
 

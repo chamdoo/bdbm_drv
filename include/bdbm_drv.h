@@ -25,6 +25,7 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_DRV_H
 #define _BLUEDBM_DRV_H
 
+#include "params.h"
 #include "utils/time.h"
 #include "platform.h"
 
@@ -214,7 +215,7 @@ struct bdbm_llm_inf_t {
 /* a generic device interface */
 struct bdbm_dm_inf_t {
 	void* ptr_private;
-	uint32_t (*probe) (struct bdbm_drv_info* bdi);
+	uint32_t (*probe) (struct bdbm_drv_info* bdi, struct nand_params* param);
 	uint32_t (*open) (struct bdbm_drv_info* bdi);
 	void (*close) (struct bdbm_drv_info* bdi);
 	uint32_t (*make_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
