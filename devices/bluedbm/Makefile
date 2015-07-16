@@ -23,6 +23,10 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \
 	-I$(PWD)/../../include/utils \
 
+EXTRA_CFLAGS += \
+	-D CONFIG_ENABLE_MSG \
+	-D CONFIG_ENABLE_DEBUG \
+
 risa_dev_bluedbm-y := \
 	../cpp/dm_main.o \
 	dm_bluedbm.o \

@@ -101,7 +101,7 @@ uint32_t dm_ramdrive_open (struct bdbm_drv_info* bdi)
 
 	p = (struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_ramdrive_open is called");
+	bdbm_msg ("dm_ramdrive_open is initialized");
 
 	return dev_ramssd_is_init (p->ramssd);
 }
@@ -112,7 +112,7 @@ void dm_ramdrive_close (struct bdbm_drv_info* bdi)
 
 	p = (struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_ramdrive_close is called");
+	bdbm_msg ("dm_ramdrive_close is destroyed");
 
 	dev_ramssd_destroy (p->ramssd);
 

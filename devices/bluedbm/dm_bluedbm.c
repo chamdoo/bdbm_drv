@@ -44,7 +44,8 @@ THE SOFTWARE.
 /*#define BDBM_DBG*/
 #define MAX_INDARRAY 4
 
-struct bdbm_dm_inf_t _dm_bluedbm_inf = {
+/*struct bdbm_dm_inf_t _dm_bluedbm_inf = {*/
+struct bdbm_dm_inf_t _bdbm_dm_inf_t = {
 	.ptr_private = NULL,
 	.probe = dm_bluedbm_probe,
 	.open = dm_bluedbm_open,
@@ -359,6 +360,8 @@ uint32_t dm_bluedbm_open (struct bdbm_drv_info* bdi)
 	/* wait until the connectal handler finishes it jobs */
 	wait_for_completion (&priv->connectal_completion_init);
 
+	bdbm_msg ("dm_bluedbm_open is initialized"); 
+
 	return 0;
 }
 
@@ -389,6 +392,8 @@ void dm_bluedbm_close (struct bdbm_drv_info* bdi)
 	if (priv->wbuf)
 		bdbm_free (priv->wbuf);
 	bdbm_free (priv);
+
+	bdbm_msg ("dm_bluedbm_close is destroyed"); 
 }
 
 void __copy_dma_to_bio (
