@@ -33,10 +33,10 @@ THE SOFTWARE.
 #include "params.h"
 #include "debug.h"
 #include "host_block.h"
-#include "dm_ramdrive.h"
-#include "dm_bluesim.h"
-#include "dm_bdbme.h"
-#include "dm_bluedbm.h"
+/*#include "dm_ramdrive.h"*/
+/*#include "dm_bluesim.h"*/
+/*#include "dm_bdbme.h"*/
+/*#include "dm_bluedbm.h"*/
 #include "llm_noq.h"
 #include "llm_mq.h"
 #include "hlm_nobuf.h"
@@ -64,6 +64,7 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 {
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
+#if 0
 	/* set functions for device manager (dm) */
 	switch (p->nand.device_type) {
 	case DEVICE_TYPE_RAMDRIVE:
@@ -95,6 +96,7 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 		bdbm_bug_on (1);
 		break;
 	}
+#endif
 
 	bdbm_msg ("call setup_risa_device begins");
 	bdi->ptr_dm_inf = setup_risa_device (bdi);

@@ -2,7 +2,11 @@
 #
 
 KBUILD_EXTRA_SYMBOLS := \
-	$(PWD)/../devices/ramdrive/Module.symvers \
+	$(PWD)/../hw/ramdrive/Module.symvers \
+
+EXTRA_CFLAGS := \
+	-I$(PWD)/../include \
+	-I$(PWD)/../include/utils \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
@@ -23,8 +27,8 @@ bdbm_drv-y := \
 	hlm_rsd.o \
 	llm_noq.o \
 	llm_mq.o \
-	../../include/utils/time.o \
-	../../include/utils/file.o \
+	../include/utils/time.o \
+	../include/utils/file.o \
 	ftl/abm.o \
 	ftl/no_ftl.o \
 	ftl/block_ftl.o \

@@ -30,8 +30,13 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 #include "bdbm_drv.h"
-#include "dev_ramssd.h"
+/*#include "dev_ramssd.h"*/
 
+enum RAMSSD_TIMING {
+	RAMSSD_TIMING_DISABLE = 1,
+	RAMSSD_TIMING_ENABLE_TASKLET,
+	RAMSSD_TIMING_ENABLE_HRTIMER,
+};
 
 int _param_nr_channels 				= NR_CHANNELS;
 int _param_nr_chips_per_channel		= NR_CHIPS_PER_CHANNEL;
