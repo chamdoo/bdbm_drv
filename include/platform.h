@@ -29,6 +29,8 @@ THE SOFTWARE.
 
 #include <linux/kernel.h>
 #include <linux/version.h>
+#include <linux/module.h>
+#include <linux/slab.h>
 
 /* memory handling */
 #define bdbm_malloc(a) vmalloc(a)
