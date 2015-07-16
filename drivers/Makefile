@@ -31,7 +31,10 @@ endif
 
 #CPPDIR = xbsv/cpp
 CPPDIR = connectal/cpp
-KBUILD_EXTRA_SYMBOLS := $(PWD)/connectal/drivers/pcieportal/Module.symvers $(PWD)/connectal/drivers/portalmem/Module.symvers
+KBUILD_EXTRA_SYMBOLS := \
+	$(PWD)/connectal/drivers/pcieportal/Module.symvers \
+	$(PWD)/connectal/drivers/portalmem/Module.symvers \
+	$(PWD)/../devices/ramdrive/Module.symvers \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG

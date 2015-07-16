@@ -57,6 +57,8 @@ THE SOFTWARE.
 /* main data structure */
 struct bdbm_drv_info* _bdi = NULL;
 
+struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi);
+
 
 static int init_func_pointers (struct bdbm_drv_info* bdi)
 {
@@ -93,6 +95,10 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 		bdbm_bug_on (1);
 		break;
 	}
+
+	bdbm_msg ("call setup_risa_device begins");
+	bdi->ptr_dm_inf = setup_risa_device (bdi);
+	bdbm_msg ("call setup_risa_device ends");
 
 	/* set functions for host */
 	switch (p->driver.host_type) {
