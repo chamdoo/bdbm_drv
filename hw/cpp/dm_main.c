@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "params.h"
+#include "dm_params.h"
 
 /* It must be exported by the device implementation module */
 extern struct bdbm_dm_inf_t _bdbm_dm_inf; 
@@ -37,6 +38,24 @@ struct bdbm_drv_info* _bdi = NULL;
 static int __init risa_dev_init (void)
 {
 	bdbm_msg ("risa_dev_warpper is initialized");
+
+#if defined (CONFIG_DEVICE_TYPE_RAMDRIVE)
+	_param_device_type = DEVICE_TYPE_RAMDRIVE;
+	bdbm_msg ("RAMDRIVE is detected");
+#elif defined (CONFIG_DEVICE_TYPE_RAMDRIVE_INTR)
+	_param_device_type = DEVICE_TYPE_RAMDRIVE_INTR;
+	bdbm_msg ("RAMDRIVE with Interrupt is detected");
+#elif defined (CONFIG_DEVICE_TYPE_RAMDRIVE_TIMING)
+	_param_device_type = DEVICE_TYPE_RAMDRIVE_TIMING;
+	bdbm_msg ("RAMDRIVE with Timining Emulation is detected");
+#elif defined (CONFIG_DEVICE_TYPE_BLUEDBM)
+	_param_device_type = DEVICE_TYPE_BLUEDBM;
+	bdbm_msg ("BlueDBM is detected");
+#else
+	#error Invalid HW is set
+	_param_device_type = DEVICE_TYPE_NOTSET;
+#endif
+
 	return 0;
 }
 

@@ -8,7 +8,8 @@ EXTRA_CFLAGS := \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
-	-D CONFIG_ENABLE_DEBUG
+	-D CONFIG_ENABLE_DEBUG \
+	-D CONFIG_DEVICE_TYPE_RAMDRIVE \
 
 risa_dev_ramdrive-y := \
 	../../include/utils/file.o \

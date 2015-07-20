@@ -40,20 +40,14 @@ THE SOFTWARE.
 #define NAND_BLOCK_ERASE_TIME_US		3000	/* 3ms */
 #define BLKOFS							256
 
-
-enum RAMSSD_TIMING {
-	RAMSSD_TIMING_DISABLE = 1,
-	RAMSSD_TIMING_ENABLE_TASKLET,
-	RAMSSD_TIMING_ENABLE_HRTIMER,
-};
-
 /* device-type parameters */
-#define DEVICE_TYPE_RAMDRIVE       		0
-#define DEVICE_TYPE_BLUESIM				1
-#define DEVICE_TYPE_BLUEDBM_EMUL		2
-#define DEVICE_TYPE_BLUEDBM				3
-#define DEVICE_TYPE_NOTSET       		0xFF
-
+enum DEVICE_TYPE {
+	DEVICE_TYPE_RAMDRIVE = 1,
+	DEVICE_TYPE_RAMDRIVE_INTR,
+	DEVICE_TYPE_RAMDRIVE_TIMING, 
+	DEVICE_TYPE_BLUEDBM,
+	DEVICE_TYPE_NOTSET = 0xFF,
+};
 
 /* default parameters for a device driver */
 #define MAPPING_POLICY_NO_FTL			0
@@ -110,7 +104,6 @@ struct nand_params {
 	uint64_t page_main_size;
 	uint64_t page_oob_size;
 	uint32_t device_type;
-	uint8_t timing_mode;
 	uint64_t device_capacity_in_byte;
 	uint64_t page_prog_time_us;
 	uint64_t page_read_time_us;

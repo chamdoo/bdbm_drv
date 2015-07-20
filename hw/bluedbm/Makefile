@@ -22,13 +22,16 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/connectal/drivers/portalmem \
 	-I$(PWD)/../../include \
 	-I$(PWD)/../../include/utils \
+	-I$(PWD)/../cpp \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
+	-D CONFIG_DEVICE_TYPE_BLUEDBM \
 
 risa_dev_bluedbm-y := \
 	../cpp/dm_main.o \
+	../cpp/dm_params.o \
 	dm_bluedbm.o \
 	$(BOARDDIR)/MMURequest.o \
 	$(BOARDDIR)/MMUIndication.o \

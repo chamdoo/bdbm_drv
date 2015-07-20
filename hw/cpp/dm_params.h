@@ -22,19 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_DM_BLUEDBM_H
-#define _BLUEDBM_DM_BLUEDBM_H
+#ifndef _BLUEDBM_DM_PARAMS_H
+#define _BLUEDBM_DM_PARAMS_H
 
-#include "bdbm_drv.h"
+extern int _param_nr_channels;
+extern int _param_nr_chips_per_channel;
+extern int _param_nr_blocks_per_chip;
+extern int _param_nr_pages_per_block;
+extern int _param_page_main_size; 
+extern int _param_page_oob_size;
+extern int _param_device_type; 
+extern int _param_host_bus_trans_time_us;
+extern int _param_chip_bus_trans_time_us;
+extern int _param_page_prog_time_us;
+extern int _param_page_read_time_us;
+extern int _param_block_erase_time_us;
+extern int _param_ramdrv_timing_mode;
 
-extern struct bdbm_dm_inf_t _dm_bluedbm_inf;
+#endif
 
-uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi, struct nand_params* params);
-uint32_t dm_bluedbm_open (struct bdbm_drv_info* bdi);
-void dm_bluedbm_close (struct bdbm_drv_info* bdi);
-uint32_t dm_bluedbm_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-void dm_bluedbm_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-uint32_t dm_bluedbm_load (struct bdbm_drv_info* bdi, const char* fn);
-uint32_t dm_bluedbm_store (struct bdbm_drv_info* bdi, const char* fn);
-
-#endif /* _BLUEDBM_DM_BLUEDBM_H */

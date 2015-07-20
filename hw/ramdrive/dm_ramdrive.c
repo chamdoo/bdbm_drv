@@ -70,11 +70,11 @@ static void __dm_setup_device_params (struct nand_params* params)
 	params->nr_pages_per_block = _param_nr_pages_per_block;
 	params->page_main_size = _param_page_main_size;
 	params->page_oob_size = _param_page_oob_size;
-	params->device_type = DEVICE_TYPE_RAMDRIVE;
+	params->device_type = _param_device_type;
 	params->page_prog_time_us = _param_page_prog_time_us;
 	params->page_read_time_us = _param_page_read_time_us;
 	params->block_erase_time_us = _param_block_erase_time_us;
-	params->timing_mode = _param_ramdrv_timing_mode;
+	/*params->timing_mode = _param_ramdrv_timing_mode;*/
 
 	/* other parameters derived from user parameters */
 	params->nr_blocks_per_channel = 
@@ -120,9 +120,7 @@ uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi, struct nand_params* param
 	if ((p ->ramssd = dev_ramssd_create (
 			/*&bdi->ptr_bdbm_params->nand, */
 			/*bdi->ptr_bdbm_params->nand.timing_mode, */
-			params,
-			params->timing_mode,
-			__dm_ramdrive_ih)) == NULL) {
+			params,	__dm_ramdrive_ih)) == NULL) {
 		bdbm_error ("dev_ramssd_create failed");
 		bdbm_free_atomic (p);
 		goto fail;
@@ -130,7 +128,7 @@ uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi, struct nand_params* param
 	bdbm_msg ("ramssd is detected!");
 
 	/* display RAMSSD */
-	dev_ramssd_summary (p->ramssd);
+	/*dev_ramssd_summary (p->ramssd);*/
 
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;

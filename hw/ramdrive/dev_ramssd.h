@@ -50,7 +50,7 @@ struct dev_ramssd_punit {
 
 struct dev_ramssd_info {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
-	uint8_t timing_mode;	/* 0: disable timing emulation, 1: enable timing emulation */
+	uint8_t emul_mode;
 	struct nand_params* nand_params;
 	void* ptr_ssdram; /* DRAM memory for SSD */
 	struct dev_ramssd_punit* ptr_punits;	/* parallel units */
@@ -61,7 +61,7 @@ struct dev_ramssd_info {
 	struct hrtimer hrtimer;	/* hrtimer must be at the end of the structure */
 };
 
-struct dev_ramssd_info* dev_ramssd_create (struct nand_params* ptr_nand_params, uint8_t timing_emul, void (*intr_handler)(void*));
+struct dev_ramssd_info* dev_ramssd_create (struct nand_params* ptr_nand_params, void (*intr_handler)(void*));
 void dev_ramssd_destroy (struct dev_ramssd_info* ptr_ramssd_info);
 uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bdbm_llm_req_t* ptr_llm_req );
 void dev_ramssd_summary (struct dev_ramssd_info* ptr_ramssd_info);

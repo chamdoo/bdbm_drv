@@ -405,14 +405,14 @@ static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *pt
 
 uint32_t __ramssd_timing_register_schedule (struct dev_ramssd_info* ptr_ramssd_info)
 {
-	switch (ptr_ramssd_info->timing_mode) {
-	case RAMSSD_TIMING_DISABLE:
+	switch (ptr_ramssd_info->emul_mode) {
+	case DEVICE_TYPE_RAMDRIVE:
 		__ramssd_cmd_done (ptr_ramssd_info);
 		break;
-	case RAMSSD_TIMING_ENABLE_HRTIMER:
+	case DEVICE_TYPE_RAMDRIVE_INTR:
 		/*__ramssd_cmd_done (ptr_ramssd_info);*/
 		break;
-	case RAMSSD_TIMING_ENABLE_TASKLET:
+	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		tasklet_schedule (ptr_ramssd_info->tasklet); 
 		break;
 	default:
@@ -427,11 +427,11 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 {
 	uint32_t ret = 0;
 
-	switch (ptr_ramssd_info->timing_mode) {
-	case RAMSSD_TIMING_DISABLE:
+	switch (ptr_ramssd_info->emul_mode) {
+	case DEVICE_TYPE_RAMDRIVE:
 		bdbm_msg ("use TIMING_DISABLE mode!");
 		break;
-	case RAMSSD_TIMING_ENABLE_HRTIMER: 
+	case DEVICE_TYPE_RAMDRIVE_INTR: 
 		{
 			ktime_t ktime;
 			bdbm_msg ("HRTIMER is created!");
@@ -441,7 +441,7 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 			hrtimer_start (&ptr_ramssd_info->hrtimer, ktime, HRTIMER_MODE_REL);
 		}
 		/* no break! we initialize a tasklet together */
-	case RAMSSD_TIMING_ENABLE_TASKLET: 
+	case DEVICE_TYPE_RAMDRIVE_TIMING: 
 		bdbm_msg ("TASKLET is created!");
 		if ((ptr_ramssd_info->tasklet = (struct tasklet_struct*)
 				bdbm_malloc_atomic (sizeof (struct tasklet_struct))) == NULL) {
@@ -463,15 +463,15 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 
 void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 {
-	switch (ptr_ramssd_info->timing_mode) {
-	case RAMSSD_TIMING_DISABLE:
+	switch (ptr_ramssd_info->emul_mode) {
+	case DEVICE_TYPE_RAMDRIVE:
 		bdbm_msg ("TIMING_DISABLE is done!");
 		break;
-	case RAMSSD_TIMING_ENABLE_HRTIMER:
+	case DEVICE_TYPE_RAMDRIVE_INTR:
 		bdbm_msg ("HRTIMER is canceled");
 		hrtimer_cancel (&ptr_ramssd_info->hrtimer);
 		/* no break! we destroy a tasklet */
-	case RAMSSD_TIMING_ENABLE_TASKLET:
+	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		bdbm_msg ("TASKLET is killed");
 		tasklet_kill (ptr_ramssd_info->tasklet);
 		break;
@@ -483,7 +483,6 @@ void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 /* Functions Exposed to External Files */
 struct dev_ramssd_info* dev_ramssd_create (
 	struct nand_params* ptr_nand_params, 
-	uint8_t timing_mode,
 	void (*intr_handler)(void*))
 {
 	uint64_t loop, nr_parallel_units;
@@ -498,7 +497,7 @@ struct dev_ramssd_info* dev_ramssd_create (
 
 	/* seup parameters */
 	ptr_ramssd_info->intr_handler = intr_handler;
-	ptr_ramssd_info->timing_mode = timing_mode;
+	ptr_ramssd_info->emul_mode = ptr_nand_params->device_type;
 	ptr_ramssd_info->nand_params = ptr_nand_params;
 
 	/* allocate ssdram space */
@@ -575,7 +574,7 @@ uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bd
 			llm_req->phyaddr->chip_no;
 
 		/* get the target elapsed time depending on the type of req */
-		if (ptr_ramssd_info->timing_mode == RAMSSD_TIMING_ENABLE_HRTIMER) {
+		if (ptr_ramssd_info->emul_mode == DEVICE_TYPE_RAMDRIVE_INTR) {
 			switch (llm_req->req_type) {
 			case REQTYPE_WRITE:
 			case REQTYPE_GC_WRITE:

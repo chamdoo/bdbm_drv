@@ -9,9 +9,9 @@ EXTRA_CFLAGS := \
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
-	-D CONFIG_DEVICE_TYPE_RAMDRIVE_TIMING \
+	-D CONFIG_DEVICE_TYPE_RAMDRIVE_INTR \
 
-risa_dev_ramdrive_timing-y := \
+risa_dev_ramdrive_intr-y := \
 	../../include/utils/file.o \
 	../../include/utils/time.o \
 	../cpp/dm_main.o \
@@ -19,7 +19,7 @@ risa_dev_ramdrive_timing-y := \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
 
-obj-m := risa_dev_ramdrive_timing.o
+obj-m := risa_dev_ramdrive_intr.o
 
 export KROOT=/lib/modules/$(shell uname -r)/build
 

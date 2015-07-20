@@ -40,12 +40,14 @@ THE SOFTWARE.
 #include "dm_bluedbm.h"
 #include "platform.h"
 
+#include "dm_params.h"
+
 
 /*#define BDBM_DBG*/
 #define MAX_INDARRAY 4
 
 /*struct bdbm_dm_inf_t _dm_bluedbm_inf = {*/
-struct bdbm_dm_inf_t _bdbm_dm_inf_t = {
+struct bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_bluedbm_probe,
 	.open = dm_bluedbm_open,
@@ -294,11 +296,56 @@ int connectal_handler_fn (void* arg)
 /**
  * the implementation of call-back functions for bdbm_drv
  **/
-uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi)
+static void __dm_setup_device_params (struct nand_params* params)
+{
+	/* user-specified parameters */
+	params->nr_channels = _param_nr_channels;
+	params->nr_chips_per_channel = _param_nr_chips_per_channel;
+	params->nr_blocks_per_chip = _param_nr_blocks_per_chip;
+	params->nr_pages_per_block = _param_nr_pages_per_block;
+	params->page_main_size = _param_page_main_size;
+	params->page_oob_size = _param_page_oob_size;
+	params->device_type = _param_device_type;
+	params->page_prog_time_us = _param_page_prog_time_us;
+	params->page_read_time_us = _param_page_read_time_us;
+	params->block_erase_time_us = _param_block_erase_time_us;
+
+	/* other parameters derived from user parameters */
+	params->nr_blocks_per_channel =
+		params->nr_chips_per_channel *
+		params->nr_blocks_per_chip;
+
+	params->nr_blocks_per_ssd =
+		params->nr_channels *
+		params->nr_chips_per_channel *
+		params->nr_blocks_per_chip;
+
+	params->nr_chips_per_ssd =
+		params->nr_channels *
+		params->nr_chips_per_channel;
+
+	params->nr_pages_per_ssd =
+		params->nr_pages_per_block *
+		params->nr_blocks_per_ssd;
+
+	params->device_capacity_in_byte = 0;
+	params->device_capacity_in_byte += params->nr_channels;
+	params->device_capacity_in_byte *= params->nr_chips_per_channel;
+	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
+	params->device_capacity_in_byte *= params->nr_pages_per_block;
+	params->device_capacity_in_byte *= params->page_main_size;
+}
+
+uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi, struct nand_params* params)
 {
 	struct dm_bluedbm_private* priv = NULL;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	uint32_t nr_punit = np->nr_channels * np->nr_chips_per_channel;
+	/*struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);*/
+	/*uint32_t nr_punit = np->nr_channels * np->nr_chips_per_channel;*/
+	uint32_t nr_punit;
+
+	/* setup NAND parameters according to users' inputs */
+	__dm_setup_device_params (params);
+	nr_punit = params->nr_channels * params->nr_chips_per_channel;
 
 	/* create a private for bluedbm */
 	if ((priv = bdbm_zmalloc (sizeof (struct dm_bluedbm_private))) == NULL)	{
