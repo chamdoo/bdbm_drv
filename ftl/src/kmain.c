@@ -45,7 +45,7 @@ THE SOFTWARE.
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
-#include "utils/file.h"
+#include "utils/ufile.h"
 
 /* main data structure */
 struct bdbm_drv_info* _bdi = NULL;

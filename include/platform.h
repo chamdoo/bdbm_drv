@@ -25,7 +25,7 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_PLATFORM_H
 #define _BLUEDBM_PLATFORM_H
 
-#ifdef __KERNEL__
+#if defined(KERNEL_MODE)
 
 #include <linux/kernel.h>
 #include <linux/version.h>
@@ -35,10 +35,7 @@ THE SOFTWARE.
 /* memory handling */
 #define bdbm_malloc(a) vmalloc(a)
 #define bdbm_zmalloc(a) vzalloc(a)
-/*#define bdbm_malloc(a) kzalloc(a, GFP_ATOMIC)*/
-/*#define bdbm_zmalloc(a) kzalloc(a, GFP_ATOMIC)*/
 #define bdbm_free(a) do { vfree(a); a = NULL; } while (0)
-/*#define bdbm_free(a) do { kfree(a); a = NULL; } while (0)*/
 #define bdbm_malloc_atomic(a) kzalloc(a, GFP_ATOMIC)
 #define bdbm_free_atomic(a) do { kfree(a); a = NULL; } while (0)
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
@@ -63,7 +60,7 @@ THE SOFTWARE.
 #define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)
 #define bdbm_spin_unlock(a) spin_unlock(a)
 #define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)
-
+#define bdbm_spin_lock_destory(a)
 /* thread */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,0)
 #define bdbm_daemonize(a) daemonize(a)
@@ -71,10 +68,35 @@ THE SOFTWARE.
 #define bdbm_daemonize(a)
 #endif
 
-#else /* __KERNEL__ */
+#elif defined(USER_MODE) 
 
-/* TODO: it is required to define platform-dependent functions using user-level functions */
+/* kernel-module-specific macros (make them do nothing) */
+#define module_param(a,b,c)
+#define MODULE_PARM_DESC(a,b)
 
-#endif /* __KERNEL__ */
+/* spinlock */
+#include <pthread.h>
+#define bdbm_spinlock_t pthread_spinlock_t
+#define bdbm_spin_lock_init(a) pthread_spin_init(a,0)
+#define bdbm_spin_lock(a) pthread_spin_lock(a)
+#define bdbm_spin_lock_irqsave(a,flag) pthread_spin_lock(a)
+#define bdbm_spin_unlock(a) pthread_spin_unlock(b)
+#define bdbm_spin_unlock_irqrestore(a,flag) pthread_spin_unlock(a)
+#define bdbm_spin_lock_destory(a) pthread_spin_destroy(a)
+
+/* memory handling */
+#include <stdlib.h>
+#define bdbm_malloc(a) malloc(a)
+#define bdbm_zmalloc(a) malloc(a)
+#define bdbm_free(a) do { free(a); a = NULL; } while (0)
+#define bdbm_malloc_atomic(a) malloc(a)
+#define bdbm_free_atomic(a) do { free(a); a = NULL; } while (0)
+#define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
+#define bdbm_memset(addr,val,size) memset(addr,val,size)
+
+#else
+/* ERROR CASE */
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #endif /* _BLUEDBM_PLATFORM_H */ 

@@ -26,8 +26,13 @@ THE SOFTWARE.
 #define _BLUEDBM_DRV_H
 
 #include "params.h"
-#include "utils/time.h"
+#include "utils/utime.h"
 #include "platform.h"
+
+#if defined(USER_MODE)
+#include "3rd/uatomic.h"
+#include "3rd/uatomic64.h"
+#endif
 
 struct bio;
 

@@ -22,18 +22,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined(KERNEL_MODE)
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
 
 #include "debug.h"
 #include "platform.h"
-#include "file.h"
+#include "ufile.h"
+
+#elif defined(USER_MODE)
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+
+#include "ufile.h"
+#include "debug.h"
+
+#else
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 
-struct file* bdbm_fopen (const char* path, int flags, int rights) 
+#if defined(KERNEL_MODE)
+bdbm_file_t bdbm_fopen (const char* path, int flags, int rights) 
 {
-	struct file* filp = NULL;
+	bdbm_file_t filp = NULL;
 	mm_segment_t oldfs;
 	int err = 0;
 
@@ -48,12 +67,12 @@ struct file* bdbm_fopen (const char* path, int flags, int rights)
 	return filp;
 }
 
-void bdbm_fclose (struct file* file) 
+void bdbm_fclose (bdbm_file_t file) 
 {
 	filp_close (file, NULL);
 }
 
-uint64_t bdbm_fread (struct file* file, uint64_t offset, uint8_t* data, uint64_t size) 
+uint64_t bdbm_fread (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size) 
 {
 	mm_segment_t oldfs;
 	uint64_t ret = 0;
@@ -75,7 +94,7 @@ uint64_t bdbm_fread (struct file* file, uint64_t offset, uint8_t* data, uint64_t
 	return len;
 } 
 
-uint64_t bdbm_fwrite (struct file* file, uint64_t offset, uint8_t* data, uint64_t size) 
+uint64_t bdbm_fwrite (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size) 
 {
 	mm_segment_t oldfs;
 	uint64_t ret = 0;
@@ -94,7 +113,7 @@ uint64_t bdbm_fwrite (struct file* file, uint64_t offset, uint8_t* data, uint64_
 	return ret;
 }
 
-uint32_t bdbm_funlink (struct file* file)
+uint32_t bdbm_funlink (bdbm_file_t file)
 {
 	/*
 	struct dentry* d = file->f_dentry->d_parent;
@@ -114,14 +133,14 @@ uint32_t bdbm_funlink (struct file* file)
 	return 0;
 }
 
-uint32_t bdbm_fsync (struct file* file) 
+uint32_t bdbm_fsync (bdbm_file_t file) 
 {
 	return vfs_fsync (file, 0);
 }
 
 void bdbm_flog (const char* filename, char* string)
 {
-	struct file* fp = NULL;
+	bdbm_file_t fp = NULL;
 
 	if ((fp = bdbm_fopen (filename, O_CREAT | O_WRONLY | O_APPEND, 0777)) == NULL) {
 		bdbm_error ("bdbm_fopen failed");
@@ -132,3 +151,70 @@ void bdbm_flog (const char* filename, char* string)
 	bdbm_fclose (fp);
 }
 
+#elif defined(USER_MODE)
+
+bdbm_file_t bdbm_fopen (const char* path, int flags, int rights) 
+{
+	return open (path, flags, rights);
+}
+
+void bdbm_fclose (bdbm_file_t file) 
+{
+	close (file);
+}
+
+uint64_t bdbm_fread (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size) 
+{
+	uint64_t ret = 0;
+	uint64_t len = 0;
+
+	lseek (file, offset, SEEK_SET);
+	while (len < size) {
+		if ((ret = read (file, data + len, size - len)) == 0)
+			break;
+		len += ret;
+	}
+	return len;
+} 
+
+uint64_t bdbm_fwrite (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size) 
+{
+	uint64_t ret = 0;
+	uint64_t len = 0;
+
+	lseek (file, offset, SEEK_SET);
+	while (len < size) {
+		if ((ret = write (file, data + len, size - len)) == 0)
+			break;
+		len += ret;
+	}
+	return len;
+}
+
+uint32_t bdbm_funlink (bdbm_file_t file)
+{
+	/*return unlink (file);*/
+	return 0;
+}
+
+uint32_t bdbm_fsync (bdbm_file_t file) 
+{
+	return syncfs (file);
+}
+
+void bdbm_flog (const char* filename, char* string)
+{
+	bdbm_file_t fp = 0;
+
+	if ((fp = bdbm_fopen (filename, O_CREAT | O_WRONLY | O_APPEND, 0777)) == 0) {
+		/*bdbm_error ("bdbm_fopen failed");*/
+		return;
+	}
+
+	bdbm_fwrite (fp, 0, (uint8_t*)string, strlen (string));
+	bdbm_fclose (fp);
+}
+
+#else
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif

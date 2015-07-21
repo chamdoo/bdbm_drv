@@ -22,29 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_TIME_H
-#define _BLUEDBM_TIME_H
+#ifndef _BLUEDBM_FILE_H
+#define _BLUEDBM_FILE_H
 
-/*#include <linux/time.h>*/
-#include <linux/ktime.h>
+#if defined(KERNEL_MODE)
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
 
-uint32_t time_get_timestamp_in_us (void);
-uint32_t time_get_timestamp_in_sec (void);
-void time_init (void);
+typedef struct file* bdbm_file_t;
 
-/* stopwatch functions */
-struct bdbm_stopwatch {
-#ifdef USE_KTIMER
-	ktime_t start;
+#elif defined(USER_MODE)
+#include <stdint.h>
+
+typedef int bdbm_file_t;
+
 #else
-	struct timeval start;
-#endif
-};
-
-void bdbm_stopwatch_start (struct bdbm_stopwatch* sw);
-int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw);
-int64_t bdbm_stopwatch_get_elapsed_time_us (struct bdbm_stopwatch* sw);
-
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
+bdbm_file_t bdbm_fopen (const char* path, int flags, int rights);
+void bdbm_fclose (bdbm_file_t file);
+uint64_t bdbm_fread (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size);
+uint64_t bdbm_fwrite (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size);
+uint32_t bdbm_fsync (bdbm_file_t file);
+uint32_t bdbm_funlink (bdbm_file_t file);
+void bdbm_flog (const char* filename, char* string);
 
+#endif

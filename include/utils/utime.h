@@ -25,8 +25,15 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_TIME_H
 #define _BLUEDBM_TIME_H
 
-/*#include <linux/time.h>*/
+#if defined(KERNEL_MODE)
 #include <linux/ktime.h>
+
+#elif defined(USER_MODE)
+#include <time.h>
+#include <sys/time.h>
+#include <stdint.h>
+
+#endif
 
 uint32_t time_get_timestamp_in_us (void);
 uint32_t time_get_timestamp_in_sec (void);
@@ -34,10 +41,19 @@ void time_init (void);
 
 /* stopwatch functions */
 struct bdbm_stopwatch {
-#ifdef USE_KTIMER
+#if defined(KERNEL_MODE) && \
+	defined(USE_KTIMER)
 	ktime_t start;
-#else
+
+#elif defined(KERNEL_MODE) && \
+	  !defined(USE_KTIMER)
 	struct timeval start;
+
+#elif defined(USER_MODE)
+	struct timeval start;
+
+#else
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 };
 
@@ -46,5 +62,4 @@ int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw);
 int64_t bdbm_stopwatch_get_elapsed_time_us (struct bdbm_stopwatch* sw);
 
 #endif
-
 

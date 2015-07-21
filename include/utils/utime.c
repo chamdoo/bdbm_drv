@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/ktime.h>
 #include <linux/time.h>
@@ -30,13 +31,25 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "debug.h"
-#include "time.h"
+#include "utime.h"
 
+#elif defined(USER_MODE)
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include "utime.h"
 
-#ifdef USE_KTIMER
-  ktime_t ktime_get (void);
+#define do_gettimeofday(a) gettimeofday (a, NULL)
+
+#else
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
+
+#if defined(KERNEL_MODE) && \
+    defined(USE_KTIMER)
+ktime_t ktime_get (void);
+#endif
 
 static uint32_t _time_startup_timestamp = 0;
 
@@ -62,7 +75,6 @@ void time_init (void)
 
 
 /* stopwatch functions */
-/* taken from http://www.gnu.org/software/libc/manual/html_node/Elapsed-Time.html */
 int timeval_subtract (
 	struct timeval *result, 
 	struct timeval *x, 
@@ -88,7 +100,8 @@ int timeval_subtract (
 void bdbm_stopwatch_start (struct bdbm_stopwatch* sw)
 {
 	if (sw) {
-#ifdef USE_KTIMER
+#if defined(KERNEL_MODE) && \
+	defined(USE_KTIMER)
 		sw->start = ktime_get ();
 #else
 		do_gettimeofday(&sw->start);
@@ -99,9 +112,11 @@ void bdbm_stopwatch_start (struct bdbm_stopwatch* sw)
 int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw)
 {
 	if (sw) {
-#ifdef USE_KTIMER
+#if defined(KERNEL_MODE) && \
+	defined(USE_KTIMER)
 		ktime_t end = ktime_get ();
 		return ktime_to_ms (ktime_sub (end, sw->start));
+
 #else
 		struct timeval diff, end;
 		do_gettimeofday (&end);
@@ -116,9 +131,11 @@ int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw)
 int64_t bdbm_stopwatch_get_elapsed_time_us (struct bdbm_stopwatch* sw)
 {
 	if (sw) {
-#ifdef USE_KTIMER
+#if defined(KERNEL_MODE) && \
+	defined(USE_KTIMER)
 		ktime_t end = ktime_get ();
 		return ktime_to_us (ktime_sub (end, sw->start));
+
 #else
 		struct timeval diff, end;
 		do_gettimeofday (&end);

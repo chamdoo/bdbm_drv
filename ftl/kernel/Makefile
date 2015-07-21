@@ -16,12 +16,13 @@ EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
 EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D USE_PMU
 EXTRA_CFLAGS += -D USE_KTIMER
+EXTRA_CFLAGS += -D KERNEL_MODE
 #EXTRA_CFLAGS += -D SNAPSHOT_ENABLE
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 
 bdbm_drv-y := \
-	../../include/utils/time.o \
-	../../include/utils/file.o \
+	../../include/utils/utime.o \
+	../../include/utils/ufile.o \
 	$(SRC)/kparams.o \
 	$(SRC)/ioctl.o \
 	$(SRC)/kmain.o \
@@ -66,5 +67,6 @@ kernel_clean:
  
 .PHONY: clean
 clean: kernel_clean
-	rm -rf Module.markers modules.order
+	@rm -rf Module.markers modules.order
+	@cd ../src; rm -rf *.o .*.cmd
 

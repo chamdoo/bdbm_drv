@@ -27,6 +27,8 @@ THE SOFTWARE.
 
 #include "platform.h"
 
+#if defined(KERNEL_MODE) 
+/* KERNEL_MODE */
 #ifdef CONFIG_ENABLE_MSG
 	#define bdbm_msg(fmt, ...)  \
 		do {    \
@@ -43,6 +45,33 @@ THE SOFTWARE.
 	do {    \
 		printk(KERN_ERR "bdbm-error: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
 	} while (0);
+
+#elif defined(USER_MODE) 
+/* USER_MODE */
+#ifdef CONFIG_ENABLE_MSG
+	#define bdbm_msg(fmt, ...)  \
+		do {    \
+			printf("bdbm: " fmt "\n", ##__VA_ARGS__);  \
+		} while (0);
+#else
+	#define bdbm_msg(fmt, ...)
+#endif
+#define bdbm_warning(fmt, ...)  \
+	do {    \
+		printf("bdbm-warning: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+	} while (0);
+#define bdbm_error(fmt, ...)  \
+	do {    \
+		printf("bdbm-error: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+	} while (0);
+
+#pragma GCC diagnostic ignored "-Wformat"
+
+#else
+	#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
+
+/* Platform-independent Code */
 #define bdbm_warn_on(condition) \
 	do { 	\
 		if (condition)	\

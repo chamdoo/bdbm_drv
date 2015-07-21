@@ -32,7 +32,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "ioctl.h"
 
-#include "utils/time.h"
+#include "utils/utime.h"
 
 /*#define ENABLE_DISPLAY*/
 

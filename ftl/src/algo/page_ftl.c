@@ -30,8 +30,8 @@ THE SOFTWARE.
 #include "params.h"
 #include "debug.h"
 
-#include "utils/time.h"
-#include "utils/file.h"
+#include "utils/utime.h"
+#include "utils/ufile.h"
 #include "algo/abm.h"
 #include "algo/page_ftl.h"
 
@@ -694,7 +694,8 @@ uint32_t bdbm_page_ftl_load (struct bdbm_drv_info* bdi, const char* fn)
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
 	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_mapping_entry* me;
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t i, pos = 0;
 
 	/* step1: load abm */
@@ -740,7 +741,8 @@ uint32_t bdbm_page_ftl_store (struct bdbm_drv_info* bdi, const char* fn)
 	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_mapping_entry* me;
 	struct bdbm_abm_block_t* b = NULL;
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t pos = 0;
 	uint64_t i, j;
 	uint32_t ret;

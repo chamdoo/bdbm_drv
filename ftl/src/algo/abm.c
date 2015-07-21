@@ -30,7 +30,7 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 #include "abm.h"
-#include "utils/file.h"
+#include "utils/ufile.h"
 
 
 static inline 
@@ -483,7 +483,8 @@ void bdbm_abm_invalidate_page (
 /* for snapshot */
 uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn)
 {
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t i, pos = 0;
 
 	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == NULL) {
@@ -558,7 +559,8 @@ uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn)
 
 uint32_t bdbm_abm_store (struct bdbm_abm_info* bai, const char* fn)
 {
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t i, pos = 0;
 
 	if ((fp = bdbm_fopen (fn,  O_CREAT | O_WRONLY, 0777)) == NULL) {

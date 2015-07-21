@@ -22,9 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
+
+#elif defined(USER_MODE)
+#include <stdint.h>
+#include <stdio.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+
+#endif
 
 #include "params.h"
 #include "platform.h"
@@ -54,7 +64,6 @@ int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 #endif
 
-
 module_param (_param_mapping_policy, int, 0000);
 module_param (_param_gc_policy, int, 0000);
 module_param (_param_wl_policy, int, 0000);
@@ -75,66 +84,9 @@ MODULE_PARM_DESC (_param_host_type, "host interface type");
 MODULE_PARM_DESC (_param_llm_type, "low-level memory management type");
 MODULE_PARM_DESC (_param_hlm_type, "high-level memory management type");
 
-
 struct bdbm_params* read_driver_params (void)
 {
 	struct bdbm_params* ptr_params = NULL;
-
-#if 0
-	/* allocate the memory for parameters */
-	if ((ptr_params = (struct bdbm_params*)bdbm_malloc (sizeof (struct bdbm_params))) == NULL) {
-		bdbm_error ("failed to allocate the memory for ptr_params");
-		return NULL;
-	}
-
-	/* handling the module parameters from the command line */
-	ptr_params->nand.nr_channels = _param_nr_channels;
-	ptr_params->nand.nr_chips_per_channel = _param_nr_chips_per_channel;
-	ptr_params->nand.nr_blocks_per_chip = _param_nr_blocks_per_chip;
-	ptr_params->nand.nr_pages_per_block = _param_nr_pages_per_block;
-	ptr_params->nand.page_main_size = _param_page_main_size;
-	ptr_params->nand.page_oob_size = _param_page_oob_size;
-	ptr_params->nand.device_type = _param_device_type;
-	ptr_params->nand.timing_mode = _param_ramdrv_timing_mode;
-	ptr_params->nand.page_read_time_us = _param_host_bus_trans_time_us + _param_chip_bus_trans_time_us + _param_page_read_time_us;
-	ptr_params->nand.page_prog_time_us = _param_host_bus_trans_time_us + _param_chip_bus_trans_time_us + _param_page_prog_time_us;
-	ptr_params->nand.block_erase_time_us = _param_block_erase_time_us;
-	ptr_params->nand.nr_blocks_per_channel = 
-		ptr_params->nand.nr_chips_per_channel * 
-		ptr_params->nand.nr_blocks_per_chip;
-	ptr_params->nand.nr_blocks_per_ssd = 
-		ptr_params->nand.nr_channels * 
-		ptr_params->nand.nr_chips_per_channel * 
-		ptr_params->nand.nr_blocks_per_chip;
-	ptr_params->nand.nr_chips_per_ssd =
-		ptr_params->nand.nr_channels * 
-		ptr_params->nand.nr_chips_per_channel;
-	ptr_params->nand.nr_pages_per_ssd =
-		ptr_params->nand.nr_pages_per_block * 
-		ptr_params->nand.nr_blocks_per_ssd;
-
-
-	/* calculate the total SSD capacity */
-	ptr_params->nand.device_capacity_in_byte = 0;
-	ptr_params->nand.device_capacity_in_byte += ptr_params->nand.nr_channels;
-	ptr_params->nand.device_capacity_in_byte *= ptr_params->nand.nr_chips_per_channel;
-
-	if (_param_mapping_policy == MAPPING_POLICY_PAGE) {
-		ptr_params->nand.device_capacity_in_byte *= 
-			(ptr_params->nand.nr_blocks_per_chip - ptr_params->nand.nr_blocks_per_chip * 0.06);	/* for FTL overprivisioning */
-		bdbm_msg ("FTL and bad-block overprovisioning: %llu %llu", 
-				ptr_params->nand.nr_blocks_per_chip,
-				(uint64_t)(ptr_params->nand.nr_blocks_per_chip * 0.06));
-	} else {
-		ptr_params->nand.device_capacity_in_byte *= 
-			(ptr_params->nand.nr_blocks_per_chip - ptr_params->nand.nr_blocks_per_chip * 0.01);	/* for bad-block overprivisioning */
-		bdbm_msg ("Bad-block overprovisioning: %llu %llu", 
-				ptr_params->nand.nr_blocks_per_chip,
-				(uint64_t)(ptr_params->nand.nr_blocks_per_chip * 0.01));
-	}
-	ptr_params->nand.device_capacity_in_byte *= ptr_params->nand.nr_pages_per_block;
-	ptr_params->nand.device_capacity_in_byte *= ptr_params->nand.page_main_size;
-#endif
 
 	/* allocate the memory for parameters */
 	if ((ptr_params = (struct bdbm_params*)bdbm_malloc (sizeof (struct bdbm_params))) == NULL) {

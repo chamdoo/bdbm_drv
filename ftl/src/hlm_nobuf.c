@@ -33,7 +33,7 @@ THE SOFTWARE.
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
-#include "utils/time.h"
+#include "utils/utime.h"
 
 
 /* interface for hlm_nobuf */
