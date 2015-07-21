@@ -1,12 +1,15 @@
 # Makefile for a RISA Device Driver
 #
 
+SRC := ../src
+
 KBUILD_EXTRA_SYMBOLS := \
-	$(PWD)/../hw/ramdrive/Module.symvers \
+	$(PWD)/../../hw/ramdrive/Module.symvers \
 
 EXTRA_CFLAGS := \
-	-I$(PWD)/../include \
-	-I$(PWD)/../include/utils \
+	-I$(PWD)/../../include \
+	-I$(PWD)/../../include/utils \
+	-I$(PWD)/../src \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
@@ -17,24 +20,24 @@ EXTRA_CFLAGS += -D USE_KTIMER
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 
 bdbm_drv-y := \
-	../include/utils/time.o \
-	../include/utils/file.o \
-	kparams.o \
-	ioctl.o \
-	kmain.o \
-	pmu.o \
-	host_block.o \
-	hlm_nobuf.o \
-	hlm_buf.o \
-	hlm_rsd.o \
-	llm_noq.o \
-	llm_mq.o \
-	ftl/abm.o \
-	ftl/no_ftl.o \
-	ftl/block_ftl.o \
-	ftl/page_ftl.o \
-	queue/queue.o \
-	queue/prior_queue.o
+	../../include/utils/time.o \
+	../../include/utils/file.o \
+	$(SRC)/kparams.o \
+	$(SRC)/ioctl.o \
+	$(SRC)/kmain.o \
+	$(SRC)/pmu.o \
+	$(SRC)/host_block.o \
+	$(SRC)/hlm_nobuf.o \
+	$(SRC)/hlm_buf.o \
+	$(SRC)/hlm_rsd.o \
+	$(SRC)/llm_noq.o \
+	$(SRC)/llm_mq.o \
+	$(SRC)/algo/abm.o \
+	$(SRC)/algo/no_ftl.o \
+	$(SRC)/algo/block_ftl.o \
+	$(SRC)/algo/page_ftl.o \
+	$(SRC)/queue/queue.o \
+	$(SRC)/queue/prior_queue.o
 
 obj-m := bdbm_drv.o
 

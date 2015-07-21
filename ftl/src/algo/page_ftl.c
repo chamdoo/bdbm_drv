@@ -32,8 +32,8 @@ THE SOFTWARE.
 
 #include "utils/time.h"
 #include "utils/file.h"
-#include "ftl/abm.h"
-#include "ftl/page_ftl.h"
+#include "algo/abm.h"
+#include "algo/page_ftl.h"
 
 
 /* FTL interface */

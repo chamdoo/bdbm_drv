@@ -30,9 +30,9 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "hlm_nobuf.h"
 
-#include "ftl/no_ftl.h"
-#include "ftl/block_ftl.h"
-#include "ftl/page_ftl.h"
+#include "algo/no_ftl.h"
+#include "algo/block_ftl.h"
+#include "algo/page_ftl.h"
 #include "utils/time.h"
 
 

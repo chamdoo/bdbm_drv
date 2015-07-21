@@ -34,9 +34,9 @@ THE SOFTWARE.
 #include "hlm_nobuf.h"
 #include "hlm_rsd.h"
 
-#include "ftl/no_ftl.h"
-#include "ftl/block_ftl.h"
-#include "ftl/page_ftl.h"
+#include "algo/no_ftl.h"
+#include "algo/block_ftl.h"
+#include "algo/page_ftl.h"
 #include "queue/queue.h"
 #include "3rd/uthash.h"
 

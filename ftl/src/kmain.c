@@ -42,9 +42,9 @@ THE SOFTWARE.
 #include "hlm_rsd.h"
 #include "hw.h"
 
-#include "ftl/no_ftl.h"
-#include "ftl/block_ftl.h"
-#include "ftl/page_ftl.h"
+#include "algo/no_ftl.h"
+#include "algo/block_ftl.h"
+#include "algo/page_ftl.h"
 #include "utils/file.h"
 
 /* main data structure */
