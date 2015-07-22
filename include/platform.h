@@ -53,6 +53,16 @@ THE SOFTWARE.
 #define	bdbm_reinit_completion(a) reinit_completion(&a)
 #endif
 
+/* mutex */
+#include <linux/mutex.h>
+#define bdbm_mutex struct mutex
+#define bdbm_mutex_init(a) mutex_init(a)
+#define bdbm_mutex_lock(a) mutex_lock(a)
+#define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)
+#define bdbm_mutex_unlock(a) mutex_unlock(a)
+#define bdbm_mutex_try_lock(a) mutex_trylock(a)
+#define bdbm_mutex_free(a)
+
 /* spinlock */
 #define bdbm_spinlock_t spinlock_t
 #define bdbm_spin_lock_init(a) spin_lock_init(a)
@@ -61,12 +71,14 @@ THE SOFTWARE.
 #define bdbm_spin_unlock(a) spin_unlock(a)
 #define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)
 #define bdbm_spin_lock_destory(a)
+
 /* thread */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,0)
 #define bdbm_daemonize(a) daemonize(a)
 #else
 #define bdbm_daemonize(a)
 #endif
+
 
 #elif defined(USER_MODE) 
 
@@ -94,9 +106,20 @@ THE SOFTWARE.
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 
+/* synchronization */
+#define bdbm_mutex struct pthread_mutex_t 
+#define bdbm_mutex_init(a) pthread_mutex_init(a, NULL)
+#define bdbm_mutex_lock(a) pthread_mutex_lock(a)
+#define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)
+#define bdbm_mutex_unlock(a) pthread_mutex_unlock(a)
+#define bdbm_mutex_try_lock(a) pthread_mutex_trylock(a)
+#define bdbm_mutex_free(a) pthread_mutex_destroy(a)
+
+
 #else
 /* ERROR CASE */
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
+
 
 #endif /* _BLUEDBM_PLATFORM_H */ 

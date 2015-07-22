@@ -32,7 +32,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "params.h"
-#include "utils/time.h"
+#include "utils/utime.h"
 
 /*
 enum RAMSSD_TIMING {

@@ -32,6 +32,7 @@ THE SOFTWARE.
 #if defined(USER_MODE)
 #include "3rd/uatomic.h"
 #include "3rd/uatomic64.h"
+#include "3rd/ulist.h"
 #endif
 
 struct bio;
@@ -170,7 +171,12 @@ struct bdbm_hlm_req_gc_t {
 	uint64_t nr_done_reqs;
 	uint64_t nr_reqs;
 	struct bdbm_llm_req_t* llm_reqs;
+#ifdef USE_COMPLETION
 	bdbm_completion gc_done;
+#else
+	bdbm_mutex gc_done;
+	/*struct pthread_mutex_t gc_done;*/
+#endif
 };
 
 /* a low-level request */

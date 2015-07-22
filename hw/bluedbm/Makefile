@@ -28,6 +28,7 @@ EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
 	-D CONFIG_DEVICE_TYPE_BLUEDBM \
+	-D KERNEL_MODE \
 
 risa_dev_bluedbm-y := \
 	../cpp/dm_main.o \

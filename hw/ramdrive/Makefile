@@ -10,10 +10,11 @@ EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
 	-D CONFIG_DEVICE_TYPE_RAMDRIVE \
+	-D KERNEL_MODE
 
 risa_dev_ramdrive-y := \
-	../../include/utils/file.o \
-	../../include/utils/time.o \
+	../../include/utils/ufile.o \
+	../../include/utils/utime.o \
 	../cpp/dm_main.o \
 	../cpp/dm_params.o \
 	dev_ramssd.o \

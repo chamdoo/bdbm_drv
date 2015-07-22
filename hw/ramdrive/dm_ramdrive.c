@@ -29,7 +29,7 @@ THE SOFTWARE.
 #include "dm_params.h"
 #include "dev_ramssd.h"
 
-#include "utils/time.h"
+#include "utils/utime.h"
 
 
 /* interface for dm */
