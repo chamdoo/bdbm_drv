@@ -1,5 +1,48 @@
-#ifndef _FMM_LIST_H
-#define _FMM_LIST_H
+/**
+ * 
+ * I grub it from linux kernel source code and fix it for user space
+ * program. Of course, this is a GPL licensed header file.
+ *
+ * Here is a recipe to cook list.h for user space program
+ *
+ * 1. copy list.h from linux/include/list.h
+ * 2. remove 
+ *     - #ifdef __KERNE__ and its #endif
+ *     - all #include line
+ *     - prefetch() and rcu related functions
+ * 3. add macro offsetof() and container_of
+ *
+ * - kazutomo@mcs.anl.gov
+ */
+
+/*
+ * Took from http://www.mcs.anl.gov/~kazutomo/list/list.h (chamdoo: 2015.07.22)
+ */
+#ifndef _LINUX_LIST_H
+#define _LINUX_LIST_H
+
+/**
+ * @name from other kernel headers
+ */
+/*@{*/
+
+/**
+ * Get offset of a member
+ */
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+
+/**
+ * Casts a member of a structure out to the containing structure
+ * @param ptr        the pointer to the member.
+ * @param type       the type of the container struct this is embedded in.
+ * @param member     the name of the member within the struct.
+ *
+ */
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+/*@}*/
+
 
 /*
  * These are non-NULL pointers that will result in page faults
@@ -9,7 +52,7 @@
 #define LIST_POISON1  ((void *) 0x00100100)
 #define LIST_POISON2  ((void *) 0x00200200)
 
-/*
+/**
  * Simple doubly linked list implementation.
  *
  * Some of the internal functions ("__xxx") are useful when
@@ -18,7 +61,6 @@
  * generate better code by using them directly rather than
  * using the generic single-entry routines.
  */
-
 struct list_head {
 	struct list_head *next, *prev;
 };
@@ -33,46 +75,47 @@ struct list_head {
 } while (0)
 
 /*
- * Insert a new_item entry between two known consecutive entries.
+ * Insert a new entry between two known consecutive entries.
  *
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_add(struct list_head *new_item,
+static inline void __list_add(struct list_head *new,
 			      struct list_head *prev,
 			      struct list_head *next)
 {
-	next->prev = new_item;
-	new_item->next = next;
-	new_item->prev = prev;
-	prev->next = new_item;
+	next->prev = new;
+	new->next = next;
+	new->prev = prev;
+	prev->next = new;
 }
 
 /**
- * list_add - add a new_item entry
- * @new_item: new_item entry to be added
+ * list_add - add a new entry
+ * @new: new entry to be added
  * @head: list head to add it after
  *
- * Insert a new_item entry after the specified head.
+ * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static inline void list_add(struct list_head *new_item, struct list_head *head)
+static inline void list_add(struct list_head *new, struct list_head *head)
 {
-	__list_add(new_item, head, head->next);
+	__list_add(new, head, head->next);
 }
 
 /**
- * list_add_tail - add a new_item entry
- * @new_item: new_item entry to be added
+ * list_add_tail - add a new entry
+ * @new: new entry to be added
  * @head: list head to add it before
  *
- * Insert a new_item entry before the specified head.
+ * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void list_add_tail(struct list_head *new_item, struct list_head *head)
+static inline void list_add_tail(struct list_head *new, struct list_head *head)
 {
-	__list_add(new_item, head->prev, head);
+	__list_add(new, head->prev, head);
 }
+
 
 /*
  * Delete a list entry by making the prev/next entries
@@ -96,9 +139,11 @@ static inline void __list_del(struct list_head * prev, struct list_head * next)
 static inline void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	entry->next = (struct list_head *)LIST_POISON1;
-	entry->prev = (struct list_head *)LIST_POISON2;
+	entry->next = LIST_POISON1;
+	entry->prev = LIST_POISON2;
 }
+
+
 
 /**
  * list_del_init - deletes entry from list and reinitialize it.
@@ -142,24 +187,6 @@ static inline int list_empty(const struct list_head *head)
 	return head->next == head;
 }
 
-/**
- * list_empty_careful - tests whether a list is
- * empty _and_ checks that no other CPU might be
- * in the process of still modifying either member
- *
- * NOTE: using list_empty_careful() without synchronization
- * can only be safe if the only activity that can happen
- * to the list entry is list_del_init(). Eg. it cannot be used
- * if another CPU could re-list_add() it.
- *
- * @head: the list to test.
- */
-static inline int list_empty_careful(const struct list_head *head)
-{
-	struct list_head *next = head->next;
-	return (next == head) && (next == head->prev);
-}
-
 static inline void __list_splice(struct list_head *list,
 				 struct list_head *head)
 {
@@ -176,7 +203,7 @@ static inline void __list_splice(struct list_head *list,
 
 /**
  * list_splice - join two lists
- * @list: the new_item list to add.
+ * @list: the new list to add.
  * @head: the place to add it in the first list.
  */
 static inline void list_splice(struct list_head *list, struct list_head *head)
@@ -187,7 +214,7 @@ static inline void list_splice(struct list_head *list, struct list_head *head)
 
 /**
  * list_splice_init - join two lists and reinitialise the emptied list.
- * @list: the new_item list to add.
+ * @list: the new list to add.
  * @head: the place to add it in the first list.
  *
  * The list at @list is reinitialised
@@ -200,31 +227,6 @@ static inline void list_splice_init(struct list_head *list,
 		INIT_LIST_HEAD(list);
 	}
 }
-
-//#define offsetof2(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-
-void DummyFunction();
-
-#define KnownAddress ((char *) ::DummyFunction)
-
-#define offsetof2(type, member) \
-	(((char *) &((type *) KnownAddress)->member) - KnownAddress) 
-
-/**
- * container_of - cast a member of a structure out to the containing structure
- *
- * @ptr:        the pointer to the member.
- * @type:       the type of the container struct this is embedded in.
- * @member:     the name of the member within the struct.
- *
- */
-/*
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)( (char *)__mptr - offsetof2(type,member) );})
-*/
-#define container_of(ptr, type, member)							\
-        (type *)( (char *)ptr - offsetof2(type,member) );
 
 /**
  * list_entry - get the struct for this entry
@@ -240,9 +242,10 @@ void DummyFunction();
  * @pos:	the &struct list_head to use as a loop counter.
  * @head:	the head for your list.
  */
+
 #define list_for_each(pos, head) \
-	for (pos = (head)->next; prefetch(pos->next), pos != (head); \
-        	pos = pos->next)
+  for (pos = (head)->next; pos != (head);	\
+       pos = pos->next)
 
 /**
  * __list_for_each	-	iterate over a list
@@ -263,9 +266,8 @@ void DummyFunction();
  * @head:	the head for your list.
  */
 #define list_for_each_prev(pos, head) \
-	for (pos = (head)->prev; pos != (head); \
+	for (pos = (head)->prev; prefetch(pos->prev), pos != (head); \
         	pos = pos->prev)
-					/*	for (pos = (head)->prev; prefetch(pos->prev), pos != (head); \ */
 
 /**
  * list_for_each_safe	-	iterate over a list safe against removal of list entry
@@ -285,7 +287,7 @@ void DummyFunction();
  */
 #define list_for_each_entry(pos, head, member)				\
 	for (pos = list_entry((head)->next, typeof(*pos), member);	\
-	     prefetch(pos->member.next), &pos->member != (head); 	\
+	     &pos->member != (head);					\
 	     pos = list_entry(pos->member.next, typeof(*pos), member))
 
 /**
@@ -296,7 +298,7 @@ void DummyFunction();
  */
 #define list_for_each_entry_reverse(pos, head, member)			\
 	for (pos = list_entry((head)->prev, typeof(*pos), member);	\
-	     prefetch(pos->member.prev), &pos->member != (head); 	\
+	     &pos->member != (head); 	\
 	     pos = list_entry(pos->member.prev, typeof(*pos), member))
 
 /**
@@ -318,7 +320,7 @@ void DummyFunction();
  */
 #define list_for_each_entry_continue(pos, head, member) 		\
 	for (pos = list_entry(pos->member.next, typeof(*pos), member);	\
-	     prefetch(pos->member.next), &pos->member != (head);	\
+	     &pos->member != (head);	\
 	     pos = list_entry(pos->member.next, typeof(*pos), member))
 
 /**
@@ -333,6 +335,37 @@ void DummyFunction();
 		n = list_entry(pos->member.next, typeof(*pos), member);	\
 	     &pos->member != (head); 					\
 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+
+/**
+ * list_for_each_entry_safe_continue -	iterate over list of given type
+ *			continuing after existing point safe against removal of list entry
+ * @pos:	the type * to use as a loop counter.
+ * @n:		another type * to use as temporary storage
+ * @head:	the head for your list.
+ * @member:	the name of the list_struct within the struct.
+ */
+#define list_for_each_entry_safe_continue(pos, n, head, member) 		\
+	for (pos = list_entry(pos->member.next, typeof(*pos), member), 		\
+		n = list_entry(pos->member.next, typeof(*pos), member);		\
+	     &pos->member != (head);						\
+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+
+/**
+ * list_for_each_entry_safe_reverse - iterate backwards over list of given type safe against
+ *				      removal of list entry
+ * @pos:	the type * to use as a loop counter.
+ * @n:		another type * to use as temporary storage
+ * @head:	the head for your list.
+ * @member:	the name of the list_struct within the struct.
+ */
+#define list_for_each_entry_safe_reverse(pos, n, head, member)		\
+	for (pos = list_entry((head)->prev, typeof(*pos), member),	\
+		n = list_entry(pos->member.prev, typeof(*pos), member);	\
+	     &pos->member != (head); 					\
+	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
+
+
+
 
 /*
  * Double linked lists with a single pointer list head.
@@ -376,9 +409,10 @@ static inline void __hlist_del(struct hlist_node *n)
 static inline void hlist_del(struct hlist_node *n)
 {
 	__hlist_del(n);
-	n->next = (struct hlist_node *)LIST_POISON1;
-	n->pprev = (struct hlist_node **)LIST_POISON2;
+	n->next = LIST_POISON1;
+	n->pprev = LIST_POISON2;
 }
+
 
 static inline void hlist_del_init(struct hlist_node *n)
 {
@@ -397,6 +431,8 @@ static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 	h->first = n;
 	n->pprev = &h->first;
 }
+
+
 
 /* next must be != NULL */
 static inline void hlist_add_before(struct hlist_node *n,
@@ -418,6 +454,8 @@ static inline void hlist_add_after(struct hlist_node *n,
 	if(next->next)
 		next->next->pprev  = &next->next;
 }
+
+
 
 #define hlist_entry(ptr, type, member) container_of(ptr,type,member)
 
@@ -478,5 +516,6 @@ static inline void hlist_add_after(struct hlist_node *n,
 	     pos && ({ n = pos->next; 1; }) && 				 \
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
+
 
 #endif

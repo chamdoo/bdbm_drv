@@ -29,15 +29,21 @@ THE SOFTWARE.
 #include "utils/utime.h"
 #include "platform.h"
 
-#if defined(USER_MODE)
+#if defined(KERNEL_MODE)
+#define KERNEL_PAGE_SIZE	PAGE_SIZE
+
+#elif defined(USER_MODE)
 #include "3rd/uatomic.h"
 #include "3rd/uatomic64.h"
 #include "3rd/ulist.h"
+
+#define KERNEL_PAGE_SIZE	4096	/* a default page size */
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
 struct bio;
-
-#define KERNEL_PAGE_SIZE	PAGE_SIZE
 
 /* useful macros */
 #define BDBM_KB (1024)

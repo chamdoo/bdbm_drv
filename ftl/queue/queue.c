@@ -22,9 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "bdbm_drv.h"
 #include "debug.h"

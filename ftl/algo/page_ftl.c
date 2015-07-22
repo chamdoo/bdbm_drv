@@ -22,9 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/log2.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+#include "3rd/uilog.h"
+#include "utils/upage.h"
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "bdbm_drv.h"
 #include "params.h"
@@ -746,7 +757,7 @@ uint32_t bdbm_page_ftl_load (struct bdbm_drv_info* bdi, const char* fn)
 	}
 
 	/* step2: load mapping table */
-	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == NULL) {
+	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == 0) {
 		bdbm_error ("bdbm_fopen failed");
 		return 1;
 	}
@@ -789,7 +800,7 @@ uint32_t bdbm_page_ftl_store (struct bdbm_drv_info* bdi, const char* fn)
 	uint32_t ret;
 
 	/* step1: make active blocks invalid (it's ugly!!!) */
-	if ((fp = bdbm_fopen (fn, O_CREAT | O_WRONLY, 0777)) == NULL) {
+	if ((fp = bdbm_fopen (fn, O_CREAT | O_WRONLY, 0777)) == 0) {
 		bdbm_error ("bdbm_fopen failed");
 		return 1;
 	}

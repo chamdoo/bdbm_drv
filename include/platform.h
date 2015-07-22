@@ -91,12 +91,16 @@ THE SOFTWARE.
 #define bdbm_spinlock_t pthread_spinlock_t
 #define bdbm_spin_lock_init(a) pthread_spin_init(a,0)
 #define bdbm_spin_lock(a) pthread_spin_lock(a)
-#define bdbm_spin_lock_irqsave(a,flag) pthread_spin_lock(a)
+#define bdbm_spin_lock_irqsave(a,flag) pthread_spin_lock(a);
 #define bdbm_spin_unlock(a) pthread_spin_unlock(b)
 #define bdbm_spin_unlock_irqrestore(a,flag) pthread_spin_unlock(a)
 #define bdbm_spin_lock_destory(a) pthread_spin_destroy(a)
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 /* memory handling */
+#include <string.h>
 #include <stdlib.h>
 #define bdbm_malloc(a) malloc(a)
 #define bdbm_zmalloc(a) malloc(a)
@@ -107,7 +111,7 @@ THE SOFTWARE.
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 
 /* synchronization */
-#define bdbm_mutex struct pthread_mutex_t 
+#define bdbm_mutex pthread_mutex_t 
 #define bdbm_mutex_init(a) pthread_mutex_init(a, NULL)
 #define bdbm_mutex_lock(a) pthread_mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)

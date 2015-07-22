@@ -22,9 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "bdbm_drv.h"
 #include "debug.h"
@@ -130,7 +139,7 @@ void bdbm_prior_queue_destroy (struct bdbm_prior_queue_t* mq)
 	HASH_ITER (hh, mq->hash_lpa, c, tmp) {
 		bdbm_warning ("hmm.. there are still some items in the hash table");
 		HASH_DEL (mq->hash_lpa, c);
-		kfree (c);
+		bdbm_free_atomic (c);
 	}
 	bdbm_free_atomic (mq->qlh);
 	bdbm_free_atomic (mq);

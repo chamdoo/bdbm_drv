@@ -22,10 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/kernel.h>
+
+#elif defined(USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "debug.h"
 #include "params.h"
@@ -210,6 +220,7 @@ void pmu_update_r_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
+	flags=10;
 	bdi->pm.time_r_sw = (bdi->pm.time_r_sw * n + delta) / (n + 1);
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }

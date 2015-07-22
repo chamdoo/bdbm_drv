@@ -3,9 +3,10 @@
 
 CC = gcc
 FTL := ../../ftl
+COMMON := ../../include
 CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS =  -lm -lpthread
-INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/../src
+INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/$(FTL)
 
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
@@ -28,15 +29,13 @@ OBJS := \
 	$(FTL)/algo/page_ftl.c \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
-	$(FTL)/utils/utime.c \
-	$(FTL)/utils/ufile.c \
-
+	$(COMMON)/utils/utime.c \
+	$(COMMON)/utils/ufile.c \
 
 	#$(FTL)/host_block.c \
 	#$(FTL)/kparams.c \
 	#$(FTL)/ioctl.c \
 	#$(FTL)/kmain.c \
-
 
 ftlib: $(OBJS)
 	gcc -o $@ $^ $(INCLUDES) $(CFLAGS) $(LIBS)

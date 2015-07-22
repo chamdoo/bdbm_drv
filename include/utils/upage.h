@@ -22,33 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_FILE_H
-#define _BLUEDBM_FILE_H
+#ifndef _UPAGE_H
+#define _UPAGE_H
 
-#if defined(KERNEL_MODE)
-#include <linux/fs.h>
-#include <asm/segment.h>
-#include <asm/uaccess.h>
-#include <linux/buffer_head.h>
-
-typedef struct file* bdbm_file_t;
-
-#elif defined(USER_MODE)
-#include <stdint.h>
-#include <fcntl.h>
-
-typedef int bdbm_file_t;
-
-#else
-#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#if defined (KERNEL_MODE)
+#error upage.h is not intended for the use in the kernel mode
 #endif
 
-bdbm_file_t bdbm_fopen (const char* path, int flags, int rights);
-void bdbm_fclose (bdbm_file_t file);
-uint64_t bdbm_fread (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size);
-uint64_t bdbm_fwrite (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size);
-uint32_t bdbm_fsync (bdbm_file_t file);
-uint32_t bdbm_funlink (bdbm_file_t file);
-void bdbm_flog (const char* filename, char* string);
+#include <stdio.h>
+#include <stdlib.h>
+
+#define GFP_KERNEL	0
+
+unsigned long get_zeroed_page (int gfp_mask) {
+	void* ptr_page = NULL;
+
+	ptr_page = (void*)malloc (4086);
+	if (ptr_page == NULL) {
+		printf ("CRITICAL-ERROR: malloc failed at %d%s\n", __LINE__, __FILE__);
+	}
+
+	return (unsigned long)ptr_page;
+}
+
+void free_page (unsigned long addr) {
+	void* ptr_page = (void*)addr;
+	free (ptr_page);
+}
 
 #endif
+
