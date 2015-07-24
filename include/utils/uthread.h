@@ -48,22 +48,23 @@ typedef struct {
 	int (*user_threadfn)(void *data);
 } bdbm_thread_t;
 
+#elif defined(USER_MODE)
+
+#define SIGKILL	0xCCCC
+
+typedef struct {
+
+} bdbm_thread_t;
+
+#endif /* USER_MODE */
+
+
 bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, char* name);
 int bdbm_thread_schedule (bdbm_thread_t* k);
 void bdbm_thread_wakeup (bdbm_thread_t* k);
 void bdbm_thread_stop (bdbm_thread_t* k);
 void bdbm_thread_msleep (uint32_t ms);
-
-#endif /* KERNEL_MODE */
-
-
-
-/*
- * Thread Implementation for User Mode 
- */
-#if defined(USER_MODE)
-
-#endif /* USER_MODE */
+void bdbm_thread_yield (void);
 
 
 #endif /* _BLUEDBM_THREAD_H */

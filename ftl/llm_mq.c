@@ -231,11 +231,12 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 		llm_req->phyaddr->chip_no;
 
 	while (bdbm_prior_queue_get_nr_items (p->q) >= 256) {
-		yield ();
+		/*yield ();*/
+		bdbm_thread_yield ();
 	}
 
 	/* put a request into Q */
-#ifdef QUICK_FIX_FOR_RWM
+#if defined(QUICK_FIX_FOR_RWM)
 	if (llm_req->req_type == REQTYPE_RMW_READ) {
 		/* FIXME: this is a quick fix to support RMW; it must be improved later */
 		/* step 1: put READ first */
@@ -255,7 +256,7 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	}
-#else 
+#else
 	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
@@ -272,7 +273,8 @@ void llm_mq_flush (struct bdbm_drv_info* bdi)
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
 	while (bdbm_prior_queue_is_all_empty (p->q) != 1) {
-		cond_resched ();
+		/*cond_resched ();*/
+		bdbm_thread_yield ();
 	}
 }
 

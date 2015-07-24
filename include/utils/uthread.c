@@ -139,6 +139,11 @@ void bdbm_thread_msleep (uint32_t ms)
 	msleep (ms);
 }
 
+void bdbm_thread_yield ()
+{
+	yield ();
+}
+
 #endif /* KERNEL_MODE */
 
 
@@ -147,7 +152,11 @@ void bdbm_thread_msleep (uint32_t ms)
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include <sys/time.h>
+
+#include <inttypes.h>
+#include <pthread.h>
 
 int bdbm_thread_fn (void *data) 
 {
@@ -184,6 +193,13 @@ void bdbm_thread_msleep (uint32_t ms)
 	tv.tv_usec = microsecs % 1000000;
 	select (0, NULL, NULL, NULL, &tv);  
 }
+
+void bdbm_thread_yield (void)
+{
+	pthread_yield ();
+}
+
+
 
 #endif
 
