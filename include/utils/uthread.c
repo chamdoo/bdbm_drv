@@ -27,7 +27,6 @@ THE SOFTWARE.
 #include "uthread.h"
 
 
-/**************************************************************************/
 #if defined(KERNEL_MODE)
 #include <linux/init.h>
 #include <linux/module.h>
@@ -147,7 +146,6 @@ void bdbm_thread_yield ()
 #endif /* KERNEL_MODE */
 
 
-/**************************************************************************/
 #if defined(USER_MODE)
 #include <stdio.h>
 #include <stdlib.h>
