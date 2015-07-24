@@ -126,8 +126,17 @@ void bdbm_thread_stop (bdbm_thread_t* k)
 		return;
 	}
 
+	/* send a KILL signal to the thread */
 	send_sig (SIGKILL, k->thread, 0);
 	bdbm_mutex_lock (&k->thread_done);
+
+	/* free bdbm_thread_t */
+	bdbm_free_atomic (k);
+}
+
+void bdbm_thread_msleep (uint32_t ms) 
+{
+	msleep (ms);
 }
 
 #endif /* KERNEL_MODE */
@@ -138,6 +147,43 @@ void bdbm_thread_stop (bdbm_thread_t* k)
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/time.h>
+
+int bdbm_thread_fn (void *data) 
+{
+	return 0;
+};
+
+bdbm_thread_t* bdbm_thread_create (
+	int (*user_threadfn)(void *data), 
+	void* user_data, 
+	char* name)
+{
+	return NULL;
+}
+
+int bdbm_thread_schedule (bdbm_thread_t* k)
+{
+	return 0;
+}
+
+void bdbm_thread_wakeup (bdbm_thread_t* k)
+{
+}
+
+void bdbm_thread_stop (bdbm_thread_t* k)
+{
+}
+
+void bdbm_thread_msleep (uint32_t ms) 
+{
+	int microsecs;
+	struct timeval tv;
+	microsecs = ms * 1000;
+	tv.tv_sec  = microsecs / 1000000;
+	tv.tv_usec = microsecs % 1000000;
+	select (0, NULL, NULL, NULL, &tv);  
+}
 
 #endif
 

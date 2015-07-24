@@ -52,6 +52,7 @@ bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, char
 int bdbm_thread_schedule (bdbm_thread_t* k);
 void bdbm_thread_wakeup (bdbm_thread_t* k);
 void bdbm_thread_stop (bdbm_thread_t* k);
+void bdbm_thread_msleep (uint32_t ms);
 
 #endif /* KERNEL_MODE */
 

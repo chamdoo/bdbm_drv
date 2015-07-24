@@ -54,8 +54,6 @@ THE SOFTWARE.
  * it must be improved later for better performance */
 #define QUICK_FIX_FOR_RWM	
 
-#define USE_ORIGINAL
-
 
 /* llm interface */
 struct bdbm_llm_inf_t _llm_mq_inf = {
@@ -70,118 +68,18 @@ struct bdbm_llm_inf_t _llm_mq_inf = {
 /* private */
 struct bdbm_llm_mq_private {
 	uint64_t nr_punits;
-#ifdef USE_COMPLETION
-	bdbm_completion* punit_locks;
-#else
 	bdbm_mutex* punit_locks;
-#endif
 	struct bdbm_prior_queue_t* q;
 
 	/* for debugging */
-#if defined(ENABLE_SEQ_DBG) && \
-	defined(USE_COMPLETION)
-	bdbm_completion dbg_seq;
-#elif defined(ENABLE_SEQ_DBG) && \
-	!defined(USE_COMPLETION)
+#if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex dbg_seq;
 #endif	
 
 	/* for thread management */
-#ifdef USE_ORIGINAL
-	#ifdef USE_COMPLETION
-	bdbm_completion llm_thread_done;
-	#else
-	bdbm_mutex llm_thread_done;
-	#endif
-	struct task_struct* llm_thread;
-	wait_queue_head_t llm_wq;
-#else
 	bdbm_thread_t* llm_thread;
-#endif
 };
 
-#ifdef USE_ORIGINAL
-int __llm_mq_thread (void* arg)
-{
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
-	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
-	DECLARE_WAITQUEUE (wait, current);
-	uint64_t loop;
-
-	bdbm_daemonize ("llm_mq_thread");
-	allow_signal (SIGKILL); 
-
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (p->llm_thread_done);
-	bdbm_reinit_completion (p->llm_thread_done);
-#else
-	bdbm_mutex_lock (&p->llm_thread_done);
-#endif
-
-	for (;;) {
-		/*send reqs until Q becomes empty */
-		if (bdbm_prior_queue_is_all_empty (p->q)) {
-			add_wait_queue (&p->llm_wq, &wait);
-			set_current_state (TASK_INTERRUPTIBLE);
-
-			schedule();	/* sleep */
-
-			remove_wait_queue (&p->llm_wq, &wait);
-			if (signal_pending (current)) {
-				break; /* SIGKILL */
-			}
-		}	
-
-		for (loop = 0; loop < p->nr_punits; loop++) {
-			struct bdbm_prior_queue_item_t* qitem = NULL;
-			struct bdbm_llm_req_t* ptr_req = NULL;
-
-			/* if pu is busy, then go to the next pnit */
-#ifdef USE_COMPLETION
-			if (!bdbm_try_wait_for_completion (p->punit_locks[loop])) {
-				continue;
-			}
-			bdbm_reinit_completion (p->punit_locks[loop]);
-#else
-			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
-				continue;
-			}
-#endif
-
-			if ((ptr_req = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
-#ifdef USE_COMPLETION
-				bdbm_complete (p->punit_locks[loop]);
-#else
-				bdbm_mutex_unlock (&p->punit_locks[loop]);
-#endif
-				continue;
-			}
-			ptr_req->ptr_qitem = qitem;
-
-			pmu_update_q (bdi, ptr_req);
-
-			if (bdi->ptr_dm_inf->make_req (bdi, ptr_req)) {
-#ifdef USE_COMPLETION
-				bdbm_complete (p->punit_locks[loop]);
-#else
-				bdbm_mutex_unlock (&p->punit_locks[loop]);
-#endif
-				/* TODO: I do not check whether it works well or not */
-				bdi->ptr_llm_inf->end_req (bdi, ptr_req);
-				bdbm_warning ("oops! make_req failed");
-			}
-		}
-	}
-
-#ifdef USE_COMPLETION
-	bdbm_complete (p->llm_thread_done);
-#else
-	bdbm_mutex_unlock (&p->llm_thread_done);
-#endif
-
-	return 0;
-}
-#else
 int __llm_mq_thread (void* arg)
 {
 	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
@@ -190,13 +88,11 @@ int __llm_mq_thread (void* arg)
 
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
-#if 0
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
 			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
 				break;
 			}
 		}
-#endif
 
 		/* send reqs until Q becomes empty */
 		for (loop = 0; loop < p->nr_punits; loop++) {
@@ -204,21 +100,11 @@ int __llm_mq_thread (void* arg)
 			struct bdbm_llm_req_t* ptr_req = NULL;
 
 			/* if pu is busy, then go to the next pnit */
-#ifdef USE_COMPLETION
-			if (!bdbm_try_wait_for_completion (p->punit_locks[loop]))
-				continue;
-			bdbm_reinit_completion (p->punit_locks[loop]);
-#else
 			if (!bdbm_mutex_try_lock (&p->punit_locks[loop]))
 				continue;
-#endif
 
 			if ((ptr_req = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
-#ifdef USE_COMPLETION
-				bdbm_complete (p->punit_locks[loop]);
-#else
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
-#endif
 				continue;
 			}
 			ptr_req->ptr_qitem = qitem;
@@ -226,11 +112,8 @@ int __llm_mq_thread (void* arg)
 			pmu_update_q (bdi, ptr_req);
 
 			if (bdi->ptr_dm_inf->make_req (bdi, ptr_req)) {
-#ifdef USE_COMPLETION
-				bdbm_complete (p->punit_locks[loop]);
-#else
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
-#endif
+
 				/* TODO: I do not check whether it works well or not */
 				bdi->ptr_llm_inf->end_req (bdi, ptr_req);
 				bdbm_warning ("oops! make_req failed");
@@ -240,8 +123,6 @@ int __llm_mq_thread (void* arg)
 
 	return 0;
 }
-#endif
-
 
 void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)
 {
@@ -279,18 +160,6 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 	}
 
 	/* create completion locks for parallel units */
-#ifdef USE_COMPLETION
-	if ((p->punit_locks = (bdbm_completion*)bdbm_malloc_atomic
-			(sizeof (bdbm_completion) * p->nr_punits)) == NULL) {
-		bdbm_error ("bdbm_malloc_atomic failed");
-		__llm_mq_create_fail (p);
-		return -1;
-	}
-	for (loop = 0; loop < p->nr_punits; loop++) {
-		bdbm_init_completion (p->punit_locks[loop]);
-		bdbm_complete (p->punit_locks[loop]);
-	}
-#else
 	if ((p->punit_locks = (bdbm_mutex*)bdbm_malloc_atomic
 			(sizeof (bdbm_mutex) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
@@ -300,43 +169,19 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 	for (loop = 0; loop < p->nr_punits; loop++) {
 		bdbm_mutex_init (&p->punit_locks[loop]);
 	}
-#endif
 
 	/* keep the private structures for llm_nt */
 	bdi->ptr_llm_inf->ptr_private = (void*)p;
 
 	/* create & run a thread */
-#ifdef USE_ORIGINAL
-	#ifdef USE_COMPLETION
-	bdbm_init_completion (p->llm_thread_done);
-	bdbm_complete (p->llm_thread_done);
-	#else
-	bdbm_mutex_init (&p->llm_thread_done);
-	#endif
-	init_waitqueue_head (&p->llm_wq);
-	if ((p->llm_thread = kthread_create (
-			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
-		bdbm_error ("kthread_create failed");
-		__llm_mq_create_fail (p);
-		return -1;
-	}
-	wake_up_process (p->llm_thread);
-#else
-	/************/
 	if ((p->llm_thread = bdbm_thread_create (
 			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
 		bdbm_error ("kthread_create failed");
 		__llm_mq_create_fail (p);
 		return -1;
 	}
-#endif
 
-#if defined(ENABLE_SEQ_DBG) && \
-	defined(USE_COMPLETION)
-	bdbm_init_completion (p->dbg_seq);
-	bdbm_complete (p->dbg_seq);
-#elif defined(ENABLE_SEQ_DBG) && \
-	!defined(USE_COMPLETION)
+#if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_init (&p->dbg_seq);
 #endif
 
@@ -353,28 +198,14 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 
 	/* wait until Q becomes empty */
 	while (!bdbm_prior_queue_is_all_empty (p->q)) {
-		msleep (1);
+		bdbm_thread_msleep (1);
 	}
 
 	/* kill kthread */
-#ifdef USE_ORIGINAL
-	send_sig (SIGKILL, p->llm_thread, 0);
-	#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (p->llm_thread_done);
-	#else
-	bdbm_mutex_lock (&p->llm_thread_done);
-	#endif
-#else
 	bdbm_thread_stop (p->llm_thread);
-#endif
 
-#ifdef USE_COMPLETION
-	for (loop = 0; loop < p->nr_punits; loop++)
-		bdbm_wait_for_completion (p->punit_locks[loop]);
-#else
 	for (loop = 0; loop < p->nr_punits; loop++)
 		bdbm_mutex_lock (&p->punit_locks[loop]);
-#endif
 
 	/* release all the relevant data structures */
 	bdbm_prior_queue_destroy (p->q);
@@ -387,12 +218,7 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 	uint64_t punit_id;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
-#if defined(ENABLE_SEQ_DBG) && \
-	defined(USE_COMPLETION)
-	bdbm_wait_for_completion (p->dbg_seq);
-	bdbm_reinit_completion (p->dbg_seq);
-#elif defined(ENABLE_SEQ_DBG) && \
-	!defined(USE_COMPLETION)
+#if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_lock (&p->dbg_seq);
 #endif
 
@@ -436,11 +262,7 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 #endif
 
 	/* wake up thread if it sleeps */
-#ifdef USE_ORIGINAL
-	wake_up_interruptible (&p->llm_wq); 
-#else
 	bdbm_thread_wakeup (p->llm_thread);
-#endif
 
 	return ret;
 }
@@ -467,11 +289,7 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
 			llm_req->phyaddr->chip_no;
 
-#ifdef USE_COMPLETION
-		bdbm_complete (p->punit_locks[punit_id]);
-#else
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-#endif
 
 		/* change its type to WRITE if req_type is RMW */
 		llm_req->phyaddr = &llm_req->phyaddr_w;
@@ -494,11 +312,7 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		pmu_inc (bdi, llm_req);
 
 		/* wake up thread if it sleeps */
-#ifdef USE_ORIGINAL
-		wake_up_interruptible (&p->llm_wq); 
-#else
 		bdbm_thread_wakeup (p->llm_thread);
-#endif
 		break;
 
 	case REQTYPE_READ:
@@ -517,11 +331,7 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		bdbm_prior_queue_remove (p->q, qitem);
 
 		/* complete a lock */
-#ifdef USE_COMPLETION
-		bdbm_complete (p->punit_locks[punit_id]);
-#else
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-#endif
 
 		/* update the elapsed time taken by NAND devices */
 		pmu_update_tot (bdi, llm_req);
@@ -530,12 +340,8 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		/* finish a request */
 		bdi->ptr_hlm_inf->end_req (bdi, llm_req);
 
-#if defined(ENABLE_SEQ_DBG) && \
-	defined(USE_COMPLETION)
-	bdbm_complete (p->dbg_seq);          
-#elif defined(ENABLE_SEQ_DBG) && \
-	!defined(USE_COMPLETION)
-	bdbm_mutex_unlock (&p->dbg_seq);
+#if defined(ENABLE_SEQ_DBG)
+		bdbm_mutex_unlock (&p->dbg_seq);
 #endif
 		break;
 
