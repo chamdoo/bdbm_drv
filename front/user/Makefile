@@ -31,6 +31,8 @@ OBJS := \
 	$(FTL)/queue/prior_queue.c \
 	$(COMMON)/utils/utime.c \
 	$(COMMON)/utils/ufile.c \
+	$(COMMON)/utils/uthread.c \
+	$(COMMON)/3rd/uilog.c \
 
 	#$(FTL)/host_block.c \
 	#$(FTL)/kparams.c \
@@ -38,8 +40,8 @@ OBJS := \
 	#$(FTL)/kmain.c \
 
 ftlib: $(OBJS)
-	gcc -o $@ $^ $(INCLUDES) $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(INCLUDES) $(CFLAGS) $(LIBS)
 
 clean:
-	@rm *.o core *~ ftlib
+	@$(RM) *.o core *~ ftlib
 	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;

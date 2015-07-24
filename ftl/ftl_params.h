@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef __BLUEDBM_KPARAM_H__
-#define __BLUEDBM_KPARAM_H__
+#ifndef __BLUEDBM_FTL_PARAM_H__
+#define __BLUEDBM_FTL_PARAM_H__
 
 struct bdbm_params* read_driver_params (void);
 void display_default_params (struct bdbm_drv_info* bdi);

@@ -26,7 +26,6 @@ THE SOFTWARE.
 #include "platform.h"
 #include "uthread.h"
 
-
 #if defined(KERNEL_MODE)
 #include <linux/init.h>
 #include <linux/module.h>
@@ -196,8 +195,6 @@ void bdbm_thread_yield (void)
 {
 	pthread_yield ();
 }
-
-
 
 #endif
 

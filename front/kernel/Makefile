@@ -23,11 +23,11 @@ EXTRA_CFLAGS += -D KERNEL_MODE
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
 bdbm_drv-y := \
-	$(FTL)/kparams.o \
-	$(FTL)/ioctl.o \
-	$(FTL)/kmain.o \
+	ioctl.o \
+	host_block.o \
+	$(FTL)/ftl_init.o \
+	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
-	$(FTL)/host_block.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/hlm_buf.o \
 	$(FTL)/hlm_rsd.o \
@@ -42,6 +42,7 @@ bdbm_drv-y := \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
+
 
 obj-m := bdbm_drv.o
 

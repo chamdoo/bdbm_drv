@@ -50,6 +50,8 @@ typedef struct {
 
 #elif defined(USER_MODE)
 
+#include <stdint.h>
+
 #define SIGKILL	0xCCCC
 
 typedef struct {
@@ -58,14 +60,12 @@ typedef struct {
 
 #endif /* USER_MODE */
 
-
 bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, char* name);
 int bdbm_thread_schedule (bdbm_thread_t* k);
 void bdbm_thread_wakeup (bdbm_thread_t* k);
 void bdbm_thread_stop (bdbm_thread_t* k);
 void bdbm_thread_msleep (uint32_t ms);
 void bdbm_thread_yield (void);
-
 
 #endif /* _BLUEDBM_THREAD_H */
 
