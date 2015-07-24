@@ -42,4 +42,4 @@ ftlib: $(OBJS)
 
 clean:
 	@rm *.o core *~ ftlib
-	@cd ../src; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;

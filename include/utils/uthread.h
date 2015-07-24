@@ -22,33 +22,48 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _UPAGE_H
-#define _UPAGE_H
+#ifndef _BLUEDBM_THREAD_H
+#define _BLUEDBM_THREAD_H
 
-#if defined (KERNEL_MODE)
-#error upage.h is not intended for the use in the kernel mode
-#endif
+/*
+ * Thread Implementation for Kernel Mode 
+ */
+#if defined(KERNEL_MODE)
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <linux/delay.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
 
-#define GFP_KERNEL	0
+#include "platform.h"
 
-inline unsigned long get_zeroed_page (int gfp_mask) {
-	void* ptr_page = NULL;
+typedef struct {
+	/* thread management */
+	bdbm_mutex thread_done;
+	wait_queue_head_t wq;
+	wait_queue_t* wait;
+	struct task_struct* thread;
+	
+	/* user management */
+	void* user_data;
+	int (*user_threadfn)(void *data);
+} bdbm_thread_t;
 
-	ptr_page = (void*)malloc (4086);
-	if (ptr_page == NULL) {
-		printf ("CRITICAL-ERROR: malloc failed at %d%s\n", __LINE__, __FILE__);
-	}
+bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, char* name);
+int bdbm_thread_schedule (bdbm_thread_t* k);
+void bdbm_thread_wakeup (bdbm_thread_t* k);
+void bdbm_thread_stop (bdbm_thread_t* k);
 
-	return (unsigned long)ptr_page;
-}
+#endif /* KERNEL_MODE */
 
-inline void free_page (unsigned long addr) {
-	void* ptr_page = (void*)addr;
-	free (ptr_page);
-}
 
-#endif
+
+/*
+ * Thread Implementation for User Mode 
+ */
+#if defined(USER_MODE)
+
+#endif /* USER_MODE */
+
+
+#endif /* _BLUEDBM_THREAD_H */
 

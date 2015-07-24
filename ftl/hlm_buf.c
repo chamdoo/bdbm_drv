@@ -25,9 +25,10 @@ THE SOFTWARE.
 /*#if defined(KERNEL_MODE)*/
 #include <linux/module.h>
 #include <linux/blkdev.h>
-#include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/sched.h>
+
+/*#include <linux/delay.h>*/
+/*#include <linux/kthread.h>*/
+/*#include <linux/sched.h>*/
 
 /*#elif defined(USER_MODE)*/
 /*#include <stdio.h>*/
@@ -42,11 +43,14 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
+#include "uthread.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "queue/queue.h"
+
+#define USE_ORIGINAL
 
 
 /* interface for hlm_buf */
@@ -65,17 +69,25 @@ struct bdbm_hlm_buf_private {
 
 	/* for thread management */
 	struct bdbm_queue_t* q;
-#ifdef USE_COMPLETION
-	bdbm_completion hlm_thread_done;
-#else
-	bdbm_mutex hlm_thread_done;
-#endif
+#ifdef USE_ORIGINAL
+	#ifdef USE_COMPLETION
+		bdbm_completion hlm_thread_done;
+	#else
+		bdbm_mutex hlm_thread_done;
+	#endif
 	struct task_struct* hlm_thread;
 	wait_queue_head_t hlm_wq;
+#else
+
+	bdbm_thread_t* hlm_thread;
+	/******/
+#endif
 };
 
 
 /* kernel thread for _llm_q */
+#ifdef USE_ORIGINAL
+#if 0
 int __hlm_buf_thread (void* arg)
 {
 	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
@@ -135,6 +147,134 @@ int __hlm_buf_thread (void* arg)
 
 	return 0;
 }
+#endif
+int __hlm_buf_thread (void* arg)
+{
+	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
+	DECLARE_WAITQUEUE (wait, current);
+	struct bdbm_hlm_req_t* r;
+
+
+	bdbm_daemonize ("hlm_buf_thread");
+	allow_signal (SIGKILL); 
+
+#ifdef USE_COMPLETION
+	bdbm_wait_for_completion (p->hlm_thread_done);
+	bdbm_reinit_completion (p->hlm_thread_done);
+#else
+	bdbm_mutex_lock (&p->hlm_thread_done);
+#endif
+
+	for (;;) {
+		if (bdbm_queue_is_all_empty (p->q)) {
+			add_wait_queue (&p->hlm_wq, &wait);
+			set_current_state (TASK_INTERRUPTIBLE);
+
+			schedule ();
+
+			remove_wait_queue (&p->hlm_wq, &wait);
+			if (signal_pending (current))
+				break; /* SIGKILL */
+		}
+
+		/*set_current_state (TASK_RUNNING);*/
+
+		/* if nothing is in Q, then go to the next punit */
+		while (!bdbm_queue_is_empty (p->q, 0)) {
+			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
+				/*bdbm_msg ("%llu: submit", r->lpa);*/
+				if (hlm_nobuf_make_req (bdi, r)) {
+					/* if it failed, we directly call 'ptr_host_inf->end_req' */
+					bdi->ptr_host_inf->end_req (bdi, r);
+					bdbm_warning ("oops! make_req failed");
+					/* [CAUTION] r is now NULL */
+				}
+			} else {
+				bdbm_error ("r == NULL");
+				bdbm_bug_on (1);
+			}
+		}
+	}
+
+	set_current_state (TASK_RUNNING);
+
+#ifdef USE_COMPLETION
+	bdbm_complete (p->hlm_thread_done);
+#else
+	bdbm_mutex_unlock (&p->hlm_thread_done);
+#endif
+
+	return 0;
+}
+#else
+int __hlm_buf_thread (void* arg)
+{
+	/*
+	bdbm_daemonize ("hlm_buf_thread");
+	allow_signal (SIGKILL); 
+
+	add_wait_queue (&p->hlm_wq, &wait);
+
+#ifdef USE_COMPLETION
+	bdbm_wait_for_completion (p->hlm_thread_done);
+	bdbm_reinit_completion (p->hlm_thread_done);
+#else
+	bdbm_mutex_lock (&p->hlm_thread_done);
+#endif
+	*/
+
+	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
+	DECLARE_WAITQUEUE (wait, current);
+	struct bdbm_hlm_req_t* r;
+
+	for (;;) {
+		/*
+		set_current_state (TASK_INTERRUPTIBLE);
+
+		if (bdbm_queue_is_all_empty (p->q)) {
+			schedule ();
+			if (signal_pending (current))
+				break; 
+		}
+
+		set_current_state (TASK_RUNNING);
+		*/
+
+		/* if nothing is in Q, then go to the next punit */
+		while (!bdbm_queue_is_empty (p->q, 0)) {
+			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
+				/*bdbm_msg ("%llu: submit", r->lpa);*/
+				if (hlm_nobuf_make_req (bdi, r)) {
+					/* if it failed, we directly call 'ptr_host_inf->end_req' */
+					bdi->ptr_host_inf->end_req (bdi, r);
+					bdbm_warning ("oops! make_req failed");
+					/* [CAUTION] r is now NULL */
+				}
+			} else {
+				bdbm_error ("r == NULL");
+				bdbm_bug_on (1);
+			}
+		}
+	}
+
+	return 0;
+
+/*
+	set_current_state (TASK_RUNNING);
+	remove_wait_queue (&p->hlm_wq, &wait);
+
+#ifdef USE_COMPLETION
+	bdbm_complete (p->hlm_thread_done);
+#else
+	bdbm_mutex_unlock (&p->hlm_thread_done);
+#endif
+
+	return 0;
+*/
+}
+#endif
 
 
 /* interface functions for hlm_buf */
@@ -150,8 +290,6 @@ uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
 	}
 
 	/* setup FTL function pointers */
-	/*p->ptr_ftl_inf = &_ftl_no_ftl;*/
-	/*p->ptr_ftl_inf = &_ftl_block_ftl;*/
 	p->ptr_ftl_inf = &_ftl_page_ftl;
 
 	/* create FTL */
@@ -171,12 +309,14 @@ uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
 	bdi->ptr_hlm_inf->ptr_private = (void*)p;
 
 	/* create & run a thread */
-#ifdef USE_COMPLETION
+#ifdef USE_ORIGINAL
+	#ifdef USE_COMPLETION
 	bdbm_init_completion (p->hlm_thread_done);
 	bdbm_complete (p->hlm_thread_done);
-#else
+	#else
 	bdbm_mutex_init (&p->hlm_thread_done);
-#endif
+	#endif
+
 	init_waitqueue_head (&p->hlm_wq);
 	if ((p->hlm_thread = kthread_create (
 			__hlm_buf_thread, bdi, "__hlm_buf_thread")) == NULL) {
@@ -185,6 +325,9 @@ uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
 		return -1;
 	}
 	wake_up_process (p->hlm_thread);
+#else
+	/****/
+#endif
 
 	return 0;
 }
@@ -200,11 +343,15 @@ void hlm_buf_destroy (struct bdbm_drv_info* bdi)
 	}
 
 	/* kill kthread */
+#ifdef USE_ORIGINAL
 	send_sig (SIGKILL, p->hlm_thread, 0);
-#ifdef USE_COMPLETION
+	#ifdef USE_COMPLETION
 	bdbm_wait_for_completion (p->hlm_thread_done);
-#else
+	#else
 	bdbm_mutex_lock (&p->hlm_thread_done);
+	#endif
+#else
+	/*****/
 #endif
 
 	/* destroy queue */
@@ -236,7 +383,11 @@ uint32_t hlm_buf_make_req (
 	}
 
 	/* wake up thread if it sleeps */
+#ifdef USE_ORIGINAL
 	wake_up_interruptible (&p->hlm_wq); 
+#else
+	/******/
+#endif
 
 	return ret;
 }

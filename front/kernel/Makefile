@@ -41,7 +41,7 @@ bdbm_drv-y := \
 	$(FTL)/queue/prior_queue.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
-
+	$(COMMON)/utils/uthread.o \
 
 obj-m := bdbm_drv.o
 

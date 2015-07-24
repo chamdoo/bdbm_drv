@@ -22,29 +22,39 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/blkdev.h>
-#include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/sched.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "debug.h"
 #include "platform.h"
 #include "params.h"
 #include "bdbm_drv.h"
 #include "llm_mq.h"
+#include "uthread.h"
 
 #include "queue/queue.h"
 #include "queue/prior_queue.h"
 #include "utils/utime.h"
 
 
-/* NOTE: This serializes all of the requests from the host file system; it is useful for debugging */
+/* NOTE: This serializes all of the requests from the host file system; 
+ * it is useful for debugging */
 /*#define ENABLE_SEQ_DBG*/
 
-/* NOTE: This is just a quick fix to support RMW; it must be improved later for better performance */
+/* NOTE: This is just a quick fix to support RMW; 
+ * it must be improved later for better performance */
 #define QUICK_FIX_FOR_RWM	
+
+#define USE_ORIGINAL
 
 
 /* llm interface */
@@ -67,24 +77,30 @@ struct bdbm_llm_mq_private {
 #endif
 	struct bdbm_prior_queue_t* q;
 
-	/* for thread management */
-#ifdef USE_COMPLETION
-	bdbm_completion llm_thread_done;
-#ifdef ENABLE_SEQ_DBG
+	/* for debugging */
+#if defined(ENABLE_SEQ_DBG) && \
+	defined(USE_COMPLETION)
 	bdbm_completion dbg_seq;
-#endif
-
-#else
-	bdbm_mutex llm_thread_done;
-#ifdef ENABLE_SEQ_DBG
+#elif defined(ENABLE_SEQ_DBG) && \
+	!defined(USE_COMPLETION)
 	bdbm_mutex dbg_seq;
 #endif	
 
-#endif
+	/* for thread management */
+#ifdef USE_ORIGINAL
+	#ifdef USE_COMPLETION
+	bdbm_completion llm_thread_done;
+	#else
+	bdbm_mutex llm_thread_done;
+	#endif
 	struct task_struct* llm_thread;
 	wait_queue_head_t llm_wq;
+#else
+	bdbm_thread_t* llm_thread;
+#endif
 };
 
+#ifdef USE_ORIGINAL
 int __llm_mq_thread (void* arg)
 {
 	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
@@ -95,8 +111,6 @@ int __llm_mq_thread (void* arg)
 	bdbm_daemonize ("llm_mq_thread");
 	allow_signal (SIGKILL); 
 
-	add_wait_queue (&p->llm_wq, &wait);
-
 #ifdef USE_COMPLETION
 	bdbm_wait_for_completion (p->llm_thread_done);
 	bdbm_reinit_completion (p->llm_thread_done);
@@ -105,17 +119,18 @@ int __llm_mq_thread (void* arg)
 #endif
 
 	for (;;) {
-		set_current_state (TASK_INTERRUPTIBLE);
-
 		/*send reqs until Q becomes empty */
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
+			add_wait_queue (&p->llm_wq, &wait);
+			set_current_state (TASK_INTERRUPTIBLE);
+
 			schedule();	/* sleep */
+
+			remove_wait_queue (&p->llm_wq, &wait);
 			if (signal_pending (current)) {
 				break; /* SIGKILL */
 			}
 		}	
-
-		set_current_state (TASK_RUNNING);
 
 		for (loop = 0; loop < p->nr_punits; loop++) {
 			struct bdbm_prior_queue_item_t* qitem = NULL;
@@ -158,9 +173,6 @@ int __llm_mq_thread (void* arg)
 		}
 	}
 
-	set_current_state (TASK_RUNNING);
-	remove_wait_queue (&p->llm_wq, &wait);
-
 #ifdef USE_COMPLETION
 	bdbm_complete (p->llm_thread_done);
 #else
@@ -169,6 +181,67 @@ int __llm_mq_thread (void* arg)
 
 	return 0;
 }
+#else
+int __llm_mq_thread (void* arg)
+{
+	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+	uint64_t loop;
+
+	for (;;) {
+		/* give a chance to other processes if Q is empty */
+#if 0
+		if (bdbm_prior_queue_is_all_empty (p->q)) {
+			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
+				break;
+			}
+		}
+#endif
+
+		/* send reqs until Q becomes empty */
+		for (loop = 0; loop < p->nr_punits; loop++) {
+			struct bdbm_prior_queue_item_t* qitem = NULL;
+			struct bdbm_llm_req_t* ptr_req = NULL;
+
+			/* if pu is busy, then go to the next pnit */
+#ifdef USE_COMPLETION
+			if (!bdbm_try_wait_for_completion (p->punit_locks[loop]))
+				continue;
+			bdbm_reinit_completion (p->punit_locks[loop]);
+#else
+			if (!bdbm_mutex_try_lock (&p->punit_locks[loop]))
+				continue;
+#endif
+
+			if ((ptr_req = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
+#ifdef USE_COMPLETION
+				bdbm_complete (p->punit_locks[loop]);
+#else
+				bdbm_mutex_unlock (&p->punit_locks[loop]);
+#endif
+				continue;
+			}
+			ptr_req->ptr_qitem = qitem;
+
+			pmu_update_q (bdi, ptr_req);
+
+			if (bdi->ptr_dm_inf->make_req (bdi, ptr_req)) {
+#ifdef USE_COMPLETION
+				bdbm_complete (p->punit_locks[loop]);
+#else
+				bdbm_mutex_unlock (&p->punit_locks[loop]);
+#endif
+				/* TODO: I do not check whether it works well or not */
+				bdi->ptr_llm_inf->end_req (bdi, ptr_req);
+				bdbm_warning ("oops! make_req failed");
+			}
+		}
+	}
+
+	return 0;
+}
+#endif
+
 
 void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)
 {
@@ -233,12 +306,13 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 	bdi->ptr_llm_inf->ptr_private = (void*)p;
 
 	/* create & run a thread */
-#ifdef USE_COMPLETION
+#ifdef USE_ORIGINAL
+	#ifdef USE_COMPLETION
 	bdbm_init_completion (p->llm_thread_done);
 	bdbm_complete (p->llm_thread_done);
-#else
+	#else
 	bdbm_mutex_init (&p->llm_thread_done);
-#endif
+	#endif
 	init_waitqueue_head (&p->llm_wq);
 	if ((p->llm_thread = kthread_create (
 			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
@@ -247,14 +321,23 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 		return -1;
 	}
 	wake_up_process (p->llm_thread);
+#else
+	/************/
+	if ((p->llm_thread = bdbm_thread_create (
+			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
+		bdbm_error ("kthread_create failed");
+		__llm_mq_create_fail (p);
+		return -1;
+	}
+#endif
 
-#ifdef ENABLE_SEQ_DBG
-#ifdef USE_COMPLETION
+#if defined(ENABLE_SEQ_DBG) && \
+	defined(USE_COMPLETION)
 	bdbm_init_completion (p->dbg_seq);
 	bdbm_complete (p->dbg_seq);
-#else
+#elif defined(ENABLE_SEQ_DBG) && \
+	!defined(USE_COMPLETION)
 	bdbm_mutex_init (&p->dbg_seq);
-#endif
 #endif
 
 	return 0;
@@ -274,21 +357,23 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 	}
 
 	/* kill kthread */
+#ifdef USE_ORIGINAL
 	send_sig (SIGKILL, p->llm_thread, 0);
-#ifdef USE_COMPLETION
+	#ifdef USE_COMPLETION
 	bdbm_wait_for_completion (p->llm_thread_done);
-#else
+	#else
 	bdbm_mutex_lock (&p->llm_thread_done);
+	#endif
+#else
+	bdbm_thread_stop (p->llm_thread);
 #endif
 
 #ifdef USE_COMPLETION
-	for (loop = 0; loop < p->nr_punits; loop++) {
+	for (loop = 0; loop < p->nr_punits; loop++)
 		bdbm_wait_for_completion (p->punit_locks[loop]);
-	}
 #else
-	for (loop = 0; loop < p->nr_punits; loop++) {
+	for (loop = 0; loop < p->nr_punits; loop++)
 		bdbm_mutex_lock (&p->punit_locks[loop]);
-	}
 #endif
 
 	/* release all the relevant data structures */
@@ -302,13 +387,13 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 	uint64_t punit_id;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
-#ifdef ENABLE_SEQ_DBG
-#ifdef USE_COMPLETION
+#if defined(ENABLE_SEQ_DBG) && \
+	defined(USE_COMPLETION)
 	bdbm_wait_for_completion (p->dbg_seq);
 	bdbm_reinit_completion (p->dbg_seq);
-#else
+#elif defined(ENABLE_SEQ_DBG) && \
+	!defined(USE_COMPLETION)
 	bdbm_mutex_lock (&p->dbg_seq);
-#endif
 #endif
 
 	/* obtain the elapsed time taken by FTL algorithms */
@@ -351,7 +436,11 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 #endif
 
 	/* wake up thread if it sleeps */
+#ifdef USE_ORIGINAL
 	wake_up_interruptible (&p->llm_wq); 
+#else
+	bdbm_thread_wakeup (p->llm_thread);
+#endif
 
 	return ret;
 }
@@ -405,7 +494,11 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		pmu_inc (bdi, llm_req);
 
 		/* wake up thread if it sleeps */
+#ifdef USE_ORIGINAL
 		wake_up_interruptible (&p->llm_wq); 
+#else
+		bdbm_thread_wakeup (p->llm_thread);
+#endif
 		break;
 
 	case REQTYPE_READ:
@@ -437,12 +530,12 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		/* finish a request */
 		bdi->ptr_hlm_inf->end_req (bdi, llm_req);
 
-#ifdef ENABLE_SEQ_DBG
-#ifdef USE_COMPLETION
-		bdbm_complete (p->dbg_seq);          
-#else
-		bdbm_mutex_unlock (&p->dbg_seq);
-#endif
+#if defined(ENABLE_SEQ_DBG) && \
+	defined(USE_COMPLETION)
+	bdbm_complete (p->dbg_seq);          
+#elif defined(ENABLE_SEQ_DBG) && \
+	!defined(USE_COMPLETION)
+	bdbm_mutex_unlock (&p->dbg_seq);
 #endif
 		break;
 
