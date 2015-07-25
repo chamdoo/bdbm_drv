@@ -22,20 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_HOST_BLOCK_H
-#define _BLUEDBM_HOST_BLOCK_H
+#include <stdio.h>
+#include <stdint.h>
 
-extern struct bdbm_host_inf_t _host_block_inf;
+#include "bdbm_drv.h"
+#include "debug.h"
+#include "platform.h"
+#include "host_user.h"
+#include "params.h"
+/*#include "ioctl.h"*/
 
-struct bdbm_host_block_private {
+#include "utils/utime.h"
+
+struct bdbm_host_inf_t _host_user_inf = {
+	.ptr_private = NULL,
+	.open = host_user_open,
+	.close = host_user_close,
+	.make_req = host_user_make_req,
+	.end_req = host_user_end_req,
+};
+
+struct bdbm_host_user_private {
 	uint64_t nr_host_reqs;
 	bdbm_spinlock_t lock;
 };
 
-uint32_t host_block_open (struct bdbm_drv_info* bdi);
-void host_block_close (struct bdbm_drv_info* bdi);
-void host_block_make_req (struct bdbm_drv_info* bdi, void* req);
-void host_block_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
+uint32_t host_user_open (struct bdbm_drv_info* bdi)
+{
+	return -1;
+}
 
-#endif
+void host_user_close (struct bdbm_drv_info* bdi)
+{
+}
+
+void host_user_make_req (struct bdbm_drv_info* bdi, void *bio)
+{
+}
+
+void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req)
+{
+}
 

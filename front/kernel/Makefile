@@ -23,10 +23,10 @@ EXTRA_CFLAGS += -D KERNEL_MODE
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
 bdbm_drv-y := \
+	kmain.o \
+	kparams.o \
 	ioctl.o \
 	host_block.o \
-	$(FTL)/ftl_init.o \
-	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/hlm_buf.o \

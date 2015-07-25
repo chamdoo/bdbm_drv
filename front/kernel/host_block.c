@@ -353,7 +353,7 @@ static void __host_block_make_request (
 	bdbm_mutex_lock (&bdbm_device.make_request_lock);
 #endif
 
-	host_block_make_req (_bdi, bio);
+	host_block_make_req (_bdi, (void*)bio);
 
 	/* free the lock*/
 #ifdef USE_COMPLETION
@@ -482,12 +482,13 @@ void host_block_close (struct bdbm_drv_info* bdi)
 
 void host_block_make_req (
 	struct bdbm_drv_info* bdi, 
-	struct bio *bio)
+	void* req)
 {
 	unsigned long flags;
 	struct nand_params* np = NULL;
 	struct bdbm_hlm_req_t* hlm_req = NULL;
 	struct bdbm_host_block_private* p = NULL;
+	struct bio* bio = (struct bio*)req;
 
 	np = &bdi->ptr_bdbm_params->nand;
 	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);

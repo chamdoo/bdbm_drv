@@ -22,20 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_HOST_BLOCK_H
-#define _BLUEDBM_HOST_BLOCK_H
+#ifndef __BLUEDBM_FTL_PARAM_H__
+#define __BLUEDBM_FTL_PARAM_H__
 
-extern struct bdbm_host_inf_t _host_block_inf;
-
-struct bdbm_host_block_private {
-	uint64_t nr_host_reqs;
-	bdbm_spinlock_t lock;
-};
-
-uint32_t host_block_open (struct bdbm_drv_info* bdi);
-void host_block_close (struct bdbm_drv_info* bdi);
-void host_block_make_req (struct bdbm_drv_info* bdi, void* req);
-void host_block_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
+struct bdbm_params* read_driver_params (void);
+void display_default_params (struct bdbm_drv_info* bdi);
 
 #endif
-

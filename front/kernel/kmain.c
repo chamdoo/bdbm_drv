@@ -38,7 +38,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "params.h"
-#include "ftl_params.h"
+#include "kparams.h"
 #include "debug.h"
 #include "host_block.h"
 

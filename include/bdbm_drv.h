@@ -43,7 +43,7 @@ THE SOFTWARE.
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
-struct bio;
+/*struct bio;*/
 
 /* useful macros */
 #define BDBM_KB (1024)
@@ -206,7 +206,7 @@ struct bdbm_host_inf_t {
 	void* ptr_private;
 	uint32_t (*open) (struct bdbm_drv_info* bdi);
 	void (*close) (struct bdbm_drv_info* bdi);
-	void (*make_req) (struct bdbm_drv_info* bdi, struct bio* bio);
+	void (*make_req) (struct bdbm_drv_info* bdi, void* req);
 	void (*end_req) (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
 };
 

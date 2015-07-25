@@ -22,20 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_HOST_BLOCK_H
-#define _BLUEDBM_HOST_BLOCK_H
+#ifndef _BLUEDBM_HOST_USER_H
+#define _BLUEDBM_HOST_USER_H
 
-extern struct bdbm_host_inf_t _host_block_inf;
+extern struct bdbm_host_inf_t _host_user_inf;
 
-struct bdbm_host_block_private {
-	uint64_t nr_host_reqs;
-	bdbm_spinlock_t lock;
-};
-
-uint32_t host_block_open (struct bdbm_drv_info* bdi);
-void host_block_close (struct bdbm_drv_info* bdi);
-void host_block_make_req (struct bdbm_drv_info* bdi, void* req);
-void host_block_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
+uint32_t host_user_open (struct bdbm_drv_info* bdi);
+void host_user_close (struct bdbm_drv_info* bdi);
+void host_user_make_req (struct bdbm_drv_info* bdi, void* bio);
+void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
 
 #endif
 

@@ -17,6 +17,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 
 OBJS := \
 	main.c \
+	host_user.c \
+	uparams.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/hlm_buf.c \
