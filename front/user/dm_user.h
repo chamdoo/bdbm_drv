@@ -22,44 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef _BLUEDBM_DM_USER_H
+#define _BLUEDBM_DM_USER_H
+
 #include <stdio.h>
 #include <stdint.h>
 
-#include "bdbm_drv.h"
-#include "debug.h"
-#include "platform.h"
-#include "host_user.h"
-#include "params.h"
+extern struct bdbm_dm_inf_t _dm_user_inf;
 
-#include "utils/utime.h"
+uint32_t dm_user_probe (struct bdbm_drv_info* bdi, struct nand_params* params);
+uint32_t dm_user_open (struct bdbm_drv_info* bdi);
+void dm_user_close (struct bdbm_drv_info* bdi);
+uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
+void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_user_load (struct bdbm_drv_info* bdi, const char* fn);
+uint32_t dm_user_store (struct bdbm_drv_info* bdi, const char* fn);
 
-struct bdbm_host_inf_t _host_user_inf = {
-	.ptr_private = NULL,
-	.open = host_user_open,
-	.close = host_user_close,
-	.make_req = host_user_make_req,
-	.end_req = host_user_end_req,
-};
-
-struct bdbm_host_user_private {
-	uint64_t nr_host_reqs;
-	bdbm_spinlock_t lock;
-};
-
-uint32_t host_user_open (struct bdbm_drv_info* bdi)
-{
-	return -1;
-}
-
-void host_user_close (struct bdbm_drv_info* bdi)
-{
-}
-
-void host_user_make_req (struct bdbm_drv_info* bdi, void *bio)
-{
-}
-
-void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req)
-{
-}
-
+#endif

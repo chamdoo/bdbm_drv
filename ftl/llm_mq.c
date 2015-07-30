@@ -130,8 +130,10 @@ void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)
 		return;
 	if (p->punit_locks)
 		bdbm_free_atomic (p->punit_locks);
-	if (p->q)
+	if (p->q) {
 		bdbm_prior_queue_destroy (p->q);
+		p->q = NULL;
+	}
 	bdbm_free_atomic (p);
 }
 

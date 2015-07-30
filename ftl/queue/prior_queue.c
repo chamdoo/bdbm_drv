@@ -136,6 +136,9 @@ void bdbm_prior_queue_destroy (struct bdbm_prior_queue_t* mq)
 {
 	struct bdbm_prior_lpa_item_t *c, *tmp;
 
+	if (mq == NULL)
+		return;
+
 	HASH_ITER (hh, mq->hash_lpa, c, tmp) {
 		bdbm_warning ("hmm.. there are still some items in the hash table");
 		HASH_DEL (mq->hash_lpa, c);
@@ -307,6 +310,9 @@ uint8_t bdbm_prior_queue_is_all_empty (struct bdbm_prior_queue_t* mq)
 {
 	uint8_t ret = 0;
 	unsigned long flags;
+
+	if (mq == NULL)
+		return 1;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->qic == 0)

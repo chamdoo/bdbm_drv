@@ -47,6 +47,7 @@ THE SOFTWARE.
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
 #include "hlm_rsd.h"
+#include "dm_user.h"
 #include "hw.h"
 
 #include "algo/no_ftl.h"
@@ -62,14 +63,7 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
-	/*
-	bdi->ptr_dm_inf = setup_risa_device (bdi);
-	if (bdi->ptr_dm_inf == NULL) {
-		bdbm_error ("invalid device interfaces");
-		bdbm_bug_on (1);
-		return -1;
-	}
-	*/
+	bdi->ptr_dm_inf = &_dm_user_inf;
 
 	/* set functions for host */
 	bdi->ptr_host_inf = &_host_user_inf;
@@ -285,5 +279,18 @@ void bdbm_drv_exit(void)
 
 int main (int argc, char** argv)
 {
+	bdbm_msg ("run ftlib...");
+
+	bdbm_msg ("initialize bdbm_drv_init");
+	if (bdbm_drv_init () == -1) {
+		bdbm_msg ("initialization failed");
+		return -1;
+	}
+
+
+	bdbm_msg ("destroy bdbm_drv_init");
+	bdbm_drv_exit ();
+
 	return 0;
 }
+

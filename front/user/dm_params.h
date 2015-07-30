@@ -22,44 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdint.h>
+#ifndef _BLUEDBM_DM_PARAMS_H
+#define _BLUEDBM_DM_PARAMS_H
 
-#include "bdbm_drv.h"
-#include "debug.h"
-#include "platform.h"
-#include "host_user.h"
-#include "params.h"
+extern int _param_nr_channels;
+extern int _param_nr_chips_per_channel;
+extern int _param_nr_blocks_per_chip;
+extern int _param_nr_pages_per_block;
+extern int _param_page_main_size; 
+extern int _param_page_oob_size;
+extern int _param_device_type; 
+extern int _param_host_bus_trans_time_us;
+extern int _param_chip_bus_trans_time_us;
+extern int _param_page_prog_time_us;
+extern int _param_page_read_time_us;
+extern int _param_block_erase_time_us;
+extern int _param_ramdrv_timing_mode;
 
-#include "utils/utime.h"
-
-struct bdbm_host_inf_t _host_user_inf = {
-	.ptr_private = NULL,
-	.open = host_user_open,
-	.close = host_user_close,
-	.make_req = host_user_make_req,
-	.end_req = host_user_end_req,
-};
-
-struct bdbm_host_user_private {
-	uint64_t nr_host_reqs;
-	bdbm_spinlock_t lock;
-};
-
-uint32_t host_user_open (struct bdbm_drv_info* bdi)
-{
-	return -1;
-}
-
-void host_user_close (struct bdbm_drv_info* bdi)
-{
-}
-
-void host_user_make_req (struct bdbm_drv_info* bdi, void *bio)
-{
-}
-
-void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req)
-{
-}
+#endif
 
