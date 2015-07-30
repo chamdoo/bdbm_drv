@@ -124,18 +124,9 @@ int __llm_mq_thread (void* arg)
 	return 0;
 }
 
-void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)
-{
-	if (!p) 
-		return;
-	if (p->punit_locks)
-		bdbm_free_atomic (p->punit_locks);
-	if (p->q) {
-		bdbm_prior_queue_destroy (p->q);
-		p->q = NULL;
-	}
-	bdbm_free_atomic (p);
-}
+/*void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)*/
+/*{*/
+/*}*/
 
 uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 {
@@ -157,37 +148,43 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 	/* create queue */
 	if ((p->q = bdbm_prior_queue_create (p->nr_punits, INFINITE_QUEUE)) == NULL) {
 		bdbm_error ("bdbm_prior_queue_create failed");
-		__llm_mq_create_fail (p);
-		return -1;
+		goto fail;
 	}
 
 	/* create completion locks for parallel units */
 	if ((p->punit_locks = (bdbm_mutex*)bdbm_malloc_atomic
 			(sizeof (bdbm_mutex) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
-		__llm_mq_create_fail (p);
-		return -1;
+		goto fail;
 	}
 	for (loop = 0; loop < p->nr_punits; loop++) {
 		bdbm_mutex_init (&p->punit_locks[loop]);
 	}
 
-	/* keep the private structures for llm_nt */
-	bdi->ptr_llm_inf->ptr_private = (void*)p;
-
 	/* create & run a thread */
 	if ((p->llm_thread = bdbm_thread_create (
 			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
 		bdbm_error ("kthread_create failed");
-		__llm_mq_create_fail (p);
-		return -1;
+		goto fail;
 	}
+
+	/* keep the private structures for llm_nt */
+	bdi->ptr_llm_inf->ptr_private = (void*)p;
 
 #if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_init (&p->dbg_seq);
 #endif
 
 	return 0;
+
+fail:
+	if (p->punit_locks)
+		bdbm_free_atomic (p->punit_locks);
+	if (p->q)
+		bdbm_prior_queue_destroy (p->q);
+	if (p)
+		bdbm_free_atomic (p);
+	return -1;
 }
 
 /* NOTE: we assume that all of the host requests are completely served.
@@ -198,20 +195,31 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 	uint64_t loop;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
+	if (p == NULL)
+		return;
+
+	bdbm_error ("1=%p",p);
+
 	/* wait until Q becomes empty */
 	while (!bdbm_prior_queue_is_all_empty (p->q)) {
 		bdbm_thread_msleep (1);
 	}
 
+	bdbm_error ("1");
 	/* kill kthread */
 	bdbm_thread_stop (p->llm_thread);
 
 	for (loop = 0; loop < p->nr_punits; loop++)
 		bdbm_mutex_lock (&p->punit_locks[loop]);
 
+	bdbm_error ("1");
 	/* release all the relevant data structures */
-	bdbm_prior_queue_destroy (p->q);
-	bdbm_free_atomic (p);
+	if (p->q)
+		bdbm_prior_queue_destroy (p->q);
+	bdbm_error ("1");
+	if (p) 
+		bdbm_free_atomic (p);
+	bdbm_error ("1");
 }
 
 uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
