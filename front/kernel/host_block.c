@@ -159,7 +159,9 @@ static struct bdbm_hlm_req_t* __host_block_create_hlm_rq_req (
 	hlm_req->ret = 0;
 	bdbm_spin_lock_init (&hlm_req->lock);
 	if ((hlm_req->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic
-			(sizeof(uint8_t*) * hlm_req->len * nr_kp_per_fp)) == NULL) { bdbm_error ("bdbm_malloc_atomic failed"); goto fail_req;
+			(sizeof(uint8_t*) * hlm_req->len * nr_kp_per_fp)) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed"); 
+		goto fail_req;
 	}
 	if ((hlm_req->kpg_flags = (uint8_t*)bdbm_malloc_atomic
 			(sizeof(uint8_t) * hlm_req->len * nr_kp_per_fp)) == NULL) {

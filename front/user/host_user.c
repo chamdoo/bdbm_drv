@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "bdbm_drv.h"
 #include "debug.h"
@@ -33,6 +34,7 @@ THE SOFTWARE.
 
 #include "utils/utime.h"
 
+
 struct bdbm_host_inf_t _host_user_inf = {
 	.ptr_private = NULL,
 	.open = host_user_open,
@@ -41,25 +43,226 @@ struct bdbm_host_inf_t _host_user_inf = {
 	.end_req = host_user_end_req,
 };
 
-struct bdbm_host_user_private {
+struct bdbm_host_block_private {
 	uint64_t nr_host_reqs;
 	bdbm_spinlock_t lock;
 };
 
+static struct bdbm_hlm_req_t* __host_block_create_hlm_req (struct bdbm_drv_info* bdi, struct bdbm_host_req_t *req);
+static void __host_block_delete_hlm_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_req);
+
+
 uint32_t host_user_open (struct bdbm_drv_info* bdi)
 {
-	return -1;
+	uint32_t ret;
+	struct bdbm_host_block_private* p;
+
+	/* create a private data structure */
+	if ((p = (struct bdbm_host_block_private*)bdbm_malloc_atomic
+			(sizeof (struct bdbm_host_block_private))) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed");
+		return 1;
+	}
+	p->nr_host_reqs = 0;
+	bdbm_spin_lock_init (&p->lock); 
+	bdi->ptr_host_inf->ptr_private = (void*)p;
+
+	return 0;
 }
 
 void host_user_close (struct bdbm_drv_info* bdi)
 {
+	unsigned long flags;
+	struct bdbm_host_block_private* p = NULL;
+
+	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+
+	/* wait for host reqs to finish */
+	bdbm_msg ("wait for host reqs to finish");
+	for (;;) {
+		bdbm_spin_lock_irqsave (&p->lock, flags);
+		if (p->nr_host_reqs == 0) {
+			bdbm_spin_unlock_irqrestore (&p->lock, flags);
+			break;
+		}
+		bdbm_spin_unlock_irqrestore (&p->lock, flags);
+
+		sleep (1);
+	}
+
+	/* free private */
+	bdbm_free_atomic (p);
 }
 
-void host_user_make_req (struct bdbm_drv_info* bdi, void *bio)
+static struct bdbm_hlm_req_t* __host_block_create_hlm_req (
+	struct bdbm_drv_info* bdi, 
+	struct bdbm_host_req_t* host_req)
 {
+	uint32_t kpg_loop = 0;
+	struct bdbm_hlm_req_t* hlm_req = NULL;
+
+	if ((hlm_req = (struct bdbm_hlm_req_t*)bdbm_malloc_atomic
+			(sizeof (struct bdbm_hlm_req_t))) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed");
+		return NULL;
+	}
+
+	hlm_req->req_type = host_req->req_type;
+	hlm_req->lpa = host_req->lpa;
+	hlm_req->len = host_req->len;
+	hlm_req->nr_done_reqs = 0;
+	hlm_req->ptr_host_req = (void*)host_req;
+	hlm_req->ret = 0;
+	bdbm_spin_lock_init (&hlm_req->lock);
+
+	if ((hlm_req->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic
+			(sizeof(uint8_t*) * hlm_req->len)) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed"); 
+		goto fail_req;
+	}
+	if ((hlm_req->kpg_flags = (uint8_t*)bdbm_malloc_atomic
+			(sizeof(uint8_t) * hlm_req->len)) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed");
+		goto fail_flags;
+	}
+
+	/* get or alloc pages */
+	for (kpg_loop = 0; kpg_loop < hlm_req->len; kpg_loop++) {
+		if ((hlm_req->pptr_kpgs[kpg_loop] = &host_req->data[kpg_loop * 4096]) != NULL) {
+			hlm_req->kpg_flags[kpg_loop] = MEMFLAG_KMAP_PAGE;
+		} else {
+			bdbm_error ("kmap failed");
+			goto fail_grab_pages;
+		}
+	}
+
+	return hlm_req;
+
+fail_grab_pages:
+	/* release grabbed pages */
+	for (kpg_loop = 0; kpg_loop < hlm_req->len; kpg_loop++) {
+		if (hlm_req->kpg_flags[kpg_loop] == MEMFLAG_KMAP_PAGE) {
+			/* do nothing */
+		} else if (hlm_req->kpg_flags[kpg_loop] != MEMFLAG_NOT_SET) {
+			bdbm_error ("invalid flags (kpg_flags[%u]=%u)", 
+				kpg_loop, 
+				hlm_req->kpg_flags[kpg_loop]);
+		}
+	}
+	bdbm_free_atomic (hlm_req->kpg_flags);
+
+fail_flags:
+	bdbm_free_atomic (hlm_req->pptr_kpgs);
+
+fail_req:
+	bdbm_free_atomic (hlm_req);
+
+	return NULL;
 }
 
-void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req)
+void host_user_make_req (
+	struct bdbm_drv_info* bdi, 
+	void *bio)
 {
+	unsigned long flags;
+	struct nand_params* np = NULL;
+	struct bdbm_hlm_req_t* hlm_req = NULL;
+	struct bdbm_host_block_private* p = NULL;
+	struct bdbm_host_req_t* host_req = (struct bdbm_host_req_t*)bio;
+
+	np = &bdi->ptr_bdbm_params->nand;
+	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+
+	/* create a hlm_req using a bio */
+	if ((hlm_req = __host_block_create_hlm_req (bdi, host_req)) == NULL) {
+		bdbm_error ("the creation of hlm_req failed");
+		return;
+	}
+
+	/* if success, increase # of host reqs */
+	bdbm_spin_lock_irqsave (&p->lock, flags);
+	p->nr_host_reqs++;
+	bdbm_spin_unlock_irqrestore (&p->lock, flags);
+
+	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
+	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
+	if (bdi->ptr_hlm_inf->make_req (bdi, hlm_req) != 0) {
+		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+
+		/* decreate # of reqs */
+		bdbm_spin_lock_irqsave (&p->lock, flags);
+		if (p->nr_host_reqs > 0)
+			p->nr_host_reqs--;
+		else
+			bdbm_error ("p->nr_host_reqs is 0");
+		bdbm_spin_unlock_irqrestore (&p->lock, flags);
+
+		/* finish a bio */
+		__host_block_delete_hlm_req (bdi, hlm_req);
+	}
+}
+
+static void __host_block_delete_hlm_req (
+	struct bdbm_drv_info* bdi, 
+	struct bdbm_hlm_req_t* hlm_req)
+{
+	struct nand_params* np = NULL;
+	uint32_t kpg_loop = 0;
+
+	np = &bdi->ptr_bdbm_params->nand;
+
+	/* temp */
+	if (hlm_req->org_pptr_kpgs) {
+		hlm_req->pptr_kpgs = hlm_req->org_pptr_kpgs;
+		hlm_req->kpg_flags = hlm_req->org_kpg_flags;
+		hlm_req->lpa--;
+		hlm_req->len++;
+	}
+	/* end */
+
+	/* free or unmap pages */
+	if (hlm_req->kpg_flags != NULL && hlm_req->pptr_kpgs != NULL) {
+		for (kpg_loop = 0; kpg_loop < hlm_req->len; kpg_loop++) {
+			if (hlm_req->kpg_flags[kpg_loop] == MEMFLAG_KMAP_PAGE_DONE) {
+				/* do nothing */
+			} else if (hlm_req->kpg_flags[kpg_loop] != MEMFLAG_NOT_SET) {
+				/* what??? */
+				bdbm_error ("invalid flags (kpg_flags[%u]=%u)", 
+					kpg_loop, 
+					hlm_req->kpg_flags[kpg_loop]);
+			}
+		}
+	}
+
+	/* release other stuff */
+	if (hlm_req->kpg_flags != NULL) 
+		bdbm_free_atomic (hlm_req->kpg_flags);
+	if (hlm_req->pptr_kpgs != NULL) 
+		bdbm_free_atomic (hlm_req->pptr_kpgs);
+	bdbm_free_atomic (hlm_req);
+}
+
+void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_req)
+{
+	uint32_t ret;
+	unsigned long flags;
+	struct bdbm_host_req_t* host_req = NULL;
+	struct bdbm_host_block_private* p = NULL;
+
+	/* get a bio from hlm_req */
+	host_req = (struct bdbm_host_req_t*)hlm_req->ptr_host_req;
+	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	ret = hlm_req->ret;
+
+	/* destroy hlm_req */
+	__host_block_delete_hlm_req (bdi, hlm_req);
+
+	/* decreate # of reqs */
+	bdbm_spin_lock_irqsave (&p->lock, flags);
+	if (p->nr_host_reqs > 0)
+		p->nr_host_reqs--;
+	else
+		bdbm_bug_on (1);
+	bdbm_spin_unlock_irqrestore (&p->lock, flags);
 }
 

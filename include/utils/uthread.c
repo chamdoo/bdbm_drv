@@ -155,9 +155,20 @@ void bdbm_thread_yield ()
 #include <inttypes.h>
 #include <pthread.h>
 
-int bdbm_thread_fn (void *data) 
+void bdbm_thread_fn (void *data) 
 {
-	return 0;
+	bdbm_thread_t* k = (bdbm_thread_t*)data;
+
+	/* initialize a kernel thread */
+	bdbm_mutex_lock (&k->thread_done);
+	
+	/* invoke a user call-back function */
+	k->user_threadfn (k->user_data);
+
+	/* a thread stops */
+	bdbm_mutex_unlock (&k->thread_done);
+
+	pthread_exit (0);
 };
 
 bdbm_thread_t* bdbm_thread_create (
@@ -165,20 +176,75 @@ bdbm_thread_t* bdbm_thread_create (
 	void* user_data, 
 	char* name)
 {
-	return NULL;
+	bdbm_thread_t* k = NULL;
+
+	/* create bdbm_thread_t */
+	if ((k = (bdbm_thread_t*)bdbm_malloc_atomic (
+			sizeof (bdbm_thread_t))) == NULL) {
+		bdbm_error ("bdbm_malloc_atomic failed");
+		return NULL;
+	}
+
+	/* initialize bdbm_thread_t */
+	k->user_threadfn = user_threadfn;
+	k->user_data = (void*)user_data;
+	bdbm_mutex_init (&k->thread_done);
+	bdbm_mutex_init (&k->thread_sleep);
+	pthread_cond_init (&k->thread_con, NULL);
+	if ((pthread_create (&k->thread, NULL, (void*)&bdbm_thread_fn, (void*)k)) != 0) {
+		bdbm_error ("kthread_create failed");
+		bdbm_free_atomic (k);
+		return NULL;
+	} 
+
+	return k;
 }
 
 int bdbm_thread_schedule (bdbm_thread_t* k)
 {
+	if (k == NULL)
+		return 0;
+
+	/* sleep until wake-up signal */
+	bdbm_mutex_lock (&k->thread_sleep);
+	pthread_cond_wait (&k->thread_con, &k->thread_sleep);
+	bdbm_mutex_unlock (&k->thread_sleep);
+
+	/*bdbm_free_atomic (k);*/
+
 	return 0;
 }
 
 void bdbm_thread_wakeup (bdbm_thread_t* k)
 {
+	if (k == NULL)
+		return;
+
+	/* send a wake-up signal */
+	bdbm_mutex_lock (&k->thread_sleep);
+	pthread_cond_signal (&k->thread_con);
+	bdbm_mutex_unlock (&k->thread_sleep);
 }
 
 void bdbm_thread_stop (bdbm_thread_t* k)
 {
+	int ret;
+
+	if (k == NULL)
+		return;
+
+	/* send a kill signal */
+	if ((ret = pthread_cancel (k->thread)) != 0)
+		bdbm_msg ("pthread_cancel is %d", ret);
+
+	if ((ret = pthread_join (k->thread, NULL)) != 0)
+		bdbm_msg ("pthread_join is %d", ret);
+
+	/* clean up */
+	bdbm_mutex_free (&k->thread_done);
+	bdbm_mutex_free (&k->thread_sleep);
+	pthread_cond_destroy (&k->thread_con);
+	bdbm_free_atomic (k);
 }
 
 void bdbm_thread_msleep (uint32_t ms) 

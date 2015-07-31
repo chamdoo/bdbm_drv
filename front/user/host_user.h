@@ -27,6 +27,13 @@ THE SOFTWARE.
 
 extern struct bdbm_host_inf_t _host_user_inf;
 
+struct bdbm_host_req_t {
+	uint32_t req_type; /* read, write, or erase */
+	uint64_t lpa; /* logical page address */
+	uint64_t len; /* legnth */
+	uint8_t* data;
+};
+
 uint32_t host_user_open (struct bdbm_drv_info* bdi);
 void host_user_close (struct bdbm_drv_info* bdi);
 void host_user_make_req (struct bdbm_drv_info* bdi, void* bio);

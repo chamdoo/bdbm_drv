@@ -142,8 +142,6 @@ uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr
 
 	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_user_make_req");
-
 	/*TODO: do somthing */
 
 	dm_user_end_req (bdi, ptr_llm_req);
@@ -154,8 +152,6 @@ uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr
 void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
 {
 	bdbm_bug_on (ptr_llm_req == NULL);
-
-	bdbm_msg ("dm_user_make_req");
 
 	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }

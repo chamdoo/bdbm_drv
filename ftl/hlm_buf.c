@@ -84,7 +84,6 @@ int __hlm_buf_thread (void* arg)
 		/* if nothing is in Q, then go to the next punit */
 		while (!bdbm_queue_is_empty (p->q, 0)) {
 			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
-				/*bdbm_msg ("%llu: submit", r->lpa);*/
 				if (hlm_nobuf_make_req (bdi, r)) {
 					/* if it failed, we directly call 'ptr_host_inf->end_req' */
 					bdi->ptr_host_inf->end_req (bdi, r);

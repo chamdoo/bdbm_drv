@@ -32,6 +32,7 @@ THE SOFTWARE.
 #elif defined(USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #endif
 
@@ -279,16 +280,30 @@ void bdbm_drv_exit(void)
 
 int main (int argc, char** argv)
 {
+	int loop;
+	struct bdbm_host_req_t host_req;
+
 	bdbm_msg ("run ftlib...");
 
-	bdbm_msg ("initialize bdbm_drv_init");
+	bdbm_msg ("initialize bdbm_drv");
 	if (bdbm_drv_init () == -1) {
 		bdbm_msg ("initialization failed");
 		return -1;
 	}
 
+	bdbm_msg ("run some simulation");
 
-	bdbm_msg ("destroy bdbm_drv_init");
+	host_req.req_type = REQTYPE_READ;
+	host_req.lpa = 0;
+	host_req.len = 4;
+	host_req.data = (uint8_t*)malloc(4096*host_req.len);
+
+	for (loop = 0; loop < 1000; loop++) {
+		_bdi->ptr_host_inf->make_req (_bdi, &host_req);
+		host_req.lpa++;
+	}
+
+	bdbm_msg ("destroy bdbm_drv");
 	bdbm_drv_exit ();
 
 	return 0;

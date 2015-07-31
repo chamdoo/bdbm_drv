@@ -51,11 +51,20 @@ typedef struct {
 #elif defined(USER_MODE)
 
 #include <stdint.h>
+#include <pthread.h>
 
 #define SIGKILL	0xCCCC
 
 typedef struct {
+	/* thread management */
+	bdbm_mutex thread_done;
+	bdbm_mutex thread_sleep;
+	pthread_cond_t thread_con;
+	pthread_t thread;
 
+	/* user management */
+	void* user_data;
+	int (*user_threadfn)(void *data);
 } bdbm_thread_t;
 
 #endif /* USER_MODE */

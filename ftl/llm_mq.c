@@ -198,28 +198,22 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 	if (p == NULL)
 		return;
 
-	bdbm_error ("1=%p",p);
-
 	/* wait until Q becomes empty */
 	while (!bdbm_prior_queue_is_all_empty (p->q)) {
 		bdbm_thread_msleep (1);
 	}
 
-	bdbm_error ("1");
 	/* kill kthread */
 	bdbm_thread_stop (p->llm_thread);
 
 	for (loop = 0; loop < p->nr_punits; loop++)
 		bdbm_mutex_lock (&p->punit_locks[loop]);
 
-	bdbm_error ("1");
 	/* release all the relevant data structures */
 	if (p->q)
 		bdbm_prior_queue_destroy (p->q);
-	bdbm_error ("1");
 	if (p) 
 		bdbm_free_atomic (p);
-	bdbm_error ("1");
 }
 
 uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
