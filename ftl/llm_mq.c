@@ -124,10 +124,6 @@ int __llm_mq_thread (void* arg)
 	return 0;
 }
 
-/*void __llm_mq_create_fail (struct bdbm_llm_mq_private* p)*/
-/*{*/
-/*}*/
-
 uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 {
 	struct bdbm_llm_mq_private* p;
@@ -200,6 +196,7 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 
 	/* wait until Q becomes empty */
 	while (!bdbm_prior_queue_is_all_empty (p->q)) {
+		bdbm_msg ("llm items = %llu", bdbm_prior_queue_get_nr_items (p->q));
 		bdbm_thread_msleep (1);
 	}
 
@@ -244,7 +241,8 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 	if (llm_req->req_type == REQTYPE_RMW_READ) {
 		/* FIXME: this is a quick fix to support RMW; it must be improved later */
 		/* step 1: put READ first */
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue 
+				(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 
@@ -252,11 +250,14 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 		punit_id = llm_req->phyaddr_w.channel_no * 
 			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
 			llm_req->phyaddr_w.chip_no;
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+
+		if ((ret = bdbm_prior_queue_enqueue 
+				(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue 
+				(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	}

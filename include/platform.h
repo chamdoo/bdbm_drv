@@ -92,7 +92,7 @@ THE SOFTWARE.
 #define bdbm_spin_lock_init(a) pthread_spin_init(a,0)
 #define bdbm_spin_lock(a) pthread_spin_lock(a)
 #define bdbm_spin_lock_irqsave(a,flag) pthread_spin_lock(a);
-#define bdbm_spin_unlock(a) pthread_spin_unlock(b)
+#define bdbm_spin_unlock(a) pthread_spin_unlock(a)
 #define bdbm_spin_unlock_irqrestore(a,flag) pthread_spin_unlock(a)
 #define bdbm_spin_lock_destory(a) pthread_spin_destroy(a)
 
@@ -103,10 +103,10 @@ THE SOFTWARE.
 #include <string.h>
 #include <stdlib.h>
 #define bdbm_malloc(a) malloc(a)
-#define bdbm_zmalloc(a) malloc(a)
-#define bdbm_free(a) do { free(a); a = NULL; } while (0)
-#define bdbm_malloc_atomic(a) malloc(a)
-#define bdbm_free_atomic(a) do { free(a); a = NULL; } while (0)
+#define bdbm_zmalloc(a) calloc(a, 1)	/* 1 byte by default */
+#define bdbm_free(a) do { free(a); } while (0)
+#define bdbm_malloc_atomic(a) calloc(a, 1) /* 1 byte by default */
+#define bdbm_free_atomic(a) do { free(a); } while (0)
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 

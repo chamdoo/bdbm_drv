@@ -151,6 +151,7 @@ enum BDBM_HLM_MEMFLAG {
 
 /* a high-level request */
 struct bdbm_hlm_req_t {
+	uint64_t uniq_id; /* for debugging */
 	uint32_t req_type; /* read, write, or trim */
 	uint64_t lpa; /* logical page address */
 	uint64_t len; /* legnth */

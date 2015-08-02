@@ -28,6 +28,7 @@ THE SOFTWARE.
 extern struct bdbm_host_inf_t _host_user_inf;
 
 struct bdbm_host_req_t {
+	uint64_t uniq_id;
 	uint32_t req_type; /* read, write, or erase */
 	uint64_t lpa; /* logical page address */
 	uint64_t len; /* legnth */

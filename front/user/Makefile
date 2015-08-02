@@ -4,7 +4,8 @@
 CC = gcc
 FTL := ../../ftl
 COMMON := ../../include
-CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
+#CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
+CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS =  -lm -lpthread
 INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/$(FTL)
 
@@ -37,11 +38,6 @@ OBJS := \
 	$(COMMON)/utils/ufile.c \
 	$(COMMON)/utils/uthread.c \
 	$(COMMON)/3rd/uilog.c \
-
-	#$(FTL)/host_block.c \
-	#$(FTL)/kparams.c \
-	#$(FTL)/ioctl.c \
-	#$(FTL)/kmain.c \
 
 ftlib: $(OBJS)
 	$(CC) -o $@ $^ $(INCLUDES) $(CFLAGS) $(LIBS)

@@ -48,6 +48,9 @@ struct bdbm_dm_inf_t _dm_user_inf = {
 /* private data structure for dm */
 struct dm_user_private {
 	struct dev_ramssd_info *ramssd;
+	bdbm_spinlock_t dm_lock;
+	uint64_t w_cnt;
+	uint64_t w_cnt_done;
 };
 
 static void __dm_setup_device_params (struct nand_params* params)
@@ -105,6 +108,11 @@ uint32_t dm_user_probe (struct bdbm_drv_info* bdi, struct nand_params* params)
 		goto fail;
 	}
 
+	/* initialize some variables */
+	bdbm_spin_lock_init (&p->dm_lock);
+	p->w_cnt = 0;
+	p->w_cnt_done = 0;
+
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;
 
@@ -131,6 +139,7 @@ void dm_user_close (struct bdbm_drv_info* bdi)
 
 	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
+	bdbm_msg ("dm_user: w_cnt = %llu, w_cnt_done = %llu", p->w_cnt, p->w_cnt_done);
 	bdbm_msg ("dm_user_close is destroyed");
 
 	bdbm_free_atomic (p);
@@ -143,6 +152,9 @@ uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr
 	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
 	/*TODO: do somthing */
+	bdbm_spin_lock (&p->dm_lock);
+	p->w_cnt++;
+	bdbm_spin_unlock (&p->dm_lock);
 
 	dm_user_end_req (bdi, ptr_llm_req);
 
@@ -151,7 +163,13 @@ uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr
 
 void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
 {
-	bdbm_bug_on (ptr_llm_req == NULL);
+	struct dm_user_private* p; 
+
+	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+
+	bdbm_spin_lock (&p->dm_lock);
+	p->w_cnt_done++;
+	bdbm_spin_unlock (&p->dm_lock);
 
 	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }

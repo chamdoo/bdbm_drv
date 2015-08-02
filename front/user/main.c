@@ -245,10 +245,6 @@ void bdbm_drv_exit(void)
 	if (_bdi == NULL)
 		return;
 
-	/* display performance results */
-	pmu_display (_bdi);
-	pmu_destory (_bdi);
-
 	if (_bdi->ptr_host_inf != NULL)
 		_bdi->ptr_host_inf->close (_bdi);
 
@@ -273,15 +269,58 @@ void bdbm_drv_exit(void)
 		_bdi->ptr_dm_inf->close (_bdi);
 	}
 
+	/* display performance results */
+	pmu_display (_bdi);
+	pmu_destory (_bdi);
+
 	bdbm_free_atomic (_bdi);
 
 	bdbm_msg ("[blueDBM is removed]");
 }
 
-int main (int argc, char** argv)
+
+/*#define NUM_THREADS	100*/
+/*#define NUM_THREADS	20*/
+#define NUM_THREADS	10
+
+#include "bdbm_drv.h"
+#include "platform.h"
+#include "3rd/uatomic64.h"
+
+atomic64_t _cnt;
+
+void host_thread_fn (void *data) 
 {
 	int loop;
-	struct bdbm_host_req_t host_req;
+	int *val = (int*)(data);
+	struct bdbm_host_req_t* host_req = NULL;
+
+	host_req = (struct bdbm_host_req_t*)malloc (sizeof (struct bdbm_host_req_t));
+
+	host_req->uniq_id = (*val) * 10000;
+	host_req->req_type = REQTYPE_WRITE;
+	host_req->lpa = 0;
+	host_req->len = 4;
+	host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+
+	for (loop = 0; loop < 10000; loop++) {
+		atomic64_inc (&_cnt);
+		_bdi->ptr_host_inf->make_req (_bdi, host_req);
+		host_req->uniq_id++;
+		host_req->lpa++;
+	}
+
+	pthread_exit (0);
+}
+
+int main (int argc, char** argv)
+{
+	int loop_thread;
+
+	pthread_t thread[NUM_THREADS];
+	int thread_args[NUM_THREADS];
+
+	atomic64_set (&_cnt, 0);
 
 	bdbm_msg ("run ftlib...");
 
@@ -292,17 +331,23 @@ int main (int argc, char** argv)
 	}
 
 	bdbm_msg ("run some simulation");
-
-	host_req.req_type = REQTYPE_READ;
-	host_req.lpa = 0;
-	host_req.len = 4;
-	host_req.data = (uint8_t*)malloc(4096*host_req.len);
-
-	for (loop = 0; loop < 1000; loop++) {
-		_bdi->ptr_host_inf->make_req (_bdi, &host_req);
-		host_req.lpa++;
+	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+		thread_args[loop_thread] = loop_thread;
+		pthread_create (
+			&thread[loop_thread], 
+			NULL, 
+			(void*)&host_thread_fn, 
+			(void*)&thread_args[loop_thread]);
 	}
 
+	bdbm_msg ("wait for threads to end...");
+	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+		pthread_join (
+			thread[loop_thread], NULL
+		);
+	}
+
+	bdbm_msg ("total req cnt = %lld", atomic64_read (&_cnt));
 	bdbm_msg ("destroy bdbm_drv");
 	bdbm_drv_exit ();
 

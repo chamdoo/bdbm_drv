@@ -143,6 +143,7 @@ void hlm_buf_destroy (struct bdbm_drv_info* bdi)
 
 	/* wait until Q becomes empty */
 	while (!bdbm_queue_is_all_empty (p->q)) {
+		bdbm_msg ("hlm items = %llu", bdbm_queue_get_nr_items (p->q));
 		bdbm_thread_msleep (1);
 	}
 
