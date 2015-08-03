@@ -55,8 +55,8 @@ int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;
 int _param_hlm_type					= HLM_RSD;
 #else
 int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
-int _param_hlm_type					= HLM_NO_BUFFER;
-/*int _param_hlm_type					= HLM_BUFFER;*/
+/*int _param_hlm_type					= HLM_NO_BUFFER;*/
+int _param_hlm_type					= HLM_BUFFER;
 #endif
 
 /* for kernel modules (nothing for user-level applications */
