@@ -279,15 +279,16 @@ void bdbm_drv_exit(void)
 }
 
 
-/*#define NUM_THREADS	100*/
+#define NUM_THREADS	100
 /*#define NUM_THREADS	20*/
-#define NUM_THREADS	10
+/*#define NUM_THREADS	10*/
 
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "3rd/uatomic64.h"
 
 atomic64_t _cnt;
+uint64_t _cnt2 = 0;
 
 void host_thread_fn (void *data) 
 {
@@ -304,7 +305,14 @@ void host_thread_fn (void *data)
 	host_req->data = (uint8_t*)malloc (4096 * host_req->len);
 
 	for (loop = 0; loop < 10000; loop++) {
-		atomic64_inc (&_cnt);
+		if (loop %2 == 0) {
+			atomic64_inc (&_cnt);
+			_cnt2++;
+		} else {
+			atomic64_dec (&_cnt);
+			_cnt2--;
+		}
+
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
 		host_req->uniq_id++;
 		host_req->lpa++;
@@ -347,7 +355,7 @@ int main (int argc, char** argv)
 		);
 	}
 
-	bdbm_msg ("total req cnt = %lld", atomic64_read (&_cnt));
+	bdbm_msg ("total req cnt = %lld, %llu", atomic64_read (&_cnt), _cnt2);
 	bdbm_msg ("destroy bdbm_drv");
 	bdbm_drv_exit ();
 

@@ -44,8 +44,6 @@ THE SOFTWARE.
 #include "algo/page_ftl.h"
 #include "utils/utime.h"
 
-uint64_t _req_hlm_cnt = 0;
-uint64_t _req_hlm_cnt_done = 0;
 
 /* interface for hlm_nobuf */
 struct bdbm_hlm_inf_t _hlm_nobuf_inf = {
@@ -91,9 +89,6 @@ uint32_t hlm_nobuf_create (struct bdbm_drv_info* bdi)
 void hlm_nobuf_destroy (struct bdbm_drv_info* bdi)
 {
 	struct bdbm_hlm_nobuf_private* p = (struct bdbm_hlm_nobuf_private*)BDBM_HLM_PRIV(bdi);
-
-	bdbm_msg ("_req_hlm_cnt = %llu/%llu", 
-		_req_hlm_cnt, _req_hlm_cnt_done);
 
 	/* free priv */
 	bdbm_free_atomic (p);
@@ -231,10 +226,6 @@ uint32_t __hlm_nobuf_make_rw_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req
 	 * (1) when some of llm_reqs fail
 	 * (2) when all of llm_reqs fail */
 	for (i = 0; i < hlm_len; i++) {
-		bdbm_spin_lock (&ptr_hlm_req->lock);
-		_req_hlm_cnt++;
-		bdbm_spin_unlock (&ptr_hlm_req->lock);
-
 		if ((ret = bdi->ptr_llm_inf->make_req (bdi, pptr_llm_req[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 		}
@@ -355,11 +346,6 @@ void __hlm_nobuf_end_host_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t*
 		bdbm_free_atomic (ptr_llm_req->ptr_oob);
 	}
 	bdbm_free_atomic (ptr_llm_req);
-
-
-	bdbm_spin_lock (&ptr_hlm_req->lock);
-	_req_hlm_cnt_done++;
-	bdbm_spin_unlock (&ptr_hlm_req->lock);
 
 	/* increase # of reqs finished */
 	/*bdbm_spin_lock (&ptr_hlm_req->lock);*/

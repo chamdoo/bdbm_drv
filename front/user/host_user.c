@@ -47,10 +47,8 @@ struct bdbm_host_inf_t _host_user_inf = {
 struct bdbm_host_block_private {
 	uint64_t nr_host_reqs;
 	bdbm_spinlock_t lock;
+	bdbm_mutex host_lock;
 };
-
-static uint32_t _req_cnt = 0;
-static uint32_t _req_cnt_done = 0;
 
 
 static struct bdbm_hlm_req_t* __host_block_create_hlm_req (
@@ -160,6 +158,8 @@ uint32_t host_user_open (struct bdbm_drv_info* bdi)
 	}
 	p->nr_host_reqs = 0;
 	bdbm_spin_lock_init (&p->lock); 
+	bdbm_mutex_init (&p->host_lock);
+
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
 	return 0;
@@ -188,7 +188,7 @@ void host_user_close (struct bdbm_drv_info* bdi)
 		bdbm_thread_msleep (1);
 	}
 
-	bdbm_msg ("# of total reqs = %u/%u", _req_cnt_done, _req_cnt);
+	bdbm_mutex_free (&p->host_lock);
 
 	/* free private */
 	bdbm_free_atomic (p);
@@ -214,10 +214,11 @@ void host_user_make_req (
 		return;
 	}
 
+	bdbm_mutex_lock (&p->host_lock);
+
 	/* if success, increase # of host reqs */
 	bdbm_spin_lock_irqsave (&p->lock, flags);
 	p->nr_host_reqs++;
-	_req_cnt += host_req->len;
 	bdbm_spin_unlock_irqrestore (&p->lock, flags);
 
 	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
@@ -236,6 +237,8 @@ void host_user_make_req (
 		/* finish a bio */
 		__host_block_delete_hlm_req (bdi, hlm_req);
 	}
+
+	bdbm_mutex_unlock (&p->host_lock);
 }
 
 void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_req)
@@ -249,10 +252,6 @@ void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_re
 	/*host_req = (struct bdbm_host_req_t*)hlm_req->ptr_host_req;*/
 	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
 	ret = hlm_req->ret;
-
-	bdbm_spin_lock_irqsave (&p->lock, flags);
-	_req_cnt_done+=hlm_req->len;
-	bdbm_spin_unlock_irqrestore (&p->lock, flags);
 
 	/* destroy hlm_req */
 	__host_block_delete_hlm_req (bdi, hlm_req);
