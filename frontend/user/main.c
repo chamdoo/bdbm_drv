@@ -287,9 +287,6 @@ void bdbm_drv_exit(void)
 #include "platform.h"
 #include "3rd/uatomic64.h"
 
-atomic64_t _cnt;
-uint64_t _cnt2 = 0;
-
 void host_thread_fn (void *data) 
 {
 	int loop;
@@ -304,15 +301,7 @@ void host_thread_fn (void *data)
 	host_req->len = 4;
 	host_req->data = (uint8_t*)malloc (4096 * host_req->len);
 
-	for (loop = 0; loop < 10000; loop++) {
-		if (loop %2 == 0) {
-			atomic64_inc (&_cnt);
-			_cnt2++;
-		} else {
-			atomic64_dec (&_cnt);
-			_cnt2--;
-		}
-
+	for (loop = 0; loop < 100000; loop++) {
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
 		host_req->uniq_id++;
 		host_req->lpa++;
@@ -327,8 +316,6 @@ int main (int argc, char** argv)
 
 	pthread_t thread[NUM_THREADS];
 	int thread_args[NUM_THREADS];
-
-	atomic64_set (&_cnt, 0);
 
 	bdbm_msg ("run ftlib...");
 
@@ -355,7 +342,6 @@ int main (int argc, char** argv)
 		);
 	}
 
-	bdbm_msg ("total req cnt = %lld, %llu", atomic64_read (&_cnt), _cnt2);
 	bdbm_msg ("destroy bdbm_drv");
 	bdbm_drv_exit ();
 

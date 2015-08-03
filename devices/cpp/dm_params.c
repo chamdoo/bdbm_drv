@@ -22,11 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
+
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
 
+#elif defined (USER_MODE)
+
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
+
 #include "params.h"
+#include "platform.h"
 
 int _param_nr_channels 				= NR_CHANNELS;
 int _param_nr_chips_per_channel		= NR_CHIPS_PER_CHANNEL;
@@ -52,7 +64,6 @@ module_param (_param_chip_bus_trans_time_us, int, 0000);
 module_param (_param_page_prog_time_us, int, 0000);
 module_param (_param_page_read_time_us, int, 0000);
 module_param (_param_block_erase_time_us, int, 0000);
-/*module_param (_param_ramdrv_timing_mode, int, 0000);*/
 module_param (_param_device_type, int, 0000);
 
 MODULE_PARM_DESC (_param_nr_channels, "# of channels");

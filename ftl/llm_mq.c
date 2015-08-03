@@ -86,12 +86,16 @@ int __llm_mq_thread (void* arg)
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 	uint64_t loop;
 
+	uint64_t cnt = 0;
+
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
+			/*bdbm_msg ("llm_thread goes to sleep");*/
 			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
 				break;
 			}
+			/*bdbm_msg ("llm_thread wakes up");*/
 		}
 
 		/* send reqs until Q becomes empty */
@@ -111,6 +115,10 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, ptr_req);
 
+			if (cnt % 500000 == 0) {
+				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
+			}
+
 			if (bdi->ptr_dm_inf->make_req (bdi, ptr_req)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 
@@ -118,6 +126,8 @@ int __llm_mq_thread (void* arg)
 				bdi->ptr_llm_inf->end_req (bdi, ptr_req);
 				bdbm_warning ("oops! make_req failed");
 			}
+
+			cnt++;
 		}
 	}
 

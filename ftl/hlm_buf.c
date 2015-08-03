@@ -74,27 +74,38 @@ int __hlm_buf_thread (void* arg)
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
 	struct bdbm_hlm_req_t* r;
 
+	uint64_t cnt = 0;
+
 	for (;;) {
 		if (bdbm_queue_is_all_empty (p->q)) {
+			/*bdbm_msg ("hlm_Q goes to sleep");*/
 			if (bdbm_thread_schedule (p->hlm_thread) == SIGKILL) {
+				/*bdbm_msg ("hlm_Q gets a sigkill signal");*/
 				break;
 			}
+			/*bdbm_msg ("hlm_Q wakes up");*/
 		}
 
 		/* if nothing is in Q, then go to the next punit */
 		while (!bdbm_queue_is_empty (p->q, 0)) {
 			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
+				/*if (cnt % 100000 == 0) {*/
+				/*bdbm_msg ("hlm_make_req: %llu, %llu", cnt, bdbm_queue_get_nr_items (p->q));*/
+				/*}*/
 				if (hlm_nobuf_make_req (bdi, r)) {
 					/* if it failed, we directly call 'ptr_host_inf->end_req' */
 					bdi->ptr_host_inf->end_req (bdi, r);
 					bdbm_warning ("oops! make_req failed");
 					/* [CAUTION] r is now NULL */
 				}
+				cnt++;
 			} else {
 				bdbm_error ("r == NULL");
 				bdbm_bug_on (1);
 			}
-		}
+		} 
+
+		/*bdbm_msg ("hlm_Q is empty.. exit");*/
 	}
 
 	return 0;
