@@ -79,7 +79,7 @@ struct dm_bluedbm_private {
 	uint8_t** wbuf;
 };
 
-extern struct bdbm_drv_info* _bdi;
+extern struct bdbm_drv_info* _bdi_dm;
 
 void __copy_bio_to_dma (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
 void __copy_dma_to_bio (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
@@ -90,7 +90,7 @@ void __copy_dma_to_bio (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
  **/
 void FlashIndicationreadDone_cb (struct PortalInternal *p, const uint32_t tag)
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	struct bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
@@ -100,14 +100,14 @@ void FlashIndicationreadDone_cb (struct PortalInternal *p, const uint32_t tag)
 		bdbm_bug_on (1);
 	}
 	priv->llm_reqs[tag] = NULL;
-	__copy_dma_to_bio (_bdi, r);
-	_bdi->ptr_dm_inf->end_req (_bdi, r);
+	__copy_dma_to_bio (_bdi_dm, r);
+	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
 	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag )
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	struct bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
@@ -117,13 +117,13 @@ void FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag
 		bdbm_bug_on (1);
 	}
 	priv->llm_reqs[tag] = NULL;
-	_bdi->ptr_dm_inf->end_req (_bdi, r);
+	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
 	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status )
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	struct bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
@@ -137,20 +137,20 @@ void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag
 		bdbm_msg ("*** bad block detected! ***");
 		r->ret = 1; /* oops! it is a bad block */
 	}
-	_bdi->ptr_dm_inf->end_req (_bdi, r);
+	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
 	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationdebugDumpResp_cb (  struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 )
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 
 	sem_post (&priv->flash_sem);
 }
 
 void MMUIndicationWrapperidResponse_cb (  struct PortalInternal *p, const uint32_t sglId ) 
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 
 	priv->dma.sglId = sglId;
 	sem_post (&priv->dma.sglIdSem);
@@ -158,7 +158,7 @@ void MMUIndicationWrapperidResponse_cb (  struct PortalInternal *p, const uint32
 
 void MMUIndicationWrapperconfigResp_cb (  struct PortalInternal *p, const uint32_t pointer )
 {
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi);
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 
 	sem_post (&priv->dma.confSem);
 }
@@ -530,7 +530,7 @@ uint32_t dm_bluedbm_make_req (
 	uint32_t punit_id;
 
 	if (ptr_llm_req->req_type == REQTYPE_READ_DUMMY) {
-		_bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
+		_bdi_dm->ptr_dm_inf->end_req (bdi, ptr_llm_req);
 		return 0;
 	}
 

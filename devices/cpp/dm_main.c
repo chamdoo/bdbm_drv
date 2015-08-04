@@ -22,7 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "bdbm_drv.h"
 #include "debug.h"
@@ -33,9 +42,15 @@ THE SOFTWARE.
 extern struct bdbm_dm_inf_t _bdbm_dm_inf; 
 
 /* It is used by the device implementation module */
-struct bdbm_drv_info* _bdi = NULL;
+struct bdbm_drv_info* _bdi_dm = NULL;
 
+#if defined (KERNEL_MODE)
 static int __init risa_dev_init (void)
+#elif defined (USER_MODE)
+int risa_dev_init (void)
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 {
 	bdbm_msg ("risa_dev_warpper is initialized");
 
@@ -51,6 +66,12 @@ static int __init risa_dev_init (void)
 #elif defined (CONFIG_DEVICE_TYPE_BLUEDBM)
 	_param_device_type = DEVICE_TYPE_BLUEDBM;
 	bdbm_msg ("BlueDBM is detected");
+#elif defined (CONFIG_DEVICE_TYPE_USER_DUMMY)
+	_param_device_type = DEVICE_TYPE_USER_DUMMY;
+	bdbm_msg ("User-level Dummy Drive is detected");
+#elif defined (CONFIG_DEVICE_TYPE_USER_RAMDRIVE)
+	_param_device_type = DEVICE_TYPE_USER_RAMDRIVE;
+	bdbm_msg ("User-level RAMDRIVE is detected");
 #else
 	#error Invalid HW is set
 	_param_device_type = DEVICE_TYPE_NOTSET;
@@ -59,12 +80,18 @@ static int __init risa_dev_init (void)
 	return 0;
 }
 
+#if defined (KERNEL_MODE)
 static void __exit risa_dev_exit (void)
+#elif defined (USER_MODE)
+void risa_dev_exit (void)
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 {
 	bdbm_msg ("risa_dev_warpper is destroyed");
 }
 
-extern struct bdbm_drv_info* _bdi;
+/*extern struct bdbm_drv_info* _bdi_dm;*/
 
 struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)
 {
@@ -73,15 +100,20 @@ struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)
 		return NULL;
 	}
 
+#if !defined (KERNEL_MODE)
+	risa_dev_init ();
+#endif
+
 	bdbm_msg ("A risa device is attached completely");
 
 	/* setup the _bdi structure */
-	_bdi = bdi;
+	_bdi_dm = bdi;
 
 	/* return bdbm_dm_inf_t */
 	return &_bdbm_dm_inf;
 }
 
+#if defined (KERNEL_MODE)
 EXPORT_SYMBOL (setup_risa_device);
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
@@ -90,3 +122,4 @@ MODULE_LICENSE ("GPL");
 
 module_init (risa_dev_init);
 module_exit (risa_dev_exit);
+#endif

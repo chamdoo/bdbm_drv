@@ -25,22 +25,24 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_DEV_RAMSSD_H
 #define _BLUEDBM_DEV_RAMSSD_H
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
+
 #include "bdbm_drv.h"
 #include "params.h"
 #include "utils/utime.h"
 
-/*
-enum RAMSSD_TIMING {
-	RAMSSD_TIMING_DISABLE = 1,
-	RAMSSD_TIMING_ENABLE_TASKLET,
-	RAMSSD_TIMING_ENABLE_HRTIMER,
-};
-*/
 
 struct dev_ramssd_punit {
 	void* ptr_req;
@@ -54,11 +56,13 @@ struct dev_ramssd_info {
 	struct nand_params* nand_params;
 	void* ptr_ssdram; /* DRAM memory for SSD */
 	struct dev_ramssd_punit* ptr_punits;	/* parallel units */
-	spinlock_t ramssd_lock;
+	bdbm_spinlock_t ramssd_lock;
 	void (*intr_handler) (void*);
 
+#if defined (KERNEL_MODE)
 	struct tasklet_struct* tasklet;	/* tasklet */
 	struct hrtimer hrtimer;	/* hrtimer must be at the end of the structure */
+#endif
 };
 
 struct dev_ramssd_info* dev_ramssd_create (struct nand_params* ptr_nand_params, void (*intr_handler)(void*));

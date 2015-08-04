@@ -22,7 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/module.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "debug.h"
 #include "dm_ramdrive.h"
@@ -50,13 +59,13 @@ struct dm_ramssd_private {
 };
 
 /* global data structure */
-extern struct bdbm_drv_info* _bdi;
+extern struct bdbm_drv_info* _bdi_dm;
 
 /* interrupt handler */
 static void __dm_ramdrive_ih (void* arg)
 {
 	struct bdbm_llm_req_t* ptr_llm_req = (struct bdbm_llm_req_t*)arg;
-	struct bdbm_drv_info* bdi = _bdi;
+	struct bdbm_drv_info* bdi = _bdi_dm;
 
 	bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
 }

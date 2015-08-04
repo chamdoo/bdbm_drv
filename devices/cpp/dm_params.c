@@ -53,6 +53,7 @@ int _param_page_read_time_us		= NAND_PAGE_READ_TIME_US;
 int _param_block_erase_time_us		= NAND_BLOCK_ERASE_TIME_US;
 int _param_device_type 				= DEVICE_TYPE_NOTSET;
 	
+
 #if defined (KERNEL_MODE)
 module_param (_param_nr_channels, int, 0000);
 module_param (_param_nr_chips_per_channel, int, 0000);

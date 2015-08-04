@@ -39,7 +39,7 @@ THE SOFTWARE.
 
 /*#include "utils/uthread.h"*/
 
-struct bdbm_dm_inf_t _dm_user_inf = {
+struct bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_user_probe,
 	.open = dm_user_open,
@@ -200,8 +200,8 @@ uint32_t dm_user_store (struct bdbm_drv_info* bdi, const char* fn)
 	return 0;
 }
 
-struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)
-{
-	return &_dm_user_inf;
-}
+/*struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)*/
+/*{*/
+/*return &_dm_user_inf;*/
+/*}*/
 

@@ -280,8 +280,9 @@ void bdbm_drv_exit(void)
 
 
 /*#define NUM_THREADS	100*/
-/*#define NUM_THREADS	20*/
-#define NUM_THREADS	10
+#define NUM_THREADS	20
+/*#define NUM_THREADS	10*/
+/*#define NUM_THREADS	1*/
 
 #include "bdbm_drv.h"
 #include "platform.h"

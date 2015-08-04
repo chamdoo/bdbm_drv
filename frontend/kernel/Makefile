@@ -5,7 +5,7 @@ FTL := ../../ftl
 COMMON := ../../include
 
 KBUILD_EXTRA_SYMBOLS := \
-	$(PWD)/../../hw/ramdrive/Module.symvers \
+	$(PWD)/../../devices/ramdrive/Module.symvers \
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \

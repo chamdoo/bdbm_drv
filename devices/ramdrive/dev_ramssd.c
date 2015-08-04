@@ -22,8 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
 #include <linux/slab.h>
 #include <linux/interrupt.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
 #include "debug.h"
 #include "platform.h"
@@ -354,7 +363,7 @@ void __ramssd_cmd_done (struct dev_ramssd_info* ptr_ramssd_info)
 	for (loop = 0; loop < nr_parallel_units; loop++) {
 		unsigned long flags;
 
-		spin_lock_irqsave (&ptr_ramssd_info->ramssd_lock, flags);
+		bdbm_spin_lock_irqsave (&ptr_ramssd_info->ramssd_lock, flags);
 		if (ptr_ramssd_info->ptr_punits[loop].ptr_req != NULL) {
 			struct dev_ramssd_punit* punit;
 			int64_t elapsed_time_in_us;
@@ -365,15 +374,15 @@ void __ramssd_cmd_done (struct dev_ramssd_info* ptr_ramssd_info)
 			if (elapsed_time_in_us >= punit->target_elapsed_time_us) {
 				void* ptr_req = punit->ptr_req;
 				punit->ptr_req = NULL;
-				spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
+				bdbm_spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
 
 				/* call the interrupt handler */
 				ptr_ramssd_info->intr_handler (ptr_req);
 			} else {
-				spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
+				bdbm_spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
 			}
 		} else {
-			spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
+			bdbm_spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
 		}
 	}
 }
@@ -386,6 +395,7 @@ static void __ramssd_timing_cmd_done (unsigned long arg)
 	__ramssd_cmd_done ((struct dev_ramssd_info*)arg);
 }
 
+#if defined (KERNEL_MODE)
 static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *ptr_hrtimer)
 {
 	ktime_t ktime;
@@ -402,19 +412,23 @@ static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *pt
 
 	return HRTIMER_NORESTART;
 }
+#endif
 
 uint32_t __ramssd_timing_register_schedule (struct dev_ramssd_info* ptr_ramssd_info)
 {
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
+	case DEVICE_TYPE_USER_RAMDRIVE:
 		__ramssd_cmd_done (ptr_ramssd_info);
 		break;
+#if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_INTR:
 		/*__ramssd_cmd_done (ptr_ramssd_info);*/
 		break;
 	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		tasklet_schedule (ptr_ramssd_info->tasklet); 
 		break;
+#endif
 	default:
 		__ramssd_timing_cmd_done ((unsigned long)ptr_ramssd_info);
 		break;
@@ -429,8 +443,10 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
+	case DEVICE_TYPE_USER_RAMDRIVE:
 		bdbm_msg ("use TIMING_DISABLE mode!");
 		break;
+#if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_INTR: 
 		{
 			ktime_t ktime;
@@ -452,6 +468,7 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 				__ramssd_timing_cmd_done, (unsigned long)ptr_ramssd_info);
 		}
 		break;
+#endif
 	default:
 		bdbm_error ("invalid timing mode");
 		ret = 1;
@@ -465,8 +482,10 @@ void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 {
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
+	case DEVICE_TYPE_USER_RAMDRIVE:
 		bdbm_msg ("TIMING_DISABLE is done!");
 		break;
+#if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_INTR:
 		bdbm_msg ("HRTIMER is canceled");
 		hrtimer_cancel (&ptr_ramssd_info->hrtimer);
@@ -475,6 +494,7 @@ void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 		bdbm_msg ("TASKLET is killed");
 		tasklet_kill (ptr_ramssd_info->tasklet);
 		break;
+#endif
 	default:
 		break;
 	}
@@ -526,7 +546,7 @@ struct dev_ramssd_info* dev_ramssd_create (
 	}
 
 	/* create spin_lock */
-	spin_lock_init (&ptr_ramssd_info->ramssd_lock);
+	bdbm_spin_lock_init (&ptr_ramssd_info->ramssd_lock);
 
 	/* done */
 	ptr_ramssd_info->is_init = 1;
@@ -605,7 +625,7 @@ uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bd
 		}
 
 		/* register reqs */
-		spin_lock_irqsave (&ptr_ramssd_info->ramssd_lock, flags);
+		bdbm_spin_lock_irqsave (&ptr_ramssd_info->ramssd_lock, flags);
 		if (ptr_ramssd_info->ptr_punits[punit_id].ptr_req == NULL) {
 			ptr_ramssd_info->ptr_punits[punit_id].ptr_req = (void*)llm_req;
 			/*ptr_ramssd_info->ptr_punits[punit_id].sw = bdbm_stopwatch_start ();*/
@@ -616,11 +636,11 @@ uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bd
 				ptr_ramssd_info->ptr_punits[punit_id].ptr_req,
 				punit_id,
 				llm_req->lpa);
-			spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
+			bdbm_spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
 			ret = 1;
 			goto fail;
 		}
-		spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
+		bdbm_spin_unlock_irqrestore (&ptr_ramssd_info->ramssd_lock, flags);
 
 		/* register reqs for callback */
 		__ramssd_timing_register_schedule (ptr_ramssd_info);
@@ -655,7 +675,8 @@ void dev_ramssd_summary (struct dev_ramssd_info* ptr_ramssd_info)
 /* for snapshot */
 uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* fn)
 {
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t len = 0;
 
 	bdbm_msg ("dev_ramssd_load - begin");
@@ -665,7 +686,7 @@ uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* f
 		return 1;
 	}
 	
-	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == NULL) {
+	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == 0) {
 		bdbm_error ("bdbm_fopen failed");
 		return 1;
 	}
@@ -684,7 +705,8 @@ uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* f
 
 uint32_t dev_ramssd_store (struct dev_ramssd_info* ptr_ramssd_info, const char* fn)
 {
-	struct file* fp = NULL;
+	/*struct file* fp = NULL;*/
+	bdbm_file_t fp = 0;
 	uint64_t pos = 0;
 	uint64_t len = 0;
 
@@ -695,7 +717,7 @@ uint32_t dev_ramssd_store (struct dev_ramssd_info* ptr_ramssd_info, const char* 
 		return 1;
 	}
 	
-	if ((fp = bdbm_fopen (fn, O_CREAT | O_WRONLY, 0777)) == NULL) {
+	if ((fp = bdbm_fopen (fn, O_CREAT | O_WRONLY, 0777)) == 0) {
 		bdbm_error ("bdbm_fopen failed");
 		return 1;
 	}

@@ -28,7 +28,7 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <stdint.h>
 
-extern struct bdbm_dm_inf_t _dm_user_inf;
+extern struct bdbm_dm_inf_t _bdbm_dm_inf;
 
 uint32_t dm_user_probe (struct bdbm_drv_info* bdi, struct nand_params* params);
 uint32_t dm_user_open (struct bdbm_drv_info* bdi);
