@@ -26,7 +26,7 @@ THE SOFTWARE.
 #define _UPAGE_H
 
 #if defined (KERNEL_MODE)
-#error upage.h is not intended for the use in the kernel mode
+#error upage.h is not intended for use with KERNEL_MODE
 #endif
 
 #include <stdio.h>
@@ -37,7 +37,7 @@ THE SOFTWARE.
 inline unsigned long get_zeroed_page (int gfp_mask) {
 	void* ptr_page = NULL;
 
-	ptr_page = (void*)malloc (4086);
+	ptr_page = (void*)malloc (4096);
 	if (ptr_page == NULL) {
 		printf ("CRITICAL-ERROR: malloc failed at %d%s\n", __LINE__, __FILE__);
 	}
