@@ -1,8 +1,8 @@
 # Makefile for a RISA Device Driver
 #
-CC = gcc
+CC = gcc 
 OUT = libdummy.a
-LIBS =  -lpthread
+#LIBS =  -lpthread
 
 INCLUDES := \
 	-I$(PWD)/../../include \
@@ -10,6 +10,10 @@ INCLUDES := \
 	-I$(PWD)/../cpp
 
 CFLAGS := \
+	-g \
+	-static \
+
+CFLAGS += \
 	-D HASH_BLOOM=20 \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
@@ -19,9 +23,9 @@ CFLAGS := \
 
 LIBSRC := \
 	../cpp/dm_params.c \
-	../../include/utils/utime.c \
-	../../include/utils/uthread.c \
 	dm_dummy.c \
+	#../../include/utils/utime.c \
+	#../../include/utils/uthread.c \
 
 LIBOBJ=$(LIBSRC:.c=.o)
 

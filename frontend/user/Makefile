@@ -6,22 +6,20 @@ FTL := ../../ftl
 COMMON := ../../include
 #CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
-LIBS =  -lm -lpthread
+LIBS += -lm -lpthread 
 INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/$(FTL)
-
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USE_PMU \
 		  -D USE_KTIMER \
 		  -D USER_MODE
+DMLIB := ../../devices/libdummy/libdummy.a
 
-OBJS := \
+SRCS := \
 	main.c \
 	uparams.c \
 	host_user.c \
-	dm_user.c \
-	dm_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/hlm_buf.c \
@@ -38,9 +36,10 @@ OBJS := \
 	$(COMMON)/utils/ufile.c \
 	$(COMMON)/utils/uthread.c \
 	$(COMMON)/3rd/uilog.c \
+	$(DMLIB)
 
-ftlib: $(OBJS)
-	$(CC) -o $@ $^ $(INCLUDES) $(CFLAGS) $(LIBS)
+ftlib: $(SRCS) $(DMLIB)
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:
 	@$(RM) *.o core *~ ftlib

@@ -48,7 +48,6 @@ THE SOFTWARE.
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
 #include "hlm_rsd.h"
-#include "dm_user.h"
 #include "hw.h"
 
 #include "algo/no_ftl.h"
@@ -64,7 +63,8 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
-	bdi->ptr_dm_inf = &_dm_user_inf;
+	/*bdi->ptr_dm_inf = &_dm_user_inf;*/
+	bdi->ptr_dm_inf = setup_risa_device (bdi);
 
 	/* set functions for host */
 	bdi->ptr_host_inf = &_host_user_inf;
@@ -279,9 +279,9 @@ void bdbm_drv_exit(void)
 }
 
 
-#define NUM_THREADS	100
+/*#define NUM_THREADS	100*/
 /*#define NUM_THREADS	20*/
-/*#define NUM_THREADS	10*/
+#define NUM_THREADS	10
 
 #include "bdbm_drv.h"
 #include "platform.h"

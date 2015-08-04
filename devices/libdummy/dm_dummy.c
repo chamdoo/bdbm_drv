@@ -200,3 +200,8 @@ uint32_t dm_user_store (struct bdbm_drv_info* bdi, const char* fn)
 	return 0;
 }
 
+struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi)
+{
+	return &_dm_user_inf;
+}
+
