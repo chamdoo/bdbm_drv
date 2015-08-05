@@ -90,12 +90,17 @@ int __llm_mq_thread (void* arg)
 
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
+		if (p == NULL) {
+			bdbm_msg ("p is NULL");
+		}
+		if (p->q == NULL) {
+			bdbm_msg ("p->q is NULL");
+		}
+
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
-			/*bdbm_msg ("llm_thread goes to sleep");*/
 			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
 				break;
 			}
-			/*bdbm_msg ("llm_thread wakes up");*/
 		}
 
 		/* send reqs until Q becomes empty */
@@ -167,15 +172,15 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 		bdbm_mutex_init (&p->punit_locks[loop]);
 	}
 
+	/* keep the private structures for llm_nt */
+	bdi->ptr_llm_inf->ptr_private = (void*)p;
+
 	/* create & run a thread */
 	if ((p->llm_thread = bdbm_thread_create (
 			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
 		bdbm_error ("kthread_create failed");
 		goto fail;
 	}
-
-	/* keep the private structures for llm_nt */
-	bdi->ptr_llm_inf->ptr_private = (void*)p;
 
 #if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_init (&p->dbg_seq);
@@ -272,7 +277,8 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 		}
 	}
 #else
-	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+	if ((ret = bdbm_prior_queue_enqueue 
+			(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
 #endif

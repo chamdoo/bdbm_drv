@@ -53,6 +53,8 @@ typedef struct {
 #include <stdint.h>
 #include <pthread.h>
 
+#include "3rd/uatomic64.h"
+
 #define SIGKILL	0xCCCC
 
 typedef struct {
@@ -61,6 +63,7 @@ typedef struct {
 	bdbm_mutex thread_sleep;
 	pthread_cond_t thread_con;
 	pthread_t thread;
+	atomic64_t is_sleep;
 
 	/* user management */
 	void* user_data;

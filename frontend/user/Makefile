@@ -6,7 +6,7 @@ FTL := ../../ftl
 COMMON := ../../include
 #CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
-LIBS += -lm -lpthread 
+LIBS += -lm -lpthread -lrt
 INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/$(FTL)
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
@@ -39,9 +39,11 @@ SRCS := \
 	$(COMMON)/3rd/uilog.c \
 	$(DMLIB)
 
-ftlib: $(SRCS) $(DMLIB)
+libftl: $(SRCS) $(DMLIB)
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:
-	@$(RM) *.o core *~ ftlib
+	@$(RM) *.o core *~ libftl 
 	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../include/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
