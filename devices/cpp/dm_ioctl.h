@@ -22,15 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef __BDBM_HW__
-#define __BDBM_HW__
+#if defined (KERNEL_MODE)
 
-#if defined (USER_MODE)
-#include <stdint.h>
+#elif defined (USER_MODE)
+#include <sys/ioctl.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
-#include "bdbm_drv.h"
-
-struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi);
-
-#endif
+#define BDBM_DM_IOCTL_NAME		"bdbm_dm_char"
+#define BDBM_DM_IOCTL_MAGIC		'X'
+#define BDBM_DM_IOCTL_MAKE_REQ	_IOR (BDBM_DM_IOCTL_MAGIC, 0, int)

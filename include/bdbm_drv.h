@@ -25,14 +25,11 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_DRV_H
 #define _BLUEDBM_DRV_H
 
-#include "params.h"
-#include "utils/utime.h"
-#include "platform.h"
-
 #if defined(KERNEL_MODE)
 #define KERNEL_PAGE_SIZE	PAGE_SIZE
 
 #elif defined(USER_MODE)
+#include <stdint.h>
 #include "3rd/uatomic.h"
 #include "3rd/uatomic64.h"
 #include "3rd/ulist.h"
@@ -43,7 +40,9 @@ THE SOFTWARE.
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
-/*struct bio;*/
+#include "params.h"
+#include "utils/utime.h"
+#include "platform.h"
 
 /* useful macros */
 #define BDBM_KB (1024)
