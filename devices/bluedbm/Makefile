@@ -33,6 +33,7 @@ EXTRA_CFLAGS += \
 risa_dev_bluedbm-y := \
 	../cpp/dm_main.o \
 	../cpp/dm_params.o \
+	../cpp/dm_stub.o \
 	dm_bluedbm.o \
 	$(BOARDDIR)/MMURequest.o \
 	$(BOARDDIR)/MMUIndication.o \

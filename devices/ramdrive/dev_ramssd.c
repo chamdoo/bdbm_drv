@@ -483,7 +483,7 @@ void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
 	case DEVICE_TYPE_USER_RAMDRIVE:
-		bdbm_msg ("TIMING_DISABLE is done!");
+		bdbm_msg ("TIMING_DISABLE is destroyed!");
 		break;
 #if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_INTR:

@@ -51,8 +51,24 @@ int _param_chip_bus_trans_time_us	= NAND_CHIP_BUS_TRANS_TIME_US;
 int _param_page_prog_time_us		= NAND_PAGE_PROG_TIME_US; 		
 int _param_page_read_time_us		= NAND_PAGE_READ_TIME_US;
 int _param_block_erase_time_us		= NAND_BLOCK_ERASE_TIME_US;
-int _param_device_type 				= DEVICE_TYPE_NOTSET;
-	
+
+/* TODO: Hmm... there might be a more fancy way than this... */
+#if defined (CONFIG_DEVICE_TYPE_RAMDRIVE)
+int	_param_device_type = DEVICE_TYPE_RAMDRIVE;
+#elif defined (CONFIG_DEVICE_TYPE_RAMDRIVE_INTR)
+int	_param_device_type = DEVICE_TYPE_RAMDRIVE_INTR;
+#elif defined (CONFIG_DEVICE_TYPE_RAMDRIVE_TIMING)
+int _param_device_type = DEVICE_TYPE_RAMDRIVE_TIMING;
+#elif defined (CONFIG_DEVICE_TYPE_BLUEDBM)
+int _param_device_type = DEVICE_TYPE_BLUEDBM;
+#elif defined (CONFIG_DEVICE_TYPE_USER_DUMMY)
+int _param_device_type = DEVICE_TYPE_USER_DUMMY;
+#elif defined (CONFIG_DEVICE_TYPE_USER_RAMDRIVE)
+int _param_device_type = DEVICE_TYPE_USER_RAMDRIVE;
+#else
+#error Invalid HW is set
+int _param_device_type = DEVICE_TYPE_NOTSET;
+#endif
 
 #if defined (KERNEL_MODE)
 module_param (_param_nr_channels, int, 0000);
@@ -82,3 +98,4 @@ MODULE_PARM_DESC (_param_page_read_time_us, "page read time");
 MODULE_PARM_DESC (_param_block_erase_time_us, "block erasure time");
 MODULE_PARM_DESC (_param_device_type, "device type"); /* it must be reset when implementing actual device modules */
 #endif
+

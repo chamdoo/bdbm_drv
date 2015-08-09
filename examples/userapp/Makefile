@@ -3,7 +3,6 @@
 
 CC = gcc
 FTL := ../../ftl
-COMMON := ../../include
 #CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt

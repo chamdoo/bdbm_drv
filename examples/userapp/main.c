@@ -28,7 +28,7 @@ THE SOFTWARE.
 #include <poll.h> /* poll */
 
 #include "bdbm_drv.h"
-#include "dm_ioctl.h"
+#include "dm_stub.h"
 #include "hw.h"
 
 /*nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;*/
@@ -89,29 +89,56 @@ int main (int argc, char** argv)
 {
 	int fd = -1;
 	int ret = 0;
-	char* devname = "/dev/bdbm_dm_char";
 	struct pollfd fds[1];
-	struct bdbm_llm_req_t* r;
 
-	if ((fd = open (devname, O_RDWR)) < 0) {
+	if ((fd = open (BDBM_DM_IOCTL_DEVNAME, O_RDWR)) < 0) {
 		printf ("error: could not open a character device (re = %d)\n", fd);
 		return -1;
 	}
 
-	printf ("about to send an ictl command\n");
-	r = create_llm_req ();
-	if ((ret = ioctl (fd, BDBM_DM_IOCTL_MAKE_REQ, r)) < 0) {
-		printf ("sent an ictl command\n");
-	} else {
-		printf ("ret = %u\n", ret);
+	/* check probe */
+	{
+		struct nand_params np;
+		ret = ioctl (fd, BDBM_DM_IOCTL_PROBE, &np);
+		printf ("probe (): ret = %d\n", ret);
+
+		printf ("nr_channels: %u\n", (uint32_t)np.nr_channels);
+		printf ("nr_chips_per_channel: %u\n", (uint32_t)np.nr_chips_per_channel);
+		printf ("nr_blocks_per_chip: %u\n", (uint32_t)np.nr_blocks_per_chip);
+		printf ("nr_pages_per_block: %u\n", (uint32_t)np.nr_pages_per_block);
+		printf ("page_main_size: %u\n", (uint32_t)np.page_main_size);
+		printf ("page_oob_size: %u\n", (uint32_t)np.page_oob_size);
+		printf ("device_type: %u\n", (uint32_t)np.device_type);
 	}
 
-	fds[0].fd = fd;
-	fds[0].events = POLLIN;
-	poll (fds, 1, -1);
+	/* check open */
+	{
+		int result;
+		ret = ioctl (fd, BDBM_DM_IOCTL_OPEN, &result);
+		printf ("open (): result = %d, ret = %d\n", result, ret);
+	}
 
-	printf ("get an ack from a device (ret = %u)\n", r->ret);
-	delete_llm_req (r);
+	/* check make_req */
+	{
+		struct bdbm_llm_req_t* r;
+		r = create_llm_req ();
+		ret = ioctl (fd, BDBM_DM_IOCTL_MAKE_REQ, r);
+		printf ("make_req () ret = %u\n", ret);
+
+		fds[0].fd = fd;
+		fds[0].events = POLLIN;
+		poll (fds, 1, -1);
+
+		printf ("end_req () ret = %u\n", r->ret);
+		delete_llm_req (r);
+	}
+
+	/* check close */
+	{
+		int result;
+		ret = ioctl (fd, BDBM_DM_IOCTL_CLOSE, &result);
+		printf ("close (): result = %d, ret = %d\n", result, ret);
+	}
 
 	close (fd);
 

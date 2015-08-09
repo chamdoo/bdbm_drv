@@ -58,13 +58,17 @@ THE SOFTWARE.
 /* main data structure */
 struct bdbm_drv_info* _bdi = NULL;
 
+
 static int init_func_pointers (struct bdbm_drv_info* bdi)
 {
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
-	/*bdi->ptr_dm_inf = &_dm_user_inf;*/
-	bdi->ptr_dm_inf = setup_risa_device (bdi);
+	if (bdbm_dm_init (bdi) != 0)  {
+		bdbm_error ("bdbm_dm_init failed");
+		return 1;
+	}
+	bdi->ptr_dm_inf = bdbm_dm_get_inf (bdi);
 
 	/* set functions for host */
 	bdi->ptr_host_inf = &_host_user_inf;
@@ -267,6 +271,7 @@ void bdbm_drv_exit(void)
 			_bdi->ptr_dm_inf->store (_bdi, "/usr/share/bdbm_drv/dm.dat");
 #endif
 		_bdi->ptr_dm_inf->close (_bdi);
+		bdbm_dm_exit (_bdi);
 	}
 
 	/* display performance results */

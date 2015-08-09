@@ -31,6 +31,8 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 
-struct bdbm_dm_inf_t* setup_risa_device (struct bdbm_drv_info* bdi);
+int bdbm_dm_init (struct bdbm_drv_info* bdi);
+struct bdbm_dm_inf_t* bdbm_dm_get_inf (struct bdbm_drv_info* bdi);
+void bdbm_dm_exit (struct bdbm_drv_info* bdi);
 
 #endif

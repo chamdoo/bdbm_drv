@@ -14,8 +14,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_PMU \
 		  -D USE_KTIMER \
 		  -D USER_MODE
-#DMLIB := ../../devices/libdummy/libdummy.a
-DMLIB := ../../devices/libramdrive/libramdrive.a
+DMLIB := ../../devices/libdummy/libdummy.a
+#DMLIB := ../../devices/libramdrive/libramdrive.a
 
 SRCS := \
 	main.c \

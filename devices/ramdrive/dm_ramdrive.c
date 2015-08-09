@@ -127,8 +127,6 @@ uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi, struct nand_params* param
 
 	/* create RAMSSD based on user-specified NAND parameters */
 	if ((p ->ramssd = dev_ramssd_create (
-			/*&bdi->ptr_bdbm_params->nand, */
-			/*bdi->ptr_bdbm_params->nand.timing_mode, */
 			params,	__dm_ramdrive_ih)) == NULL) {
 		bdbm_error ("dev_ramssd_create failed");
 		bdbm_free_atomic (p);

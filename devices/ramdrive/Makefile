@@ -18,6 +18,7 @@ risa_dev_ramdrive-y := \
 	../../include/utils/uthread.o \
 	../cpp/dm_main.o \
 	../cpp/dm_params.o \
+	../cpp/dm_stub.o \
 	dev_ramssd.o \
 	dm_ramdrive.o \
 

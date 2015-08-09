@@ -47,3 +47,4 @@ $(OUT): $(LIBOBJ)
 clean:
 	@$(RM) *.o core *~ libramdrive.a
 	@cd ../cpp; $(RM) *.o
+	@cd ../ramdrive; $(RM) *.o
