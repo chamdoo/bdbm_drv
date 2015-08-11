@@ -108,8 +108,6 @@ struct bdbm_llm_req_t* create_llm_req_w (void)
 	return r;
 }
 
-
-
 void delete_llm_req (struct bdbm_llm_req_t* r)
 {
 	int loop = 0;

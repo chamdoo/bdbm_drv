@@ -142,25 +142,6 @@ static struct bdbm_llm_req_t* __get_llm_req (struct bdbm_llm_req_t* ur)
 	copy_from_user (kr->ptr_oob, ur->ptr_oob, 64);
 	kr->ret = 1;
 
-#if 0
-	/* display some values */
-	bdbm_msg ("req_type: %u", 
-		kr->req_type);
-	bdbm_msg ("lpa: %llu", 
-		kr->lpa);
-	bdbm_msg ("phyaddr: %llu %llu %llu %llu", 
-		kr->phyaddr->channel_no, 
-		kr->phyaddr->chip_no,
-		kr->phyaddr->block_no,
-		kr->phyaddr->page_no);
-	bdbm_msg ("kpg_flags: %u", 
-		kr->kpg_flags[0]);
-	bdbm_msg ("data: %X %X %X ...",
-		kr->pptr_kpgs[0][0],
-		kr->pptr_kpgs[0][1],
-		kr->pptr_kpgs[0][2]);
-#endif
-
     return kr;
 }
 
