@@ -351,6 +351,8 @@ static uint32_t __ramssd_send_cmd (
 		break;
 	}
 
+	ptr_req->ret = ret;
+
 	return ret;
 }
 

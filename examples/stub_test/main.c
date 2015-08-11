@@ -139,8 +139,8 @@ int main (int argc, char** argv)
 	/* check probe */
 	{
 		ret = ioctl (fd, BDBM_DM_IOCTL_PROBE, &np);
+		printf ("--------------------------------\n");
 		printf ("probe (): ret = %d\n", ret);
-
 		printf ("nr_channels: %u\n", (uint32_t)np.nr_channels);
 		printf ("nr_chips_per_channel: %u\n", (uint32_t)np.nr_chips_per_channel);
 		printf ("nr_blocks_per_chip: %u\n", (uint32_t)np.nr_blocks_per_chip);
@@ -155,7 +155,8 @@ int main (int argc, char** argv)
 	{
 		int result;
 		ret = ioctl (fd, BDBM_DM_IOCTL_OPEN, &result);
-		printf ("open (): result = %d\n", ret);
+		printf ("--------------------------------\n");
+		printf ("open (): ret= %d\n", ret);
 		printf ("\n");
 	}
 
@@ -163,7 +164,8 @@ int main (int argc, char** argv)
 	/* check mmap */
 	{
 		punit_status = mmap (NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-		printf ("mmap (): result = %p\n", punit_status);
+		printf ("--------------------------------\n");
+		printf ("mmap (): ret= %p\n", punit_status);
 		printf ("\n");
 	}
 
@@ -179,6 +181,7 @@ int main (int argc, char** argv)
 	  		r->phyaddr->chip_no;
 
 		ret = ioctl (fd, BDBM_DM_IOCTL_MAKE_REQ, r);
+		printf ("--------------------------------\n");
 		printf ("make_req () ret = %u\n", ret);
 
 		fds[0].fd = fd;
@@ -205,6 +208,7 @@ int main (int argc, char** argv)
 	  		r->phyaddr->chip_no;
 
 		ret = ioctl (fd, BDBM_DM_IOCTL_MAKE_REQ, r);
+		printf ("--------------------------------\n");
 		printf ("make_req () ret = %u\n", ret);
 
 		fds[0].fd = fd;
@@ -227,7 +231,8 @@ int main (int argc, char** argv)
 	{
 		int result;
 		ret = ioctl (fd, BDBM_DM_IOCTL_CLOSE, &result);
-		printf ("close (): result = %d, ret = %d\n", result, ret);
+		printf ("--------------------------------\n");
+		printf ("close (): ret = %d\n", ret);
 	}
 
 	close (fd);

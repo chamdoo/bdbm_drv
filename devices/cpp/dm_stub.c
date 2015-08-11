@@ -171,7 +171,7 @@ static void __return_llm_req (
 	/* copy a retun value */
 	copy_to_user (&ur->ret, &kr->ret, sizeof (uint8_t));
 
-	/* copy data in Kernel to user-space if it is a read request, 
+	/* copy data from Kernel to user-space when the type of request is a read, 
 	 * except for REQTYPE_READ_DUMMY */
 	if (kr->req_type == REQTYPE_READ ||
 		kr->req_type == REQTYPE_RMW_READ ||
