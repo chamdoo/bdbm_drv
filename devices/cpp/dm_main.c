@@ -62,6 +62,11 @@ int bdbm_dm_init (struct bdbm_drv_info* bdi)
 		return 1;
 	}
 
+	if (_bdi_dm != NULL) {
+		bdbm_warning ("dm_stub is already used by other clients");
+		return 1;
+	}
+
 	/* initialize global variables */
 	_bdi_dm = bdi;
 
