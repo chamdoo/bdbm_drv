@@ -33,7 +33,7 @@ THE SOFTWARE.
 #include <linux/poll.h> /* poll_table, etc. */
 #include <linux/cdev.h> /* cdev_init, etc. */
 #include <linux/device.h> /* class_create, device_create, etc */
-#include <linux/workqueue.h> /* workqueue */
+#include <linux/mm.h>  /* mmap related stuff */
 
 #include "bdbm_drv.h"
 #include "debug.h"
@@ -51,7 +51,8 @@ typedef struct {
 	wait_queue_head_t pollwq;
 	struct bdbm_llm_req_t** kr;
 	struct bdbm_llm_req_t** ur;
-	uint8_t* punit_map;
+	uint8_t* punit_done;
+	uint8_t* punit_busy;
 } bdbm_dm_stub_t;
 
 void llm_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
@@ -66,7 +67,7 @@ void llm_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	msleep (1000);
 
 	req->ret = 33;
-	s->punit_map[punit_id] = 0;
+	s->punit_busy[punit_id] = 0;
 
 	wake_up_interruptible (&(s->pollwq));
 }
@@ -104,7 +105,8 @@ static int dm_stub_open (struct inode *inode, struct file *filp)
 	init_waitqueue_head (&s->pollwq);
 	s->kr = NULL;	/* will be initialized when probe () is called */
 	s->ur = NULL;
-	s->punit_map = NULL;
+	s->punit_busy = NULL;
+	s->punit_done = NULL;
 
 	/* create bdi */
 	if ((_bdi_dm = (struct bdbm_drv_info*)bdbm_malloc 
@@ -259,11 +261,15 @@ static long dm_stub_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 			/* create llm_reqs for bdi */
 			s->kr = (struct bdbm_llm_req_t**)bdbm_zmalloc (punit * sizeof (struct bdbm_llm_req_t*));
 			s->ur = (struct bdbm_llm_req_t**)bdbm_zmalloc (punit * sizeof (struct bdbm_llm_req_t*));
-			s->punit_map = (uint8_t*)bdbm_malloc_atomic (punit * sizeof (uint8_t));
+			s->punit_busy = (uint8_t*)bdbm_malloc_atomic (punit * sizeof (uint8_t));
+			s->punit_done = (uint8_t*)get_zeroed_page (GFP_KERNEL); /* get with zeros */
 
-			if (s->kr == NULL || s->ur == NULL || s->punit_map == NULL) {
-				bdbm_warning ("bdbm_malloc failed (kr=%p, ur=%p, punit_map=%p)", 
-					s->kr, s->ur, s->punit_map);
+			if (s->kr == NULL || 
+				s->ur == NULL || 
+				s->punit_busy == NULL ||
+				s->punit_done == NULL) {
+				bdbm_warning ("bdbm_malloc failed (kr=%p, ur=%p, punit_busy=%p, punit_done=%p)", 
+					s->kr, s->ur, s->punit_busy, s->punit_done);
 				return -ENOTTY;
 			}
 		}
@@ -295,10 +301,15 @@ static long dm_stub_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 		_bdi_dm->ptr_dm_inf->close (_bdi_dm);
 
 		/* free llm_reqs for bdi */
-		if (s->punit_map) bdbm_free_atomic (s->punit_map);
+		if (s->punit_done) {
+			bdbm_msg ("punit_done[0] = %u", s->punit_done[0]);
+			free_page ((unsigned long)s->punit_done);
+		}
+		if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
 		if (s->kr) bdbm_free (s->kr);
 		if (s->ur) bdbm_free (s->ur);
-		s->punit_map = NULL;
+		s->punit_done = NULL;
+		s->punit_busy = NULL;
 		s->kr = NULL;
 		s->ur = NULL;
 		break;
@@ -315,29 +326,26 @@ static long dm_stub_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 			struct bdbm_llm_req_t* kr = __get_llm_req (ur);
 
 			/* copy llm_req to kernel */
-			bdbm_msg ("make_req: 1");
 			if (kr == NULL) {
 				bdbm_warning ("__get_llm_req () failed (ur=%p, kr=%p)", ur, kr);
 				return -ENOTTY;
 			}
 
 			/* get punit_id */
-			bdbm_msg ("make_req: 1");
 			punit_id = kr->phyaddr->channel_no *
 				_bdi_dm->ptr_bdbm_params->nand.nr_chips_per_channel +
 				kr->phyaddr->chip_no;
 
 			/* see if there is a request to the same punit */
-			if (s->punit_map[punit_id] != 0) {
+			if (s->punit_busy[punit_id] != 0) {
 				bdbm_warning ("oops! the punit for the request is busy (punit_id = %u)", punit_id);
 				return -EBUSY;
 			}
 
-			s->punit_map[punit_id] = 1;
+			s->punit_busy[punit_id] = 1;
 			s->ur[punit_id] = ur;
 			s->kr[punit_id] = kr;
 
-			bdbm_msg ("make_req: 3");
 			/* call make_req */ 
 			if (_bdi_dm->ptr_dm_inf->make_req (_bdi_dm, kr) != 0) {
 				return -ENOTTY;
@@ -381,15 +389,20 @@ static unsigned int dm_stub_poll (struct file *filp, poll_table *poll_table)
 
 	/* see if there are available punits */
 	for (loop = 0; loop < punit; loop++) {
-		if (s->punit_map[loop] == 0) {
+		if (s->punit_busy[loop] == 0) {
 			if (s->ur[loop] != NULL && s->kr[loop] != NULL) {
 				/* OK... there are available punits */
 				__return_llm_req (s->ur[loop], s->kr[loop]);
 				__release_llm_req (s->kr[loop]);
+
 				s->ur[loop] = NULL;
 				s->kr[loop] = NULL;
 
 				mask |= POLLIN | POLLRDNORM; 
+
+				if (s->punit_done) {
+					s->punit_done[loop] = 1; /* done */
+				}
 
 				bdbm_msg ("poll_wait done");
 			}
@@ -399,10 +412,50 @@ static unsigned int dm_stub_poll (struct file *filp, poll_table *poll_table)
 	return mask;
 }
 
+static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
+	struct page *page = NULL;
+	bdbm_dm_stub_t* s = NULL;
+
+	bdbm_msg ("mmap_fault is called");
+
+	/* see if s and s->punit_done is available */
+	s = (bdbm_dm_stub_t *)vma->vm_private_data;
+	if (s == NULL || !s->punit_done) {
+		bdbm_warning ("s or punit_done is not allocated yet");
+		return -ENOMEM;
+	}
+
+	/* get the page */
+	page = virt_to_page (s->punit_done);
+	
+	/* increment the reference count of this page */
+	get_page (page);
+	vmf->page = page;					//--changed
+
+	return 0;
+}
+
+/* http://stackoverflow.com/questions/10760479/mmap-kernel-buffer-to-user-space */
+struct vm_operations_struct mmap_vm_ops = {
+	.fault = mmap_fault,
+};
+
 static int dm_stub_mmap (struct file *filp, struct vm_area_struct *vma)
 {
 	/* TODO: not implemented yet */
-	bdbm_warning ("dm_stub_mmap is not implemented yet");
+	bdbm_dm_stub_t* s = filp->private_data;
+
+	bdbm_msg ("dm_stub_mmap is called");
+
+	if (s == NULL) {
+		bdbm_warning ("dm_stub is not created yet");
+		return 1;
+	}
+
+	vma->vm_ops = &mmap_vm_ops;
+	vma->vm_private_data = filp->private_data;	/* bdbm_dm_stub_t */
+
 	return 0;
 }
 
@@ -428,12 +481,12 @@ static struct class *cl = NULL;
 static int FIRST_MINOR = 0;
 static int MINOR_CNT = 1;
 
+/* register a bdbm_dm_stub driver */
 int bdbm_dm_stub_init (void)
 {
 	int ret = -1;
 	struct device *dev_ret = NULL;
 
-	/* register a bdbm_dm_stub driver */
 	if ((ret = alloc_chrdev_region (&devnum, FIRST_MINOR, MINOR_CNT, BDBM_DM_IOCTL_NAME)) != 0) {
 		bdbm_error ("bdbm_dm_stub registration failed: %d\n", ret);
 		return ret;
@@ -467,6 +520,7 @@ int bdbm_dm_stub_init (void)
 	return 0;
 }
 
+/* remove a bdbm_db_stub driver */
 void bdbm_dm_stub_exit (void)
 {
 	if (cl == NULL || devnum == 0) {

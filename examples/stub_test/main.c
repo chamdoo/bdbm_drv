@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include <fcntl.h> /* O_RDWR */
 #include <unistd.h> /* close */
 #include <poll.h> /* poll */
+#include <sys/mman.h> /* mmap */
 
 #include "bdbm_drv.h"
 #include "dm_stub.h"
@@ -90,6 +91,8 @@ int main (int argc, char** argv)
 	int fd = -1;
 	int ret = 0;
 	struct pollfd fds[1];
+	uint8_t* punit_status = NULL;
+	struct nand_params np;
 
 	if ((fd = open (BDBM_DM_IOCTL_DEVNAME, O_RDWR)) < 0) {
 		printf ("error: could not open a character device (re = %d)\n", fd);
@@ -98,7 +101,6 @@ int main (int argc, char** argv)
 
 	/* check probe */
 	{
-		struct nand_params np;
 		ret = ioctl (fd, BDBM_DM_IOCTL_PROBE, &np);
 		printf ("probe (): ret = %d\n", ret);
 
@@ -118,10 +120,23 @@ int main (int argc, char** argv)
 		printf ("open (): result = %d, ret = %d\n", result, ret);
 	}
 
+	/* check mmap */
+	{
+		punit_status = mmap (NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		printf ("punit_status: %p\n", punit_status);
+		printf ("punit_status[0] = %u\n", punit_status[0]);
+	}
+
 	/* check make_req */
 	{
 		struct bdbm_llm_req_t* r;
+		uint64_t punit_id;
+
 		r = create_llm_req ();
+		punit_id = r->phyaddr->channel_no *
+			np.nr_chips_per_channel +
+	  		r->phyaddr->chip_no;
+
 		ret = ioctl (fd, BDBM_DM_IOCTL_MAKE_REQ, r);
 		printf ("make_req () ret = %u\n", ret);
 
@@ -131,6 +146,9 @@ int main (int argc, char** argv)
 
 		printf ("end_req () ret = %u\n", r->ret);
 		delete_llm_req (r);
+
+		printf ("punit_status[0] = %u\n", punit_status[punit_id]);
+		punit_status[0] = 0;
 	}
 
 	/* check close */

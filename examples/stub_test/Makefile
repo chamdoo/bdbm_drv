@@ -23,7 +23,7 @@ CFLAGS += -D HASH_BLOOM=20 \
 SRCS := \
 	main.c \
 
-userapp: $(SRCS) 
+stub_test: $(SRCS) 
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:
