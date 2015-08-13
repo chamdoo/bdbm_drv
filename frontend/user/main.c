@@ -308,6 +308,7 @@ void host_thread_fn (void *data)
 	host_req->data = (uint8_t*)malloc (4096 * host_req->len);
 
 	for (loop = 0; loop < 100000; loop++) {
+	/*for (loop = 0; loop < 100; loop++) {*/
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
 		host_req->uniq_id++;
 		host_req->lpa++;

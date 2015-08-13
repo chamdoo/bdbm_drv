@@ -107,16 +107,21 @@ int __llm_mq_thread (void* arg)
 		for (loop = 0; loop < p->nr_punits; loop++) {
 			struct bdbm_prior_queue_item_t* qitem = NULL;
 			struct bdbm_llm_req_t* ptr_req = NULL;
+			int ret;
 
 			/* if pu is busy, then go to the next pnit */
-			if (!bdbm_mutex_try_lock (&p->punit_locks[loop]))
+			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
+				/*bdbm_msg ("[llm_mq] mutex is busy: %u", loop);*/
 				continue;
+			}
 
 			if ((ptr_req = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 				continue;
 			}
 			ptr_req->ptr_qitem = qitem;
+
+			/*bdbm_msg ("[llm_mq] mutex is locked: %u", loop);*/
 
 			pmu_update_q (bdi, ptr_req);
 
@@ -218,8 +223,11 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 	/* kill kthread */
 	bdbm_thread_stop (p->llm_thread);
 
-	for (loop = 0; loop < p->nr_punits; loop++)
+	for (loop = 0; loop < p->nr_punits; loop++) {
+		/*bdbm_msg ("[llm_mq] wait for punit lock: %u", loop);*/
 		bdbm_mutex_lock (&p->punit_locks[loop]);
+		/*bdbm_msg ("[llm_mq] mutex is closed: %u", loop);*/
+	}
 
 	/* release all the relevant data structures */
 	if (p->q)
@@ -313,6 +321,7 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 			llm_req->phyaddr->chip_no;
 
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+		/*bdbm_msg ("[llm_mq] mutex is release: %u", punit_id);*/
 
 		/* change its type to WRITE if req_type is RMW */
 		llm_req->phyaddr = &llm_req->phyaddr_w;
@@ -355,6 +364,7 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 
 		/* complete a lock */
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+		/*bdbm_msg ("[llm_mq] mutex is release: %u", punit_id);*/
 
 		/* update the elapsed time taken by NAND devices */
 		pmu_update_tot (bdi, llm_req);

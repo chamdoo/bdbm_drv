@@ -60,7 +60,7 @@ THE SOFTWARE.
 #define bdbm_mutex_lock(a) mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)
 #define bdbm_mutex_unlock(a) mutex_unlock(a)
-#define bdbm_mutex_try_lock(a) mutex_trylock(a)
+#define bdbm_mutex_try_lock(a) mutex_trylock(a)  /* 1: acquire 0: contention */
 #define bdbm_mutex_free(a)
 
 /* spinlock */
@@ -116,7 +116,17 @@ THE SOFTWARE.
 #define bdbm_mutex_lock(a) pthread_mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)
 #define bdbm_mutex_unlock(a) pthread_mutex_unlock(a)
-#define bdbm_mutex_try_lock(a) pthread_mutex_trylock(a)
+/* NOTE:
+ * Linux kernel's mutex_trylock returns '1' when it accquires a lock,
+ * while pthread's mutex_try_lock return '0' when it gets a lock.
+ *
+ * For a compatibility purpuse, bdbm_mutex_try_lock always returns '1' 
+ * when a lock is accquired by a thread. Otherwise, it returns 0. */
+#define bdbm_mutex_try_lock(a) ({ \
+	int z = pthread_mutex_trylock(a); int ret; \
+	if (z == 0) ret = 1; \
+	else ret = -z; \
+	ret; })
 #define bdbm_mutex_free(a) pthread_mutex_destroy(a)
 
 

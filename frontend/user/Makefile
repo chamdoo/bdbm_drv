@@ -7,15 +7,22 @@ COMMON := ../../include
 #CFLAGS := -Wall -g -O2 -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
-INCLUDES = -I$(PWD)/../../include -I$(PWD)/../../include/utils -I$(PWD)/$(FTL)
+
+INCLUDES = -I$(PWD)/../../include \
+		   -I$(PWD)/../../include/utils \
+		   -I$(PWD)/$(FTL) \
+		   -I$(PWD)/../../devices/cpp 	# temp
+
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USE_PMU \
 		  -D USE_KTIMER \
 		  -D USER_MODE
-DMLIB := ../../devices/libdummy/libdummy.a
+
+#DMLIB := ../../devices/libdummy/libdummy.a
 #DMLIB := ../../devices/libramdrive/libramdrive.a
+DMLIB := dm_proxy.c
 
 SRCS := \
 	main.c \

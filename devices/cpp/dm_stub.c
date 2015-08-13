@@ -191,7 +191,7 @@ static int dm_stub_probe (bdbm_dm_stub_t* s)
 		return -ENOTTY;
 	}
 
-	/* call probe */
+	/* call probe; just get NAND parameters from the device */
 	if (bdi->ptr_dm_inf->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
 		bdbm_warning ("dm->probe () failed");
 		return -EIO;
@@ -279,7 +279,7 @@ static int dm_stub_close (bdbm_dm_stub_t* s)
 
 	bdbm_spin_lock (&s->lock);
 	if (s->ref_cnt == 0) {
-		bdbm_warning ("oops! bdbm_dm_stub is not open");
+		bdbm_warning ("oops! bdbm_dm_stub is not open or was already closed");
 		bdbm_spin_unlock (&s->lock);
 		return -ENOTTY;
 	}
@@ -522,6 +522,10 @@ static int dm_fops_release (struct inode *inode, struct file *filp)
 		bdbm_warning ("attempt to close dm_stub which was not open");
 		return 0;
 	}
+
+	/* it is not necessary when dm_stub is nicely closed,
+	 * bit it is required when a client is crashed */
+	dm_stub_close (s);
 
 	/* free some variables */
 	bdbm_spin_lock_destory (&s->lock_busy);

@@ -247,8 +247,8 @@ void bdbm_thread_wakeup (bdbm_thread_t* k)
 
 	/* send a wake-up signal */
 	if (atomic64_read (&k->is_sleep) == 1) {
-		if ((ret = bdbm_mutex_try_lock (&k->thread_sleep)) == 0) {
-				pthread_cond_signal (&k->thread_con);
+		if ((ret = bdbm_mutex_try_lock (&k->thread_sleep)) == 1) {
+			pthread_cond_signal (&k->thread_con);
 			bdbm_mutex_unlock (&k->thread_sleep);
 		} else {
 			/*bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));*/
