@@ -230,11 +230,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 		s->punit_done = (uint8_t*)get_zeroed_page (GFP_KERNEL); /* get with zeros */
 
 		/* are there any errors? */
-		if (s->kr == NULL || 
-			s->ur == NULL || 
-			s->punit_busy == NULL || 
-			s->punit_done == NULL) {
-
+		if (s->kr == NULL || s->ur == NULL || s->punit_busy == NULL || s->punit_done == NULL) {
 			if (s->kr) bdbm_free (s->kr);
 			if (s->ur) bdbm_free (s->ur);
 			if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
@@ -337,7 +333,9 @@ static int dm_stub_make_req (bdbm_dm_stub_t* s, struct bdbm_llm_req_t* ur)
 
 	/* see if there is an on-going request */
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
-	if (s->punit_busy[punit_id] != 0) {
+	if (s->punit_busy[punit_id] != 0 ||
+		s->ur[punit_id] != NULL || 
+		s->kr[punit_id] != NULL) {
 		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
 		bdbm_warning ("oops! the punit for the request is busy (punit_id = %u)", punit_id);
 		__free_llm_req (kr);
@@ -556,12 +554,16 @@ static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table)
 		return 0;
 	}
 
+	/*bdbm_msg ("dm_fops_poll is called");*/
+
 	poll_wait (filp, &s->pollwq, poll_table);
 
 	/* see if there are requests that already finished */
 	if (dm_stub_end_req (s) == 0) {
 		mask |= POLLIN | POLLRDNORM; 
 	}
+
+	/*bdbm_msg ("dm_fops_poll is finished");*/
 
 	return mask;
 }
