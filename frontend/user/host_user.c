@@ -128,6 +128,11 @@ static void __host_block_delete_hlm_req (
 		for (kpg_loop = 0; kpg_loop < hlm_req->len; kpg_loop++) {
 			if (hlm_req->kpg_flags[kpg_loop] == MEMFLAG_KMAP_PAGE_DONE) {
 				/* ok. do nothing */
+				/* temp */
+				if (hlm_req->pptr_kpgs[0]) {
+					free (hlm_req->pptr_kpgs[0]);
+					hlm_req->pptr_kpgs[0] = NULL;
+				}
 			} else if (hlm_req->kpg_flags[kpg_loop] != MEMFLAG_NOT_SET) {
 				/* what??? */
 				bdbm_error ("invalid flags (kpg_flags[%u]=%u)", 

@@ -125,7 +125,7 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, ptr_req);
 
-			if (cnt % 500000 == 0) {
+			if (cnt % 50000 == 0) {
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 			}
 

@@ -102,7 +102,8 @@ THE SOFTWARE.
 /* memory handling */
 #include <string.h>
 #include <stdlib.h>
-#define bdbm_malloc(a) malloc(a)
+/*#define bdbm_malloc(a) malloc(a)*/
+#define bdbm_malloc(a) calloc(a, 1)
 #define bdbm_zmalloc(a) calloc(a, 1)	/* 1 byte by default */
 #define bdbm_free(a) do { free(a); } while (0)
 #define bdbm_malloc_atomic(a) calloc(a, 1) /* 1 byte by default */

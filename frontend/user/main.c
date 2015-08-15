@@ -284,10 +284,10 @@ void bdbm_drv_exit(void)
 }
 
 
-#define NUM_THREADS	100
+/*#define NUM_THREADS	100*/
 /*#define NUM_THREADS	20*/
 /*#define NUM_THREADS	10*/
-/*#define NUM_THREADS	1*/
+#define NUM_THREADS	1
 
 #include "bdbm_drv.h"
 #include "platform.h"
@@ -296,22 +296,23 @@ void bdbm_drv_exit(void)
 void host_thread_fn (void *data) 
 {
 	int loop;
+	int lpa = 0;
+	int unique_id = 0;
 	int *val = (int*)(data);
-	struct bdbm_host_req_t* host_req = NULL;
 
-	host_req = (struct bdbm_host_req_t*)malloc (sizeof (struct bdbm_host_req_t));
+	/*for (loop = 0; loop < 100000; loop++) {*/
+	for (loop = 0; loop < 1; loop++) {
+		struct bdbm_host_req_t* host_req = NULL;
 
-	host_req->uniq_id = (*val) * 10000;
-	host_req->req_type = REQTYPE_WRITE;
-	host_req->lpa = 0;
-	host_req->len = 4;
-	host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+		host_req = (struct bdbm_host_req_t*)malloc (sizeof (struct bdbm_host_req_t));
 
-	for (loop = 0; loop < 100000; loop++) {
-	/*for (loop = 0; loop < 100; loop++) {*/
+		host_req->uniq_id = (*val) * 10000;
+		host_req->req_type = REQTYPE_WRITE;
+		host_req->lpa = lpa++;
+		host_req->len = 4;
+		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
-		host_req->uniq_id++;
-		host_req->lpa++;
 	}
 
 	pthread_exit (0);
@@ -324,7 +325,7 @@ int main (int argc, char** argv)
 	pthread_t thread[NUM_THREADS];
 	int thread_args[NUM_THREADS];
 
-	bdbm_msg ("run ftlib...");
+	bdbm_msg ("run ftlib... (%d)", sizeof (struct bdbm_llm_req_t));
 
 	bdbm_msg ("initialize bdbm_drv");
 	if (bdbm_drv_init () == -1) {

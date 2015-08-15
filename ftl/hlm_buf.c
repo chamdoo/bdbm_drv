@@ -74,8 +74,6 @@ int __hlm_buf_thread (void* arg)
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
 	struct bdbm_hlm_req_t* r;
 
-	uint64_t cnt = 0;
-
 	for (;;) {
 		if (bdbm_queue_is_all_empty (p->q)) {
 			/*bdbm_msg ("hlm_Q goes to sleep");*/
@@ -89,22 +87,17 @@ int __hlm_buf_thread (void* arg)
 		/* if nothing is in Q, then go to the next punit */
 		while (!bdbm_queue_is_empty (p->q, 0)) {
 			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
-				/*if (cnt % 100000 == 0) {*/
-				/*bdbm_msg ("hlm_make_req: %llu, %llu", cnt, bdbm_queue_get_nr_items (p->q));*/
-				/*}*/
 				if (hlm_nobuf_make_req (bdi, r)) {
 					/* if it failed, we directly call 'ptr_host_inf->end_req' */
 					bdi->ptr_host_inf->end_req (bdi, r);
 					bdbm_warning ("oops! make_req failed");
 					/* [CAUTION] r is now NULL */
 				}
-				cnt++;
 			} else {
 				bdbm_error ("r == NULL");
 				bdbm_bug_on (1);
 			}
 		} 
-
 		/*bdbm_msg ("hlm_Q is empty.. exit");*/
 	}
 
@@ -170,7 +163,7 @@ void hlm_buf_destroy (struct bdbm_drv_info* bdi)
 
 uint32_t hlm_buf_make_req (
 	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* ptr_hlm_req)
+	struct bdbm_hlm_req_t* r)
 {
 	uint32_t ret;
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
@@ -182,7 +175,7 @@ uint32_t hlm_buf_make_req (
 	} 
 	
 	/* put a request into Q */
-	if ((ret = bdbm_queue_enqueue (p->q, 0, (void*)ptr_hlm_req))) {
+	if ((ret = bdbm_queue_enqueue (p->q, 0, (void*)r))) {
 		bdbm_msg ("bdbm_queue_enqueue failed");
 	}
 
@@ -194,8 +187,8 @@ uint32_t hlm_buf_make_req (
 
 void hlm_buf_end_req (
 	struct bdbm_drv_info* bdi, 
-	struct bdbm_llm_req_t* ptr_llm_req)
+	struct bdbm_llm_req_t* r)
 {
-	hlm_nobuf_end_req (bdi, ptr_llm_req);
+	hlm_nobuf_end_req (bdi, r);
 }
 
