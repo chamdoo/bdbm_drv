@@ -74,6 +74,11 @@ int __hlm_buf_thread (void* arg)
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
 	struct bdbm_hlm_req_t* r;
 
+	while (p->hlm_thread == NULL) {
+		bdbm_msg ("wait: p->hlm_thread=%p", p->hlm_thread);
+		bdbm_thread_msleep (1);
+	}
+
 	for (;;) {
 		if (bdbm_queue_is_all_empty (p->q)) {
 			/*bdbm_msg ("hlm_Q goes to sleep");*/

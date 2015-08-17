@@ -32,6 +32,19 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 
+typedef struct {
+	uint32_t req_type; /* read, write, or erase */
+	uint64_t lpa; /* logical page address */
+	
+	uint64_t channel_no;
+	uint64_t chip_no;
+	uint64_t block_no;
+	uint64_t page_no;
+
+	uint8_t kpg_flags[16]; /* maximum page size is assumed to be 64KB */
+	uint8_t ret; /* return value */
+} bdbm_llm_req_ioctl_t;
+
 #define BDBM_DM_IOCTL_NAME		"bdbm_dm_stub"
 #define BDBM_DM_IOCTL_DEVNAME	"/dev/bdbm_dm_stub"
 #define BDBM_DM_IOCTL_MAGIC		'X'
@@ -39,8 +52,7 @@ THE SOFTWARE.
 #define BDBM_DM_IOCTL_PROBE		_IOWR (BDBM_DM_IOCTL_MAGIC, 0, int)
 #define BDBM_DM_IOCTL_OPEN		_IOWR (BDBM_DM_IOCTL_MAGIC, 1, int)
 #define BDBM_DM_IOCTL_CLOSE		_IOWR (BDBM_DM_IOCTL_MAGIC, 2, int)
-//#define BDBM_DM_IOCTL_MAKE_REQ	_IOR (BDBM_DM_IOCTL_MAGIC, 3, int)
-#define BDBM_DM_IOCTL_MAKE_REQ	_IOWR (BDBM_DM_IOCTL_MAGIC, 3, struct bdbm_llm_req_t)
+#define BDBM_DM_IOCTL_MAKE_REQ	_IOWR (BDBM_DM_IOCTL_MAGIC, 3, bdbm_llm_req_ioctl_t*)
 #define BDBM_DM_IOCTL_END_REQ	_IOWR (BDBM_DM_IOCTL_MAGIC, 4, int)
 #define BDBM_DM_IOCTL_LOAD		_IOWR (BDBM_DM_IOCTL_MAGIC, 5, int)
 #define BDBM_DM_IOCTL_STORE		_IOWR (BDBM_DM_IOCTL_MAGIC, 6, int)

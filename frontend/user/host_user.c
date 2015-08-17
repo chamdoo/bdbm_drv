@@ -128,7 +128,6 @@ static void __host_block_delete_hlm_req (
 		for (kpg_loop = 0; kpg_loop < hlm_req->len; kpg_loop++) {
 			if (hlm_req->kpg_flags[kpg_loop] == MEMFLAG_KMAP_PAGE_DONE) {
 				/* ok. do nothing */
-				/* temp */
 				if (hlm_req->pptr_kpgs[0]) {
 					free (hlm_req->pptr_kpgs[0]);
 					hlm_req->pptr_kpgs[0] = NULL;
@@ -212,14 +211,14 @@ void host_user_make_req (
 	np = &bdi->ptr_bdbm_params->nand;
 	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
 
+	bdbm_mutex_lock (&p->host_lock);
+
 	/* create a hlm_req using a bio */
 	if ((hlm_req = __host_block_create_hlm_req (bdi, host_req)) == NULL) {
 		bdbm_spin_unlock_irqrestore (&p->lock, flags);
 		bdbm_error ("the creation of hlm_req failed");
 		return;
 	}
-
-	bdbm_mutex_lock (&p->host_lock);
 
 	/* if success, increase # of host reqs */
 	bdbm_spin_lock_irqsave (&p->lock, flags);

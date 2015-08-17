@@ -284,10 +284,10 @@ void bdbm_drv_exit(void)
 }
 
 
-/*#define NUM_THREADS	100*/
+#define NUM_THREADS	100
 /*#define NUM_THREADS	20*/
 /*#define NUM_THREADS	10*/
-#define NUM_THREADS	1
+/*#define NUM_THREADS	1*/
 
 #include "bdbm_drv.h"
 #include "platform.h"
@@ -300,17 +300,22 @@ void host_thread_fn (void *data)
 	int unique_id = 0;
 	int *val = (int*)(data);
 
-	/*for (loop = 0; loop < 100000; loop++) {*/
-	for (loop = 0; loop < 1; loop++) {
+	for (loop = 0; loop < 100000; loop++) {
+		/*for (loop = 0; loop < 1; loop++) {*/
 		struct bdbm_host_req_t* host_req = NULL;
 
 		host_req = (struct bdbm_host_req_t*)malloc (sizeof (struct bdbm_host_req_t));
 
-		host_req->uniq_id = (*val) * 10000;
+		host_req->uniq_id = (*val);
+		(*val)++;
 		host_req->req_type = REQTYPE_WRITE;
 		host_req->lpa = lpa++;
 		host_req->len = 4;
 		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+
+		host_req->data[0] = 0xA;
+		host_req->data[1] = 0xB;
+		host_req->data[2] = 0xC;
 
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
 	}
@@ -336,9 +341,7 @@ int main (int argc, char** argv)
 	bdbm_msg ("run some simulation");
 	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 		thread_args[loop_thread] = loop_thread;
-		pthread_create (
-			&thread[loop_thread], 
-			NULL, 
+		pthread_create (&thread[loop_thread], NULL, 
 			(void*)&host_thread_fn, 
 			(void*)&thread_args[loop_thread]);
 	}

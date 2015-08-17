@@ -115,6 +115,10 @@ struct bdbm_drv_info {
 #define BDBM_LLM_PRIV(bdi) bdi->ptr_llm_inf->ptr_private
 #define BDBM_FTL_PRIV(bdi) bdi->ptr_ftl_inf->ptr_private
 
+#define GET_PUNIT_ID(bdi,phyaddr) \
+	phyaddr->channel_no * \
+	bdi->ptr_bdbm_params->nand.nr_chips_per_channel + \
+	phyaddr->chip_no
 
 /* request types */
 enum BDBM_REQTYPE {

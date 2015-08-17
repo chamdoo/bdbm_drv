@@ -88,6 +88,11 @@ int __llm_mq_thread (void* arg)
 
 	uint64_t cnt = 0;
 
+	while (p->llm_thread == NULL) {
+		bdbm_msg ("wait: p->llm_thread=%p", p->llm_thread);
+		bdbm_thread_msleep (1);
+	}
+
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
 		if (p == NULL) {
@@ -95,6 +100,9 @@ int __llm_mq_thread (void* arg)
 		}
 		if (p->q == NULL) {
 			bdbm_msg ("p->q is NULL");
+		}
+		if (p->llm_thread == NULL) {
+			bdbm_msg ("p->llm_thread is NULL");
 		}
 
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
@@ -106,34 +114,31 @@ int __llm_mq_thread (void* arg)
 		/* send reqs until Q becomes empty */
 		for (loop = 0; loop < p->nr_punits; loop++) {
 			struct bdbm_prior_queue_item_t* qitem = NULL;
-			struct bdbm_llm_req_t* ptr_req = NULL;
+			struct bdbm_llm_req_t* r = NULL;
 			int ret;
 
 			/* if pu is busy, then go to the next pnit */
 			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
-				/*bdbm_msg ("[llm_mq] mutex is busy: %u", loop);*/
 				continue;
 			}
 
-			if ((ptr_req = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
+			if ((r = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 				continue;
 			}
-			ptr_req->ptr_qitem = qitem;
+			r->ptr_qitem = qitem;
 
-			/*bdbm_msg ("[llm_mq] mutex is locked: %u", loop);*/
-
-			pmu_update_q (bdi, ptr_req);
+			pmu_update_q (bdi, r);
 
 			if (cnt % 50000 == 0) {
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 			}
 
-			if (bdi->ptr_dm_inf->make_req (bdi, ptr_req)) {
+			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 
 				/* TODO: I do not check whether it works well or not */
-				bdi->ptr_llm_inf->end_req (bdi, ptr_req);
+				bdi->ptr_llm_inf->end_req (bdi, r);
 				bdbm_warning ("oops! make_req failed");
 			}
 
@@ -224,9 +229,7 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 	bdbm_thread_stop (p->llm_thread);
 
 	for (loop = 0; loop < p->nr_punits; loop++) {
-		/*bdbm_msg ("[llm_mq] wait for punit lock: %u", loop);*/
 		bdbm_mutex_lock (&p->punit_locks[loop]);
-		/*bdbm_msg ("[llm_mq] mutex is closed: %u", loop);*/
 	}
 
 	/* release all the relevant data structures */
@@ -274,19 +277,16 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
 			llm_req->phyaddr_w.chip_no;
 
-		if ((ret = bdbm_prior_queue_enqueue 
-				(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
-		if ((ret = bdbm_prior_queue_enqueue 
-				(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	}
 #else
-	if ((ret = bdbm_prior_queue_enqueue 
-			(p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
 #endif
@@ -321,7 +321,6 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 			llm_req->phyaddr->chip_no;
 
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-		/*bdbm_msg ("[llm_mq] mutex is release: %u", punit_id);*/
 
 		/* change its type to WRITE if req_type is RMW */
 		llm_req->phyaddr = &llm_req->phyaddr_w;
@@ -364,7 +363,6 @@ void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 
 		/* complete a lock */
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-		/*bdbm_msg ("[llm_mq] mutex is release: %u", punit_id);*/
 
 		/* update the elapsed time taken by NAND devices */
 		pmu_update_tot (bdi, llm_req);

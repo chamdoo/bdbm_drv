@@ -55,18 +55,23 @@ typedef struct {
 	wait_queue_head_t pollwq;
 	struct bdbm_params params;
 	struct bdbm_drv_info* bdi;
-	uint64_t punit;
-	uint8_t* punit_done;	/* punit_done is updated only in dm_fops_poll while user applications is calling poll () */
-	uint8_t* mmap_shared;
-	uint64_t mmap_shared_size;
-
 	bdbm_spinlock_t lock;
 	uint32_t ref_cnt;
 
+	uint64_t punit;
+	uint8_t* punit_done;	/* punit_done is updated only in dm_fops_poll while poll () is calling */
+	uint8_t** punit_main_pages;
+	uint8_t** punit_oob_pages;
+
+	/* shared by mmap */
+	uint8_t* mmap_shared;
+	uint64_t mmap_shared_size;
+
+	/* keep the status of reqs */
 	bdbm_spinlock_t lock_busy;
 	uint8_t* punit_busy;
 	struct bdbm_llm_req_t** kr;
-	struct bdbm_llm_req_t** ur;
+	bdbm_llm_req_ioctl_t** ur;
 } bdbm_dm_stub_t;
 
 struct bdbm_llm_inf_t _bdbm_llm_inf = {
@@ -82,9 +87,7 @@ struct bdbm_llm_inf_t _bdbm_llm_inf = {
 void __dm_intr_handler (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
-	uint64_t punit_id = req->phyaddr->channel_no *
-		bdi->ptr_bdbm_params->nand.nr_chips_per_channel +
-		req->phyaddr->chip_no;
+	uint64_t punit_id = GET_PUNIT_ID (bdi, req->phyaddr);
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
@@ -103,116 +106,110 @@ void __dm_intr_handler (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 }
 
 /* TODO: We should improve it to use mmap to avoid useless malloc, memcpy, free, etc */
-static struct bdbm_llm_req_t* __get_llm_req (struct nand_params* np, struct bdbm_llm_req_t* ur)
+static struct bdbm_llm_req_t* __get_llm_req (
+	bdbm_dm_stub_t* s,
+	bdbm_llm_req_ioctl_t __user *ur)
 {
-    int loop = 0;
-	struct bdbm_llm_req_t* kr = NULL;
 	uint32_t nr_kp_per_fp = 1;
+	uint64_t punit_id, loop;
+	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_ioctl_t kr;
 
 	if (ur == NULL) {
 		bdbm_warning ("user-level llm_req is NULL");
 		return NULL;
 	}
 
-	/* copy a user-level llm_req to a kernel-level llm_req */
-    kr = (struct bdbm_llm_req_t*)bdbm_zmalloc (sizeof (struct bdbm_llm_req_t));
-	if (access_ok (VERIFY_READ, (void __user *)ur, sizeof (struct bdbm_llm_req_t)) == 1) {
-		copy_from_user (kr, (void __user *)ur, sizeof (struct bdbm_llm_req_t));
-	} else {
-		bdbm_msg ("access_ok failed 1");
+ 	/* is it accessable ?*/
+	if (access_ok (VERIFY_READ, ur, sizeof (kr)) != 1) {
+		bdbm_warning ("access_ok () failed");
+		return NULL;
 	}
-	
-	kr->phyaddr = (struct bdbm_phyaddr_t*)bdbm_zmalloc (sizeof (struct bdbm_phyaddr_t));
-	if (access_ok (VERIFY_READ, (void __user *)ur->phyaddr, sizeof (struct bdbm_phyaddr_t)) == 1) {
-		copy_from_user (kr->phyaddr, (void __user *)ur->phyaddr, sizeof (struct bdbm_phyaddr_t));
-	} else {
-		bdbm_msg ("access_ok failed 2");
+	copy_from_user (&kr, ur, sizeof (kr));
+
+	/* create bdbm_llm_req_t */
+	if ((r = (struct bdbm_llm_req_t*)bdbm_zmalloc 
+			(sizeof (struct bdbm_llm_req_t))) == NULL) {
+		bdbm_warning ("bdbm_zmalloc () failed");
+		return NULL;
 	}
 
-	kr->kpg_flags = (uint8_t*)bdbm_zmalloc (sizeof (uint8_t) * nr_kp_per_fp);
-	if (access_ok (VERIFY_READ, (void __user *)ur->kpg_flags, sizeof (uint8_t) * nr_kp_per_fp) == 1) {
-		copy_from_user (kr->kpg_flags, (void __user *)ur->kpg_flags, sizeof (uint8_t) * nr_kp_per_fp);
-	} else {
-		bdbm_msg ("access_ok failed 3");
-	}
+	/* initialize it */
+	r->req_type = kr.req_type;
+	r->lpa = kr.lpa;
+	r->phyaddr_r.channel_no = kr.channel_no;
+	r->phyaddr_r.chip_no = kr.chip_no;
+	r->phyaddr_r.block_no = kr.block_no;
+	r->phyaddr_r.page_no = kr.page_no;
+	r->phyaddr = &r->phyaddr_r;
+	r->kpg_flags = (uint8_t*)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t));
+	r->pptr_kpgs = (uint8_t**)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t*));
 
-	kr->pptr_kpgs = (uint8_t**)bdbm_zmalloc (sizeof (uint8_t*) * nr_kp_per_fp);
+  	punit_id = GET_PUNIT_ID (s->bdi, r->phyaddr);
 	for (loop = 0; loop < nr_kp_per_fp; loop++) {
-        kr->pptr_kpgs[loop] = (uint8_t*)get_zeroed_page (GFP_KERNEL);
-		/* copy user-data to Kernel only if the type of request is a write */
-		/* FIXME: maybe, we need to handle RMW in a different way */
-		if (kr->req_type == REQTYPE_WRITE ||
-			kr->req_type == REQTYPE_RMW_WRITE ||
-			kr->req_type == REQTYPE_GC_WRITE) {
-			if (access_ok (VERIFY_READ, (void __user *)ur->pptr_kpgs[loop], KERNEL_PAGE_SIZE) == 1) {
-				copy_from_user (kr->pptr_kpgs[loop], (void __user *)ur->pptr_kpgs[loop], KERNEL_PAGE_SIZE);
-			} else {
-				bdbm_msg ("access_ok failed 4");
-			}
-		}
+		r->kpg_flags[loop] = kr.kpg_flags[loop];
+		r->pptr_kpgs[loop] = 
+			s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
 	}
+	r->ptr_oob = s->punit_oob_pages[punit_id];
+	r->ret = 1;
 
-	/*if (np->page_oob_size > 0 && ur->ptr_oob != NULL) {*/
-	if (np->page_oob_size > 0) {
-		kr->ptr_oob = (uint8_t*)bdbm_zmalloc (sizeof (uint8_t) * np->page_oob_size);
-		/* copy user-data to Kernel only if the type of request is a write */
-		/* FIXME: maybe, we need to handle RMW in a different way */
-		if (kr->req_type == REQTYPE_WRITE ||
-			kr->req_type == REQTYPE_RMW_WRITE ||
-			kr->req_type == REQTYPE_GC_WRITE) {
-			if (access_ok (VERIFY_READ, (void __user *)ur->ptr_oob, np->page_oob_size) == 1) {
-				copy_from_user (kr->ptr_oob, ur->ptr_oob, np->page_oob_size);
-			} else {
-				bdbm_msg ("access_ok failed 5");
-			}
-		}
-	} else {
-		kr->ptr_oob = NULL;
-		bdbm_msg ("oop_size is 0 or oop_buf is NULL");
-	}
+	/*
+	bdbm_msg ("main: %X %X %X ...",
+		r->pptr_kpgs[0][0],
+		r->pptr_kpgs[0][1],
+		r->pptr_kpgs[0][2]);
 
-	kr->ret = 1;
-
-    return kr;
+	bdbm_msg ("oob: %X %X %X ...",
+		r->ptr_oob[0],
+		r->ptr_oob[1],
+		r->ptr_oob[2]);
+	*/
+	return r;
 }
 
 static void __return_llm_req (
-	struct nand_params* np,
-	struct bdbm_llm_req_t* ur,
+	bdbm_dm_stub_t* s,
+	bdbm_llm_req_ioctl_t* ur,
 	struct bdbm_llm_req_t* kr)
 {
-	/* copy a retun value */
-	copy_to_user (&ur->ret, &kr->ret, sizeof (uint8_t));
+	/* TEMP */
+	/*
+	kr->pptr_kpgs[0][0] = 'B';
+	kr->pptr_kpgs[0][1] = 'C';
+	kr->pptr_kpgs[0][2] = 'D';
 
-	/* copy data from Kernel to user-space when the type of request is a read, 
-	 * except for REQTYPE_READ_DUMMY */
-	if (kr->req_type == REQTYPE_READ ||
-		kr->req_type == REQTYPE_RMW_READ ||
-		kr->req_type == REQTYPE_GC_READ) {
-		uint32_t nr_kp_per_fp = 1;
-		uint32_t loop = 0;
-		for (loop = 0; loop < nr_kp_per_fp; loop++) {
-			/* copy main page data */
-			copy_to_user (ur->pptr_kpgs[loop], kr->pptr_kpgs[loop], KERNEL_PAGE_SIZE);
-		}
-		/* copy oob data */
-		if (np->page_oob_size > 0 && kr->ptr_oob != NULL) {
-			/*copy_to_user (ur->ptr_oob, kr->ptr_oob, np->page_oob_size);*/
-		}
+	bdbm_msg ("ret- main: %X %X %X ...",
+		kr->pptr_kpgs[0][0],
+		kr->pptr_kpgs[0][1],
+		kr->pptr_kpgs[0][2]);
+
+	bdbm_msg ("ret - oob: %X %X %X ...",
+		kr->ptr_oob[0],
+		kr->ptr_oob[1],
+		kr->ptr_oob[2]);
+	*/
+	/* TEMP */
+	
+	/* copy a retun value */
+	if (access_ok (VERIFY_WRITE, ur, sizeof (*ur)) != 1) {
+		bdbm_warning ("access_ok () failed");
+	} else {
+		/*copy_to_user (&ur->ret, &kr->ret, sizeof (uint8_t));*/
 	}
 }
 
 static void __free_llm_req (struct bdbm_llm_req_t* kr)
 {
-    int loop = 0;
-	uint32_t nr_kp_per_fp = 1;
+	/*int loop = 0;*/
+	/*uint32_t nr_kp_per_fp = 1;*/
 
-	bdbm_free (kr->phyaddr);
+	/*bdbm_free (kr->phyaddr);*/
 	bdbm_free (kr->kpg_flags);
-	for (loop = 0; loop < nr_kp_per_fp; loop++)
-		free_page ((unsigned long)kr->pptr_kpgs[loop]);
+	/*for (loop = 0; loop < nr_kp_per_fp; loop++)*/
+	/*free_page ((unsigned long)kr->pptr_kpgs[loop]);*/
 	bdbm_free (kr->pptr_kpgs);
-	bdbm_free (kr->ptr_oob);
+	/*bdbm_free (kr->ptr_oob);*/
 	bdbm_free (kr);
 }
 
@@ -238,6 +235,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 {
 	struct bdbm_drv_info* bdi = s->bdi;
 	unsigned long flags;
+	uint64_t mmap_ofs, loop;
 
 	if (bdi->ptr_dm_inf->open == NULL) {
 		bdbm_warning ("ptr_dm_inf->open is NULL");
@@ -258,42 +256,59 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 
 	/* initialize internal variables */
 	s->punit = s->params.nand.nr_chips_per_channel * s->params.nand.nr_channels;
-	s->punit_busy = (uint8_t*)bdbm_malloc_atomic (s->punit * sizeof (uint8_t));
-	s->kr = (struct bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (struct bdbm_llm_req_t*));
-	s->ur = (struct bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (struct bdbm_llm_req_t*));
+	s->mmap_shared_size = KERNEL_PAGE_SIZE + PAGE_ALIGN (
+		s->punit * (s->params.nand.page_main_size + s->params.nand.page_oob_size));
 
-	/* kmalloc () is OK because a relatively smaller 
-	 * amount of memory than 1 MB is needed */
-	s->mmap_shared_size = 
-		KERNEL_PAGE_SIZE + PAGE_ALIGN (s->punit * 
-		(s->params.nand.page_main_size + s->params.nand.page_oob_size));
-	s->mmap_shared = (uint8_t*)kmalloc (
-		s->mmap_shared_size, GFP_KERNEL);
+	s->kr = (struct bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (struct bdbm_llm_req_t*));
+	s->ur = (bdbm_llm_req_ioctl_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_ioctl_t*));
+	s->punit_busy = (uint8_t*)bdbm_malloc_atomic (s->punit * sizeof (uint8_t));
+	s->punit_main_pages = (uint8_t**)bdbm_zmalloc (s->punit * sizeof (uint8_t*));
+	s->punit_oob_pages = (uint8_t**)bdbm_zmalloc (s->punit * sizeof (uint8_t*));
+	s->mmap_shared = (uint8_t*)kmalloc (s->mmap_shared_size, GFP_KERNEL); 	/* kmalloc () is OK because a relatively smaller amount of memory than 1 MB is needed for mmap_shared */
 
 	/* setup other stuffs */
-	s->punit_done = s->mmap_shared + 4096;
+	mmap_ofs = 0;
+	s->punit_done = s->mmap_shared;
+	mmap_ofs += KERNEL_PAGE_SIZE;
+	for (loop = 0; loop < s->punit; loop++) {
+		s->punit_main_pages[loop] = s->mmap_shared + mmap_ofs;
+		mmap_ofs += s->params.nand.page_main_size;
+		s->punit_oob_pages[loop] = s->mmap_shared + mmap_ofs;
+		mmap_ofs += s->params.nand.page_oob_size;
+	}
+
+	bdbm_msg ("mmap_shared_size = %llu, mmap_ofs = %llu", 
+		s->mmap_shared_size, mmap_ofs);
 
 	/* are there any errors? */
 	if (s->kr == NULL || 
 		s->ur == NULL || 
+		s->mmap_shared == NULL ||
 		s->punit_busy == NULL || 
-		s->punit_done == NULL) {
+		s->punit_main_pages == NULL ||
+		s->punit_oob_pages == NULL) {
 
+		if (s->punit_oob_pages) bdbm_free (s->punit_oob_pages);
+		if (s->punit_main_pages) bdbm_free (s->punit_main_pages);
+		if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
+		if (s->mmap_shared) kfree (s->mmap_shared);
 		if (s->kr) bdbm_free (s->kr);
 		if (s->ur) bdbm_free (s->ur);
-		if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
 
+		s->punit_oob_pages = NULL;
+		s->punit_main_pages = NULL;
+		s->punit_busy = NULL;
+		s->mmap_shared = NULL;
 		s->kr = NULL;
 		s->ur = NULL;
-		s->punit_busy = NULL;
-		s->punit_done = NULL;
 
 		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
 		bdbm_spin_unlock (&s->lock);
 
 		bdbm_warning ("bdbm_malloc failed \
-			(kr=%p, ur=%p, punit_busy=%p, punit_done=%p)", 
-			s->kr, s->ur, s->punit_busy, s->punit_done);
+			(kr=%p, ur=%p, s->mmap_shared=%p, punit_busy=%p, punit_main_pages=%p, punit_oob_pages=%p)", 
+			s->kr, s->ur, s->mmap_shared, 
+			s->punit_busy, s->punit_main_pages, s->punit_oob_pages);
 
 		return -EIO;
 	}
@@ -335,8 +350,10 @@ static int dm_stub_close (bdbm_dm_stub_t* s)
 	bdi->ptr_dm_inf->close (bdi);
 
 	/* free llm_reqs for bdi */
-	if (s->mmap_shared) kfree (s->mmap_shared);
+	if (s->punit_oob_pages) bdbm_free (s->punit_oob_pages);
+	if (s->punit_main_pages) bdbm_free (s->punit_main_pages);
 	if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
+	if (s->mmap_shared) kfree (s->mmap_shared);
 	if (s->kr) bdbm_free (s->kr);
 	if (s->ur) bdbm_free (s->ur);
 
@@ -349,12 +366,13 @@ static int dm_stub_close (bdbm_dm_stub_t* s)
 	return 0;
 }
 
-static int dm_stub_make_req (bdbm_dm_stub_t* s, struct bdbm_llm_req_t* ur)
+static int dm_stub_make_req (
+	bdbm_dm_stub_t* s, 
+	bdbm_llm_req_ioctl_t __user *ur)
 {
 	struct bdbm_drv_info* bdi = s->bdi;
 	struct bdbm_llm_req_t* kr = NULL;
-	struct nand_params* np = &s->params.nand;
-	uint32_t punit_id = -1;
+	uint32_t punit_id;
 	unsigned long flags;
 
 	if (bdi->ptr_dm_inf->make_req == NULL) {
@@ -372,15 +390,13 @@ static int dm_stub_make_req (bdbm_dm_stub_t* s, struct bdbm_llm_req_t* ur)
 	bdbm_spin_unlock (&s->lock);
 
 	/* copy user-level llm_req to kernel-level */
-	if ((kr = __get_llm_req (np, ur)) == NULL) {
+	if ((kr = __get_llm_req (s, ur)) == NULL) {
 		bdbm_warning ("__get_llm_req () failed (ur=%p, kr=%p)", ur, kr);
 		return -EIO;
 	}
 
 	/* get punit_id */
-	punit_id = kr->phyaddr->channel_no *
-		s->params.nand.nr_chips_per_channel +
-		kr->phyaddr->chip_no;
+	punit_id = GET_PUNIT_ID (bdi, kr->phyaddr);
 
 	/* see if there is an on-going request */
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
@@ -408,8 +424,7 @@ static int dm_stub_make_req (bdbm_dm_stub_t* s, struct bdbm_llm_req_t* ur)
 static int dm_stub_end_req (bdbm_dm_stub_t* s)
 {
 	struct bdbm_llm_req_t* kr = NULL;
-	struct bdbm_llm_req_t* ur = NULL;
-	struct nand_params* np = &s->params.nand;
+	bdbm_llm_req_ioctl_t* ur = NULL;
 	uint64_t loop;
 	int ret = 1;
 
@@ -433,7 +448,7 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
 		/* let's finish it */
 		if (ur != NULL && kr != NULL) {
 			/* setup results and destroy a kernel copy */
-			__return_llm_req (np, ur, kr);
+			__return_llm_req (s, ur, kr);
 			__free_llm_req (kr);
 
 			/* done */
@@ -453,7 +468,6 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
  */
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
 static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table);
-/*static int mmap_fault (struct vm_area_struct *vma, struct vm_fault *vmf);*/
 static void mmap_open (struct vm_area_struct *vma);
 static void mmap_close (struct vm_area_struct *vma);
 static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma);
@@ -461,16 +475,11 @@ static int dm_fops_create (struct inode *inode, struct file *filp);
 static int dm_fops_release (struct inode *inode, struct file *filp);
 
 /* Linux Device Drivers, 3rd Edition, (CHAP 15 / SEC 2): http://www.makelinux.net/ldd3/chp-15-sect-2 */
-/* http://read.pudn.com/downloads96/sourcecode/unix_linux/391892/mmap.example/mmap.example/mmap.c__.htm */
 /* arch/powerpc/kernel/proc_powerpc.c */
 /* arch/powerpc/kernel/rtas_flash.c */
-/* drivers/media/video/vino.c */
 struct vm_operations_struct mmap_vm_ops = {
 	.open = mmap_open,
 	.close = mmap_close,
-#if 0
-	.fault = mmap_fault,
-#endif
 };
 
 static struct file_operations fops = {
@@ -495,48 +504,8 @@ void mmap_close (struct vm_area_struct *vma)
 	bdbm_msg ("mmap_close");
 }
 
-#if 0
-static int mmap_fault (struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-	struct page *page = NULL;
-	bdbm_dm_stub_t* s = NULL;
-
-	bdbm_msg ("mmap_fault is called");
-
-	/* see if s and s->punit_done is available */
-	s = (bdbm_dm_stub_t *)vma->vm_private_data;
-	if (s == NULL || !s->punit_done) {
-		bdbm_warning ("s or punit_done is not allocated yet");
-		return -ENOMEM;
-	}
-
-	/* get the page */
-	page = virt_to_page (s->punit_done);
-	
-	/* increment the reference count of this page */
-	get_page (page);
-	vmf->page = page;
-
-	return 0;
-}
-#endif
-
 static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 {
-#if 0
-	/* TODO: not implemented yet */
-	bdbm_dm_stub_t* s = filp->private_data;
-
-	if (s == NULL) {
-		bdbm_warning ("dm_stub is not created yet");
-		return 1;
-	}
-
-	vma->vm_ops = &mmap_vm_ops;
-	vma->vm_private_data = filp->private_data;	/* bdbm_dm_stub_t */
-
-	bdbm_msg ("dm_fops_mmap is called");
-#endif
 	bdbm_dm_stub_t* s = filp->private_data;
 	uint64_t size = vma->vm_end - vma->vm_start;
 
@@ -551,12 +520,14 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 		return -EINVAL;
 	}
 
-	if (remap_pfn_range (
-			vma, 
-			vma->vm_start, 
+	bdbm_warning ("size: %llu, s->mmap_shared_size: %llu", size, s->mmap_shared_size);
+
+	vma->vm_page_prot = pgprot_noncached (vma->vm_page_prot);
+	vma->vm_pgoff = __pa(s->mmap_shared) >> PAGE_SHIFT;
+
+	if (remap_pfn_range (vma, vma->vm_start, 
 			__pa(s->mmap_shared) >> PAGE_SHIFT,
-			size,
-			vma->vm_page_prot)) {
+			size, vma->vm_page_prot)) {
 		return -EAGAIN;
 	}
 
@@ -698,7 +669,7 @@ static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 		ret = dm_stub_close (s);
 		break;
 	case BDBM_DM_IOCTL_MAKE_REQ:
-		ret = dm_stub_make_req (s, (struct bdbm_llm_req_t*)arg);
+		ret = dm_stub_make_req (s, (bdbm_llm_req_ioctl_t __user*)arg);
 		break;
 	case BDBM_DM_IOCTL_END_REQ:
 		bdbm_warning ("Hmm... dm_stub_end_req () cannot be directly called by user applications");

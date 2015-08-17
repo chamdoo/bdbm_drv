@@ -16,9 +16,9 @@ INCLUDES = -I$(PWD)/../../include \
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
 		  -D CONFIG_ENABLE_DEBUG \
-		  -D USE_PMU \
 		  -D USE_KTIMER \
-		  -D USER_MODE
+		  -D USER_MODE \
+		  -D USE_PMU \
 
 #DMLIB := ../../devices/libdummy/libdummy.a
 #DMLIB := ../../devices/libramdrive/libramdrive.a
