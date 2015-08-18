@@ -216,12 +216,7 @@ uint32_t bdbm_block_ftl_create (struct bdbm_drv_info* bdi)
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
-#ifdef USE_COMPLETION
-	bdbm_init_completion (p->gc_hlm.gc_done);
-	bdbm_complete (p->gc_hlm.gc_done);
-#else
 	bdbm_mutex_init (&p->gc_hlm.gc_done);
-#endif
 
 	bdbm_msg ("nr_segments = %llu, nr_blocks_per_segment = %llu, nr_pages_per_segment = %llu",
 		p->nr_segments, p->nr_blocks_per_segment, p->nr_pages_per_segment);
@@ -557,23 +552,15 @@ uint32_t __bdbm_block_ftl_erase_block (
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = p->nr_blocks_per_segment;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		uint8_t is_bad = 0;
@@ -586,14 +573,6 @@ uint32_t __bdbm_block_ftl_erase_block (
 	}
 
 	/* measure gc elapsed time */
-#if 0
-#ifdef USE_COMPLETION
-	bdbm_complete (hlm_gc->gc_done);
-#else
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
-#endif
-
 	return 0;
 }
 
@@ -737,23 +716,15 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (struct bdbm_drv_info* bdi, uint64
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = p->nr_blocks_per_segment;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		uint8_t is_bad = 0;
@@ -774,13 +745,6 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (struct bdbm_drv_info* bdi, uint64
 	}
 
 	/* measure gc elapsed time */
-#if 0
-#ifdef USE_COMPLETION
-	bdbm_complete (hlm_gc->gc_done);
-#else
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
-#endif
 }
 
 uint32_t bdbm_block_ftl_badblock_scan (struct bdbm_drv_info* bdi)

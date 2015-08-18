@@ -94,11 +94,7 @@ struct bdbm_page_ftl_private {
 	struct bdbm_hlm_req_gc_t gc_hlm;
 
 	/* for bad-block scanning */
-#ifdef USE_COMPLETION
-	bdbm_completion badblk;
-#else
 	bdbm_mutex badblk;
-#endif
 };
 
 
@@ -265,12 +261,7 @@ uint32_t bdbm_page_ftl_create (struct bdbm_drv_info* bdi)
 		r->ptr_oob = (uint8_t*)bdbm_malloc_atomic (sizeof (uint8_t) * np->page_oob_size);
 		i++;
 	}
-#ifdef USE_COMPLETION
-	bdbm_init_completion (p->gc_hlm.gc_done);
-	bdbm_complete (p->gc_hlm.gc_done);
-#else
 	bdbm_mutex_init (&p->gc_hlm.gc_done);
-#endif
 
 	return 0;
 }
@@ -612,23 +603,15 @@ uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
 	hlm_gc->req_type = REQTYPE_GC_READ;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_llm_reqs;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < nr_llm_reqs; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	/* build hlm_req_gc for writes */
 	for (i = 0; i < nr_llm_reqs; i++) {
@@ -649,23 +632,15 @@ uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
 	hlm_gc->req_type = REQTYPE_GC_WRITE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_llm_reqs;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < nr_llm_reqs; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	/* erase blocks */
 erase_blks:
@@ -687,23 +662,15 @@ erase_blks:
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_gc_blks;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < nr_gc_blks; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	/* FIXME: what happens if block erasure fails */
 	for (i = 0; i < nr_gc_blks; i++) {
@@ -727,15 +694,6 @@ erase_blks:
 */
 		bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
 	}
-
-	/* measure gc elapsed time */
-#if 0
-#ifdef USE_COMPLETION
-	bdbm_complete (hlm_gc->gc_done);          
-#else
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
-#endif
 
 	return 0;
 }
@@ -888,23 +846,15 @@ void __bdbm_page_badblock_scan_eraseblks (
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = p->nr_punits;
-#ifdef USE_COMPLETION
-	bdbm_reinit_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
-#endif
 	for (i = 0; i < p->nr_punits; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (hlm_gc->gc_done);
-#else
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
 
 	for (i = 0; i < p->nr_punits; i++) {
 		uint8_t ret = 0;
@@ -918,13 +868,6 @@ void __bdbm_page_badblock_scan_eraseblks (
 	}
 
 	/* measure gc elapsed time */
-#if 0
-#ifdef USE_COMPLETION
-	bdbm_complete (hlm_gc->gc_done);
-#else
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
-#endif
-#endif
 }
 
 uint32_t bdbm_page_badblock_scan (struct bdbm_drv_info* bdi)

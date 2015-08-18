@@ -48,11 +48,7 @@ struct bdbm_host_inf_t _host_block_inf = {
 static struct bdbm_device_t {
 	struct gendisk *gd;
 	struct request_queue *queue;
-#ifdef USE_COMPLETION
-	bdbm_completion make_request_lock;
-#else
 	bdbm_mutex make_request_lock;
-#endif
 } bdbm_device;
 
 static uint32_t bdbm_device_major_num = 0;
@@ -348,21 +344,12 @@ static void __host_block_make_request (
 	}
 
 	/* grab the lock until a host request is sent to hlm */
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (bdbm_device.make_request_lock);
-	bdbm_reinit_completion (bdbm_device.make_request_lock);
-#else
 	bdbm_mutex_lock (&bdbm_device.make_request_lock);
-#endif
 
 	host_block_make_req (_bdi, (void*)bio);
 
 	/* free the lock*/
-#ifdef USE_COMPLETION
-	bdbm_complete (bdbm_device.make_request_lock);          
-#else
 	bdbm_mutex_unlock (&bdbm_device.make_request_lock);          
-#endif
 }
 
 static uint32_t __host_block_register_block_device (struct bdbm_drv_info* bdi)
@@ -370,12 +357,7 @@ static uint32_t __host_block_register_block_device (struct bdbm_drv_info* bdi)
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
 	/* create a completion lock */
-#ifdef USE_COMPLETION
-	bdbm_init_completion (bdbm_device.make_request_lock);
-	bdbm_complete (bdbm_device.make_request_lock);
-#else
 	bdbm_mutex_init (&bdbm_device.make_request_lock);
-#endif
 
 	/* create a blk queue */
 	if (!(bdbm_device.queue = blk_alloc_queue (GFP_KERNEL))) {

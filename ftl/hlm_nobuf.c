@@ -363,11 +363,7 @@ void __hlm_nobuf_end_gc_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* l
 
 	hlm_req->nr_done_reqs++;
 	if (hlm_req->nr_reqs == hlm_req->nr_done_reqs) {
-#ifdef USE_COMPLETION
-		bdbm_complete (hlm_req->gc_done);
-#else
 		bdbm_mutex_unlock (&hlm_req->gc_done);
-#endif
 	}
 }
 

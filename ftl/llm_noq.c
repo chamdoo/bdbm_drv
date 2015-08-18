@@ -53,11 +53,7 @@ struct bdbm_llm_inf_t _llm_noq_inf = {
 
 struct bdbm_llm_noq_private {
 	uint64_t nr_punits;
-#ifdef USE_COMPLETION
-	bdbm_completion* punit_locks;
-#else
 	bdbm_mutex* punit_locks;
-#endif
 };
 
 uint32_t llm_noq_create (struct bdbm_drv_info* bdi)
@@ -78,30 +74,16 @@ uint32_t llm_noq_create (struct bdbm_drv_info* bdi)
 		bdi->ptr_bdbm_params->nand.nr_chips_per_channel;
 
 	/* create completion locks for parallel units */
-#ifdef USE_COMPLETION
-	if ((p->punit_locks = (bdbm_completion*)bdbm_malloc_atomic
-			(sizeof (bdbm_completion) * p->nr_punits)) == NULL) {
-		bdbm_error ("bdbm_malloc_atomic failed");
-		bdbm_free_atomic (p);
-		return -1;
-	}
-#else
 	if ((p->punit_locks = (bdbm_mutex*)bdbm_malloc_atomic
 			(sizeof (bdbm_mutex) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		bdbm_free_atomic (p);
 		return -1;
 	}
-#endif
 
 	/* initialize completion locks */
 	for (loop = 0; loop < p->nr_punits; loop++) {
-#ifdef USE_COMPLETION
-		bdbm_init_completion (p->punit_locks[loop]);
-		bdbm_complete (p->punit_locks[loop]);
-#else
 		bdbm_mutex_init (&p->punit_locks[loop]);
-#endif
 	}
 
 	/* keep the private structures for llm_nt */
@@ -122,11 +104,7 @@ void llm_noq_destroy (struct bdbm_drv_info* bdi)
 
 	/* complete all the completion locks */
 	for (loop = 0; loop < p->nr_punits; loop++) {
-#ifdef USE_COMPLETION
-		bdbm_wait_for_completion (p->punit_locks[loop]);
-#else
 		bdbm_mutex_lock (&p->punit_locks[loop]);
-#endif
 	}
 
 	/* release all the relevant data structures */
@@ -148,12 +126,7 @@ uint32_t llm_noq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm
 		llm_req->phyaddr->chip_no;
 
 	/* wait until a parallel unit becomes idle */
-#ifdef USE_COMPLETION
-	bdbm_wait_for_completion (p->punit_locks[punit_id]);
-	bdbm_reinit_completion (p->punit_locks[punit_id]);
-#else
 	bdbm_mutex_lock (&p->punit_locks[punit_id]);
-#endif
 
 	/* send a request to a device manager */
 	ret = bdi->ptr_dm_inf->make_req (bdi, llm_req);
@@ -161,11 +134,7 @@ uint32_t llm_noq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm
 	/* handle error cases */
 	if (ret != 0) {
 		/* complete a lock */
-#ifdef USE_COMPLETION
-		bdbm_complete (p->punit_locks[punit_id]);
-#else
 		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-#endif
 		bdbm_error ("llm_make_req failed");
 	}
 
@@ -178,14 +147,9 @@ void llm_noq_flush (struct bdbm_drv_info* bdi)
 	uint64_t loop;
 
 	for (loop = 0; loop < p->nr_punits; loop++) {
-#ifdef USE_COMPLETION
-		bdbm_wait_for_completion (p->punit_locks[loop]);
-		bdbm_complete (p->punit_locks[loop]);
-#else
 		/* FIXIT: it is wired.. */
 		bdbm_mutex_lock (&p->punit_locks[loop]);
 		bdbm_mutex_unlock (&p->punit_locks[loop]);
-#endif
 	}
 }
 
@@ -202,11 +166,7 @@ void llm_noq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 		llm_req->phyaddr->chip_no;
 
 	/* complete a lock */
-#ifdef USE_COMPLETION
-	bdbm_complete (p->punit_locks[punit_id]);
-#else
 	bdbm_mutex_unlock (&p->punit_locks[punit_id]);
-#endif
 
 	/* finish a request */
 	bdi->ptr_hlm_inf->end_req (bdi, llm_req);
