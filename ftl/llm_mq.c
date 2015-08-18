@@ -85,26 +85,16 @@ int __llm_mq_thread (void* arg)
 	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 	uint64_t loop;
-
 	uint64_t cnt = 0;
 
-	while (p->llm_thread == NULL) {
-		bdbm_msg ("wait: p->llm_thread=%p", p->llm_thread);
-		bdbm_thread_msleep (1);
+	if (p == NULL || p->q == NULL || p->llm_thread == NULL) {
+		bdbm_msg ("invalid parameters (p=%p, p->q=%p, p->llm_thread=%p",
+			p, p->q, p->llm_thread);
+		return 0;
 	}
 
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
-		if (p == NULL) {
-			bdbm_msg ("p is NULL");
-		}
-		if (p->q == NULL) {
-			bdbm_msg ("p->q is NULL");
-		}
-		if (p->llm_thread == NULL) {
-			bdbm_msg ("p->llm_thread is NULL");
-		}
-
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
 			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
 				break;
@@ -191,6 +181,7 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 		bdbm_error ("kthread_create failed");
 		goto fail;
 	}
+	bdbm_thread_run (p->llm_thread);
 
 #if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_init (&p->dbg_seq);

@@ -81,10 +81,15 @@ bdbm_thread_t* bdbm_thread_create (
 		return NULL;
 	} 
 
+	return k;
+}
+
+int bdbm_thread_run (bdbm_thread_t* k)
+{
 	/* wake up thread! */
 	wake_up_process (k->thread);
 
-	return k;
+	return 0;
 }
 
 int bdbm_thread_schedule (bdbm_thread_t* k)
@@ -193,15 +198,15 @@ bdbm_thread_t* bdbm_thread_create (
 	bdbm_mutex_init (&k->thread_done);
 	bdbm_mutex_init (&k->thread_sleep);
 	pthread_cond_init (&k->thread_con, NULL);
-	if ((pthread_create (&k->thread, NULL, (void*)&bdbm_thread_fn, (void*)k)) != 0) {
-		bdbm_error ("kthread_create failed");
-		bdbm_free_atomic (k);
-		return NULL;
-	} 
 
 	bdbm_msg ("new thread created: %p", k);
 
 	return k;
+}
+
+int bdbm_thread_run (bdbm_thread_t* k)
+{
+	return pthread_create (&k->thread, NULL, (void*)&bdbm_thread_fn, (void*)k);
 }
 
 int bdbm_thread_schedule (bdbm_thread_t* k)

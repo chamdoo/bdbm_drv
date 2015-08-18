@@ -74,19 +74,11 @@ int __hlm_buf_thread (void* arg)
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
 	struct bdbm_hlm_req_t* r;
 
-	while (p->hlm_thread == NULL) {
-		bdbm_msg ("wait: p->hlm_thread=%p", p->hlm_thread);
-		bdbm_thread_msleep (1);
-	}
-
 	for (;;) {
 		if (bdbm_queue_is_all_empty (p->q)) {
-			/*bdbm_msg ("hlm_Q goes to sleep");*/
 			if (bdbm_thread_schedule (p->hlm_thread) == SIGKILL) {
-				/*bdbm_msg ("hlm_Q gets a sigkill signal");*/
 				break;
 			}
-			/*bdbm_msg ("hlm_Q wakes up");*/
 		}
 
 		/* if nothing is in Q, then go to the next punit */
@@ -103,7 +95,6 @@ int __hlm_buf_thread (void* arg)
 				bdbm_bug_on (1);
 			}
 		} 
-		/*bdbm_msg ("hlm_Q is empty.. exit");*/
 	}
 
 	return 0;
@@ -142,6 +133,7 @@ uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
 		bdbm_error ("kthread_create failed");
 		return -1;
 	}
+	bdbm_thread_run (p->hlm_thread);
 
 	return 0;
 }

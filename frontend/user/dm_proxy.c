@@ -162,6 +162,7 @@ uint32_t dm_proxy_open (struct bdbm_drv_info* bdi)
 		ioctl (p->fd, BDBM_DM_IOCTL_CLOSE, &ret);
 		return 1;
 	}
+	bdbm_thread_run (p->dm_proxy_thread);
 
 	return 0;
 }
