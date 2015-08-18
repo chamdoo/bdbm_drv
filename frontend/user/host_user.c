@@ -146,6 +146,10 @@ static void __host_block_delete_hlm_req (
 		bdbm_free_atomic (hlm_req->kpg_flags);
 	if (hlm_req->pptr_kpgs != NULL) 
 		bdbm_free_atomic (hlm_req->pptr_kpgs);
+
+	/* temp */
+	bdbm_free (hlm_req->ptr_host_req);
+	/* end */
 	bdbm_free_atomic (hlm_req);
 }
 
@@ -253,7 +257,6 @@ void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_re
 	struct bdbm_host_block_private* p = NULL;
 
 	/* get a bio from hlm_req */
-	/*host_req = (struct bdbm_host_req_t*)hlm_req->ptr_host_req;*/
 	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
 	ret = hlm_req->ret;
 

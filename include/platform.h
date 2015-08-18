@@ -102,11 +102,10 @@ THE SOFTWARE.
 /* memory handling */
 #include <string.h>
 #include <stdlib.h>
-/*#define bdbm_malloc(a) malloc(a)*/
-#define bdbm_malloc(a) calloc(a, 1)
+#define bdbm_malloc(a) malloc(a)
 #define bdbm_zmalloc(a) calloc(a, 1)	/* 1 byte by default */
 #define bdbm_free(a) do { free(a); } while (0)
-#define bdbm_malloc_atomic(a) calloc(a, 1) /* 1 byte by default */
+#define bdbm_malloc_atomic(a) calloc(1, a) /* 1 byte by default */
 #define bdbm_free_atomic(a) do { free(a); } while (0)
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
@@ -117,10 +116,8 @@ THE SOFTWARE.
 #define bdbm_mutex_lock(a) pthread_mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)
 #define bdbm_mutex_unlock(a) pthread_mutex_unlock(a)
-/* NOTE:
- * Linux kernel's mutex_trylock returns '1' when it accquires a lock,
+/* NOTE: Linux kernel's mutex_trylock returns '1' when it accquires a lock,
  * while pthread's mutex_try_lock return '0' when it gets a lock.
- *
  * For a compatibility purpuse, bdbm_mutex_try_lock always returns '1' 
  * when a lock is accquired by a thread. Otherwise, it returns 0. */
 #define bdbm_mutex_try_lock(a) ({ \

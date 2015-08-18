@@ -94,7 +94,8 @@ uint8_t bdbm_queue_enqueue (struct bdbm_queue_t* mq, uint64_t qid, void* req)
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->max_size == INFINITE_QUEUE || mq->qic < mq->max_size) {
 		struct bdbm_queue_item_t* q = NULL;
-		if ((q = bdbm_malloc_atomic (sizeof (struct bdbm_queue_item_t))) == NULL) {
+		if ((q = (struct bdbm_queue_item_t*)bdbm_malloc_atomic 
+				(sizeof (struct bdbm_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 		} else {
 			q->ptr_req = (void*)req;
@@ -127,7 +128,8 @@ uint8_t bdbm_queue_enqueue_top (struct bdbm_queue_t* mq, uint64_t qid, void* req
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->max_size == INFINITE_QUEUE || mq->qic < mq->max_size) {
 		struct bdbm_queue_item_t* q = NULL;
-		if ((q = bdbm_malloc_atomic (sizeof (struct bdbm_queue_item_t))) == NULL) {
+		if ((q = (struct bdbm_queue_item_t*)bdbm_malloc_atomic 
+				(sizeof (struct bdbm_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 		} else {
 			q->ptr_req = (void*)req;
@@ -166,7 +168,6 @@ uint8_t bdbm_queue_is_empty (struct bdbm_queue_t* mq, uint64_t qid)
 
 	return ret;
 }
-
 
 void* bdbm_queue_dequeue (struct bdbm_queue_t* mq, uint64_t qid)
 {

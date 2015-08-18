@@ -154,17 +154,6 @@ static struct bdbm_llm_req_t* __get_llm_req (
 	r->ptr_oob = s->punit_oob_pages[punit_id];
 	r->ret = 1;
 
-	/*
-	bdbm_msg ("main: %X %X %X ...",
-		r->pptr_kpgs[0][0],
-		r->pptr_kpgs[0][1],
-		r->pptr_kpgs[0][2]);
-
-	bdbm_msg ("oob: %X %X %X ...",
-		r->ptr_oob[0],
-		r->ptr_oob[1],
-		r->ptr_oob[2]);
-	*/
 	return r;
 }
 
@@ -173,24 +162,6 @@ static void __return_llm_req (
 	bdbm_llm_req_ioctl_t* ur,
 	struct bdbm_llm_req_t* kr)
 {
-	/* TEMP */
-	/*
-	kr->pptr_kpgs[0][0] = 'B';
-	kr->pptr_kpgs[0][1] = 'C';
-	kr->pptr_kpgs[0][2] = 'D';
-
-	bdbm_msg ("ret- main: %X %X %X ...",
-		kr->pptr_kpgs[0][0],
-		kr->pptr_kpgs[0][1],
-		kr->pptr_kpgs[0][2]);
-
-	bdbm_msg ("ret - oob: %X %X %X ...",
-		kr->ptr_oob[0],
-		kr->ptr_oob[1],
-		kr->ptr_oob[2]);
-	*/
-	/* TEMP */
-	
 	/* copy a retun value */
 	if (access_ok (VERIFY_WRITE, ur, sizeof (*ur)) != 1) {
 		bdbm_warning ("access_ok () failed");
@@ -203,7 +174,6 @@ static void __free_llm_req (struct bdbm_llm_req_t* kr)
 {
 	/*int loop = 0;*/
 	/*uint32_t nr_kp_per_fp = 1;*/
-
 	/*bdbm_free (kr->phyaddr);*/
 	bdbm_free (kr->kpg_flags);
 	/*for (loop = 0; loop < nr_kp_per_fp; loop++)*/
@@ -494,9 +464,8 @@ static struct file_operations fops = {
 
 void mmap_open (struct vm_area_struct *vma)
 {
-	bdbm_msg ("mmap_open: virt %lx, phys %lx\n",
-		vma->vm_start, 
-		vma->vm_pgoff << PAGE_SHIFT);
+	bdbm_msg ("mmap_open: virt %lx, phys %lx",
+		vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
 }
 
 void mmap_close (struct vm_area_struct *vma)
@@ -515,12 +484,9 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 	}
 
 	if (size > s->mmap_shared_size) {
-		bdbm_warning ("size > s->mmap_shared_size:\
-			%llu > %llu", size, s->mmap_shared_size);
+		bdbm_warning ("size > s->mmap_shared_size: %llu > %llu", size, s->mmap_shared_size);
 		return -EINVAL;
 	}
-
-	bdbm_warning ("size: %llu, s->mmap_shared_size: %llu", size, s->mmap_shared_size);
 
 	vma->vm_page_prot = pgprot_noncached (vma->vm_page_prot);
 	vma->vm_pgoff = __pa(s->mmap_shared) >> PAGE_SHIFT;

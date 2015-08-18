@@ -178,6 +178,10 @@ uint32_t hlm_buf_make_req (
 		bdbm_error ("it should not be happened!");
 		bdbm_bug_on (1);
 	} 
+
+	while (bdbm_queue_get_nr_items (p->q) >= 256) {
+		bdbm_thread_yield ();
+	}
 	
 	/* put a request into Q */
 	if ((ret = bdbm_queue_enqueue (p->q, 0, (void*)r))) {

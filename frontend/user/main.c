@@ -330,15 +330,15 @@ int main (int argc, char** argv)
 	pthread_t thread[NUM_THREADS];
 	int thread_args[NUM_THREADS];
 
-	bdbm_msg ("run ftlib... (%d)", sizeof (struct bdbm_llm_req_t));
+	bdbm_msg ("[main] run ftlib... (%d)", sizeof (struct bdbm_llm_req_t));
 
-	bdbm_msg ("initialize bdbm_drv");
+	bdbm_msg ("[main] initialize bdbm_drv");
 	if (bdbm_drv_init () == -1) {
-		bdbm_msg ("initialization failed");
+		bdbm_msg ("[main] initialization failed");
 		return -1;
 	}
 
-	bdbm_msg ("run some simulation");
+	bdbm_msg ("[main] run some simulation");
 	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 		thread_args[loop_thread] = loop_thread;
 		pthread_create (&thread[loop_thread], NULL, 
@@ -346,15 +346,18 @@ int main (int argc, char** argv)
 			(void*)&thread_args[loop_thread]);
 	}
 
-	bdbm_msg ("wait for threads to end...");
+	bdbm_msg ("[main] wait for threads to end...");
 	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 		pthread_join (
 			thread[loop_thread], NULL
 		);
 	}
 
-	bdbm_msg ("destroy bdbm_drv");
+	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_exit ();
+
+	bdbm_msg ("[main] done");
+	for (;;);
 
 	return 0;
 }

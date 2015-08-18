@@ -218,7 +218,7 @@ uint32_t dm_proxy_make_req (
 			if (r->kpg_flags != NULL) 
 				ior.kpg_flags[loop] = r->kpg_flags[loop];
 			else
-				ior.kpg_flags[loop] = 0x00;
+				ior.kpg_flags[loop] = 0; /* not used */
 			memcpy (p->punit_main_pages[punit_id] + (loop * KERNEL_PAGE_SIZE), 
 				r->pptr_kpgs[loop], KERNEL_PAGE_SIZE);
 		}
