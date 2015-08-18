@@ -285,9 +285,9 @@ void bdbm_drv_exit(void)
 
 
 /*#define NUM_THREADS	100*/
-/*#define NUM_THREADS	20*/
+#define NUM_THREADS	20
 /*#define NUM_THREADS	10*/
-#define NUM_THREADS	1
+/*#define NUM_THREADS	1*/
 
 #include "bdbm_drv.h"
 #include "platform.h"
@@ -300,8 +300,8 @@ void host_thread_fn (void *data)
 	int unique_id = 0;
 	int *val = (int*)(data);
 
-	for (loop = 0; loop < 100000; loop++) {
-		/*for (loop = 0; loop < 1; loop++) {*/
+	for (loop = 0; loop < 10000; loop++) {
+	/*for (loop = 0; loop < 100; loop++) {*/
 		struct bdbm_host_req_t* host_req = NULL;
 
 		host_req = (struct bdbm_host_req_t*)malloc (sizeof (struct bdbm_host_req_t));

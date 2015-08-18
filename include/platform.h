@@ -103,7 +103,7 @@ THE SOFTWARE.
 #include <string.h>
 #include <stdlib.h>
 #define bdbm_malloc(a) malloc(a)
-#define bdbm_zmalloc(a) calloc(a, 1)	/* 1 byte by default */
+#define bdbm_zmalloc(a) calloc(1, a)	/* 1 byte by default */
 #define bdbm_free(a) do { free(a); } while (0)
 #define bdbm_malloc_atomic(a) calloc(1, a) /* 1 byte by default */
 #define bdbm_free_atomic(a) do { free(a); } while (0)

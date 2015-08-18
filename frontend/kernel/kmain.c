@@ -62,12 +62,19 @@ static int init_func_pointers (struct bdbm_drv_info* bdi)
 	struct bdbm_params* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
+#if 0
 	bdi->ptr_dm_inf = setup_risa_device (bdi);
 	if (bdi->ptr_dm_inf == NULL) {
 		bdbm_error ("invalid device interfaces");
 		bdbm_bug_on (1);
 		return -1;
 	}
+#endif
+	if (bdbm_dm_init (bdi) != 0)  {
+		bdbm_error ("bdbm_dm_init failed");
+		return 1;
+	}
+	bdi->ptr_dm_inf = bdbm_dm_get_inf (bdi);
 
 	/* set functions for host */
 	switch (p->driver.host_type) {
@@ -298,6 +305,7 @@ static void __exit bdbm_drv_exit(void)
 			_bdi->ptr_dm_inf->store (_bdi, "/usr/share/bdbm_drv/dm.dat");
 #endif
 		_bdi->ptr_dm_inf->close (_bdi);
+		bdbm_dm_exit (_bdi);
 	}
 
 	bdbm_free_atomic (_bdi);

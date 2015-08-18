@@ -147,7 +147,7 @@ void llm_noq_flush (struct bdbm_drv_info* bdi)
 	uint64_t loop;
 
 	for (loop = 0; loop < p->nr_punits; loop++) {
-		/* FIXIT: it is wired.. */
+		/* FIXME: it is wired.. */
 		bdbm_mutex_lock (&p->punit_locks[loop]);
 		bdbm_mutex_unlock (&p->punit_locks[loop]);
 	}

@@ -17,6 +17,7 @@ risa_dev_ramdrive_timing-y := \
 	../../include/utils/utime.o \
 	../cpp/dm_main.o \
 	../cpp/dm_params.o \
+	../cpp/dm_stub.o \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
 

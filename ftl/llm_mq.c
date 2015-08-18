@@ -105,7 +105,6 @@ int __llm_mq_thread (void* arg)
 		for (loop = 0; loop < p->nr_punits; loop++) {
 			struct bdbm_prior_queue_item_t* qitem = NULL;
 			struct bdbm_llm_req_t* r = NULL;
-			int ret;
 
 			/* if pu is busy, then go to the next pnit */
 			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
