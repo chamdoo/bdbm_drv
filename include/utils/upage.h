@@ -26,29 +26,12 @@ THE SOFTWARE.
 #define _UPAGE_H
 
 #if defined (KERNEL_MODE)
-#error upage.h is not intended for use with KERNEL_MODE
+#error "upage.h is not intended for use with KERNEL_MODE"
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #define GFP_KERNEL	0
 
-inline unsigned long get_zeroed_page (int gfp_mask) {
-	void* ptr_page = NULL;
-
-	ptr_page = (void*)malloc (4096);
-	if (ptr_page == NULL) {
-		printf ("CRITICAL-ERROR: malloc failed at %d%s\n", __LINE__, __FILE__);
-	}
-
-	return (unsigned long)ptr_page;
-}
-
-inline void free_page (unsigned long addr) {
-	void* ptr_page = (void*)addr;
-	free (ptr_page);
-}
+unsigned long get_zeroed_page (int gfp_mask);
+void free_page (unsigned long addr);
 
 #endif
-

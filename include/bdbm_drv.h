@@ -267,12 +267,18 @@ struct bdbm_ftl_inf_t {
 	uint32_t (*invalidate_lpa) (struct bdbm_drv_info* bdi, uint64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (struct bdbm_drv_info* bdi);
 	uint8_t (*is_gc_needed) (struct bdbm_drv_info* bdi);
+
+	/* interfaces for intialization */
 	uint32_t (*scan_badblocks) (struct bdbm_drv_info* bdi);
 	uint32_t (*load) (struct bdbm_drv_info* bdi, const char* fn);
 	uint32_t (*store) (struct bdbm_drv_info* bdi, const char* fn);
 	
-	/* custom interfaces for rsd */
+	/* interfaces for RSD */
 	uint64_t (*get_segno) (struct bdbm_drv_info* bdi, uint64_t lpa);
+
+	/* interfaces for DFTL */
+	struct bdbm_hlm_req_t* (*get_incomp_mapblk) (struct bdbm_drv_info* bdi);
+	struct bdbm_hlm_req_t* (*get_victim_mapblk) (struct bdbm_drv_info* bdi);
 };
 
 

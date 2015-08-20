@@ -20,9 +20,9 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USER_MODE \
 		  -D USE_PMU \
 
-#DMLIB := ../../devices/libdummy/libdummy.a
+DMLIB := ../../devices/libdummy/libdummy.a
 #DMLIB := ../../devices/libramdrive/libramdrive.a
-DMLIB := dm_proxy.c
+#DMLIB := dm_proxy.c
 
 SRCS := \
 	main.c \
@@ -38,11 +38,14 @@ SRCS := \
 	$(FTL)/algo/no_ftl.c \
 	$(FTL)/algo/block_ftl.c \
 	$(FTL)/algo/page_ftl.c \
+	$(FTL)/algo/dftl_map.c \
+	$(FTL)/algo/dftl.c \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(COMMON)/utils/utime.c \
 	$(COMMON)/utils/ufile.c \
 	$(COMMON)/utils/uthread.c \
+	$(COMMON)/utils/upage.c \
 	$(COMMON)/3rd/uilog.c \
 	$(DMLIB)
 
@@ -54,3 +57,4 @@ clean:
 	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd ../../include/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+
