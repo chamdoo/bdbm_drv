@@ -229,7 +229,7 @@ void llm_mq_destroy (bdbm_drv_info_t* bdi)
 		bdbm_free_atomic (p);
 }
 
-uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
+uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
 	uint64_t punit_id;
@@ -240,12 +240,10 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 #endif
 
 	/* obtain the elapsed time taken by FTL algorithms */
-	pmu_update_sw (bdi, llm_req);
+	pmu_update_sw (bdi, r);
 
 	/* get a parallel unit ID */
-	punit_id = llm_req->phyaddr->channel_no * 
-		BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
-		llm_req->phyaddr->chip_no;
+	punit_id = r->phyaddr->punit_id;
 
 	while (bdbm_prior_queue_get_nr_items (p->q) >= 256) {
 		/*yield ();*/
@@ -254,28 +252,29 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 	/* put a request into Q */
 #if defined(QUICK_FIX_FOR_RWM)
-	if (llm_req->req_type == REQTYPE_RMW_READ) {
+	if (r->req_type == REQTYPE_RMW_READ) {
 		/* FIXME: this is a quick fix to support RMW; it must be improved later */
 		/* step 1: put READ first */
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue (
+				p->q, punit_id, r->lpa, (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 
 		/* step 2: put WRITE second with the same LPA */
-		punit_id = llm_req->phyaddr_w.channel_no * 
-			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
-			llm_req->phyaddr_w.chip_no;
-
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		punit_id = r->phyaddr_w.punit_id;
+		if ((ret = bdbm_prior_queue_enqueue (
+				p->q, punit_id, r->lpa, (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+		if ((ret = bdbm_prior_queue_enqueue (
+				p->q, punit_id, r->lpa, (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	}
 #else
-	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, llm_req->lpa, (void*)llm_req))) {
+	if ((ret = bdbm_prior_queue_enqueue (
+			p->q, punit_id, r->lpa, (void*)r))) {
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
 #endif
@@ -296,40 +295,31 @@ void llm_mq_flush (bdbm_drv_info_t* bdi)
 	}
 }
 
-void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
+void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
-	uint64_t punit_id;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
-	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)llm_req->ptr_qitem;
+	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)r->ptr_qitem;
 
-	switch (llm_req->req_type) {
+	switch (r->req_type) {
 	case REQTYPE_RMW_READ:
 		/* get a parallel unit ID */
-		punit_id = llm_req->phyaddr->channel_no * 
-			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
-			llm_req->phyaddr->chip_no;
-
-		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);
 
 		/* change its type to WRITE if req_type is RMW */
-		llm_req->phyaddr = &llm_req->phyaddr_w;
-		llm_req->req_type = REQTYPE_RMW_WRITE;
-
-		punit_id = llm_req->phyaddr->channel_no * 
-			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
-			llm_req->phyaddr->chip_no;
+		r->phyaddr = &r->phyaddr_w;
+		r->req_type = REQTYPE_RMW_WRITE;
 
 #ifdef QUICK_FIX_FOR_RWM
 		bdbm_prior_queue_remove (p->q, qitem);
 #else
 		/* put it to Q again */
-		if (bdbm_prior_queue_move (p->q, punit_id, qitem)) {
+		if (bdbm_prior_queue_move (p->q, r->phyaddr->punit_id, qitem)) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 			bdbm_bug_on (1);
 		}
 #endif
 
-		pmu_inc (bdi, llm_req);
+		pmu_inc (bdi, r);
 
 		/* wake up thread if it sleeps */
 		bdbm_thread_wakeup (p->llm_thread);
@@ -344,21 +334,17 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	case REQTYPE_GC_ERASE:
 	case REQTYPE_TRIM:
 		/* get a parallel unit ID */
-		punit_id = llm_req->phyaddr->channel_no * 
-			BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
-			llm_req->phyaddr->chip_no;
-
 		bdbm_prior_queue_remove (p->q, qitem);
 
 		/* complete a lock */
-		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);
 
 		/* update the elapsed time taken by NAND devices */
-		pmu_update_tot (bdi, llm_req);
-		pmu_inc (bdi, llm_req);
+		pmu_update_tot (bdi, r);
+		pmu_inc (bdi, r);
 
 		/* finish a request */
-		bdi->ptr_hlm_inf->end_req (bdi, llm_req);
+		bdi->ptr_hlm_inf->end_req (bdi, r);
 
 #if defined(ENABLE_SEQ_DBG)
 		bdbm_mutex_unlock (&p->dbg_seq);
@@ -366,7 +352,7 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 		break;
 
 	default:
-		bdbm_error ("invalid req-type (%u)", llm_req->req_type);
+		bdbm_error ("invalid req-type (%u)", r->req_type);
 		break;
 	}
 }

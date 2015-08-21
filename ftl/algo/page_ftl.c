@@ -317,6 +317,7 @@ uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_ph
 	ppa->chip_no = b->chip_no;
 	ppa->block_no = b->block_no;
 	ppa->page_no = p->curr_page_ofs;
+	ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 
 	/* check some error cases before returning the physical address */
 	bdbm_bug_on (ppa->channel_no != curr_channel);
@@ -406,12 +407,14 @@ uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr
 		ppa->chip_no = 0;
 		ppa->block_no = 0;
 		ppa->page_no = 0;
+		ppa->punit_id = 0;
 		ret = 1;
 	} else {
 		ppa->channel_no = me->phyaddr.channel_no;
 		ppa->chip_no = me->phyaddr.chip_no;
 		ppa->block_no = me->phyaddr.block_no;
 		ppa->page_no = me->phyaddr.page_no;
+		ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 		ret = 0;
 	}
 

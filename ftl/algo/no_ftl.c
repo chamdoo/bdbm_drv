@@ -93,6 +93,7 @@ uint32_t bdbm_no_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t
 	ppa->block_no = lpa >> (log2_pages);
 	ppa->block_no = ppa->block_no & (nand_params->nr_blocks_per_chip - 1);
 	ppa->page_no = lpa & (nand_params->nr_pages_per_block - 1);
+	ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 
 	return 0;
 }

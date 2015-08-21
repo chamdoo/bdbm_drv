@@ -126,6 +126,7 @@ enum BDBM_REQTYPE {
 
 /* a physical address */
 typedef struct {
+	uint64_t punit_id;
 	uint64_t channel_no;
 	uint64_t chip_no;
 	uint64_t block_no;

@@ -49,7 +49,7 @@ THE SOFTWARE.
 extern bdbm_dm_inf_t _bdbm_dm_inf; 
 extern bdbm_drv_info_t* _bdi_dm; 
 
-void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
 typedef struct {
 	wait_queue_head_t pollwq;
@@ -84,10 +84,10 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 };
 
 
-void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
+void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
-	uint64_t punit_id = GET_PUNIT_ID (bdi, req->phyaddr);
+	uint64_t punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);

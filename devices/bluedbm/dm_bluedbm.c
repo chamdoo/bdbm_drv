@@ -452,13 +452,9 @@ void __copy_dma_to_bio (
 	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;
-	uint32_t punit_id;
-
-	punit_id = r->phyaddr->channel_no * 
-		np->nr_chips_per_channel + r->phyaddr->chip_no;
 
 	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->rbuf[punit_id];
+	ptr_dma_addr = (uint8_t*)priv->rbuf[r->phyaddr->punit_id];
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_pages; loop++) {
@@ -494,13 +490,9 @@ void __copy_bio_to_dma (
  	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;
-	uint32_t punit_id;
-
-	punit_id = r->phyaddr->channel_no * 
-		np->nr_chips_per_channel + r->phyaddr->chip_no;
 
 	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->wbuf[punit_id];
+	ptr_dma_addr = (uint8_t*)priv->wbuf[r->phyaddr->punit_id];
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_pages; loop++) {
@@ -521,22 +513,19 @@ void __copy_bio_to_dma (
 
 uint32_t dm_bluedbm_make_req (
 	bdbm_drv_info_t* bdi, 
-	bdbm_llm_req_t* ptr_llm_req)
+	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	bdbm_phyaddr_t* phyaddr = ptr_llm_req->phyaddr;
 	unsigned long flags;
 	uint32_t punit_id;
 
-	if (ptr_llm_req->req_type == REQTYPE_READ_DUMMY) {
-		_bdi_dm->ptr_dm_inf->end_req (bdi, ptr_llm_req);
+	if (r->req_type == REQTYPE_READ_DUMMY) {
+		_bdi_dm->ptr_dm_inf->end_req (bdi, r);
 		return 0;
 	}
 
 	/* check punit (= tags) */
-	punit_id = phyaddr->channel_no * 
-		np->nr_chips_per_channel + phyaddr->chip_no;
+	punit_id = r->phyaddr->punit_id;
 
 	spin_lock_irqsave (&priv->lock, flags);
 	if (priv->llm_reqs[punit_id] != NULL) {
@@ -544,28 +533,34 @@ uint32_t dm_bluedbm_make_req (
 		bdbm_error ("punit_id (%u) is busy...", punit_id);
 		bdbm_bug_on (1);
 	} else
-		priv->llm_reqs[punit_id] = ptr_llm_req;
+		priv->llm_reqs[punit_id] = r;
 	spin_unlock_irqrestore (&priv->lock, flags);
 
 #ifdef BDBM_DBG
-	switch (ptr_llm_req->req_type) {
+	switch (r->req_type) {
 	case REQTYPE_WRITE:
-		bdbm_msg ("[W-NM] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[W-NM] %llu (%llu,%llu,%llu,%llu)",
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	case REQTYPE_RMW_WRITE:
-		bdbm_msg ("[W-RW] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[W-RW] %llu (%llu,%llu,%llu,%llu)", 
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	case REQTYPE_GC_WRITE:
-		bdbm_msg ("[W-GC] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[W-GC] %llu (%llu,%llu,%llu,%llu)", 
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	case REQTYPE_READ:
-		bdbm_msg ("[R-NM] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[R-NM] %llu (%llu,%llu,%llu,%llu)", 
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	case REQTYPE_RMW_READ:
-		bdbm_msg ("[R-RW] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[R-RW] %llu (%llu,%llu,%llu,%llu)", 
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	case REQTYPE_GC_READ:
-		bdbm_msg ("[R-GC] %llu (%llu,%llu,%llu,%llu)", ptr_llm_req->lpa,phyaddr->channel_no,phyaddr->chip_no,phyaddr->block_no,phyaddr->page_no);
+		bdbm_msg ("[R-GC] %llu (%llu,%llu,%llu,%llu)", 
+			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
 		break;
 	default:
 		break;
@@ -573,17 +568,17 @@ uint32_t dm_bluedbm_make_req (
 #endif
 
 	/* submit reqs to the device */
-	switch (ptr_llm_req->req_type) {
+	switch (r->req_type) {
 	case REQTYPE_WRITE:
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_GC_WRITE:
-		__copy_bio_to_dma (bdi, ptr_llm_req);
+		__copy_bio_to_dma (bdi, r);
 		FlashRequest_writePage (
 			&priv->intarr[3], 
-			phyaddr->channel_no, 
-			phyaddr->chip_no, 
-			phyaddr->block_no+BLKOFS, 
-			phyaddr->page_no, 
+			r->phyaddr->channel_no, 
+			r->phyaddr->chip_no, 
+			r->phyaddr->block_no+BLKOFS, 
+			r->phyaddr->page_no, 
 			punit_id);
 		break;
 
@@ -592,19 +587,19 @@ uint32_t dm_bluedbm_make_req (
 	case REQTYPE_GC_READ:
 		FlashRequest_readPage (
 			&priv->intarr[3], 
-			phyaddr->channel_no, 
-			phyaddr->chip_no, 
-			phyaddr->block_no+BLKOFS, 
-			phyaddr->page_no, 
+			r->phyaddr->channel_no, 
+			r->phyaddr->chip_no, 
+			r->phyaddr->block_no+BLKOFS, 
+			r->phyaddr->page_no, 
 			punit_id);
 		break;
 
 	case REQTYPE_GC_ERASE:
 		FlashRequest_eraseBlock (
 			&priv->intarr[3], 
-			phyaddr->channel_no, 
-			phyaddr->chip_no, 
-			phyaddr->block_no+BLKOFS, 
+			r->phyaddr->channel_no, 
+			r->phyaddr->chip_no, 
+			r->phyaddr->block_no+BLKOFS, 
 			punit_id);
 		break;
 
@@ -615,9 +610,9 @@ uint32_t dm_bluedbm_make_req (
 	return 0;
 }
 
-void dm_bluedbm_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
+void dm_bluedbm_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
-	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
+	bdi->ptr_llm_inf->end_req (bdi, r);
 }
 
 uint32_t dm_bluedbm_load (bdbm_drv_info_t* bdi, const char* fn)

@@ -302,6 +302,7 @@ uint32_t bdbm_block_ftl_get_ppa (
 	ppa->chip_no = e->chip_no;
 	ppa->block_no = e->block_no;
 	ppa->page_no = page_ofs;
+	ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 
 	return 0;
 }
@@ -353,6 +354,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = e->chip_no;
 			ppa->block_no = e->block_no;
 			ppa->page_no = page_ofs;
+			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 
 			if ((e->rw_pg_ofs + 1) != page_ofs) {
@@ -368,6 +370,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = e->chip_no;
 			ppa->block_no = e->block_no;
 			ppa->page_no = page_ofs;
+			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 
 			problem_seg_no = segment_no;
@@ -400,6 +403,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = b->chip_no;
 			ppa->block_no = b->block_no;
 			ppa->page_no = page_ofs;
+			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 		} else {
 			bdbm_error ("oops! bdbm_abm_get_free_block_prepare failed (%llu %llu)", channel_no, chip_no);
