@@ -44,7 +44,7 @@ THE SOFTWARE.
 
 
 /* interface for dm */
-struct bdbm_dm_inf_t _bdbm_dm_inf = {
+bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_proxy_probe,
 	.open = dm_proxy_open,
@@ -68,15 +68,15 @@ typedef struct {
 	uint8_t** punit_oob_pages;
 
 	bdbm_spinlock_t lock;
-	struct bdbm_llm_req_t** llm_reqs;
+	bdbm_llm_req_t** llm_reqs;
 } bdbm_dm_proxy_t;
 
 int __dm_proxy_thread (void* arg);
 
 
 uint32_t dm_proxy_probe (
-	struct bdbm_drv_info* bdi, 
-	struct nand_params* params)
+	bdbm_drv_info_t* bdi, 
+	nand_params_t* params)
 {
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	int ret;
@@ -107,7 +107,7 @@ uint32_t dm_proxy_probe (
 	return 0;
 }
 
-uint32_t dm_proxy_open (struct bdbm_drv_info* bdi)
+uint32_t dm_proxy_open (bdbm_drv_info_t* bdi)
 {
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	uint64_t mmap_ofs = 0, loop;
@@ -120,8 +120,8 @@ uint32_t dm_proxy_open (struct bdbm_drv_info* bdi)
 	}
 
 	/* allocate space for llm_reqs */
-	if ((p->llm_reqs = (struct bdbm_llm_req_t**)bdbm_malloc 
-			(sizeof (struct bdbm_llm_req_t*) * p->punit)) == NULL) {
+	if ((p->llm_reqs = (bdbm_llm_req_t**)bdbm_malloc 
+			(sizeof (bdbm_llm_req_t*) * p->punit)) == NULL) {
 		bdbm_warning ("bdbm_malloc () failed");
 		ioctl (p->fd, BDBM_DM_IOCTL_CLOSE, &ret);
 		return 1;
@@ -168,7 +168,7 @@ uint32_t dm_proxy_open (struct bdbm_drv_info* bdi)
 }
 
 void dm_proxy_close (
-	struct bdbm_drv_info* bdi)
+	bdbm_drv_info_t* bdi)
 {
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	int ret;
@@ -181,10 +181,10 @@ void dm_proxy_close (
 }
 
 uint32_t dm_proxy_make_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_llm_req_t* r)
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
 {
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	bdbm_llm_req_ioctl_t ior;
 	int loop, punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
@@ -238,9 +238,9 @@ uint32_t dm_proxy_make_req (
 
 int __dm_proxy_thread (void* arg) 
 {
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
-	struct bdbm_dm_inf_t* dm_inf = (struct bdbm_dm_inf_t*)BDBM_GET_DM_INF(bdi);
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_dm_inf_t* dm_inf = (bdbm_dm_inf_t*)BDBM_GET_DM_INF(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	int nr_kp_per_fp = 1;
 	struct pollfd fds[1];
@@ -270,7 +270,7 @@ int __dm_proxy_thread (void* arg)
 		if (ret > 0) {
 			for (loop = 0; loop < p->punit; loop++) {
 				if (p->ps[loop] == 1) {
-					struct bdbm_llm_req_t* r = NULL;
+					bdbm_llm_req_t* r = NULL;
 
 					/* lookup the llm_reqs array to find a request finished */
 					bdbm_spin_lock (&p->lock);
@@ -310,16 +310,16 @@ int __dm_proxy_thread (void* arg)
 }
 
 void dm_proxy_end_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_llm_req_t* r)
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
 {
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 
 	bdi->ptr_llm_inf->end_req (bdi, r);
 }
 
 uint32_t dm_proxy_load (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	const char* fn)
 {
 	bdbm_warning ("dm_proxy_load is not implemented yet");
@@ -327,7 +327,7 @@ uint32_t dm_proxy_load (
 }
 
 uint32_t dm_proxy_store (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	const char* fn)
 {
 	bdbm_warning ("dm_proxy_store is not implemented yet");
@@ -336,7 +336,7 @@ uint32_t dm_proxy_store (
 
 
 /* functions exported to clients */
-int bdbm_dm_init (struct bdbm_drv_info* bdi)
+int bdbm_dm_init (bdbm_drv_info_t* bdi)
 {
 	bdbm_dm_proxy_t* p = NULL;
 
@@ -363,12 +363,12 @@ int bdbm_dm_init (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-struct bdbm_dm_inf_t* bdbm_dm_get_inf (struct bdbm_drv_info* bdi)
+bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 {
 	return &_bdbm_dm_inf;
 }
 
-void bdbm_dm_exit (struct bdbm_drv_info* bdi) 
+void bdbm_dm_exit (bdbm_drv_info_t* bdi) 
 {
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 

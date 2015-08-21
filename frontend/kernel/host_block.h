@@ -25,17 +25,17 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_HOST_BLOCK_H
 #define _BLUEDBM_HOST_BLOCK_H
 
-extern struct bdbm_host_inf_t _host_block_inf;
+extern bdbm_host_inf_t _host_block_inf;
 
-struct bdbm_host_block_private {
+typedef struct {
 	uint64_t nr_host_reqs;
 	bdbm_spinlock_t lock;
-};
+} bdbm_host_block_private_t;
 
-uint32_t host_block_open (struct bdbm_drv_info* bdi);
-void host_block_close (struct bdbm_drv_info* bdi);
-void host_block_make_req (struct bdbm_drv_info* bdi, void* req);
-void host_block_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
+uint32_t host_block_open (bdbm_drv_info_t* bdi);
+void host_block_close (bdbm_drv_info_t* bdi);
+void host_block_make_req (bdbm_drv_info_t* bdi, void* req);
+void host_block_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 
 #endif
 

@@ -42,7 +42,7 @@ THE SOFTWARE.
 
 
 /* interface for dm */
-struct bdbm_dm_inf_t _bdbm_dm_inf = {
+bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_ramdrive_probe,
 	.open = dm_ramdrive_open,
@@ -55,22 +55,22 @@ struct bdbm_dm_inf_t _bdbm_dm_inf = {
 
 /* private data structure for dm */
 struct dm_ramssd_private {
-	struct dev_ramssd_info *ramssd;
+	dev_ramssd_info_t *ramssd;
 };
 
 /* global data structure */
-extern struct bdbm_drv_info* _bdi_dm;
+extern bdbm_drv_info_t* _bdi_dm;
 
 /* interrupt handler */
 static void __dm_ramdrive_ih (void* arg)
 {
-	struct bdbm_llm_req_t* ptr_llm_req = (struct bdbm_llm_req_t*)arg;
-	struct bdbm_drv_info* bdi = _bdi_dm;
+	bdbm_llm_req_t* ptr_llm_req = (bdbm_llm_req_t*)arg;
+	bdbm_drv_info_t* bdi = _bdi_dm;
 
 	bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
 }
 
-static void __dm_setup_device_params (struct nand_params* params)
+static void __dm_setup_device_params (nand_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -111,7 +111,7 @@ static void __dm_setup_device_params (struct nand_params* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_ramdrive_probe (struct bdbm_drv_info* bdi, struct nand_params* params)
+uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
 {
 	struct dm_ramssd_private* p = NULL;
 
@@ -146,7 +146,7 @@ fail:
 	return -1;
 }
 
-uint32_t dm_ramdrive_open (struct bdbm_drv_info* bdi)
+uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi)
 {
 	struct dm_ramssd_private * p;
 
@@ -157,7 +157,7 @@ uint32_t dm_ramdrive_open (struct bdbm_drv_info* bdi)
 	return dev_ramssd_is_init (p->ramssd);
 }
 
-void dm_ramdrive_close (struct bdbm_drv_info* bdi)
+void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 {
 	struct dm_ramssd_private* p; 
 
@@ -170,7 +170,7 @@ void dm_ramdrive_close (struct bdbm_drv_info* bdi)
 	bdbm_free_atomic (p);
 }
 
-uint32_t dm_ramdrive_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	uint32_t ret;
 	struct dm_ramssd_private* p; 
@@ -185,7 +185,7 @@ uint32_t dm_ramdrive_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t*
 	return ret;
 }
 
-void dm_ramdrive_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	bdbm_bug_on (ptr_llm_req == NULL);
 
@@ -193,7 +193,7 @@ void dm_ramdrive_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_
 }
 
 /* for snapshot */
-uint32_t dm_ramdrive_load (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_ramdrive_load (bdbm_drv_info_t* bdi, const char* fn)
 {	
 	struct dm_ramssd_private * p = 
 		(struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;
@@ -201,7 +201,7 @@ uint32_t dm_ramdrive_load (struct bdbm_drv_info* bdi, const char* fn)
 	return dev_ramssd_load (p->ramssd, fn);
 }
 
-uint32_t dm_ramdrive_store (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_ramdrive_store (bdbm_drv_info_t* bdi, const char* fn)
 {
 	struct dm_ramssd_private * p = 
 		(struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;

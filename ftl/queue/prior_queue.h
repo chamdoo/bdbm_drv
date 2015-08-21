@@ -31,40 +31,40 @@ enum BDBM_PRIOR_QUEUE_SIZE {
 	INFINITE_PRIOR_QUEUE = -1,
 };
 
-struct bdbm_prior_queue_item_t {
+typedef struct {
 	struct list_head list; /* list header */
 	void* ptr_req;
 	uint64_t lpa;
 	uint64_t tag;
 	uint8_t lock;
-};
+} bdbm_prior_queue_item_t;
 
-struct bdbm_prior_lpa_item_t {
+typedef struct {
 	struct list_head list;	/* list header */
 	uint64_t lpa;
 	uint64_t cur_tag;
 	uint64_t max_tag;
 	UT_hash_handle hh;	/* hash header */
-};
+} bdbm_prior_lpa_item_t;
 
-struct bdbm_prior_queue_t {
+typedef struct {
 	uint64_t nr_queues;
 	int64_t max_size;
 	int64_t qic; /* queue item count */
 	bdbm_spinlock_t lock; /* queue lock */
 	struct list_head* qlh; /* queue list header */
- 	struct bdbm_prior_lpa_item_t* hash_lpa;	/* lpa hash */
-};
+ 	bdbm_prior_lpa_item_t* hash_lpa;	/* lpa hash */
+} bdbm_prior_queue_t;
 
-struct bdbm_prior_queue_t* bdbm_prior_queue_create (uint64_t nr_queues, int64_t size);
-void bdbm_prior_queue_destroy (struct bdbm_prior_queue_t* mq);
-uint8_t bdbm_prior_queue_enqueue (struct bdbm_prior_queue_t* mq, uint64_t qid, uint64_t lpa, void* req);
-void* bdbm_prior_queue_dequeue (struct bdbm_prior_queue_t* mq, uint64_t qid, struct bdbm_prior_queue_item_t** out_q);
-uint8_t bdbm_prior_queue_remove (struct bdbm_prior_queue_t* mq, struct bdbm_prior_queue_item_t* q);
-uint8_t bdbm_prior_queue_move (struct bdbm_prior_queue_t* mq, uint64_t quid, struct bdbm_prior_queue_item_t* q);
-uint8_t bdbm_prior_queue_is_full (struct bdbm_prior_queue_t* mq);
-uint8_t bdbm_prior_queue_is_empty (struct bdbm_prior_queue_t* mq, uint64_t qid);
-uint8_t bdbm_prior_queue_is_all_empty (struct bdbm_prior_queue_t* mq);
-uint64_t bdbm_prior_queue_get_nr_items (struct bdbm_prior_queue_t* mq);
+bdbm_prior_queue_t* bdbm_prior_queue_create (uint64_t nr_queues, int64_t size);
+void bdbm_prior_queue_destroy (bdbm_prior_queue_t* mq);
+uint8_t bdbm_prior_queue_enqueue (bdbm_prior_queue_t* mq, uint64_t qid, uint64_t lpa, void* req);
+void* bdbm_prior_queue_dequeue (bdbm_prior_queue_t* mq, uint64_t qid, bdbm_prior_queue_item_t** out_q);
+uint8_t bdbm_prior_queue_remove (bdbm_prior_queue_t* mq, bdbm_prior_queue_item_t* q);
+uint8_t bdbm_prior_queue_move (bdbm_prior_queue_t* mq, uint64_t quid, bdbm_prior_queue_item_t* q);
+uint8_t bdbm_prior_queue_is_full (bdbm_prior_queue_t* mq);
+uint8_t bdbm_prior_queue_is_empty (bdbm_prior_queue_t* mq, uint64_t qid);
+uint8_t bdbm_prior_queue_is_all_empty (bdbm_prior_queue_t* mq);
+uint64_t bdbm_prior_queue_get_nr_items (bdbm_prior_queue_t* mq);
 
 #endif

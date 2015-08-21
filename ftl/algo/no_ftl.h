@@ -25,15 +25,15 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_FTL_NOFTL_H
 #define _BLUEDBM_FTL_NOFTL_H
 
-extern struct bdbm_ftl_inf_t _ftl_no_ftl;
+extern bdbm_ftl_inf_t _ftl_no_ftl;
 
-uint32_t bdbm_no_ftl_create (struct bdbm_drv_info* bdi);
-void bdbm_no_ftl_destroy (struct bdbm_drv_info* bdi);
-uint32_t bdbm_no_ftl_get_free_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-uint32_t bdbm_no_ftl_get_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-uint32_t bdbm_no_ftl_map_lpa_to_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ptr_phyaddr);
-uint32_t bdbm_no_ftl_invalidate_lpa (struct bdbm_drv_info* bdi, uint64_t lpa, uint64_t len);
-uint32_t bdbm_no_ftl_do_gc (struct bdbm_drv_info* bdi); /* TODO */
+uint32_t bdbm_no_ftl_create (bdbm_drv_info_t* bdi);
+void bdbm_no_ftl_destroy (bdbm_drv_info_t* bdi);
+uint32_t bdbm_no_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_no_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_no_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr);
+uint32_t bdbm_no_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len);
+uint32_t bdbm_no_ftl_do_gc (bdbm_drv_info_t* bdi); /* TODO */
 
 #endif /* _BLUEDBM_FTL_NOFTL_H */
 

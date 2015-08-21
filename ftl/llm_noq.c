@@ -42,7 +42,7 @@ THE SOFTWARE.
 
 
 /* llm interface */
-struct bdbm_llm_inf_t _llm_noq_inf = {
+bdbm_llm_inf_t _llm_noq_inf = {
 	.ptr_private = NULL,
 	.create = llm_noq_create,
 	.destroy = llm_noq_destroy,
@@ -53,10 +53,10 @@ struct bdbm_llm_inf_t _llm_noq_inf = {
 
 struct bdbm_llm_noq_private {
 	uint64_t nr_punits;
-	bdbm_mutex* punit_locks;
+	bdbm_mutex_t* punit_locks;
 };
 
-uint32_t llm_noq_create (struct bdbm_drv_info* bdi)
+uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_noq_private* p;
 	uint64_t loop;
@@ -74,8 +74,8 @@ uint32_t llm_noq_create (struct bdbm_drv_info* bdi)
 		bdi->ptr_bdbm_params->nand.nr_chips_per_channel;
 
 	/* create completion locks for parallel units */
-	if ((p->punit_locks = (bdbm_mutex*)bdbm_malloc_atomic
-			(sizeof (bdbm_mutex) * p->nr_punits)) == NULL) {
+	if ((p->punit_locks = (bdbm_mutex_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_mutex_t) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		bdbm_free_atomic (p);
 		return -1;
@@ -95,7 +95,7 @@ uint32_t llm_noq_create (struct bdbm_drv_info* bdi)
 /* NOTE: we assume that all of the host requests are completely served.
  * the host adapter must be first closed before this function is called.
  * if not, it would work improperly. */
-void llm_noq_destroy (struct bdbm_drv_info* bdi)
+void llm_noq_destroy (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_noq_private* p;
 	uint64_t loop;
@@ -112,7 +112,7 @@ void llm_noq_destroy (struct bdbm_drv_info* bdi)
 	bdbm_free_atomic (p);
 }
 
-uint32_t llm_noq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
 	uint64_t punit_id;
@@ -141,7 +141,7 @@ uint32_t llm_noq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm
 	return ret;
 }
 
-void llm_noq_flush (struct bdbm_drv_info* bdi)
+void llm_noq_flush (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_noq_private* p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
 	uint64_t loop;
@@ -153,7 +153,7 @@ void llm_noq_flush (struct bdbm_drv_info* bdi)
 	}
 }
 
-void llm_noq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	struct bdbm_llm_noq_private* p;
 	uint64_t punit_id;

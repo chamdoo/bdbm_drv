@@ -28,14 +28,14 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <stdint.h>
 
-extern struct bdbm_dm_inf_t _bdbm_dm_inf;
+extern bdbm_dm_inf_t _bdbm_dm_inf;
 
-uint32_t dm_user_probe (struct bdbm_drv_info* bdi, struct nand_params* params);
-uint32_t dm_user_open (struct bdbm_drv_info* bdi);
-void dm_user_close (struct bdbm_drv_info* bdi);
-uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-uint32_t dm_user_load (struct bdbm_drv_info* bdi, const char* fn);
-uint32_t dm_user_store (struct bdbm_drv_info* bdi, const char* fn);
+uint32_t dm_user_probe (bdbm_drv_info_t* bdi, nand_params_t* params);
+uint32_t dm_user_open (bdbm_drv_info_t* bdi);
+void dm_user_close (bdbm_drv_info_t* bdi);
+uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+void dm_user_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_user_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t dm_user_store (bdbm_drv_info_t* bdi, const char* fn);
 
 #endif

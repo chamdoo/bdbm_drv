@@ -26,13 +26,13 @@ THE SOFTWARE.
 #define _BLUEDBM_HLM_NO_BUFFER_H
 
 /* export hlm_nobuf interface */
-extern struct bdbm_hlm_inf_t _hlm_nobuf_inf;
+extern bdbm_hlm_inf_t _hlm_nobuf_inf;
 
 /* functions */
-uint32_t hlm_nobuf_create (struct bdbm_drv_info* bdi);
-void hlm_nobuf_destroy (struct bdbm_drv_info* bdi);
-uint32_t hlm_nobuf_make_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
-void hlm_nobuf_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
+uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi);
+void hlm_nobuf_destroy (bdbm_drv_info_t* bdi);
+uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 
 #endif
 

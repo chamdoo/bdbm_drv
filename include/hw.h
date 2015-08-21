@@ -31,8 +31,8 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 
-int bdbm_dm_init (struct bdbm_drv_info* bdi);
-struct bdbm_dm_inf_t* bdbm_dm_get_inf (struct bdbm_drv_info* bdi);
-void bdbm_dm_exit (struct bdbm_drv_info* bdi);
+int bdbm_dm_init (bdbm_drv_info_t* bdi);
+bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi);
+void bdbm_dm_exit (bdbm_drv_info_t* bdi);
 
 #endif

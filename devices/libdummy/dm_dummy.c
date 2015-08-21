@@ -39,7 +39,7 @@ THE SOFTWARE.
 
 /*#include "utils/uthread.h"*/
 
-struct bdbm_dm_inf_t _bdbm_dm_inf = {
+bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_user_probe,
 	.open = dm_user_open,
@@ -52,13 +52,12 @@ struct bdbm_dm_inf_t _bdbm_dm_inf = {
 
 /* private data structure for dm */
 struct dm_user_private {
-	struct dev_ramssd_info *ramssd;
 	bdbm_spinlock_t dm_lock;
 	uint64_t w_cnt;
 	uint64_t w_cnt_done;
 };
 
-static void __dm_setup_device_params (struct nand_params* params)
+static void __dm_setup_device_params (nand_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -99,7 +98,7 @@ static void __dm_setup_device_params (struct nand_params* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_user_probe (struct bdbm_drv_info* bdi, struct nand_params* params)
+uint32_t dm_user_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
 {
 	struct dm_user_private* p = NULL;
 
@@ -127,7 +126,7 @@ fail:
 	return -1;
 }
 
-uint32_t dm_user_open (struct bdbm_drv_info* bdi)
+uint32_t dm_user_open (bdbm_drv_info_t* bdi)
 {
 	struct dm_user_private * p;
 
@@ -138,7 +137,7 @@ uint32_t dm_user_open (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void dm_user_close (struct bdbm_drv_info* bdi)
+void dm_user_close (bdbm_drv_info_t* bdi)
 {
 	struct dm_user_private* p; 
 
@@ -150,7 +149,7 @@ void dm_user_close (struct bdbm_drv_info* bdi)
 	bdbm_free_atomic (p);
 }
 
-uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	struct dm_user_private* p; 
 
@@ -166,7 +165,7 @@ uint32_t dm_user_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr
 	return 0;
 }
 
-void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+void dm_user_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	struct dm_user_private* p; 
 
@@ -180,7 +179,7 @@ void dm_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_
 }
 
 /* for snapshot */
-uint32_t dm_user_load (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_user_load (bdbm_drv_info_t* bdi, const char* fn)
 {	
 	struct dm_user_private * p = 
 		(struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
@@ -190,7 +189,7 @@ uint32_t dm_user_load (struct bdbm_drv_info* bdi, const char* fn)
 	return 0;
 }
 
-uint32_t dm_user_store (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_user_store (bdbm_drv_info_t* bdi, const char* fn)
 {
 	struct dm_user_private * p = 
 		(struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;

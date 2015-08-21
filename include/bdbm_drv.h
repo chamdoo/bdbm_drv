@@ -54,8 +54,10 @@ THE SOFTWARE.
 #define BDBM_SIZE_MB(size) (size/BDBM_MB)
 #define BDBM_SIZE_GB(size) (size/BDBM_GB)
 
+typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
+
 /* for performance monitoring */
-struct bdbm_perf_monitor {
+typedef struct {
 	bdbm_spinlock_t pmu_lock;
 
 	atomic64_t exetime_us;
@@ -87,19 +89,7 @@ struct bdbm_perf_monitor {
 
 	atomic64_t* util_r;
 	atomic64_t* util_w;
-};
-
-/* the main data-structure for bdbm_drv */
-struct bdbm_drv_info {
-	void* private_data;
-	struct bdbm_params* ptr_bdbm_params;
-	struct bdbm_host_inf_t* ptr_host_inf; 
-	struct bdbm_dm_inf_t* ptr_dm_inf;
-	struct bdbm_hlm_inf_t* ptr_hlm_inf;
-	struct bdbm_llm_inf_t* ptr_llm_inf;
-	struct bdbm_ftl_inf_t* ptr_ftl_inf;
-	struct bdbm_perf_monitor pm;
-};
+} bdbm_perf_monitor_t;
 
 #define BDBM_GET_HOST_INF(bdi) bdi->ptr_host_inf
 #define BDBM_GET_DM_INF(bdi) bdi->ptr_dm_inf
@@ -135,12 +125,12 @@ enum BDBM_REQTYPE {
 };
 
 /* a physical address */
-struct bdbm_phyaddr_t {
+typedef struct {
 	uint64_t channel_no;
 	uint64_t chip_no;
 	uint64_t block_no;
 	uint64_t page_no;
-};
+} bdbm_phyaddr_t;
 
 /* a high-level memory manager request */
 enum BDBM_HLM_MEMFLAG {
@@ -153,7 +143,7 @@ enum BDBM_HLM_MEMFLAG {
 };
 
 /* a high-level request */
-struct bdbm_hlm_req_t {
+typedef struct {
 	uint64_t uniq_id; /* for debugging */
 	uint32_t req_type; /* read, write, or trim */
 	uint64_t lpa; /* logical page address */
@@ -167,35 +157,21 @@ struct bdbm_hlm_req_t {
 	bdbm_spinlock_t lock; /* spinlock */
 
 	/* for performance monitoring */
-	struct bdbm_stopwatch sw;
+	bdbm_stopwatch_t sw;
 
 	/* temp */
 	uint8_t* org_kpg_flags;
 	uint8_t** org_pptr_kpgs; /* data for individual kernel pages */
 	/* end */
-};
-
-/* a high-level request for gc */
-struct bdbm_hlm_req_gc_t {
-	uint32_t req_type;
-	uint64_t nr_done_reqs;
-	uint64_t nr_reqs;
-	struct bdbm_llm_req_t* llm_reqs;
-#ifdef USE_COMPLETION
-	bdbm_completion gc_done;
-#else
-	bdbm_mutex gc_done;
-	/*struct pthread_mutex_t gc_done;*/
-#endif
-};
+} bdbm_hlm_req_t;
 
 /* a low-level request */
-struct bdbm_llm_req_t {
+typedef struct {
 	uint32_t req_type; /* read, write, or erase */
 	uint64_t lpa; /* logical page address */
-	struct bdbm_phyaddr_t* phyaddr;	/* current */
-	struct bdbm_phyaddr_t phyaddr_r; /* for reads */
-	struct bdbm_phyaddr_t phyaddr_w; /* for writes */
+	bdbm_phyaddr_t* phyaddr;	/* current */
+	bdbm_phyaddr_t phyaddr_r; /* for reads */
+	bdbm_phyaddr_t phyaddr_w; /* for writes */
 	uint8_t* kpg_flags;
 	uint8_t** pptr_kpgs; /* from bdbm_hlm_req_t */
 	uint8_t* ptr_oob;
@@ -203,117 +179,142 @@ struct bdbm_llm_req_t {
 	struct list_head list;	/* for list management */
 	void* ptr_qitem;
 	uint8_t ret;	/* old for GC */
-};
+} bdbm_llm_req_t;
+
+/* a high-level request for gc */
+typedef struct {
+	uint32_t req_type;
+	uint64_t nr_done_reqs;
+	uint64_t nr_reqs;
+	bdbm_llm_req_t* llm_reqs;
+#ifdef USE_COMPLETION
+	bdbm_completion gc_done;
+#else
+	bdbm_mutex_t gc_done;
+	/*struct pthread_mutex_t gc_done;*/
+#endif
+} bdbm_hlm_req_gc_t;
 
 /* a generic host interface */
-struct bdbm_host_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*open) (struct bdbm_drv_info* bdi);
-	void (*close) (struct bdbm_drv_info* bdi);
-	void (*make_req) (struct bdbm_drv_info* bdi, void* req);
-	void (*end_req) (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
-};
+	uint32_t (*open) (bdbm_drv_info_t* bdi);
+	void (*close) (bdbm_drv_info_t* bdi);
+	void (*make_req) (bdbm_drv_info_t* bdi, void* req);
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+} bdbm_host_inf_t;
 
 /* a generic high-level memory manager interface */
-struct bdbm_hlm_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*create) (struct bdbm_drv_info* bdi);
-	void (*destroy) (struct bdbm_drv_info* bdi);
-	uint32_t (*make_req) (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
-	void (*end_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-};
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+} bdbm_hlm_inf_t;
 
 /* a generic low-level memory manager interface */
-struct bdbm_llm_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*create) (struct bdbm_drv_info* bdi);
-	void (*destroy) (struct bdbm_drv_info* bdi);
-	uint32_t (*make_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-	void (*flush) (struct bdbm_drv_info* bdi);
-	void (*end_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-};
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+	void (*flush) (bdbm_drv_info_t* bdi);
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+} bdbm_llm_inf_t;
 
 /* a generic device interface */
-struct bdbm_dm_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*probe) (struct bdbm_drv_info* bdi, struct nand_params* param);
-	uint32_t (*open) (struct bdbm_drv_info* bdi);
-	void (*close) (struct bdbm_drv_info* bdi);
-	uint32_t (*make_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-	void (*end_req) (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-	uint32_t (*load) (struct bdbm_drv_info* bdi, const char* fn);
-	uint32_t (*store) (struct bdbm_drv_info* bdi, const char* fn);
-};
+	uint32_t (*probe) (bdbm_drv_info_t* bdi, nand_params_t* param);
+	uint32_t (*open) (bdbm_drv_info_t* bdi);
+	void (*close) (bdbm_drv_info_t* bdi);
+	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
+	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
+} bdbm_dm_inf_t;
 
 /* a generic queue interface */
-struct bdbm_queue_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*create) (struct bdbm_drv_info* bdi, uint64_t nr_punits, uint64_t nr_items_per_pu);
-	void (*destroy) (struct bdbm_drv_info* bdi);
-	uint32_t (*enqueue) (struct bdbm_drv_info* bdi, uint64_t punit, void* req);
-	void* (*dequeue) (struct bdbm_drv_info* bdi, uint64_t punit);
-	uint8_t (*is_full) (struct bdbm_drv_info* bdi, uint64_t punit);
-	uint8_t (*is_empty) (struct bdbm_drv_info* bdi, uint64_t punit);
-};
+	uint32_t (*create) (bdbm_drv_info_t* bdi, uint64_t nr_punits, uint64_t nr_items_per_pu);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*enqueue) (bdbm_drv_info_t* bdi, uint64_t punit, void* req);
+	void* (*dequeue) (bdbm_drv_info_t* bdi, uint64_t punit);
+	uint8_t (*is_full) (bdbm_drv_info_t* bdi, uint64_t punit);
+	uint8_t (*is_empty) (bdbm_drv_info_t* bdi, uint64_t punit);
+} bdbm_queue_inf_t;
 
 /* a generic FTL interface */
-struct bdbm_ftl_inf_t {
+typedef struct {
 	void* ptr_private;
-	uint32_t (*create) (struct bdbm_drv_info* bdi);
-	void (*destroy) (struct bdbm_drv_info* bdi);
-	uint32_t (*get_free_ppa) (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-	uint32_t (*get_ppa) (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-	uint32_t (*map_lpa_to_ppa) (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-	uint32_t (*invalidate_lpa) (struct bdbm_drv_info* bdi, uint64_t lpa, uint64_t len);
-	uint32_t (*do_gc) (struct bdbm_drv_info* bdi);
-	uint8_t (*is_gc_needed) (struct bdbm_drv_info* bdi);
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len);
+	uint32_t (*do_gc) (bdbm_drv_info_t* bdi);
+	uint8_t (*is_gc_needed) (bdbm_drv_info_t* bdi);
 
 	/* interfaces for intialization */
-	uint32_t (*scan_badblocks) (struct bdbm_drv_info* bdi);
-	uint32_t (*load) (struct bdbm_drv_info* bdi, const char* fn);
-	uint32_t (*store) (struct bdbm_drv_info* bdi, const char* fn);
+	uint32_t (*scan_badblocks) (bdbm_drv_info_t* bdi);
+	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
+	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
 	
 	/* interfaces for RSD */
-	uint64_t (*get_segno) (struct bdbm_drv_info* bdi, uint64_t lpa);
+	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);
 
 	/* interfaces for DFTL */
-	struct bdbm_hlm_req_t* (*get_incomp_mapblk) (struct bdbm_drv_info* bdi);
-	struct bdbm_hlm_req_t* (*get_victim_mapblk) (struct bdbm_drv_info* bdi);
+	bdbm_hlm_req_t* (*get_incomp_mapblk) (bdbm_drv_info_t* bdi);
+	bdbm_hlm_req_t* (*get_victim_mapblk) (bdbm_drv_info_t* bdi);
+} bdbm_ftl_inf_t;
+
+/* the main data-structure for bdbm_drv */
+struct _bdbm_drv_info_t {
+	void* private_data;
+	bdbm_params_t* ptr_bdbm_params;
+	bdbm_host_inf_t* ptr_host_inf; 
+	bdbm_dm_inf_t* ptr_dm_inf;
+	bdbm_hlm_inf_t* ptr_hlm_inf;
+	bdbm_llm_inf_t* ptr_llm_inf;
+	bdbm_ftl_inf_t* ptr_ftl_inf;
+	bdbm_perf_monitor_t pm;
 };
 
-
 /* performance monitor functions */
-void pmu_create (struct bdbm_drv_info* bdi);
-void pmu_destory (struct bdbm_drv_info* bdi);
-void pmu_display (struct bdbm_drv_info* bdi);
+void pmu_create (bdbm_drv_info_t* bdi);
+void pmu_destory (bdbm_drv_info_t* bdi);
+void pmu_display (bdbm_drv_info_t* bdi);
 
-void pmu_inc (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req);
-void pmu_inc_read (struct bdbm_drv_info* bdi);
-void pmu_inc_write (struct bdbm_drv_info* bdi);
-void pmu_inc_rmw_read (struct bdbm_drv_info* bdi);
-void pmu_inc_rmw_write (struct bdbm_drv_info* bdi);
-void pmu_inc_gc (struct bdbm_drv_info* bdi);
-void pmu_inc_gc_erase (struct bdbm_drv_info* bdi);
-void pmu_inc_gc_read (struct bdbm_drv_info* bdi);
-void pmu_inc_gc_write (struct bdbm_drv_info* bdi);
-void pmu_inc_util_r (struct bdbm_drv_info* bdi, uint64_t pid);
-void pmu_inc_util_w (struct bdbm_drv_info* bdi, uint64_t pid);
+void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req);
+void pmu_inc_read (bdbm_drv_info_t* bdi);
+void pmu_inc_write (bdbm_drv_info_t* bdi);
+void pmu_inc_rmw_read (bdbm_drv_info_t* bdi);
+void pmu_inc_rmw_write (bdbm_drv_info_t* bdi);
+void pmu_inc_gc (bdbm_drv_info_t* bdi);
+void pmu_inc_gc_erase (bdbm_drv_info_t* bdi);
+void pmu_inc_gc_read (bdbm_drv_info_t* bdi);
+void pmu_inc_gc_write (bdbm_drv_info_t* bdi);
+void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t pid);
+void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t pid);
 
-void pmu_update_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_r_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_w_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_rmw_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_gc_sw (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw);
+void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw);
 
-void pmu_update_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_r_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_w_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_rmw_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
+void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 
-void pmu_update_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_r_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_w_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_rmw_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void pmu_update_gc_tot (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw);
+void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw);
 
 #endif /* _BLUEDBM_DRV_H */

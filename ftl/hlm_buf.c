@@ -48,7 +48,7 @@ THE SOFTWARE.
 
 
 /* interface for hlm_buf */
-struct bdbm_hlm_inf_t _hlm_buf_inf = {
+bdbm_hlm_inf_t _hlm_buf_inf = {
 	.ptr_private = NULL,
 	.create = hlm_buf_create,
 	.destroy = hlm_buf_destroy,
@@ -59,10 +59,10 @@ struct bdbm_hlm_inf_t _hlm_buf_inf = {
 
 /* data structures for hlm_buf */
 struct bdbm_hlm_buf_private {
-	struct bdbm_ftl_inf_t* ptr_ftl_inf;	/* for hlm_nobuff (it must be on top of this structure) */
+	bdbm_ftl_inf_t* ptr_ftl_inf;	/* for hlm_nobuff (it must be on top of this structure) */
 
 	/* for thread management */
-	struct bdbm_queue_t* q;
+	bdbm_queue_t* q;
 	bdbm_thread_t* hlm_thread;
 };
 
@@ -70,9 +70,9 @@ struct bdbm_hlm_buf_private {
 /* kernel thread for _llm_q */
 int __hlm_buf_thread (void* arg)
 {
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
-	struct bdbm_hlm_req_t* r;
+	bdbm_hlm_req_t* r;
 
 	for (;;) {
 		if (bdbm_queue_is_all_empty (p->q)) {
@@ -83,7 +83,7 @@ int __hlm_buf_thread (void* arg)
 
 		/* if nothing is in Q, then go to the next punit */
 		while (!bdbm_queue_is_empty (p->q, 0)) {
-			if ((r = (struct bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
+			if ((r = (bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
 				if (hlm_nobuf_make_req (bdi, r)) {
 					/* if it failed, we directly call 'ptr_host_inf->end_req' */
 					bdi->ptr_host_inf->end_req (bdi, r);
@@ -101,7 +101,7 @@ int __hlm_buf_thread (void* arg)
 }
 
 /* interface functions for hlm_buf */
-uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
+uint32_t hlm_buf_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_buf_private* p;
 
@@ -138,7 +138,7 @@ uint32_t hlm_buf_create (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void hlm_buf_destroy (struct bdbm_drv_info* bdi)
+void hlm_buf_destroy (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)bdi->ptr_hlm_inf->ptr_private;
 
@@ -159,8 +159,8 @@ void hlm_buf_destroy (struct bdbm_drv_info* bdi)
 }
 
 uint32_t hlm_buf_make_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* r)
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* r)
 {
 	uint32_t ret;
 	struct bdbm_hlm_buf_private* p = (struct bdbm_hlm_buf_private*)BDBM_HLM_PRIV(bdi);
@@ -187,8 +187,8 @@ uint32_t hlm_buf_make_req (
 }
 
 void hlm_buf_end_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_llm_req_t* r)
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
 {
 	hlm_nobuf_end_req (bdi, r);
 }

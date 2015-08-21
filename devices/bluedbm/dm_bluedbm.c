@@ -46,8 +46,8 @@ THE SOFTWARE.
 /*#define BDBM_DBG*/
 #define MAX_INDARRAY 4
 
-/*struct bdbm_dm_inf_t _dm_bluedbm_inf = {*/
-struct bdbm_dm_inf_t _bdbm_dm_inf = {
+/*bdbm_dm_inf_t _dm_bluedbm_inf = {*/
+bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,
 	.probe = dm_bluedbm_probe,
 	.open = dm_bluedbm_open,
@@ -74,15 +74,15 @@ struct dm_bluedbm_private {
 
 	/* for tag management */
 	bdbm_spinlock_t lock;
-	struct bdbm_llm_req_t** llm_reqs;
+	bdbm_llm_req_t** llm_reqs;
 	uint8_t** rbuf;
 	uint8_t** wbuf;
 };
 
-extern struct bdbm_drv_info* _bdi_dm;
+extern bdbm_drv_info_t* _bdi_dm;
 
-void __copy_bio_to_dma (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
-void __copy_dma_to_bio (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
+void __copy_bio_to_dma (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+void __copy_dma_to_bio (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
 
 /**
@@ -91,7 +91,7 @@ void __copy_dma_to_bio (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* r);
 void FlashIndicationreadDone_cb (struct PortalInternal *p, const uint32_t tag)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&priv->lock, flags);
@@ -108,7 +108,7 @@ void FlashIndicationreadDone_cb (struct PortalInternal *p, const uint32_t tag)
 void FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag )
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&priv->lock, flags);
@@ -124,7 +124,7 @@ void FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag
 void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status )
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&priv->lock, flags);
@@ -177,7 +177,7 @@ void manual_event (struct dm_bluedbm_private* priv)
 
 int event_handler_fn (void* arg) 
 {
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
 
 	while (1) {
@@ -213,7 +213,7 @@ int connectal_handler_fn (void* arg)
 	#define BDBM_NUM_TAGS 128
 
 	uint32_t t = 0;
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
 
 	uint32_t src_alloc;
@@ -296,7 +296,7 @@ int connectal_handler_fn (void* arg)
 /**
  * the implementation of call-back functions for bdbm_drv
  **/
-static void __dm_setup_device_params (struct nand_params* params)
+static void __dm_setup_device_params (nand_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -336,10 +336,10 @@ static void __dm_setup_device_params (struct nand_params* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi, struct nand_params* params)
+uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
 {
 	struct dm_bluedbm_private* priv = NULL;
-	/*struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);*/
+	/*nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);*/
 	/*uint32_t nr_punit = np->nr_channels * np->nr_chips_per_channel;*/
 	uint32_t nr_punit;
 
@@ -356,8 +356,8 @@ uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi, struct nand_params* params
 
 	/* initialize some internal data structures */
 	bdbm_spin_lock_init (&priv->lock);
-	if ((priv->llm_reqs = (struct bdbm_llm_req_t**)bdbm_zmalloc (
-			sizeof (struct bdbm_llm_req_t*) * nr_punit)) == NULL) {
+	if ((priv->llm_reqs = (bdbm_llm_req_t**)bdbm_zmalloc (
+			sizeof (bdbm_llm_req_t*) * nr_punit)) == NULL) {
 		bdbm_warning ("bdbm_zmalloc failed");
 		goto fail;
 	}
@@ -397,7 +397,7 @@ fail:
 
 /* NOTE: To prevent the mapped-memory from Connectal from being freed,
  * we have to run connectal_handler in a different thread */
-uint32_t dm_bluedbm_open (struct bdbm_drv_info* bdi)
+uint32_t dm_bluedbm_open (bdbm_drv_info_t* bdi)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
 
@@ -412,7 +412,7 @@ uint32_t dm_bluedbm_open (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void dm_bluedbm_close (struct bdbm_drv_info* bdi)
+void dm_bluedbm_close (bdbm_drv_info_t* bdi)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
 
@@ -444,11 +444,11 @@ void dm_bluedbm_close (struct bdbm_drv_info* bdi)
 }
 
 void __copy_dma_to_bio (
-	struct bdbm_drv_info* bdi,
-	struct bdbm_llm_req_t* r)
+	bdbm_drv_info_t* bdi,
+	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;
@@ -486,11 +486,11 @@ void __copy_dma_to_bio (
 }
 
 void __copy_bio_to_dma (
-	struct bdbm_drv_info* bdi,
-	struct bdbm_llm_req_t* r)
+	bdbm_drv_info_t* bdi,
+	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
  	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;
@@ -520,12 +520,12 @@ void __copy_bio_to_dma (
 }
 
 uint32_t dm_bluedbm_make_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_llm_req_t* ptr_llm_req)
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* ptr_llm_req)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_phyaddr_t* phyaddr = ptr_llm_req->phyaddr;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_phyaddr_t* phyaddr = ptr_llm_req->phyaddr;
 	unsigned long flags;
 	uint32_t punit_id;
 
@@ -615,18 +615,18 @@ uint32_t dm_bluedbm_make_req (
 	return 0;
 }
 
-void dm_bluedbm_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+void dm_bluedbm_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }
 
-uint32_t dm_bluedbm_load (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_bluedbm_load (bdbm_drv_info_t* bdi, const char* fn)
 {
 	/* do nothing */
 	return 0;
 }
 
-uint32_t dm_bluedbm_store (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t dm_bluedbm_store (bdbm_drv_info_t* bdi, const char* fn)
 {
 	/* do nothing */
 	return 0;

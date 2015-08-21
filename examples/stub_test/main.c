@@ -35,12 +35,12 @@ THE SOFTWARE.
 /*nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;*/
 int nr_kp_per_fp = 1;
 
-struct bdbm_llm_req_t* create_llm_req_r (void)
+bdbm_llm_req_t* create_llm_req_r (void)
 {
 	int loop = 0;
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 
-	r = (struct bdbm_llm_req_t*)malloc (sizeof (struct bdbm_llm_req_t));
+	r = (bdbm_llm_req_t*)malloc (sizeof (bdbm_llm_req_t));
 
 	/* items to copy */
 	r->req_type = REQTYPE_READ;
@@ -70,12 +70,12 @@ struct bdbm_llm_req_t* create_llm_req_r (void)
 	return r;
 }
 
-struct bdbm_llm_req_t* create_llm_req_w (void)
+bdbm_llm_req_t* create_llm_req_w (void)
 {
 	int loop = 0;
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 
-	r = (struct bdbm_llm_req_t*)malloc (sizeof (struct bdbm_llm_req_t));
+	r = (bdbm_llm_req_t*)malloc (sizeof (bdbm_llm_req_t));
 
 	/* items to copy */
 	r->req_type = REQTYPE_WRITE;
@@ -108,7 +108,7 @@ struct bdbm_llm_req_t* create_llm_req_w (void)
 	return r;
 }
 
-void delete_llm_req (struct bdbm_llm_req_t* r)
+void delete_llm_req (bdbm_llm_req_t* r)
 {
 	int loop = 0;
 
@@ -122,7 +122,7 @@ void delete_llm_req (struct bdbm_llm_req_t* r)
 }
 
 
-struct nand_params np;
+nand_params_t np;
 
 int main2(int argc, char** argv)
 {
@@ -130,7 +130,7 @@ int main2(int argc, char** argv)
 	int ret = 0;
 	struct pollfd fds[1];
 	uint8_t* punit_status = NULL;
-	struct nand_params np;
+	nand_params_t np;
 
 	if ((fd = open (BDBM_DM_IOCTL_DEVNAME, O_RDWR)) < 0) {
 		printf ("error: could not open a character device (re = %d)\n", fd);
@@ -172,7 +172,7 @@ int main2(int argc, char** argv)
 
 	/* check make_req */
 	{
-		struct bdbm_llm_req_t* r;
+		bdbm_llm_req_t* r;
 		uint64_t punit_id;
 		int poll_ret;
 
@@ -201,7 +201,7 @@ int main2(int argc, char** argv)
 
 	/* check make_req */
 	{
-		struct bdbm_llm_req_t* r;
+		bdbm_llm_req_t* r;
 		uint64_t punit_id;
 
 		r = create_llm_req_r ();
@@ -254,7 +254,7 @@ typedef struct {
 	int32_t id;
 } req_thread_t;
 
-struct bdbm_llm_req_t** reqs = NULL;
+bdbm_llm_req_t** reqs = NULL;
 
 void check_thread_fn (void* data)
 {
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
 	pthread_t thread_make_req[NUM_THREADS]; 
 	req_thread_t req_threads[NUM_THREADS];
 
-	reqs = (struct bdbm_llm_req_t**)malloc (nr_punit * sizeof (struct bdbm_llm_req_t*));
+	reqs = (bdbm_llm_req_t**)malloc (nr_punit * sizeof (bdbm_llm_req_t*));
 
 	for (loop = 0; loop < NUM_THREADS; loop++) {
 		req_threads[loop].fd = fd;

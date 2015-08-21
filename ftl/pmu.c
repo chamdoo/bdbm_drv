@@ -44,10 +44,10 @@ THE SOFTWARE.
 
 
 #ifdef USE_PMU
-void pmu_create (struct bdbm_drv_info* bdi)
+void pmu_create (bdbm_drv_info_t* bdi)
 {
 	uint64_t i, punit;
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 
 	bdbm_spin_lock_init (&bdi->pm.pmu_lock);
 
@@ -95,7 +95,7 @@ void pmu_create (struct bdbm_drv_info* bdi)
 	}
 }
 
-void pmu_destory (struct bdbm_drv_info* bdi)
+void pmu_destory (bdbm_drv_info_t* bdi)
 {
 	if (bdi->pm.util_r)
 		bdbm_free_atomic (bdi->pm.util_r);
@@ -106,9 +106,9 @@ void pmu_destory (struct bdbm_drv_info* bdi)
 /* 
  * increase the number of I/O operations according to their types 
  */
-void pmu_inc (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 	uint64_t pid = 
 		np->nr_chips_per_channel * 
 		llm_req->phyaddr->channel_no +
@@ -147,58 +147,58 @@ void pmu_inc (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
 	}
 }
 
-void pmu_inc_read (struct bdbm_drv_info* bdi) 
+void pmu_inc_read (bdbm_drv_info_t* bdi) 
 {
 	atomic64_inc (&bdi->pm.page_read_cnt);
 }
 
-void pmu_inc_write (struct bdbm_drv_info* bdi) 
+void pmu_inc_write (bdbm_drv_info_t* bdi) 
 {
 	atomic64_inc (&bdi->pm.page_write_cnt);
 }
 
-void pmu_inc_rmw_read (struct bdbm_drv_info* bdi) 
+void pmu_inc_rmw_read (bdbm_drv_info_t* bdi) 
 {
 	atomic64_inc (&bdi->pm.rmw_read_cnt);
 }
 
-void pmu_inc_rmw_write (struct bdbm_drv_info* bdi) 
+void pmu_inc_rmw_write (bdbm_drv_info_t* bdi) 
 {
 	atomic64_inc (&bdi->pm.rmw_write_cnt);
 }
 
-void pmu_inc_gc (struct bdbm_drv_info* bdi)
+void pmu_inc_gc (bdbm_drv_info_t* bdi)
 {
 	atomic64_inc (&bdi->pm.gc_cnt);
 }
 
-void pmu_inc_gc_erase (struct bdbm_drv_info* bdi)
+void pmu_inc_gc_erase (bdbm_drv_info_t* bdi)
 {
 	atomic64_inc (&bdi->pm.gc_erase_cnt);
 }
 
-void pmu_inc_gc_read (struct bdbm_drv_info* bdi)
+void pmu_inc_gc_read (bdbm_drv_info_t* bdi)
 {
 	atomic64_inc (&bdi->pm.gc_read_cnt);
 }
 
-void pmu_inc_gc_write (struct bdbm_drv_info* bdi)
+void pmu_inc_gc_write (bdbm_drv_info_t* bdi)
 {
 	atomic64_inc (&bdi->pm.gc_write_cnt);
 }
 
-void pmu_inc_util_r (struct bdbm_drv_info* bdi, uint64_t id)
+void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t id)
 {
 	atomic64_inc (&bdi->pm.util_r[id]);
 }
 
-void pmu_inc_util_w (struct bdbm_drv_info* bdi, uint64_t id)
+void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t id)
 {
 	atomic64_inc (&bdi->pm.util_w[id]);
 }
 
 /* update the time taken to run sw algorithms */
-void pmu_update_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	switch (req->req_type) {
 	case REQTYPE_READ:
@@ -213,10 +213,10 @@ void pmu_update_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	}
 }
 
-void pmu_update_r_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -225,10 +225,10 @@ void pmu_update_r_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_w_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -236,10 +236,10 @@ void pmu_update_w_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_rmw_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -247,7 +247,7 @@ void pmu_update_rmw_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_gc_sw (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw) 
+void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
@@ -261,7 +261,7 @@ void pmu_update_gc_sw (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw)
 /* 
  * update the time taken to stay in the queue 
  **/
-void pmu_update_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	switch (req->req_type) {
 	case REQTYPE_READ:
@@ -276,10 +276,10 @@ void pmu_update_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	}
 }
 
-void pmu_update_r_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -287,10 +287,10 @@ void pmu_update_r_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_w_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -298,10 +298,10 @@ void pmu_update_w_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_rmw_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -309,7 +309,7 @@ void pmu_update_rmw_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_gc_q (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw)
+void pmu_update_gc_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
@@ -323,7 +323,7 @@ void pmu_update_gc_q (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw)
 /* 
  * update the time taken for NAND devices to handle reqs 
  **/
-void pmu_update_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	switch (req->req_type) {
 	case REQTYPE_READ:
@@ -338,10 +338,10 @@ void pmu_update_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	}
 }
 
-void pmu_update_r_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -349,10 +349,10 @@ void pmu_update_r_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_w_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) 
+void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -360,10 +360,10 @@ void pmu_update_w_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_rmw_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	unsigned long flags;
-	struct bdbm_hlm_req_t* h = (struct bdbm_hlm_req_t*)req->ptr_hlm_req;
+	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (&h->sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
@@ -371,7 +371,7 @@ void pmu_update_rmw_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
-void pmu_update_gc_tot (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw)
+void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
@@ -386,11 +386,11 @@ void pmu_update_gc_tot (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw)
 char format[1024];
 char str[1024];
 
-void pmu_display (struct bdbm_drv_info* bdi) 
+void pmu_display (bdbm_drv_info_t* bdi) 
 {
 	uint64_t i, j;
 	uint32_t exetime;
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 
 	bdbm_msg ("-----------------------------------------------");
 	bdbm_msg ("< PERFORMANCE SUMMARY >");
@@ -483,37 +483,37 @@ void pmu_display (struct bdbm_drv_info* bdi)
 
 #else
 
-void pmu_create (struct bdbm_drv_info* bdi) {}
-void pmu_destroy (struct bdbm_drv_info* bdi) {}
-void pmu_display (struct bdbm_drv_info* bdi) {}
+void pmu_create (bdbm_drv_info_t* bdi) {}
+void pmu_destroy (bdbm_drv_info_t* bdi) {}
+void pmu_display (bdbm_drv_info_t* bdi) {}
 
-void pmu_inc (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req) {}
-void pmu_inc_read (struct bdbm_drv_info* bdi) {}
-void pmu_inc_write (struct bdbm_drv_info* bdi) {}
-void pmu_inc_rmw_read (struct bdbm_drv_info* bdi) {}
-void pmu_inc_rmw_write (struct bdbm_drv_info* bdi) {}
-void pmu_inc_gc (struct bdbm_drv_info* bdi) {}
-void pmu_inc_gc_erase (struct bdbm_drv_info* bdi) {}
-void pmu_inc_gc_read (struct bdbm_drv_info* bdi) {}
-void pmu_inc_gc_write (struct bdbm_drv_info* bdi) {}
-void pmu_inc_util_r (struct bdbm_drv_info* bdi, uint64_t id) {}
-void pmu_inc_util_w (struct bdbm_drv_info* bdi, uint64_t id) {}
+void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req) {}
+void pmu_inc_read (bdbm_drv_info_t* bdi) {}
+void pmu_inc_write (bdbm_drv_info_t* bdi) {}
+void pmu_inc_rmw_read (bdbm_drv_info_t* bdi) {}
+void pmu_inc_rmw_write (bdbm_drv_info_t* bdi) {}
+void pmu_inc_gc (bdbm_drv_info_t* bdi) {}
+void pmu_inc_gc_erase (bdbm_drv_info_t* bdi) {}
+void pmu_inc_gc_read (bdbm_drv_info_t* bdi) {}
+void pmu_inc_gc_write (bdbm_drv_info_t* bdi) {}
+void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t id) {}
+void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t id) {}
 
-void pmu_update_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_r_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_w_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_rmw_sw (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_gc_sw (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw) {}
+void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) {}
 
-void pmu_update_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_r_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_w_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_rmw_q (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
+void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
 
-void pmu_update_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_r_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_w_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_rmw_tot (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req) {}
-void pmu_update_gc_tot (struct bdbm_drv_info* bdi, struct bdbm_stopwatch* sw) {}
+void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
+void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) {}
 
 #endif

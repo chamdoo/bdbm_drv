@@ -42,7 +42,7 @@ THE SOFTWARE.
 
 /* Functions for Managing DRAM SSD */
 static uint8_t* __ramssd_page_addr (
-	struct dev_ramssd_info* ptr_ramssd_info,
+	dev_ramssd_info_t* ptr_ramssd_info,
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no,
@@ -64,7 +64,7 @@ static uint8_t* __ramssd_page_addr (
 }
 
 static uint8_t* __ramssd_block_addr (
-	struct dev_ramssd_info* ptr_ramssd_info,
+	dev_ramssd_info_t* ptr_ramssd_info,
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no)
@@ -83,7 +83,7 @@ static uint8_t* __ramssd_block_addr (
 	return ptr_ramssd;
 }
 
-static void* __ramssd_alloc_ssdram (struct nand_params* ptr_nand_params)
+static void* __ramssd_alloc_ssdram (nand_params_t* ptr_nand_params)
 {
 	void* ptr_ramssd = NULL;
 	uint64_t page_size_in_bytes;
@@ -142,7 +142,7 @@ static void __ramssd_free_ssdram (void* ptr_ramssd)
 }
 
 static uint8_t __ramssd_read_page (
-	struct dev_ramssd_info* ptr_ramssd_info, 
+	dev_ramssd_info_t* ptr_ramssd_info, 
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no,
@@ -205,7 +205,7 @@ fail:
 }
 
 static uint8_t __ramssd_prog_page (
-	struct dev_ramssd_info* ptr_ramssd_info, 
+	dev_ramssd_info_t* ptr_ramssd_info, 
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no,
@@ -264,7 +264,7 @@ fail:
 }
 
 static uint8_t __ramssd_erase_block (
-	struct dev_ramssd_info* ptr_ramssd_info, 
+	dev_ramssd_info_t* ptr_ramssd_info, 
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no)
@@ -285,7 +285,7 @@ static uint8_t __ramssd_erase_block (
 }
 
 static uint32_t __ramssd_send_cmd (
-	struct dev_ramssd_info* ptr_ramssd_info, struct bdbm_llm_req_t* ptr_req)
+	dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* ptr_req)
 {
 	uint8_t ret = 0;
 	uint8_t use_oob = 1;	/* read or program OOB by default; why not??? */
@@ -356,7 +356,7 @@ static uint32_t __ramssd_send_cmd (
 	return ret;
 }
 
-void __ramssd_cmd_done (struct dev_ramssd_info* ptr_ramssd_info)
+void __ramssd_cmd_done (dev_ramssd_info_t* ptr_ramssd_info)
 {
 	uint64_t loop, nr_parallel_units;
 
@@ -367,7 +367,7 @@ void __ramssd_cmd_done (struct dev_ramssd_info* ptr_ramssd_info)
 
 		bdbm_spin_lock_irqsave (&ptr_ramssd_info->ramssd_lock, flags);
 		if (ptr_ramssd_info->ptr_punits[loop].ptr_req != NULL) {
-			struct dev_ramssd_punit* punit;
+			dev_ramssd_punit_t* punit;
 			int64_t elapsed_time_in_us;
 
 			punit = &ptr_ramssd_info->ptr_punits[loop];
@@ -394,17 +394,17 @@ void __ramssd_cmd_done (struct dev_ramssd_info* ptr_ramssd_info)
 static void __ramssd_timing_cmd_done (unsigned long arg)
 {
 	/* forward it to ramssd_cmd_done */
-	__ramssd_cmd_done ((struct dev_ramssd_info*)arg);
+	__ramssd_cmd_done ((dev_ramssd_info_t*)arg);
 }
 
 #if defined (KERNEL_MODE)
 static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *ptr_hrtimer)
 {
 	ktime_t ktime;
-	struct dev_ramssd_info* ptr_ramssd_info;
+	dev_ramssd_info_t* ptr_ramssd_info;
 	
-	ptr_ramssd_info = (struct dev_ramssd_info*)container_of 
-		(ptr_hrtimer, struct dev_ramssd_info, hrtimer);
+	ptr_ramssd_info = (dev_ramssd_info_t*)container_of 
+		(ptr_hrtimer, dev_ramssd_info_t, hrtimer);
 
 	/* call a tasklet */
 	tasklet_schedule (ptr_ramssd_info->tasklet); 
@@ -416,7 +416,7 @@ static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *pt
 }
 #endif
 
-uint32_t __ramssd_timing_register_schedule (struct dev_ramssd_info* ptr_ramssd_info)
+uint32_t __ramssd_timing_register_schedule (dev_ramssd_info_t* ptr_ramssd_info)
 {
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
@@ -439,7 +439,7 @@ uint32_t __ramssd_timing_register_schedule (struct dev_ramssd_info* ptr_ramssd_i
 	return 0;
 }
 
-uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info) 
+uint32_t __ramssd_timing_create (dev_ramssd_info_t* ptr_ramssd_info) 
 {
 	uint32_t ret = 0;
 
@@ -480,7 +480,7 @@ uint32_t __ramssd_timing_create (struct dev_ramssd_info* ptr_ramssd_info)
 	return ret;
 }
 
-void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
+void __ramssd_timing_destory (dev_ramssd_info_t* ptr_ramssd_info)
 {
 	switch (ptr_ramssd_info->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
@@ -503,16 +503,16 @@ void __ramssd_timing_destory (struct dev_ramssd_info* ptr_ramssd_info)
 }
 
 /* Functions Exposed to External Files */
-struct dev_ramssd_info* dev_ramssd_create (
-	struct nand_params* ptr_nand_params, 
+dev_ramssd_info_t* dev_ramssd_create (
+	nand_params_t* ptr_nand_params, 
 	void (*intr_handler)(void*))
 {
 	uint64_t loop, nr_parallel_units;
-	struct dev_ramssd_info* ptr_ramssd_info = NULL;
+	dev_ramssd_info_t* ptr_ramssd_info = NULL;
 
 	/* create a ramssd info */
-	if ((ptr_ramssd_info = (struct dev_ramssd_info*)
-			bdbm_malloc_atomic (sizeof (struct dev_ramssd_info))) == NULL) {
+	if ((ptr_ramssd_info = (dev_ramssd_info_t*)
+			bdbm_malloc_atomic (sizeof (dev_ramssd_info_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		goto fail;
 	}
@@ -532,8 +532,8 @@ struct dev_ramssd_info* dev_ramssd_create (
 	/* create parallel units */
 	nr_parallel_units = dev_ramssd_get_chips_per_ssd (ptr_ramssd_info);
 
-	if ((ptr_ramssd_info->ptr_punits = (struct dev_ramssd_punit*)
-			bdbm_malloc_atomic (sizeof (struct dev_ramssd_punit) * nr_parallel_units)) == NULL) {
+	if ((ptr_ramssd_info->ptr_punits = (dev_ramssd_punit_t*)
+			bdbm_malloc_atomic (sizeof (dev_ramssd_punit_t) * nr_parallel_units)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		goto fail_punits;
 	}
@@ -568,7 +568,7 @@ fail:
 	return NULL;
 }
 
-void dev_ramssd_destroy (struct dev_ramssd_info* ptr_ramssd_info)
+void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info)
 {
 	/* kill tasklet */
 	__ramssd_timing_destory (ptr_ramssd_info);
@@ -581,7 +581,7 @@ void dev_ramssd_destroy (struct dev_ramssd_info* ptr_ramssd_info)
 	bdbm_free_atomic (ptr_ramssd_info);
 }
 
-uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bdbm_llm_req_t* llm_req)
+uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
 
@@ -652,7 +652,7 @@ fail:
 	return ret;
 }
 
-void dev_ramssd_summary (struct dev_ramssd_info* ptr_ramssd_info)
+void dev_ramssd_summary (dev_ramssd_info_t* ptr_ramssd_info)
 {
 	if (ptr_ramssd_info->is_init == 0) {
 		bdbm_msg ("RAMSSD is not initialized yet");
@@ -675,7 +675,7 @@ void dev_ramssd_summary (struct dev_ramssd_info* ptr_ramssd_info)
 }
 
 /* for snapshot */
-uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* fn)
+uint32_t dev_ramssd_load (dev_ramssd_info_t* ptr_ramssd_info, const char* fn)
 {
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
@@ -705,7 +705,7 @@ uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* f
 	return 0;
 }
 
-uint32_t dev_ramssd_store (struct dev_ramssd_info* ptr_ramssd_info, const char* fn)
+uint32_t dev_ramssd_store (dev_ramssd_info_t* ptr_ramssd_info, const char* fn)
 {
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;

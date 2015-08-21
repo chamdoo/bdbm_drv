@@ -46,15 +46,15 @@ THE SOFTWARE.
 
 
 /* exported by the device implementation module */
-extern struct bdbm_dm_inf_t _bdbm_dm_inf; 
-extern struct bdbm_drv_info* _bdi_dm; 
+extern bdbm_dm_inf_t _bdbm_dm_inf; 
+extern bdbm_drv_info_t* _bdi_dm; 
 
-void __dm_intr_handler (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
+void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 
 typedef struct {
 	wait_queue_head_t pollwq;
-	struct bdbm_params params;
-	struct bdbm_drv_info* bdi;
+	bdbm_params_t params;
+	bdbm_drv_info_t* bdi;
 	bdbm_spinlock_t lock;
 	uint32_t ref_cnt;
 
@@ -70,11 +70,11 @@ typedef struct {
 	/* keep the status of reqs */
 	bdbm_spinlock_t lock_busy;
 	uint8_t* punit_busy;
-	struct bdbm_llm_req_t** kr;
+	bdbm_llm_req_t** kr;
 	bdbm_llm_req_ioctl_t** ur;
 } bdbm_dm_stub_t;
 
-struct bdbm_llm_inf_t _bdbm_llm_inf = {
+bdbm_llm_inf_t _bdbm_llm_inf = {
 	.ptr_private = NULL,
 	.create = NULL,
 	.destroy = NULL,
@@ -84,7 +84,7 @@ struct bdbm_llm_inf_t _bdbm_llm_inf = {
 };
 
 
-void __dm_intr_handler (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
+void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
 	uint64_t punit_id = GET_PUNIT_ID (bdi, req->phyaddr);
@@ -106,13 +106,13 @@ void __dm_intr_handler (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req)
 }
 
 /* TODO: We should improve it to use mmap to avoid useless malloc, memcpy, free, etc */
-static struct bdbm_llm_req_t* __get_llm_req (
+static bdbm_llm_req_t* __get_llm_req (
 	bdbm_dm_stub_t* s,
 	bdbm_llm_req_ioctl_t __user *ur)
 {
 	uint32_t nr_kp_per_fp = 1;
 	uint64_t punit_id, loop;
-	struct bdbm_llm_req_t* r = NULL;
+	bdbm_llm_req_t* r = NULL;
 	bdbm_llm_req_ioctl_t kr;
 
 	if (ur == NULL) {
@@ -128,8 +128,8 @@ static struct bdbm_llm_req_t* __get_llm_req (
 	copy_from_user (&kr, ur, sizeof (kr));
 
 	/* create bdbm_llm_req_t */
-	if ((r = (struct bdbm_llm_req_t*)bdbm_zmalloc 
-			(sizeof (struct bdbm_llm_req_t))) == NULL) {
+	if ((r = (bdbm_llm_req_t*)bdbm_zmalloc 
+			(sizeof (bdbm_llm_req_t))) == NULL) {
 		bdbm_warning ("bdbm_zmalloc () failed");
 		return NULL;
 	}
@@ -160,7 +160,7 @@ static struct bdbm_llm_req_t* __get_llm_req (
 static void __return_llm_req (
 	bdbm_dm_stub_t* s,
 	bdbm_llm_req_ioctl_t* ur,
-	struct bdbm_llm_req_t* kr)
+	bdbm_llm_req_t* kr)
 {
 	/* copy a retun value */
 	if (access_ok (VERIFY_WRITE, ur, sizeof (*ur)) != 1) {
@@ -170,7 +170,7 @@ static void __return_llm_req (
 	}
 }
 
-static void __free_llm_req (struct bdbm_llm_req_t* kr)
+static void __free_llm_req (bdbm_llm_req_t* kr)
 {
 	/*int loop = 0;*/
 	/*uint32_t nr_kp_per_fp = 1;*/
@@ -185,7 +185,7 @@ static void __free_llm_req (struct bdbm_llm_req_t* kr)
 
 static int dm_stub_probe (bdbm_dm_stub_t* s)
 {
-	struct bdbm_drv_info* bdi = s->bdi;
+	bdbm_drv_info_t* bdi = s->bdi;
 
 	if (bdi->ptr_dm_inf->probe == NULL) {
 		bdbm_warning ("ptr_dm_inf->probe is NULL");
@@ -203,7 +203,7 @@ static int dm_stub_probe (bdbm_dm_stub_t* s)
 
 static int dm_stub_open (bdbm_dm_stub_t* s)
 {
-	struct bdbm_drv_info* bdi = s->bdi;
+	bdbm_drv_info_t* bdi = s->bdi;
 	unsigned long flags;
 	uint64_t mmap_ofs, loop;
 
@@ -229,7 +229,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	s->mmap_shared_size = KERNEL_PAGE_SIZE + PAGE_ALIGN (
 		s->punit * (s->params.nand.page_main_size + s->params.nand.page_oob_size));
 
-	s->kr = (struct bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (struct bdbm_llm_req_t*));
+	s->kr = (bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_t*));
 	s->ur = (bdbm_llm_req_ioctl_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_ioctl_t*));
 	s->punit_busy = (uint8_t*)bdbm_malloc_atomic (s->punit * sizeof (uint8_t));
 	s->punit_main_pages = (uint8_t**)bdbm_zmalloc (s->punit * sizeof (uint8_t*));
@@ -300,7 +300,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 
 static int dm_stub_close (bdbm_dm_stub_t* s)
 {
-	struct bdbm_drv_info* bdi = s->bdi;
+	bdbm_drv_info_t* bdi = s->bdi;
 
 	if (bdi->ptr_dm_inf->close == NULL) {
 		bdbm_warning ("ptr_dm_inf->close is NULL");
@@ -340,8 +340,8 @@ static int dm_stub_make_req (
 	bdbm_dm_stub_t* s, 
 	bdbm_llm_req_ioctl_t __user *ur)
 {
-	struct bdbm_drv_info* bdi = s->bdi;
-	struct bdbm_llm_req_t* kr = NULL;
+	bdbm_drv_info_t* bdi = s->bdi;
+	bdbm_llm_req_t* kr = NULL;
 	uint32_t punit_id;
 	unsigned long flags;
 
@@ -393,7 +393,7 @@ static int dm_stub_make_req (
 
 static int dm_stub_end_req (bdbm_dm_stub_t* s)
 {
-	struct bdbm_llm_req_t* kr = NULL;
+	bdbm_llm_req_t* kr = NULL;
 	bdbm_llm_req_ioctl_t* ur = NULL;
 	uint64_t loop;
 	int ret = 1;
@@ -533,8 +533,8 @@ static int dm_fops_create (struct inode *inode, struct file *filp)
 	s->ref_cnt = 0;
 
 	/* create bdi with zeros */
-	if ((s->bdi = (struct bdbm_drv_info*)bdbm_zmalloc 
-			(sizeof (struct bdbm_drv_info))) == NULL) {
+	if ((s->bdi = (bdbm_drv_info_t*)bdbm_zmalloc 
+			(sizeof (bdbm_drv_info_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		return -EIO;
 	} 
@@ -626,7 +626,7 @@ static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 	switch (cmd) {
 	case BDBM_DM_IOCTL_PROBE:
 		if ((ret = dm_stub_probe (s)) == 0)
-			copy_to_user ((struct nand_params*)arg, &s->params.nand, sizeof (struct nand_params));
+			copy_to_user ((nand_params_t*)arg, &s->params.nand, sizeof (nand_params_t));
 		break;
 	case BDBM_DM_IOCTL_OPEN:
 		ret = dm_stub_open (s);

@@ -25,7 +25,7 @@ THE SOFTWARE.
 #ifndef __BLUEDBM_FTL_PARAM_H__
 #define __BLUEDBM_FTL_PARAM_H__
 
-struct bdbm_params* read_driver_params (void);
-void display_default_params (struct bdbm_drv_info* bdi);
+bdbm_params_t* read_driver_params (void);
+void display_default_params (bdbm_drv_info_t* bdi);
 
 #endif

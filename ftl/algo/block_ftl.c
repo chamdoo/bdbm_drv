@@ -49,7 +49,7 @@ THE SOFTWARE.
 
 
 /* FTL interface */
-struct bdbm_ftl_inf_t _ftl_block_ftl = {
+bdbm_ftl_inf_t _ftl_block_ftl = {
 	.ptr_private = NULL,
 	.create = bdbm_block_ftl_create,
 	.destroy = bdbm_block_ftl_destroy,
@@ -93,10 +93,10 @@ struct bdbm_block_ftl_private {
 	uint64_t nr_blocks_per_segment;	/* how many blocks belong to a segment */
 
 	bdbm_spinlock_t ftl_lock;
-	struct bdbm_abm_info* abm;
+	bdbm_abm_info_t* abm;
 	struct bdbm_block_mapping_entry** ptr_mapping_table;
-	struct bdbm_abm_block_t** gc_bab;
-	struct bdbm_hlm_req_gc_t gc_hlm;
+	bdbm_abm_block_t** gc_bab;
+	bdbm_hlm_req_gc_t gc_hlm;
 
 	uint64_t* nr_trimmed_pages;
 	int64_t nr_dead_segments;
@@ -104,7 +104,7 @@ struct bdbm_block_ftl_private {
 
 
 uint32_t __hlm_rsd_make_rm_seg (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	uint32_t seg_no);
 
 /* some internal functions */
@@ -133,15 +133,15 @@ uint64_t __bdbm_block_ftl_get_page_ofs (
 }
 
 uint32_t __bdbm_block_ftl_do_gc_segment (
-	struct bdbm_drv_info* bdi,
+	bdbm_drv_info_t* bdi,
 	uint64_t seg_no);
 
 /* functions for block-level FTL */
-uint32_t bdbm_block_ftl_create (struct bdbm_drv_info* bdi)
+uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_abm_info* abm = NULL;
+	bdbm_abm_info_t* abm = NULL;
 	struct bdbm_block_ftl_private* p = NULL;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 
 	uint64_t nr_segments;
 	uint64_t nr_blocks_per_segment;
@@ -206,13 +206,13 @@ uint32_t bdbm_block_ftl_create (struct bdbm_drv_info* bdi)
 	}
 
 	/* initialize gc_hlm */
-	if ((p->gc_bab = (struct bdbm_abm_block_t**)bdbm_zmalloc 
-			(sizeof (struct bdbm_abm_block_t*) * p->nr_blocks_per_segment)) == NULL) {
+	if ((p->gc_bab = (bdbm_abm_block_t**)bdbm_zmalloc 
+			(sizeof (bdbm_abm_block_t*) * p->nr_blocks_per_segment)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
-	if ((p->gc_hlm.llm_reqs = (struct bdbm_llm_req_t*)bdbm_zmalloc
-			(sizeof (struct bdbm_llm_req_t) * p->nr_blocks_per_segment)) == NULL) {
+	if ((p->gc_hlm.llm_reqs = (bdbm_llm_req_t*)bdbm_zmalloc
+			(sizeof (bdbm_llm_req_t) * p->nr_blocks_per_segment)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
@@ -229,7 +229,7 @@ fail:
 }
 
 void bdbm_block_ftl_destroy (
-	struct bdbm_drv_info* bdi)
+	bdbm_drv_info_t* bdi)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	uint64_t i, j;
@@ -266,9 +266,9 @@ void bdbm_block_ftl_destroy (
 }
 
 uint32_t bdbm_block_ftl_get_ppa (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	uint64_t lpa,
-	struct bdbm_phyaddr_t* ppa)
+	bdbm_phyaddr_t* ppa)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	struct bdbm_block_mapping_entry* e = NULL;
@@ -309,9 +309,9 @@ uint32_t bdbm_block_ftl_get_ppa (
 static uint64_t problem_seg_no = -1;
 
 uint32_t bdbm_block_ftl_get_free_ppa (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	uint64_t lpa,
-	struct bdbm_phyaddr_t* ppa)
+	bdbm_phyaddr_t* ppa)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	struct bdbm_block_mapping_entry* e = NULL;
@@ -387,8 +387,8 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 		/* [CASE 3] allocate a new free block */
 		uint64_t channel_no;
 		uint64_t chip_no;
-		struct bdbm_abm_block_t* b = NULL;
-		struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+		bdbm_abm_block_t* b = NULL;
+		nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 
 		channel_no = block_no % np->nr_channels;
 		chip_no = block_no / np->nr_channels;
@@ -414,9 +414,9 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 }
 
 uint32_t bdbm_block_ftl_map_lpa_to_ppa (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	uint64_t lpa, 
-	struct bdbm_phyaddr_t* ppa)
+	bdbm_phyaddr_t* ppa)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	struct bdbm_block_mapping_entry* e = NULL;
@@ -453,7 +453,7 @@ uint32_t bdbm_block_ftl_map_lpa_to_ppa (
 }
 
 uint32_t bdbm_block_ftl_invalidate_lpa (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	uint64_t lpa,
 	uint64_t len)
 {
@@ -494,7 +494,7 @@ uint32_t bdbm_block_ftl_invalidate_lpa (
 }
 
 uint8_t bdbm_block_ftl_is_gc_needed (
-	struct bdbm_drv_info* bdi)
+	bdbm_drv_info_t* bdi)
 {
 	/*
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
@@ -510,19 +510,19 @@ uint8_t bdbm_block_ftl_is_gc_needed (
 }
 
 uint32_t __bdbm_block_ftl_erase_block (
-	struct bdbm_drv_info* bdi,
+	bdbm_drv_info_t* bdi,
 	uint64_t seg_no)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
-	struct bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i;
 
-	bdbm_memset (p->gc_bab, 0x00, sizeof (struct bdbm_abm_block_t*) * p->nr_blocks_per_segment);
+	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * p->nr_blocks_per_segment);
 
 	/* setup a set of reqs */
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
-		struct bdbm_abm_block_t* b = NULL;
-		struct bdbm_llm_req_t* r = NULL;
+		bdbm_abm_block_t* b = NULL;
+		bdbm_llm_req_t* r = NULL;
 
 		if ((b = bdbm_abm_get_block (p->abm, 
 				p->ptr_mapping_table[seg_no][i].channel_no, 
@@ -564,7 +564,7 @@ uint32_t __bdbm_block_ftl_erase_block (
 
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		uint8_t is_bad = 0;
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
 
 		if (hlm_gc->llm_reqs[i].ret != 0)
 			is_bad = 1; /* bad block */
@@ -577,10 +577,10 @@ uint32_t __bdbm_block_ftl_erase_block (
 }
 
 uint32_t __bdbm_block_ftl_do_gc_segment (
-	struct bdbm_drv_info* bdi,
+	bdbm_drv_info_t* bdi,
 	uint64_t seg_no)
 {
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	struct bdbm_block_mapping_entry* e = NULL;
 	uint64_t i;
@@ -620,7 +620,7 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 }
 
 uint32_t bdbm_block_ftl_do_gc (
-	struct bdbm_drv_info* bdi)
+	bdbm_drv_info_t* bdi)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
 	uint64_t seg_no = -1; /* victim */
@@ -650,7 +650,7 @@ uint32_t bdbm_block_ftl_do_gc (
 	return ret;
 }
 
-uint64_t bdbm_block_ftl_get_segno (struct bdbm_drv_info* bdi, uint64_t lpa)
+uint64_t bdbm_block_ftl_get_segno (bdbm_drv_info_t* bdi, uint64_t lpa)
 {
 	return __bdbm_block_ftl_get_segment_no (BDBM_FTL_PRIV (bdi), lpa);
 }
@@ -667,30 +667,30 @@ struct bdbm_block_mapping_entry {
 };
 #endif
 
-uint32_t bdbm_block_ftl_load (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t bdbm_block_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 {
 	return 0;
 }
 
-uint32_t bdbm_block_ftl_store (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t bdbm_block_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 {
 	return 0;
 }
 
-void __bdbm_block_ftl_badblock_scan_eraseblks (struct bdbm_drv_info* bdi, uint64_t block_no)
+void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t block_no)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
-	bdbm_memset (p->gc_bab, 0x00, sizeof (struct bdbm_abm_block_t*) * p->nr_blocks_per_segment);
+	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * p->nr_blocks_per_segment);
 
 	/* setup a set of reqs */
 	for (i = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
-			struct bdbm_abm_block_t* b = NULL;
-			struct bdbm_llm_req_t* r = NULL;
+			bdbm_abm_block_t* b = NULL;
+			bdbm_llm_req_t* r = NULL;
 			uint64_t punit_id = i*np->nr_chips_per_channel+j;
 
 			if ((b = bdbm_abm_get_block (p->abm, i, j, block_no)) == NULL) {
@@ -728,7 +728,7 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (struct bdbm_drv_info* bdi, uint64
 
 	for (i = 0; i < p->nr_blocks_per_segment; i++) {
 		uint8_t is_bad = 0;
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
 
 		if (hlm_gc->llm_reqs[i].ret != 0)
 			is_bad = 1; /* bad block */
@@ -747,10 +747,10 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (struct bdbm_drv_info* bdi, uint64
 	/* measure gc elapsed time */
 }
 
-uint32_t bdbm_block_ftl_badblock_scan (struct bdbm_drv_info* bdi)
+uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_block_ftl_private* p = BDBM_FTL_PRIV (bdi);
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_block_mapping_entry* me = NULL;
 	uint64_t i = 0, j = 0;
 	uint32_t ret = 0;

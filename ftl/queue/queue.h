@@ -29,28 +29,28 @@ enum BDBM_QUEUE_SIZE {
 	INFINITE_QUEUE = -1,
 };
 
-struct bdbm_queue_item_t {
+typedef struct {
 	void* ptr_req;
 	struct list_head list;
-};
+} bdbm_queue_item_t;
 
-struct bdbm_queue_t {
+typedef struct {
 	uint64_t nr_queues;
 	int64_t max_size;
 	int64_t qic;			/* queue item count */
 	bdbm_spinlock_t lock;	/* queue lock */
 
 	struct list_head* qlh;	/* queue list header */
-};
+} bdbm_queue_t;
 
-struct bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t size);
-void bdbm_queue_destroy (struct bdbm_queue_t* mq);
-uint8_t bdbm_queue_enqueue (struct bdbm_queue_t* mq, uint64_t qid, void* req);
-uint8_t bdbm_queue_enqueue_top (struct bdbm_queue_t* mq, uint64_t qid, void* req);
-void* bdbm_queue_dequeue (struct bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_full (struct bdbm_queue_t* mq);
-uint8_t bdbm_queue_is_empty (struct bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_all_empty (struct bdbm_queue_t* mq);
-uint64_t bdbm_queue_get_nr_items (struct bdbm_queue_t* mq);
+bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t size);
+void bdbm_queue_destroy (bdbm_queue_t* mq);
+uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req);
+uint8_t bdbm_queue_enqueue_top (bdbm_queue_t* mq, uint64_t qid, void* req);
+void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid);
+uint8_t bdbm_queue_is_full (bdbm_queue_t* mq);
+uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid);
+uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq);
+uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq);
 
 #endif

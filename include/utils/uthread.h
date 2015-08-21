@@ -38,7 +38,7 @@ THE SOFTWARE.
 
 typedef struct {
 	/* thread management */
-	bdbm_mutex thread_done;
+	bdbm_mutex_t thread_done;
 	wait_queue_head_t wq;
 	wait_queue_t* wait;
 	struct task_struct* thread;
@@ -59,8 +59,8 @@ typedef struct {
 
 typedef struct {
 	/* thread management */
-	bdbm_mutex thread_done;
-	bdbm_mutex thread_sleep;
+	bdbm_mutex_t thread_done;
+	bdbm_mutex_t thread_sleep;
 	pthread_cond_t thread_con;
 	pthread_t thread;
 	atomic64_t is_sleep;

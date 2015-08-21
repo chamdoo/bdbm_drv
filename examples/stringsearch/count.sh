@@ -1,1 +1,1 @@
-grep -Ro $1 $2 | wc -w
+grep -Ro $2 $2 | wc -w

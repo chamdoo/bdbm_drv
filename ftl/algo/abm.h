@@ -58,7 +58,7 @@ enum BDBM_ABM_BLK_STATUS {
 	BDBM_ABM_BLK_BAD,
 };
 
-struct bdbm_abm_block_t {
+typedef struct {
 	uint8_t status;	/* ABM_BLK_STATUS */
 	uint64_t channel_no;
 	uint64_t chip_no;
@@ -68,11 +68,11 @@ struct bdbm_abm_block_t {
 	babm_abm_page_t* pst;	/* a page status table; used when the FTL requires */
 
 	struct list_head list;	/* for list */
-};
+} bdbm_abm_block_t;
 
-struct bdbm_abm_info {
-	struct nand_params* np;
-	struct bdbm_abm_block_t* blocks;
+typedef struct {
+	nand_params_t* np;
+	bdbm_abm_block_t* blocks;
 	struct list_head** list_head_free;
 	struct list_head** list_head_clean;
 	struct list_head** list_head_dirty;
@@ -85,30 +85,30 @@ struct bdbm_abm_info {
 	uint64_t nr_clean_blks;
 	uint64_t nr_dirty_blks;
 	uint64_t nr_bad_blks;
-};
+} bdbm_abm_info_t;
 
-struct bdbm_abm_info* bdbm_abm_create (struct nand_params* np, uint8_t use_pst);
-void bdbm_abm_destroy (struct bdbm_abm_info* bai);
-struct bdbm_abm_block_t* bdbm_abm_get_block (struct bdbm_abm_info* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
-struct bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (struct bdbm_abm_info* bai, uint64_t channel_no, uint64_t chip_no);
-void bdbm_abm_get_free_block_rollback (struct bdbm_abm_info* bai, struct bdbm_abm_block_t* blk);
-void bdbm_abm_get_free_block_commit (struct bdbm_abm_info* bai, struct bdbm_abm_block_t* blk);
-void bdbm_abm_erase_block (struct bdbm_abm_info* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint8_t is_bad);
-void bdbm_abm_invalidate_page (struct bdbm_abm_info* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no);
+bdbm_abm_info_t* bdbm_abm_create (nand_params_t* np, uint8_t use_pst);
+void bdbm_abm_destroy (bdbm_abm_info_t* bai);
+bdbm_abm_block_t* bdbm_abm_get_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
+bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no);
+void bdbm_abm_get_free_block_rollback (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
+void bdbm_abm_get_free_block_commit (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
+void bdbm_abm_erase_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint8_t is_bad);
+void bdbm_abm_invalidate_page (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no);
 
-static inline uint64_t bdbm_abm_get_nr_free_blocks (struct bdbm_abm_info* bai) { return bai->nr_free_blks; }
-static inline uint64_t bdbm_abm_get_nr_free_blocks_prepared (struct bdbm_abm_info* bai) { return bai->nr_free_blks_prepared; }
-static inline uint64_t bdbm_abm_get_nr_clean_blocks (struct bdbm_abm_info* bai) { return bai->nr_clean_blks; }
-static inline uint64_t bdbm_abm_get_nr_dirty_blocks (struct bdbm_abm_info* bai) { return bai->nr_dirty_blks; }
-static inline uint64_t bdbm_abm_get_nr_total_blocks (struct bdbm_abm_info* bai) { return bai->nr_total_blks; }
+static inline uint64_t bdbm_abm_get_nr_free_blocks (bdbm_abm_info_t* bai) { return bai->nr_free_blks; }
+static inline uint64_t bdbm_abm_get_nr_free_blocks_prepared (bdbm_abm_info_t* bai) { return bai->nr_free_blks_prepared; }
+static inline uint64_t bdbm_abm_get_nr_clean_blocks (bdbm_abm_info_t* bai) { return bai->nr_clean_blks; }
+static inline uint64_t bdbm_abm_get_nr_dirty_blocks (bdbm_abm_info_t* bai) { return bai->nr_dirty_blks; }
+static inline uint64_t bdbm_abm_get_nr_total_blocks (bdbm_abm_info_t* bai) { return bai->nr_total_blks; }
 
-uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn);
-uint32_t bdbm_abm_store (struct bdbm_abm_info* bai, const char* fn);
+uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn);
+uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 
 #define bdbm_abm_list_for_each_dirty_block(pos, bai, channel_no, chip_no) \
 	list_for_each (pos, &(bai->list_head_dirty[channel_no][chip_no]))
 #define bdbm_abm_fetch_dirty_block(pos) \
-	list_entry (pos, struct bdbm_abm_block_t, list)
+	list_entry (pos, bdbm_abm_block_t, list)
 /*  (example:)
  *  bdbm_abm_list_for_each_dirty_block (pos, p->bai, j, k) {
 		b = bdbm_abm_fetch_dirty_block (pos);

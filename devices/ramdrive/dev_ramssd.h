@@ -44,18 +44,18 @@ THE SOFTWARE.
 #include "utils/utime.h"
 
 
-struct dev_ramssd_punit {
+typedef struct {
 	void* ptr_req;
 	int64_t target_elapsed_time_us;
-	struct bdbm_stopwatch sw;
-};
+	bdbm_stopwatch_t sw;
+} dev_ramssd_punit_t;
 
-struct dev_ramssd_info {
+typedef struct {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
 	uint8_t emul_mode;
-	struct nand_params* nand_params;
+	nand_params_t* nand_params;
 	void* ptr_ssdram; /* DRAM memory for SSD */
-	struct dev_ramssd_punit* ptr_punits;	/* parallel units */
+	dev_ramssd_punit_t* ptr_punits;	/* parallel units */
 	bdbm_spinlock_t ramssd_lock;
 	void (*intr_handler) (void*);
 
@@ -63,98 +63,98 @@ struct dev_ramssd_info {
 	struct tasklet_struct* tasklet;	/* tasklet */
 	struct hrtimer hrtimer;	/* hrtimer must be at the end of the structure */
 #endif
-};
+} dev_ramssd_info_t;
 
-struct dev_ramssd_info* dev_ramssd_create (struct nand_params* ptr_nand_params, void (*intr_handler)(void*));
-void dev_ramssd_destroy (struct dev_ramssd_info* ptr_ramssd_info);
-uint32_t dev_ramssd_send_cmd (struct dev_ramssd_info* ptr_ramssd_info, struct bdbm_llm_req_t* ptr_llm_req );
-void dev_ramssd_summary (struct dev_ramssd_info* ptr_ramssd_info);
+dev_ramssd_info_t* dev_ramssd_create (nand_params_t* ptr_nand_params, void (*intr_handler)(void*));
+void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info);
+uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* ptr_llm_req );
+void dev_ramssd_summary (dev_ramssd_info_t* ptr_ramssd_info);
 
 /* for snapshot */
-uint32_t dev_ramssd_load (struct dev_ramssd_info* ptr_ramssd_info, const char* fn);
-uint32_t dev_ramssd_store (struct dev_ramssd_info* ptr_ramssd_info, const char* fn);
+uint32_t dev_ramssd_load (dev_ramssd_info_t* ptr_ramssd_info, const char* fn);
+uint32_t dev_ramssd_store (dev_ramssd_info_t* ptr_ramssd_info, const char* fn);
 
 /* some inline functions */
 inline static 
-uint64_t dev_ramssd_get_page_size_main (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_page_size_main (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->page_main_size;
 }
 
 inline static 
-uint64_t dev_ramssd_get_page_size_oob (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_page_size_oob (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->page_oob_size;
 }
 
 inline static 
-uint64_t dev_ramssd_get_page_size (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_page_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->page_main_size +
 		ptr_ramssd_info->nand_params->page_oob_size;
 }
 
 inline static 
-uint64_t dev_ramssd_get_block_size (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_block_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_page_size (ptr_ramssd_info) *	
 		ptr_ramssd_info->nand_params->nr_pages_per_block;
 }
 
 inline static 
-uint64_t dev_ramssd_get_chip_size (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_chip_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_block_size (ptr_ramssd_info) * 
 		ptr_ramssd_info->nand_params->nr_blocks_per_chip;
 }
 
 inline static 
-uint64_t dev_ramssd_get_channel_size (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_channel_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_chip_size (ptr_ramssd_info) * 
 		ptr_ramssd_info->nand_params->nr_chips_per_channel;
 }
 
 inline static 
-uint64_t dev_ramssd_get_ssd_size (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_ssd_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_channel_size (ptr_ramssd_info) * 
 		ptr_ramssd_info->nand_params->nr_channels;
 }
 
 inline static 
-uint64_t dev_ramssd_get_pages_per_block (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_pages_per_block (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->nr_pages_per_block;
 }
 
 inline static 
-uint64_t dev_ramssd_get_blocks_per_chips (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_blocks_per_chips (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->nr_blocks_per_chip;
 }
 
 inline static 
-uint64_t dev_ramssd_get_chips_per_channel (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_chips_per_channel (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->nr_chips_per_channel;
 }
 
 inline static 
-uint64_t dev_ramssd_get_channles_per_ssd (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_channles_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->nr_channels;
 }
 
 inline static 
-uint64_t dev_ramssd_get_chips_per_ssd (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_chips_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return ptr_ramssd_info->nand_params->nr_channels *
 		ptr_ramssd_info->nand_params->nr_chips_per_channel;
 }
 
 inline static 
-uint64_t dev_ramssd_get_blocks_per_ssd (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_blocks_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_chips_per_ssd (ptr_ramssd_info) *
 		ptr_ramssd_info->nand_params->nr_blocks_per_chip;
 }
 
 inline static 
-uint64_t dev_ramssd_get_pages_per_ssd (struct dev_ramssd_info* ptr_ramssd_info) {
+uint64_t dev_ramssd_get_pages_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_blocks_per_ssd (ptr_ramssd_info) *
 		ptr_ramssd_info->nand_params->nr_pages_per_block;
 }
 
 inline static 
-uint8_t dev_ramssd_is_init (struct dev_ramssd_info* ptr_ramssd_info) {
+uint8_t dev_ramssd_is_init (dev_ramssd_info_t* ptr_ramssd_info) {
 	if (ptr_ramssd_info->is_init == 1)
 		return 0;
 	else 

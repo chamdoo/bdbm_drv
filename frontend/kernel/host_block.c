@@ -37,7 +37,7 @@ THE SOFTWARE.
 /*#define ENABLE_DISPLAY*/
 
 /* interface for host */
-struct bdbm_host_inf_t _host_block_inf = {
+bdbm_host_inf_t _host_block_inf = {
 	.ptr_private = NULL,
 	.open = host_block_open,
 	.close = host_block_close,
@@ -48,7 +48,7 @@ struct bdbm_host_inf_t _host_block_inf = {
 static struct bdbm_device_t {
 	struct gendisk *gd;
 	struct request_queue *queue;
-	bdbm_mutex make_request_lock;
+	bdbm_mutex_t make_request_lock;
 } bdbm_device;
 
 static uint32_t bdbm_device_major_num = 0;
@@ -59,23 +59,23 @@ static struct block_device_operations bdops = {
 };
 
 /* global data structure */
-extern struct bdbm_drv_info* _bdi;
+extern bdbm_drv_info_t* _bdi;
 
 
-static struct bdbm_hlm_req_t* __host_block_create_hlm_trim_req (
-	struct bdbm_drv_info* bdi, 
+static bdbm_hlm_req_t* __host_block_create_hlm_trim_req (
+	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
-	struct bdbm_hlm_req_t* hlm_req = NULL;
-	struct nand_params* np = &bdi->ptr_bdbm_params->nand;
-	struct driver_params* dp = &bdi->ptr_bdbm_params->driver;
+	bdbm_hlm_req_t* hlm_req = NULL;
+	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
 	uint64_t nr_secs_per_fp = 0;
 
 	nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;
 
 	/* create bdbm_hm_req_t */
-	if ((hlm_req = (struct bdbm_hlm_req_t*)bdbm_malloc_atomic
-			(sizeof (struct bdbm_hlm_req_t))) == NULL) {
+	if ((hlm_req = (bdbm_hlm_req_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_hlm_req_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return NULL;
 	}
@@ -110,13 +110,13 @@ static struct bdbm_hlm_req_t* __host_block_create_hlm_trim_req (
 	return hlm_req;
 }
 
-static struct bdbm_hlm_req_t* __host_block_create_hlm_rq_req (
-	struct bdbm_drv_info* bdi, 
+static bdbm_hlm_req_t* __host_block_create_hlm_rq_req (
+	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
 	struct bio_vec *bvec = NULL;
-	struct bdbm_hlm_req_t* hlm_req = NULL;
-	struct nand_params* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_hlm_req_t* hlm_req = NULL;
+	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
 
 	uint32_t loop = 0;
 	uint32_t kpg_loop = 0;
@@ -131,8 +131,8 @@ static struct bdbm_hlm_req_t* __host_block_create_hlm_rq_req (
 	nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* create bdbm_hm_req_t */
-	if ((hlm_req = (struct bdbm_hlm_req_t*)bdbm_malloc_atomic
-			(sizeof (struct bdbm_hlm_req_t))) == NULL) {
+	if ((hlm_req = (bdbm_hlm_req_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_hlm_req_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return NULL;
 	}
@@ -224,12 +224,12 @@ fail_req:
 	return NULL;
 }
 
-static struct bdbm_hlm_req_t* __host_block_create_hlm_req (
-	struct bdbm_drv_info* bdi, 
+static bdbm_hlm_req_t* __host_block_create_hlm_req (
+	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
-	struct bdbm_hlm_req_t* hlm_req = NULL;
-	struct nand_params* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_hlm_req_t* hlm_req = NULL;
+	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
 	uint64_t nr_secs_per_kp = 0;
 
 	/* get # of sectors per flash page */
@@ -265,10 +265,10 @@ static struct bdbm_hlm_req_t* __host_block_create_hlm_req (
 }
 
 static void __host_block_delete_hlm_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* hlm_req)
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* hlm_req)
 {
-	struct nand_params* np = NULL;
+	nand_params_t* np = NULL;
 	uint32_t kpg_loop = 0;
 	uint32_t nr_kp_per_fp = 0;
 
@@ -305,11 +305,11 @@ static void __host_block_delete_hlm_req (
 }
 
 static void __host_block_display_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* hlm_req)
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* hlm_req)
 {
 #ifdef ENABLE_DISPLAY
-	struct bdbm_ftl_inf_t* ftl = (struct bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint64_t seg_no = 0;
 
 	if (ftl->get_segno) {
@@ -352,9 +352,9 @@ static void __host_block_make_request (
 	bdbm_mutex_unlock (&bdbm_device.make_request_lock);          
 }
 
-static uint32_t __host_block_register_block_device (struct bdbm_drv_info* bdi)
+static uint32_t __host_block_register_block_device (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_params* p = bdi->ptr_bdbm_params;
+	bdbm_params_t* p = bdi->ptr_bdbm_params;
 
 	/* create a completion lock */
 	bdbm_mutex_init (&bdbm_device.make_request_lock);
@@ -404,7 +404,7 @@ static uint32_t __host_block_register_block_device (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void __host_block_unregister_block_device (struct bdbm_drv_info* bdi)
+void __host_block_unregister_block_device (bdbm_drv_info_t* bdi)
 {
 	/* unregister a BlueDBM device driver */
 	del_gendisk (bdbm_device.gd);
@@ -413,14 +413,14 @@ void __host_block_unregister_block_device (struct bdbm_drv_info* bdi)
 	blk_cleanup_queue (bdbm_device.queue);
 }
 
-uint32_t host_block_open (struct bdbm_drv_info* bdi)
+uint32_t host_block_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
-	struct bdbm_host_block_private* p;
+	bdbm_host_block_private_t* p;
 
 	/* create a private data structure */
-	if ((p = (struct bdbm_host_block_private*)bdbm_malloc_atomic
-			(sizeof (struct bdbm_host_block_private))) == NULL) {
+	if ((p = (bdbm_host_block_private_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_host_block_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
@@ -438,12 +438,12 @@ uint32_t host_block_open (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void host_block_close (struct bdbm_drv_info* bdi)
+void host_block_close (bdbm_drv_info_t* bdi)
 {
 	unsigned long flags;
-	struct bdbm_host_block_private* p = NULL;
+	bdbm_host_block_private_t* p = NULL;
 
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* wait for host reqs to finish */
 	bdbm_msg ("wait for host reqs to finish");
@@ -465,17 +465,17 @@ void host_block_close (struct bdbm_drv_info* bdi)
 }
 
 void host_block_make_req (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	void* req)
 {
 	unsigned long flags;
-	struct nand_params* np = NULL;
-	struct bdbm_hlm_req_t* hlm_req = NULL;
-	struct bdbm_host_block_private* p = NULL;
+	nand_params_t* np = NULL;
+	bdbm_hlm_req_t* hlm_req = NULL;
+	bdbm_host_block_private_t* p = NULL;
 	struct bio* bio = (struct bio*)req;
 
 	np = &bdi->ptr_bdbm_params->nand;
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* see if the address range of bio is beyond storage space */
 	if (bio->bi_sector + bio_sectors (bio) > np->device_capacity_in_byte / KERNEL_SECTOR_SIZE) {
@@ -521,18 +521,18 @@ void host_block_make_req (
 }
 
 void host_block_end_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* hlm_req)
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* hlm_req)
 {
 	uint32_t ret;
 	unsigned long flags;
 	struct bio* bio = NULL;
-	struct bdbm_host_block_private* p = NULL;
+	bdbm_host_block_private_t* p = NULL;
 
 
 	/* get a bio from hlm_req */
 	bio = (struct bio*)hlm_req->ptr_host_req;
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 	ret = hlm_req->ret;
 
 	/* destroy hlm_req */

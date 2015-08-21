@@ -56,7 +56,7 @@ THE SOFTWARE.
 
 
 /* llm interface */
-struct bdbm_llm_inf_t _llm_mq_inf = {
+bdbm_llm_inf_t _llm_mq_inf = {
 	.ptr_private = NULL,
 	.create = llm_mq_create,
 	.destroy = llm_mq_destroy,
@@ -68,12 +68,12 @@ struct bdbm_llm_inf_t _llm_mq_inf = {
 /* private */
 struct bdbm_llm_mq_private {
 	uint64_t nr_punits;
-	bdbm_mutex* punit_locks;
-	struct bdbm_prior_queue_t* q;
+	bdbm_mutex_t* punit_locks;
+	bdbm_prior_queue_t* q;
 
 	/* for debugging */
 #if defined(ENABLE_SEQ_DBG)
-	bdbm_mutex dbg_seq;
+	bdbm_mutex_t dbg_seq;
 #endif	
 
 	/* for thread management */
@@ -82,7 +82,7 @@ struct bdbm_llm_mq_private {
 
 int __llm_mq_thread (void* arg)
 {
-	struct bdbm_drv_info* bdi = (struct bdbm_drv_info*)arg;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 	uint64_t loop;
 	uint64_t cnt = 0;
@@ -103,15 +103,15 @@ int __llm_mq_thread (void* arg)
 
 		/* send reqs until Q becomes empty */
 		for (loop = 0; loop < p->nr_punits; loop++) {
-			struct bdbm_prior_queue_item_t* qitem = NULL;
-			struct bdbm_llm_req_t* r = NULL;
+			bdbm_prior_queue_item_t* qitem = NULL;
+			bdbm_llm_req_t* r = NULL;
 
 			/* if pu is busy, then go to the next pnit */
 			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
 				continue;
 			}
 
-			if ((r = (struct bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
+			if ((r = (bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 				continue;
 			}
@@ -138,7 +138,7 @@ int __llm_mq_thread (void* arg)
 	return 0;
 }
 
-uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
+uint32_t llm_mq_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_mq_private* p;
 	uint64_t loop;
@@ -162,8 +162,8 @@ uint32_t llm_mq_create (struct bdbm_drv_info* bdi)
 	}
 
 	/* create completion locks for parallel units */
-	if ((p->punit_locks = (bdbm_mutex*)bdbm_malloc_atomic
-			(sizeof (bdbm_mutex) * p->nr_punits)) == NULL) {
+	if ((p->punit_locks = (bdbm_mutex_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_mutex_t) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		goto fail;
 	}
@@ -201,7 +201,7 @@ fail:
 /* NOTE: we assume that all of the host requests are completely served.
  * the host adapter must be first closed before this function is called.
  * if not, it would work improperly. */
-void llm_mq_destroy (struct bdbm_drv_info* bdi)
+void llm_mq_destroy (bdbm_drv_info_t* bdi)
 {
 	uint64_t loop;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
@@ -229,7 +229,7 @@ void llm_mq_destroy (struct bdbm_drv_info* bdi)
 		bdbm_free_atomic (p);
 }
 
-uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
 	uint64_t punit_id;
@@ -286,7 +286,7 @@ uint32_t llm_mq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_
 	return ret;
 }
 
-void llm_mq_flush (struct bdbm_drv_info* bdi)
+void llm_mq_flush (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
@@ -296,11 +296,11 @@ void llm_mq_flush (struct bdbm_drv_info* bdi)
 	}
 }
 
-void llm_mq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint64_t punit_id;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
-	struct bdbm_prior_queue_item_t* qitem = (struct bdbm_prior_queue_item_t*)llm_req->ptr_qitem;
+	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)llm_req->ptr_qitem;
 
 	switch (llm_req->req_type) {
 	case REQTYPE_RMW_READ:

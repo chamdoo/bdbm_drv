@@ -26,15 +26,15 @@ THE SOFTWARE.
 #define _BLUEDBM_HLM_RSD_H
 
 /* export hlm_rsd interface */
-extern struct bdbm_hlm_inf_t _hlm_rsd_inf;
+extern bdbm_hlm_inf_t _hlm_rsd_inf;
 
 /* functions */
-uint32_t hlm_rsd_create (struct bdbm_drv_info* bdi);
-void hlm_rsd_destroy (struct bdbm_drv_info* bdi);
-uint32_t hlm_rsd_make_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* req);
-void hlm_rsd_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-uint32_t hlm_rsd_load (struct bdbm_drv_info* bdi, const char* fn);
-uint32_t hlm_rsd_store (struct bdbm_drv_info* bdi, const char* fn);
+uint32_t hlm_rsd_create (bdbm_drv_info_t* bdi);
+void hlm_rsd_destroy (bdbm_drv_info_t* bdi);
+uint32_t hlm_rsd_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+void hlm_rsd_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+uint32_t hlm_rsd_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t hlm_rsd_store (bdbm_drv_info_t* bdi, const char* fn);
 
 #endif
 

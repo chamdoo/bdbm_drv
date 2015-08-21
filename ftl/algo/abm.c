@@ -43,29 +43,29 @@ THE SOFTWARE.
 
 
 static inline 
-uint64_t __get_channel_ofs (struct nand_params* np, uint64_t blk_idx) {
+uint64_t __get_channel_ofs (nand_params_t* np, uint64_t blk_idx) {
 	return (blk_idx / np->nr_blocks_per_channel);
 }
 
 static inline 
-uint64_t __get_chip_ofs (struct nand_params* np, uint64_t blk_idx) {
+uint64_t __get_chip_ofs (nand_params_t* np, uint64_t blk_idx) {
 	return ((blk_idx % np->nr_blocks_per_channel) / np->nr_blocks_per_chip);
 }
 
 static inline 
-uint64_t __get_block_ofs (struct nand_params* np, uint64_t blk_idx) {
+uint64_t __get_block_ofs (nand_params_t* np, uint64_t blk_idx) {
 	return (blk_idx % np->nr_blocks_per_chip);
 }
 
 static inline
-uint64_t __get_block_idx (struct nand_params* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
+uint64_t __get_block_idx (nand_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
 	return channel_no * np->nr_blocks_per_channel + 
 		chip_no * np->nr_blocks_per_chip + 
 		block_no;
 }
 
 static inline
-void __bdbm_abm_check_status (struct bdbm_abm_info* bai)
+void __bdbm_abm_check_status (bdbm_abm_info_t* bai)
 {
 	bdbm_bug_on (bai->nr_total_blks != 
 		bai->nr_free_blks + 
@@ -76,7 +76,7 @@ void __bdbm_abm_check_status (struct bdbm_abm_info* bai)
 }
 
 static inline
-void __bdbm_abm_display_status (struct bdbm_abm_info* bai) 
+void __bdbm_abm_display_status (bdbm_abm_info_t* bai) 
 {
 	bdbm_msg ("[ABM] Total: %llu => Free:%llu, Free(prepare):%llu, Clean:%llu, Dirty:%llu, Bad:%llu",
 		bai->nr_total_blks,
@@ -89,7 +89,7 @@ void __bdbm_abm_display_status (struct bdbm_abm_info* bai)
 	__bdbm_abm_check_status (bai);
 }
 
-babm_abm_page_t* __bdbm_abm_create_pst (struct nand_params* np)
+babm_abm_page_t* __bdbm_abm_create_pst (nand_params_t* np)
 {
 	babm_abm_page_t* pst = NULL;
 
@@ -105,15 +105,15 @@ void __bdbm_abm_destory_pst (babm_abm_page_t* pst)
 		bdbm_free (pst);
 }
 
-struct bdbm_abm_info* bdbm_abm_create (
-	struct nand_params* np,
+bdbm_abm_info_t* bdbm_abm_create (
+	nand_params_t* np,
 	uint8_t use_pst)
 {
 	uint64_t loop;
-	struct bdbm_abm_info* bai = NULL;
+	bdbm_abm_info_t* bai = NULL;
 
 	/* create 'bdbm_abm_info' */
-	if ((bai = (struct bdbm_abm_info*)bdbm_zmalloc (sizeof (struct bdbm_abm_info))) == NULL) {
+	if ((bai = (bdbm_abm_info_t*)bdbm_zmalloc (sizeof (bdbm_abm_info_t))) == NULL) {
 		bdbm_error ("bdbm_zmalloc fbailed");
 		return NULL;
 	}
@@ -121,7 +121,7 @@ struct bdbm_abm_info* bdbm_abm_create (
 
 	/* create 'bdbm_abm_block' */
 	if ((bai->blocks = bdbm_zmalloc 
-			(sizeof (struct bdbm_abm_block_t) * np->nr_blocks_per_ssd)) == NULL) {
+			(sizeof (bdbm_abm_block_t) * np->nr_blocks_per_ssd)) == NULL) {
 		goto fail;
 	}
 
@@ -205,7 +205,7 @@ fail:
 	return NULL;
 }
 
-void bdbm_abm_destroy (struct bdbm_abm_info* bai) 
+void bdbm_abm_destroy (bdbm_abm_info_t* bai) 
 {
 	uint64_t loop;
 
@@ -241,8 +241,8 @@ void bdbm_abm_destroy (struct bdbm_abm_info* bai)
 }
 
 /* get a block using an index */
-struct bdbm_abm_block_t* bdbm_abm_get_block (
-	struct bdbm_abm_info* bai,
+bdbm_abm_block_t* bdbm_abm_get_block (
+	bdbm_abm_info_t* bai,
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no) 
@@ -262,18 +262,18 @@ struct bdbm_abm_block_t* bdbm_abm_get_block (
 }
 
 /* get a free block using lists */
-struct bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
-	struct bdbm_abm_info* bai,
+bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
+	bdbm_abm_info_t* bai,
 	uint64_t channel_no,
 	uint64_t chip_no) 
 {
 	struct list_head* pos = NULL;
-	struct bdbm_abm_block_t* blk = NULL;
+	bdbm_abm_block_t* blk = NULL;
 	uint32_t cnt = 0;
 
 	list_for_each (pos, &(bai->list_head_free[channel_no][chip_no])) {
 		cnt++;
-		blk = list_entry (pos, struct bdbm_abm_block_t, list);
+		blk = list_entry (pos, bdbm_abm_block_t, list);
 		if (blk->status == BDBM_ABM_BLK_FREE) {
 			blk->status = BDBM_ABM_BLK_FREE_PREPARE;
 
@@ -304,8 +304,8 @@ struct bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 }
 
 void bdbm_abm_get_free_block_rollback (
-	struct bdbm_abm_info* bai,
-	struct bdbm_abm_block_t* blk)
+	bdbm_abm_info_t* bai,
+	bdbm_abm_block_t* blk)
 {
 	bdbm_bug_on (blk->status != BDBM_ABM_BLK_FREE_PREPARE);
 
@@ -322,8 +322,8 @@ void bdbm_abm_get_free_block_rollback (
 }
 
 void bdbm_abm_get_free_block_commit (
-	struct bdbm_abm_info* bai,
-	struct bdbm_abm_block_t* blk)
+	bdbm_abm_info_t* bai,
+	bdbm_abm_block_t* blk)
 {
 	/* see if the status of a block is correct or not */
 	bdbm_bug_on (blk->status != BDBM_ABM_BLK_FREE_PREPARE);
@@ -345,13 +345,13 @@ void bdbm_abm_get_free_block_commit (
 }
 
 void bdbm_abm_erase_block (
-	struct bdbm_abm_info* bai,
+	bdbm_abm_info_t* bai,
 	uint64_t channel_no,
 	uint64_t chip_no,
 	uint64_t block_no,
 	uint8_t is_bad)
 {
-	struct bdbm_abm_block_t* blk = NULL;
+	bdbm_abm_block_t* blk = NULL;
 	uint64_t blk_idx = 
 		__get_block_idx (bai->np, channel_no, chip_no, block_no);
 
@@ -439,13 +439,13 @@ void bdbm_abm_erase_block (
 }
 
 void bdbm_abm_invalidate_page (
-	struct bdbm_abm_info* bai, 
+	bdbm_abm_info_t* bai, 
 	uint64_t channel_no, 
 	uint64_t chip_no, 
 	uint64_t block_no, 
 	uint64_t page_no)
 {
-	struct bdbm_abm_block_t* b = NULL;
+	bdbm_abm_block_t* b = NULL;
 
 	b = bdbm_abm_get_block (bai, channel_no, chip_no, block_no);
 
@@ -490,7 +490,7 @@ void bdbm_abm_invalidate_page (
 
 
 /* for snapshot */
-uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn)
+uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn)
 {
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
@@ -524,7 +524,7 @@ uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn)
 	bai->nr_bad_blks = 0;
 
 	for (i = 0; i < bai->np->nr_blocks_per_ssd; i++) {
-		struct bdbm_abm_block_t* b = &bai->blocks[i];
+		bdbm_abm_block_t* b = &bai->blocks[i];
 		list_del (&b->list);
 		switch (b->status) {
 		case BDBM_ABM_BLK_FREE:
@@ -566,7 +566,7 @@ uint32_t bdbm_abm_load (struct bdbm_abm_info* bai, const char* fn)
 	return 0;
 }
 
-uint32_t bdbm_abm_store (struct bdbm_abm_info* bai, const char* fn)
+uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn)
 {
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;

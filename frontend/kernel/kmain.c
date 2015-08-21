@@ -55,11 +55,11 @@ THE SOFTWARE.
 #include "utils/ufile.h"
 
 /* main data structure */
-struct bdbm_drv_info* _bdi = NULL;
+bdbm_drv_info_t* _bdi = NULL;
 
-static int init_func_pointers (struct bdbm_drv_info* bdi)
+static int init_func_pointers (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_params* p = bdi->ptr_bdbm_params;
+	bdbm_params_t* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
 #if 0
@@ -147,13 +147,13 @@ uint8_t* ptr_ram_consumer = NULL;
 
 static int __init bdbm_drv_init (void)
 {
-	struct bdbm_drv_info* bdi = NULL;
-	struct bdbm_host_inf_t* host = NULL; 
-	struct bdbm_dm_inf_t* dm = NULL;
-	struct bdbm_hlm_inf_t* hlm = NULL;
-	struct bdbm_llm_inf_t* llm = NULL;
-	struct bdbm_ftl_inf_t* ftl = NULL;
-	/*struct bdbm_params* ptr_params = NULL;*/
+	bdbm_drv_info_t* bdi = NULL;
+	bdbm_host_inf_t* host = NULL; 
+	bdbm_dm_inf_t* dm = NULL;
+	bdbm_hlm_inf_t* hlm = NULL;
+	bdbm_llm_inf_t* llm = NULL;
+	bdbm_ftl_inf_t* ftl = NULL;
+	/*bdbm_params_t* ptr_params = NULL;*/
 #ifdef SNAPSHOT_ENABLE
 	uint32_t load = 0;
 #endif
@@ -167,8 +167,8 @@ static int __init bdbm_drv_init (void)
 	}
 #endif
 
-	/* allocate the memory for bdbm_drv_info */
-	if ((bdi = (struct bdbm_drv_info*)bdbm_malloc_atomic (sizeof (struct bdbm_drv_info))) == NULL) {
+	/* allocate the memory for bdbm_drv_info_t */
+	if ((bdi = (bdbm_drv_info_t*)bdbm_malloc_atomic (sizeof (bdbm_drv_info_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		goto fail;
 	}

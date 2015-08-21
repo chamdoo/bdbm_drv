@@ -105,7 +105,7 @@ enum HLM_TYPE {
 
 
 /* parameter structures */
-struct driver_params {
+typedef struct {
 	uint32_t mapping_policy;
 	uint32_t gc_policy;
 	uint32_t wl_policy;
@@ -116,9 +116,9 @@ struct driver_params {
 	uint32_t llm_type;
 	uint32_t hlm_type;
 	uint32_t mapping_type;
-};
+} driver_params_t;
 
-struct nand_params {
+typedef struct {
 	uint64_t nr_channels;
 	uint64_t nr_chips_per_channel;
 	uint64_t nr_blocks_per_chip;
@@ -135,11 +135,11 @@ struct nand_params {
 	uint64_t nr_blocks_per_ssd;
 	uint64_t nr_chips_per_ssd;
 	uint64_t nr_pages_per_ssd;
-};
+} nand_params_t;
 
-struct bdbm_params {
-	struct driver_params driver;
-	struct nand_params nand;
-};
+typedef struct {
+	driver_params_t driver;
+	nand_params_t nand;
+} bdbm_params_t;
 
 #endif /* _BLUEDBM_PARAMS_H */

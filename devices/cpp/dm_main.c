@@ -33,10 +33,11 @@ THE SOFTWARE.
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
+#include "bdbm_drv.h"
 #include "debug.h"
 
-extern struct bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
-struct bdbm_drv_info* _bdi_dm = NULL; /* for Connectal & RAMSSD */
+extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
+bdbm_drv_info_t* _bdi_dm = NULL; /* for Connectal & RAMSSD */
 
 
 #if defined (KERNEL_MODE)
@@ -54,7 +55,7 @@ static void __exit risa_dev_exit (void)
 }
 #endif
 
-int bdbm_dm_init (struct bdbm_drv_info* bdi)
+int bdbm_dm_init (bdbm_drv_info_t* bdi)
 {
 	/* see if bdi is valid or not */
 	if (bdi == NULL) {
@@ -73,7 +74,7 @@ int bdbm_dm_init (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void bdbm_dm_exit (struct bdbm_drv_info* bdi)
+void bdbm_dm_exit (bdbm_drv_info_t* bdi)
 {
 	_bdi_dm = NULL;
 }
@@ -81,7 +82,7 @@ void bdbm_dm_exit (struct bdbm_drv_info* bdi)
 /* NOTE: Export dm_inf to kernel or user applications.
  * This is only supported when both the FTL and the device manager (dm) are compiled 
  * in the same mode (i.e., both KERNEL_MODE or USER_MODE) */
-struct bdbm_dm_inf_t* bdbm_dm_get_inf (struct bdbm_drv_info* bdi)
+bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 {
 	if (_bdi_dm == NULL) {
 		bdbm_warning ("_bdi_dm is not initialized yet");

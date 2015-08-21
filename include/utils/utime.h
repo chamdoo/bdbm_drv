@@ -40,7 +40,7 @@ uint32_t time_get_timestamp_in_sec (void);
 void time_init (void);
 
 /* stopwatch functions */
-struct bdbm_stopwatch {
+typedef struct {
 #if defined(KERNEL_MODE) && \
 	defined(USE_KTIMER)
 	ktime_t start;
@@ -55,11 +55,11 @@ struct bdbm_stopwatch {
 #else
 	#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
-};
+} bdbm_stopwatch_t;
 
-void bdbm_stopwatch_start (struct bdbm_stopwatch* sw);
-int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw);
-int64_t bdbm_stopwatch_get_elapsed_time_us (struct bdbm_stopwatch* sw);
+void bdbm_stopwatch_start (bdbm_stopwatch_t* sw);
+int64_t bdbm_stopwatch_get_elapsed_time_ms (bdbm_stopwatch_t* sw);
+int64_t bdbm_stopwatch_get_elapsed_time_us (bdbm_stopwatch_t* sw);
 
 #endif
 

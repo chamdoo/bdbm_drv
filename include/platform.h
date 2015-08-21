@@ -55,7 +55,7 @@ THE SOFTWARE.
 
 /* mutex */
 #include <linux/mutex.h>
-#define bdbm_mutex struct mutex
+#define bdbm_mutex_t struct mutex
 #define bdbm_mutex_init(a) mutex_init(a)
 #define bdbm_mutex_lock(a) mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)
@@ -111,7 +111,7 @@ THE SOFTWARE.
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 
 /* synchronization */
-#define bdbm_mutex pthread_mutex_t 
+#define bdbm_mutex_t pthread_mutex_t 
 #define bdbm_mutex_init(a) pthread_mutex_init(a, NULL)
 #define bdbm_mutex_lock(a) pthread_mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)

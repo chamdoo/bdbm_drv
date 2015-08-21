@@ -25,13 +25,13 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_LLM_NT_H
 #define _BLUEDBM_LLM_NT_H
 
-extern struct bdbm_llm_inf_t _llm_noq_inf;
+extern bdbm_llm_inf_t _llm_noq_inf;
 
-uint32_t llm_noq_create (struct bdbm_drv_info* bdi);
-void llm_noq_destroy (struct bdbm_drv_info* bdi);
-uint32_t llm_noq_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
-void llm_noq_flush (struct bdbm_drv_info* bdi);
-void llm_noq_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* req);
+uint32_t llm_noq_create (bdbm_drv_info_t* bdi);
+void llm_noq_destroy (bdbm_drv_info_t* bdi);
+uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void llm_noq_flush (bdbm_drv_info_t* bdi);
+void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 
 #endif
 

@@ -43,13 +43,13 @@ THE SOFTWARE.
 
 static uint64_t max_queue_items = 0;
 
-struct bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
+bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 {
-	struct bdbm_queue_t* mq;
+	bdbm_queue_t* mq;
 	uint64_t loop;
 
 	/* create a private structure */
-	if ((mq = bdbm_malloc_atomic (sizeof (struct bdbm_queue_t))) == NULL) {
+	if ((mq = bdbm_malloc_atomic (sizeof (bdbm_queue_t))) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		return NULL;
 	}
@@ -74,13 +74,13 @@ struct bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 /* NOTE: it must be called when mq is empty.
  * If not, we would work improperly (e.g., freeing while locking)
  */
-void bdbm_queue_destroy (struct bdbm_queue_t* mq)
+void bdbm_queue_destroy (bdbm_queue_t* mq)
 {
 	bdbm_free_atomic (mq->qlh);
 	bdbm_free_atomic (mq);
 }
 
-uint8_t bdbm_queue_enqueue (struct bdbm_queue_t* mq, uint64_t qid, void* req)
+uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req)
 {
 	uint32_t ret = 0;
 	unsigned long flags;
@@ -93,9 +93,9 @@ uint8_t bdbm_queue_enqueue (struct bdbm_queue_t* mq, uint64_t qid, void* req)
 	ret = 1;
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->max_size == INFINITE_QUEUE || mq->qic < mq->max_size) {
-		struct bdbm_queue_item_t* q = NULL;
-		if ((q = (struct bdbm_queue_item_t*)bdbm_malloc_atomic 
-				(sizeof (struct bdbm_queue_item_t))) == NULL) {
+		bdbm_queue_item_t* q = NULL;
+		if ((q = (bdbm_queue_item_t*)bdbm_malloc_atomic 
+				(sizeof (bdbm_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 		} else {
 			q->ptr_req = (void*)req;
@@ -114,7 +114,7 @@ uint8_t bdbm_queue_enqueue (struct bdbm_queue_t* mq, uint64_t qid, void* req)
 	return ret;
 }
 
-uint8_t bdbm_queue_enqueue_top (struct bdbm_queue_t* mq, uint64_t qid, void* req)
+uint8_t bdbm_queue_enqueue_top (bdbm_queue_t* mq, uint64_t qid, void* req)
 {
 	uint32_t ret = 0;
 	unsigned long flags;
@@ -127,9 +127,9 @@ uint8_t bdbm_queue_enqueue_top (struct bdbm_queue_t* mq, uint64_t qid, void* req
 	ret = 1;
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->max_size == INFINITE_QUEUE || mq->qic < mq->max_size) {
-		struct bdbm_queue_item_t* q = NULL;
-		if ((q = (struct bdbm_queue_item_t*)bdbm_malloc_atomic 
-				(sizeof (struct bdbm_queue_item_t))) == NULL) {
+		bdbm_queue_item_t* q = NULL;
+		if ((q = (bdbm_queue_item_t*)bdbm_malloc_atomic 
+				(sizeof (bdbm_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 		} else {
 			q->ptr_req = (void*)req;
@@ -148,17 +148,17 @@ uint8_t bdbm_queue_enqueue_top (struct bdbm_queue_t* mq, uint64_t qid, void* req
 	return ret;
 }
 
-uint8_t bdbm_queue_is_empty (struct bdbm_queue_t* mq, uint64_t qid)
+uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid)
 {
 	unsigned long flags;
 	struct list_head* pos = NULL;
-	struct bdbm_queue_item_t* q = NULL;
+	bdbm_queue_item_t* q = NULL;
 	uint8_t ret = 1;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->qic > 0) {
 		list_for_each (pos, &mq->qlh[qid]) {
-			q = list_entry (pos, struct bdbm_queue_item_t, list);
+			q = list_entry (pos, bdbm_queue_item_t, list);
 			break;
 		}
 		if (q)
@@ -169,17 +169,17 @@ uint8_t bdbm_queue_is_empty (struct bdbm_queue_t* mq, uint64_t qid)
 	return ret;
 }
 
-void* bdbm_queue_dequeue (struct bdbm_queue_t* mq, uint64_t qid)
+void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid)
 {
 	unsigned long flags;
 	struct list_head* pos = NULL;
-	struct bdbm_queue_item_t* q = NULL;
+	bdbm_queue_item_t* q = NULL;
 	void* req = NULL;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->qic > 0) {
 		list_for_each (pos, &mq->qlh[qid]) {
-			q = list_entry (pos, struct bdbm_queue_item_t, list);
+			q = list_entry (pos, bdbm_queue_item_t, list);
 			break;
 		}
 		if (q) {
@@ -194,7 +194,7 @@ void* bdbm_queue_dequeue (struct bdbm_queue_t* mq, uint64_t qid)
 	return req;
 }
 
-uint8_t bdbm_queue_is_full (struct bdbm_queue_t* mq)
+uint8_t bdbm_queue_is_full (bdbm_queue_t* mq)
 {
 	uint8_t ret = 0;
 	unsigned long flags;
@@ -211,7 +211,7 @@ uint8_t bdbm_queue_is_full (struct bdbm_queue_t* mq)
 	return ret;
 }
 
-uint8_t bdbm_queue_is_all_empty (struct bdbm_queue_t* mq)
+uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq)
 {
 	uint8_t ret = 0;
 	unsigned long flags;
@@ -224,7 +224,7 @@ uint8_t bdbm_queue_is_all_empty (struct bdbm_queue_t* mq)
 	return ret;
 }
 
-uint64_t bdbm_queue_get_nr_items (struct bdbm_queue_t* mq)
+uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq)
 {
 	uint64_t nr_items = 0;
 	unsigned long flags;

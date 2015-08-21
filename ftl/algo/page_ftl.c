@@ -48,7 +48,7 @@ THE SOFTWARE.
 
 
 /* FTL interface */
-struct bdbm_ftl_inf_t _ftl_page_ftl = {
+bdbm_ftl_inf_t _ftl_page_ftl = {
 	.ptr_private = NULL,
 	.create = bdbm_page_ftl_create,
 	.destroy = bdbm_page_ftl_destroy,
@@ -75,11 +75,11 @@ enum BDBM_PFTL_PAGE_STATUS {
 
 struct bdbm_page_mapping_entry {
 	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
-	struct bdbm_phyaddr_t phyaddr; /* physical location */
+	bdbm_phyaddr_t phyaddr; /* physical location */
 };
 
 struct bdbm_page_ftl_private {
-	struct bdbm_abm_info* bai;
+	bdbm_abm_info_t* bai;
 	struct bdbm_page_mapping_entry* ptr_mapping_table;
 	bdbm_spinlock_t ftl_lock;
 	uint64_t nr_punits;	
@@ -87,18 +87,18 @@ struct bdbm_page_ftl_private {
 	/* for the management of active blocks */
 	uint64_t curr_puid;
 	uint64_t curr_page_ofs;
-	struct bdbm_abm_block_t** ac_bab;
+	bdbm_abm_block_t** ac_bab;
 
 	/* reserved for gc (reused whenever gc is invoked) */
-	struct bdbm_abm_block_t** gc_bab;
-	struct bdbm_hlm_req_gc_t gc_hlm;
+	bdbm_abm_block_t** gc_bab;
+	bdbm_hlm_req_gc_t gc_hlm;
 
 	/* for bad-block scanning */
-	bdbm_mutex badblk;
+	bdbm_mutex_t badblk;
 };
 
 
-struct bdbm_page_mapping_entry* __bdbm_page_ftl_create_mapping_table (struct nand_params* np)
+struct bdbm_page_mapping_entry* __bdbm_page_ftl_create_mapping_table (nand_params_t* np)
 {
 	struct bdbm_page_mapping_entry* me;
 	uint64_t loop;
@@ -131,9 +131,9 @@ void __bdbm_page_ftl_destroy_mapping_table (
 }
 
 uint32_t __bdbm_page_ftl_get_active_blocks (
-	struct nand_params* np,
-	struct bdbm_abm_info* bai,
-	struct bdbm_abm_block_t** bab)
+	nand_params_t* np,
+	bdbm_abm_info_t* bai,
+	bdbm_abm_block_t** bab)
 {
 	uint64_t i, j;
 
@@ -155,20 +155,20 @@ uint32_t __bdbm_page_ftl_get_active_blocks (
 	return 0;
 }
 
-struct bdbm_abm_block_t** __bdbm_page_ftl_create_active_blocks (
-	struct nand_params* np,
-	struct bdbm_abm_info* bai)
+bdbm_abm_block_t** __bdbm_page_ftl_create_active_blocks (
+	nand_params_t* np,
+	bdbm_abm_info_t* bai)
 {
 	uint64_t nr_punits;
-	struct bdbm_abm_block_t** bab = NULL;
+	bdbm_abm_block_t** bab = NULL;
 
 	nr_punits = np->nr_chips_per_channel * np->nr_channels;
 
 	/*bdbm_msg ("nr_punits: %llu", nr_punits);*/
 
 	/* create a set of active blocks */
-	if ((bab = (struct bdbm_abm_block_t**)bdbm_zmalloc 
-			(sizeof (struct bdbm_abm_block_t*) * nr_punits)) == NULL) {
+	if ((bab = (bdbm_abm_block_t**)bdbm_zmalloc 
+			(sizeof (bdbm_abm_block_t*) * nr_punits)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
@@ -188,7 +188,7 @@ fail:
 }
 
 void __bdbm_page_ftl_destroy_active_blocks (
-	struct bdbm_abm_block_t** bab)
+	bdbm_abm_block_t** bab)
 {
 	if (bab == NULL)
 		return;
@@ -198,10 +198,10 @@ void __bdbm_page_ftl_destroy_active_blocks (
 	bdbm_free (bab);
 }
 
-uint32_t bdbm_page_ftl_create (struct bdbm_drv_info* bdi)
+uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_page_ftl_private* p = NULL;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint64_t i = 0, j = 0;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
@@ -239,21 +239,21 @@ uint32_t bdbm_page_ftl_create (struct bdbm_drv_info* bdi)
 	}
 
 	/* allocate gc stuffs */
-	if ((p->gc_bab = (struct bdbm_abm_block_t**)bdbm_zmalloc 
-			(sizeof (struct bdbm_abm_block_t*) * p->nr_punits)) == NULL) {
+	if ((p->gc_bab = (bdbm_abm_block_t**)bdbm_zmalloc 
+			(sizeof (bdbm_abm_block_t*) * p->nr_punits)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		bdbm_page_ftl_destroy (bdi);
 		return 1;
 	}
-	if ((p->gc_hlm.llm_reqs = (struct bdbm_llm_req_t*)bdbm_zmalloc
-			(sizeof (struct bdbm_llm_req_t) * p->nr_punits * np->nr_pages_per_block)) == NULL) {
+	if ((p->gc_hlm.llm_reqs = (bdbm_llm_req_t*)bdbm_zmalloc
+			(sizeof (bdbm_llm_req_t) * p->nr_punits * np->nr_pages_per_block)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		bdbm_page_ftl_destroy (bdi);
 		return 1;
 	}
 
 	while (i < p->nr_punits * np->nr_pages_per_block) {
-		struct bdbm_llm_req_t* r = &p->gc_hlm.llm_reqs[i];
+		bdbm_llm_req_t* r = &p->gc_hlm.llm_reqs[i];
 		r->kpg_flags = NULL;
 		r->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic (sizeof(uint8_t*) * nr_kp_per_fp);
 		for (j = 0; j < nr_kp_per_fp; j++)
@@ -266,10 +266,10 @@ uint32_t bdbm_page_ftl_create (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void bdbm_page_ftl_destroy (struct bdbm_drv_info* bdi)
+void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 
 	if (!p)
 		return;
@@ -278,7 +278,7 @@ void bdbm_page_ftl_destroy (struct bdbm_drv_info* bdi)
 		uint64_t i = 0, j = 0;
 		uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 		while (i < p->nr_punits * np->nr_pages_per_block) {
-			struct bdbm_llm_req_t* r = &p->gc_hlm.llm_reqs[i];
+			bdbm_llm_req_t* r = &p->gc_hlm.llm_reqs[i];
 			for (j = 0; j < nr_kp_per_fp; j++)
 				free_page ((unsigned long)r->pptr_kpgs[j]);
 			bdbm_free_atomic (r->pptr_kpgs);
@@ -298,11 +298,11 @@ void bdbm_page_ftl_destroy (struct bdbm_drv_info* bdi)
 	bdbm_free (p);
 }
 
-uint32_t bdbm_page_ftl_get_free_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa)
+uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_abm_block_t* b = NULL;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
 	uint64_t curr_chip;
 
@@ -347,9 +347,9 @@ uint32_t bdbm_page_ftl_get_free_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, st
 	return 0;
 }
 
-uint32_t bdbm_page_ftl_map_lpa_to_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ptr_phyaddr)
+uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)
 {
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
 	struct bdbm_page_mapping_entry* me = NULL;
 
@@ -382,9 +382,9 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, 
 	return 0;
 }
 
-uint32_t bdbm_page_ftl_get_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa)
+uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
 	struct bdbm_page_mapping_entry* me = NULL;
 	uint32_t ret;
@@ -418,9 +418,9 @@ uint32_t bdbm_page_ftl_get_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct 
 	return ret;
 }
 
-uint32_t bdbm_page_ftl_invalidate_lpa (struct bdbm_drv_info* bdi, uint64_t lpa, uint64_t len)
+uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)
 {	
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
 	struct bdbm_page_mapping_entry* me = NULL;
 	uint64_t loop;
@@ -450,7 +450,7 @@ uint32_t bdbm_page_ftl_invalidate_lpa (struct bdbm_drv_info* bdi, uint64_t lpa, 
 	return 0;
 }
 
-uint8_t bdbm_page_ftl_is_gc_needed (struct bdbm_drv_info* bdi)
+uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
 	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
@@ -474,15 +474,15 @@ uint8_t bdbm_page_ftl_is_gc_needed (struct bdbm_drv_info* bdi)
 
 /* VICTIM SELECTION - First Selection:
  * select the first dirty block in a list */
-struct bdbm_abm_block_t* __bdbm_page_ftl_victim_selection (
-	struct bdbm_drv_info* bdi,
+bdbm_abm_block_t* __bdbm_page_ftl_victim_selection (
+	bdbm_drv_info_t* bdi,
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_abm_block_t* a = NULL;
-	struct bdbm_abm_block_t* b = NULL;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_abm_block_t* a = NULL;
+	bdbm_abm_block_t* b = NULL;
 	struct list_head* pos = NULL;
 
 	a = p->ac_bab[channel_no*np->nr_chips_per_channel + chip_no];
@@ -498,16 +498,16 @@ struct bdbm_abm_block_t* __bdbm_page_ftl_victim_selection (
 
 /* VICTIM SELECTION - Greedy:
  * select a dirty block with a small number of valid pages */
-struct bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
-	struct bdbm_drv_info* bdi,
+bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
+	bdbm_drv_info_t* bdi,
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_abm_block_t* a = NULL;
-	struct bdbm_abm_block_t* b = NULL;
-	struct bdbm_abm_block_t* v = NULL;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_abm_block_t* a = NULL;
+	bdbm_abm_block_t* b = NULL;
+	bdbm_abm_block_t* v = NULL;
 	struct list_head* pos = NULL;
 
 	a = p->ac_bab[channel_no*np->nr_chips_per_channel + chip_no];
@@ -532,26 +532,26 @@ struct bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 }
 
 /* TODO: need to improve it for background gc */
-uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
+uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t nr_gc_blks = 0;
 	uint64_t nr_llm_reqs = 0;
 	uint64_t nr_punits = 0;
 	uint64_t i, j;
 
-	struct bdbm_stopwatch sw;
+	bdbm_stopwatch_t sw;
 
 	nr_punits = np->nr_channels * np->nr_chips_per_channel;
 
 	/* choose victim blocks for individual parallel units */
-	bdbm_memset (p->gc_bab, 0x00, sizeof (struct bdbm_abm_block_t*) * nr_punits);
+	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * nr_punits);
 	bdbm_stopwatch_start (&sw);
 	for (i = 0, nr_gc_blks = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
-			struct bdbm_abm_block_t* b; 
+			bdbm_abm_block_t* b; 
 			if ((b = __bdbm_page_ftl_victim_selection_greedy (bdi, i, j))) {
 				p->gc_bab[nr_gc_blks] = b;
 				nr_gc_blks++;
@@ -566,12 +566,12 @@ uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
 
 	/* build hlm_req_gc for reads */
 	for (i = 0, nr_llm_reqs = 0; i < nr_gc_blks; i++) {
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
 		if (b == NULL)
 			break;
 		for (j = 0; j < np->nr_pages_per_block; j++) {
 			if (b->pst[j] != BDBM_ABM_PAGE_INVALID) {
-				struct bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
+				bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
 				r->req_type = REQTYPE_GC_READ;
 				r->lpa = -1ULL; /* lpa is not available now */
 				r->ptr_hlm_req = (void*)hlm_gc;
@@ -615,7 +615,7 @@ uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
 
 	/* build hlm_req_gc for writes */
 	for (i = 0; i < nr_llm_reqs; i++) {
-		struct bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
+		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		r->lpa = ((uint64_t*)r->ptr_oob)[0]; /* update LPA */
 		if (bdbm_page_ftl_get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
@@ -645,8 +645,8 @@ uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi)
 	/* erase blocks */
 erase_blks:
 	for (i = 0; i < nr_gc_blks; i++) {
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
-		struct bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_ERASE;
 		r->lpa = -1ULL; /* lpa is not available now */
 		r->ptr_hlm_req = (void*)hlm_gc;
@@ -675,13 +675,13 @@ erase_blks:
 	/* FIXME: what happens if block erasure fails */
 	for (i = 0; i < nr_gc_blks; i++) {
 		uint8_t ret = 0;
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
 		if (hlm_gc->llm_reqs[i].ret != 0) 
 			ret = 1;	/* bad block */
 /*
 #ifdef EMULATE_BAD_BLOCKS
 		{
-			struct bdbm_llm_req_t* r = (struct bdbm_llm_req_t*)&hlm_gc->llm_reqs[i];
+			bdbm_llm_req_t* r = (bdbm_llm_req_t*)&hlm_gc->llm_reqs[i];
 			if (r->phyaddr->block_no % 8 == 0) {
 				bdbm_msg (" -- FTL: b:%llu c:%llu b:%llu (ret=%u)",
 						r->phyaddr->channel_no, 
@@ -699,10 +699,10 @@ erase_blks:
 }
 
 /* for snapshot */
-uint32_t bdbm_page_ftl_load (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_mapping_entry* me;
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
@@ -745,12 +745,12 @@ uint32_t bdbm_page_ftl_load (struct bdbm_drv_info* bdi, const char* fn)
 	return 0;
 }
 
-uint32_t bdbm_page_ftl_store (struct bdbm_drv_info* bdi, const char* fn)
+uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_mapping_entry* me;
-	struct bdbm_abm_block_t* b = NULL;
+	bdbm_abm_block_t* b = NULL;
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
 	uint64_t pos = 0;
@@ -807,20 +807,20 @@ uint32_t bdbm_page_ftl_store (struct bdbm_drv_info* bdi, const char* fn)
 }
 
 void __bdbm_page_badblock_scan_eraseblks (
-	struct bdbm_drv_info* bdi,
+	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
 	/* setup blocks to erase */
-	bdbm_memset (p->gc_bab, 0x00, sizeof (struct bdbm_abm_block_t*) * p->nr_punits);
+	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * p->nr_punits);
 	for (i = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
-			struct bdbm_abm_block_t* b = NULL;
-			struct bdbm_llm_req_t* r = NULL;
+			bdbm_abm_block_t* b = NULL;
+			bdbm_llm_req_t* r = NULL;
 			uint64_t punit_id = i*np->nr_chips_per_channel+j;
 
 			if ((b = bdbm_abm_get_block (p->bai, i, j, block_no)) == NULL) {
@@ -858,7 +858,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 
 	for (i = 0; i < p->nr_punits; i++) {
 		uint8_t ret = 0;
-		struct bdbm_abm_block_t* b = p->gc_bab[i];
+		bdbm_abm_block_t* b = p->gc_bab[i];
 
 		if (hlm_gc->llm_reqs[i].ret != 0) {
 			ret = 1; /* bad block */
@@ -870,10 +870,10 @@ void __bdbm_page_badblock_scan_eraseblks (
 	/* measure gc elapsed time */
 }
 
-uint32_t bdbm_page_badblock_scan (struct bdbm_drv_info* bdi)
+uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct nand_params* np = BDBM_GET_NAND_PARAMS (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	struct bdbm_page_mapping_entry* me = NULL;
 	uint64_t i = 0;
 	uint32_t ret = 0;

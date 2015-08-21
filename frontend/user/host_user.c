@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include "utils/uthread.h"
 
 
-struct bdbm_host_inf_t _host_user_inf = {
+bdbm_host_inf_t _host_user_inf = {
 	.ptr_private = NULL,
 	.open = host_user_open,
 	.close = host_user_close,
@@ -44,22 +44,22 @@ struct bdbm_host_inf_t _host_user_inf = {
 	.end_req = host_user_end_req,
 };
 
-struct bdbm_host_block_private {
+typedef struct {
 	uint64_t nr_host_reqs;
 	bdbm_spinlock_t lock;
-	bdbm_mutex host_lock;
-};
+	bdbm_mutex_t host_lock;
+} bdbm_host_block_private_t;
 
 
-static struct bdbm_hlm_req_t* __host_block_create_hlm_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_host_req_t* host_req)
+static bdbm_hlm_req_t* __host_block_create_hlm_req (
+	bdbm_drv_info_t* bdi, 
+	bdbm_host_req_t* host_req)
 {
 	uint32_t kpg_loop = 0;
-	struct bdbm_hlm_req_t* hlm_req = NULL;
+	bdbm_hlm_req_t* hlm_req = NULL;
 
-	if ((hlm_req = (struct bdbm_hlm_req_t*)bdbm_malloc_atomic
-			(sizeof (struct bdbm_hlm_req_t))) == NULL) {
+	if ((hlm_req = (bdbm_hlm_req_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_hlm_req_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return NULL;
 	}
@@ -106,10 +106,10 @@ fail_req:
 }
 
 static void __host_block_delete_hlm_req (
-	struct bdbm_drv_info* bdi, 
-	struct bdbm_hlm_req_t* hlm_req)
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* hlm_req)
 {
-	struct nand_params* np = NULL;
+	nand_params_t* np = NULL;
 	uint32_t kpg_loop = 0;
 
 	np = &bdi->ptr_bdbm_params->nand;
@@ -153,14 +153,14 @@ static void __host_block_delete_hlm_req (
 	bdbm_free_atomic (hlm_req);
 }
 
-uint32_t host_user_open (struct bdbm_drv_info* bdi)
+uint32_t host_user_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
-	struct bdbm_host_block_private* p;
+	bdbm_host_block_private_t* p;
 
 	/* create a private data structure */
-	if ((p = (struct bdbm_host_block_private*)bdbm_malloc_atomic
-			(sizeof (struct bdbm_host_block_private))) == NULL) {
+	if ((p = (bdbm_host_block_private_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_host_block_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
@@ -173,12 +173,12 @@ uint32_t host_user_open (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void host_user_close (struct bdbm_drv_info* bdi)
+void host_user_close (bdbm_drv_info_t* bdi)
 {
 	unsigned long flags;
-	struct bdbm_host_block_private* p = NULL;
+	bdbm_host_block_private_t* p = NULL;
 
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* wait for host reqs to finish */
 	bdbm_msg ("wait for host reqs to finish");
@@ -203,17 +203,17 @@ void host_user_close (struct bdbm_drv_info* bdi)
 }
 
 void host_user_make_req (
-	struct bdbm_drv_info* bdi, 
+	bdbm_drv_info_t* bdi, 
 	void *bio)
 {
 	unsigned long flags;
-	struct nand_params* np = NULL;
-	struct bdbm_hlm_req_t* hlm_req = NULL;
-	struct bdbm_host_block_private* p = NULL;
-	struct bdbm_host_req_t* host_req = (struct bdbm_host_req_t*)bio;
+	nand_params_t* np = NULL;
+	bdbm_hlm_req_t* hlm_req = NULL;
+	bdbm_host_block_private_t* p = NULL;
+	bdbm_host_req_t* host_req = (bdbm_host_req_t*)bio;
 
 	np = &bdi->ptr_bdbm_params->nand;
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 
 	bdbm_mutex_lock (&p->host_lock);
 
@@ -249,15 +249,15 @@ void host_user_make_req (
 	bdbm_mutex_unlock (&p->host_lock);
 }
 
-void host_user_end_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* hlm_req)
+void host_user_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 {
 	uint32_t ret;
 	unsigned long flags;
-	/*struct bdbm_host_req_t* host_req = NULL;*/
-	struct bdbm_host_block_private* p = NULL;
+	/*bdbm_host_req_t* host_req = NULL;*/
+	bdbm_host_block_private_t* p = NULL;
 
 	/* get a bio from hlm_req */
-	p = (struct bdbm_host_block_private*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 	ret = hlm_req->ret;
 
 	/* destroy hlm_req */

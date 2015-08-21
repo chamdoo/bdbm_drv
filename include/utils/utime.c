@@ -97,7 +97,7 @@ int timeval_subtract (
 	return x->tv_sec < y->tv_sec;
 }
 
-void bdbm_stopwatch_start (struct bdbm_stopwatch* sw)
+void bdbm_stopwatch_start (bdbm_stopwatch_t* sw)
 {
 	if (sw) {
 #if defined(KERNEL_MODE) && \
@@ -109,7 +109,7 @@ void bdbm_stopwatch_start (struct bdbm_stopwatch* sw)
 	}
 }
 
-int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw)
+int64_t bdbm_stopwatch_get_elapsed_time_ms (bdbm_stopwatch_t* sw)
 {
 	if (sw) {
 #if defined(KERNEL_MODE) && \
@@ -128,7 +128,7 @@ int64_t bdbm_stopwatch_get_elapsed_time_ms (struct bdbm_stopwatch* sw)
 	return 0;
 }
 
-int64_t bdbm_stopwatch_get_elapsed_time_us (struct bdbm_stopwatch* sw)
+int64_t bdbm_stopwatch_get_elapsed_time_us (bdbm_stopwatch_t* sw)
 {
 	if (sw) {
 #if defined(KERNEL_MODE) && \

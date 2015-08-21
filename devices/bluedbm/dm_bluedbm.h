@@ -27,14 +27,14 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 
-extern struct bdbm_dm_inf_t _dm_bluedbm_inf;
+extern bdbm_dm_inf_t _dm_bluedbm_inf;
 
-uint32_t dm_bluedbm_probe (struct bdbm_drv_info* bdi, struct nand_params* params);
-uint32_t dm_bluedbm_open (struct bdbm_drv_info* bdi);
-void dm_bluedbm_close (struct bdbm_drv_info* bdi);
-uint32_t dm_bluedbm_make_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-void dm_bluedbm_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req);
-uint32_t dm_bluedbm_load (struct bdbm_drv_info* bdi, const char* fn);
-uint32_t dm_bluedbm_store (struct bdbm_drv_info* bdi, const char* fn);
+uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, nand_params_t* params);
+uint32_t dm_bluedbm_open (bdbm_drv_info_t* bdi);
+void dm_bluedbm_close (bdbm_drv_info_t* bdi);
+uint32_t dm_bluedbm_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+void dm_bluedbm_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_bluedbm_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t dm_bluedbm_store (bdbm_drv_info_t* bdi, const char* fn);
 
 #endif /* _BLUEDBM_DM_BLUEDBM_H */

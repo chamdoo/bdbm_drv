@@ -80,12 +80,12 @@ MODULE_PARM_DESC (_param_host_type, "host interface type");
 MODULE_PARM_DESC (_param_llm_type, "low-level memory management type");
 MODULE_PARM_DESC (_param_hlm_type, "high-level memory management type");
 
-struct bdbm_params* read_driver_params (void)
+bdbm_params_t* read_driver_params (void)
 {
-	struct bdbm_params* ptr_params = NULL;
+	bdbm_params_t* ptr_params = NULL;
 
 	/* allocate the memory for parameters */
-	if ((ptr_params = (struct bdbm_params*)bdbm_malloc (sizeof (struct bdbm_params))) == NULL) {
+	if ((ptr_params = (bdbm_params_t*)bdbm_malloc (sizeof (bdbm_params_t))) == NULL) {
 		bdbm_error ("failed to allocate the memory for ptr_params");
 		return NULL;
 	}
@@ -104,9 +104,9 @@ struct bdbm_params* read_driver_params (void)
 	return ptr_params;
 }
 
-void display_default_params (struct bdbm_drv_info* bdi)
+void display_default_params (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_params* ptr_params = bdi->ptr_bdbm_params;
+	bdbm_params_t* ptr_params = bdi->ptr_bdbm_params;
 
 	if (ptr_params == NULL) {
 		bdbm_msg ("oops! the parameters are not loaded properly");

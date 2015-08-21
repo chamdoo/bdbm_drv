@@ -40,7 +40,7 @@ THE SOFTWARE.
  * [1] linux-source/drivers/mtd/mtd_blkdevs.c
  * [2] linux-source/drivers/mtd/nftlcore.c */
 
-extern struct bdbm_drv_info* _bdi;
+extern bdbm_drv_info_t* _bdi;
 
 DECLARE_COMPLETION(task_completion);
 static struct task_struct *task = NULL;
@@ -48,7 +48,7 @@ static struct task_struct *task = NULL;
 
 int badblock_scan_thread_fn (void* arg) 
 {
-	struct bdbm_ftl_inf_t* ftl = NULL;
+	bdbm_ftl_inf_t* ftl = NULL;
 	uint32_t ret;
 
 	/* get the ftl */
@@ -69,7 +69,7 @@ exit:
 
 int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 {
-	struct nand_params* np = &_bdi->ptr_bdbm_params->nand;
+	nand_params_t* np = &_bdi->ptr_bdbm_params->nand;
 	int nr_sectors = np->device_capacity_in_byte >> 9;
 
 	/* NOTE: Heads * Cylinders * Sectors = # of sectors (512B) in SSDs */

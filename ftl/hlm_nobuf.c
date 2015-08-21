@@ -46,7 +46,7 @@ THE SOFTWARE.
 
 
 /* interface for hlm_nobuf */
-struct bdbm_hlm_inf_t _hlm_nobuf_inf = {
+bdbm_hlm_inf_t _hlm_nobuf_inf = {
 	.ptr_private = NULL,
 	.create = hlm_nobuf_create,
 	.destroy = hlm_nobuf_destroy,
@@ -58,12 +58,12 @@ struct bdbm_hlm_inf_t _hlm_nobuf_inf = {
 
 /* data structures for hlm_nobuf */
 struct bdbm_hlm_nobuf_private {
-	struct bdbm_ftl_inf_t* ptr_ftl_inf;
+	bdbm_ftl_inf_t* ptr_ftl_inf;
 };
 
 
 /* functions for hlm_nobuf */
-uint32_t hlm_nobuf_create (struct bdbm_drv_info* bdi)
+uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_nobuf_private* p;
 
@@ -86,7 +86,7 @@ uint32_t hlm_nobuf_create (struct bdbm_drv_info* bdi)
 	return 0;
 }
 
-void hlm_nobuf_destroy (struct bdbm_drv_info* bdi)
+void hlm_nobuf_destroy (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_nobuf_private* p = (struct bdbm_hlm_nobuf_private*)BDBM_HLM_PRIV(bdi);
 
@@ -94,9 +94,9 @@ void hlm_nobuf_destroy (struct bdbm_drv_info* bdi)
 	bdbm_free_atomic (p);
 }
 
-uint32_t __hlm_nobuf_make_trim_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* ptr_hlm_req)
+uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	struct bdbm_ftl_inf_t* ftl = (struct bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint64_t i;
 
 	for (i = 0; i < ptr_hlm_req->len; i++) {
@@ -106,10 +106,10 @@ uint32_t __hlm_nobuf_make_trim_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_r
 	return 0;
 }
 
-uint32_t __hlm_nobuf_get_req_type (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* ptr_hlm_req, uint32_t index)
+uint32_t __hlm_nobuf_get_req_type (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req, uint32_t index)
 {
-	struct driver_params* dp = (struct driver_params*)BDBM_GET_DRIVER_PARAMS(bdi);
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
+	driver_params_t* dp = (driver_params_t*)BDBM_GET_DRIVER_PARAMS(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 	uint32_t nr_kp_per_fp, req_type, j;
 
 	nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
@@ -132,11 +132,11 @@ uint32_t __hlm_nobuf_get_req_type (struct bdbm_drv_info* bdi, struct bdbm_hlm_re
 	return req_type;
 }
 
-uint32_t __hlm_nobuf_make_rw_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* ptr_hlm_req)
+uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	struct bdbm_ftl_inf_t* ftl = (struct bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
-	struct nand_params* np = (struct nand_params*)BDBM_GET_NAND_PARAMS(bdi);
-	struct bdbm_llm_req_t** pptr_llm_req;
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_llm_req_t** pptr_llm_req;
 	uint32_t nr_kp_per_fp;
 	uint32_t hlm_len;
 	uint32_t ret = 0;
@@ -146,19 +146,19 @@ uint32_t __hlm_nobuf_make_rw_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req
 	hlm_len = ptr_hlm_req->len;
 
 	/* create a set of llm_req */
-	if ((pptr_llm_req = (struct bdbm_llm_req_t**)bdbm_malloc_atomic
-			(sizeof (struct bdbm_llm_req_t*) * ptr_hlm_req->len)) == NULL) {
+	if ((pptr_llm_req = (bdbm_llm_req_t**)bdbm_malloc_atomic
+			(sizeof (bdbm_llm_req_t*) * ptr_hlm_req->len)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return -1;
 	}
 
 	/* divide a hlm_req into multiple llm_reqs */
 	for (i = 0; i < hlm_len; i++) {
-		struct bdbm_llm_req_t* r = NULL;
+		bdbm_llm_req_t* r = NULL;
 
 		/* create a low-level request */
-		if ((r = (struct bdbm_llm_req_t*)bdbm_malloc_atomic 
-				(sizeof (struct bdbm_llm_req_t))) == NULL) {
+		if ((r = (bdbm_llm_req_t*)bdbm_malloc_atomic 
+				(sizeof (bdbm_llm_req_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 			goto fail;
 		}
@@ -239,7 +239,7 @@ uint32_t __hlm_nobuf_make_rw_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req
 fail:
 	/* free llm_req */
 	for (i = 0; i < ptr_hlm_req->len; i++) {
-		struct bdbm_llm_req_t* r = pptr_llm_req[i];
+		bdbm_llm_req_t* r = pptr_llm_req[i];
 		if (r != NULL) {
 			if (r->ptr_oob != NULL)
 				bdbm_free_atomic (r->ptr_oob);
@@ -251,9 +251,9 @@ fail:
 	return 1;
 }
 
-uint32_t hlm_nobuf_make_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* ptr_hlm_req)
+uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	struct bdbm_ftl_inf_t* ftl = (struct bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint32_t ret;
 
 	/* see if gc is needed or not */
@@ -287,9 +287,9 @@ uint32_t hlm_nobuf_make_req (struct bdbm_drv_info* bdi, struct bdbm_hlm_req_t* p
 	return ret;
 }
 
-void __hlm_nobuf_end_host_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* ptr_llm_req)
+void __hlm_nobuf_end_host_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
-	struct bdbm_hlm_req_t* ptr_hlm_req = (struct bdbm_hlm_req_t* )ptr_llm_req->ptr_hlm_req;
+	bdbm_hlm_req_t* ptr_hlm_req = (bdbm_hlm_req_t* )ptr_llm_req->ptr_hlm_req;
 
 	/* see if 'ptr_hlm_req' is NULL or not */
 	if (ptr_hlm_req == NULL) {
@@ -309,7 +309,7 @@ void __hlm_nobuf_end_host_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t*
 
 	/* change flags of hlm */
 	if (ptr_hlm_req->kpg_flags != NULL) {
-		struct nand_params* np;
+		nand_params_t* np;
 		uint32_t nr_kp_per_fp, ofs, loop;
 
 		np = &bdi->ptr_bdbm_params->nand;
@@ -357,9 +357,9 @@ void __hlm_nobuf_end_host_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t*
 	}
 }
 
-void __hlm_nobuf_end_gc_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+void __hlm_nobuf_end_gc_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
-	struct bdbm_hlm_req_gc_t* hlm_req = (struct bdbm_hlm_req_gc_t* )llm_req->ptr_hlm_req;
+	bdbm_hlm_req_gc_t* hlm_req = (bdbm_hlm_req_gc_t* )llm_req->ptr_hlm_req;
 
 	hlm_req->nr_done_reqs++;
 	if (hlm_req->nr_reqs == hlm_req->nr_done_reqs) {
@@ -367,7 +367,7 @@ void __hlm_nobuf_end_gc_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* l
 	}
 }
 
-void hlm_nobuf_end_req (struct bdbm_drv_info* bdi, struct bdbm_llm_req_t* llm_req)
+void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	switch (llm_req->req_type) {
 	case REQTYPE_READ:

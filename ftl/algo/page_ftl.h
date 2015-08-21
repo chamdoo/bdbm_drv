@@ -25,19 +25,19 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_FTL_PAGEFTL_H
 #define _BLUEDBM_FTL_PAGEFTL_H
 
-extern struct bdbm_ftl_inf_t _ftl_page_ftl;
+extern bdbm_ftl_inf_t _ftl_page_ftl;
 
-uint32_t bdbm_page_ftl_create (struct bdbm_drv_info* bdi);
-void bdbm_page_ftl_destroy (struct bdbm_drv_info* bdi);
-uint32_t bdbm_page_ftl_get_free_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-uint32_t bdbm_page_ftl_get_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ppa);
-uint32_t bdbm_page_ftl_map_lpa_to_ppa (struct bdbm_drv_info* bdi, uint64_t lpa, struct bdbm_phyaddr_t* ptr_phyaddr);
-uint32_t bdbm_page_ftl_invalidate_lpa (struct bdbm_drv_info* bdi, uint64_t lpa, uint64_t len);
-uint8_t bdbm_page_ftl_is_gc_needed (struct bdbm_drv_info* bdi);
-uint32_t bdbm_page_ftl_do_gc (struct bdbm_drv_info* bdi);
-uint32_t bdbm_page_badblock_scan (struct bdbm_drv_info* bdi);
-uint32_t bdbm_page_ftl_load (struct bdbm_drv_info* bdi, const char* fn);
-uint32_t bdbm_page_ftl_store (struct bdbm_drv_info* bdi, const char* fn);
+uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi);
+void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr);
+uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len);
+uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
 
 #endif /* _BLUEDBM_FTL_BLOCKFTL_H */
 
