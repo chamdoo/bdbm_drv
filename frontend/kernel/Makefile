@@ -37,6 +37,8 @@ bdbm_drv-y := \
 	$(FTL)/algo/no_ftl.o \
 	$(FTL)/algo/block_ftl.o \
 	$(FTL)/algo/page_ftl.o \
+	$(FTL)/algo/dftl.o \
+	$(FTL)/algo/dftl_map.o \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
 	$(COMMON)/utils/utime.o \

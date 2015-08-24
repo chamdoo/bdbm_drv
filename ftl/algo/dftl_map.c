@@ -22,4 +22,331 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined (KERNEL_MODE)
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/log2.h>
+
+#elif defined (USER_MODE)
+#include <stdio.h>
+#include <stdint.h>
+#include "3rd/uilog.h"
+#include "utils/upage.h"
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
+
+#include "bdbm_drv.h"
+#include "params.h"
+#include "debug.h"
+
+#include "utils/utime.h"
+#include "utils/ufile.h"
+#include "algo/abm.h"
+#include "algo/dftl_map.h"
+
+
+dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np)
+{
+	dftl_mapping_table_t* mt = NULL;
+	uint64_t i;
+
+	/* create a mapping tables */
+	if ((mt = (dftl_mapping_table_t*)bdbm_zmalloc
+			(sizeof (dftl_mapping_table_t))) == NULL) {
+		return NULL;
+	}
+	INIT_LIST_HEAD (&mt->lru_list);
+	mt->mapping_entry_size = sizeof (mapping_entry_t);
+	mt->nr_entires_per_dir_slot = np->page_main_size / mt->mapping_entry_size;
+	mt->nr_total_dir_slots = np->nr_pages_per_ssd / mt->nr_entires_per_dir_slot;
+	mt->max_cached_dir_slots = 20;
+	atomic64_set (&mt->nr_cached_slots, 0);
+
+	/* create a directory */
+	if ((mt->dir = (directory_slot_t*)bdbm_zmalloc (
+			sizeof (directory_slot_t) * mt->nr_total_dir_slots)) == NULL) {
+		return NULL;
+	}
+
+	/* initialize directory slots */
+	for (i = 0; i < mt->nr_total_dir_slots; i++) {
+		directory_slot_t* ds = &mt->dir[i];
+
+		ds->id = i;
+		ds->status = DFTL_DIR_EMPTY;
+		ds->phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
+		ds->me = NULL;
+	}
+
+	return mt;
+}
+
+void bdbm_dftl_destroy_mapping_table (dftl_mapping_table_t* mt)
+{
+	struct list_head* next, *temp;
+	int i = 0;
+
+	/* empty dirty list */
+	list_for_each_safe (next, temp, &mt->lru_list) {
+		directory_slot_t* ds = NULL;
+		ds = list_entry (next, directory_slot_t, list);
+		list_del (&ds->list);
+	}
+
+	/* remove directories */
+	if (mt->dir) {
+		for (i = 0; i < mt->nr_total_dir_slots; i++)
+			if (mt->dir[i].me != NULL)
+				bdbm_free (mt->dir[i].me);
+		bdbm_free (mt->dir);
+	}
+	bdbm_free (mt);
+}
+
+void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np)
+{
+	uint64_t i = 0;
+	struct list_head* next, *temp;
+
+	/* initialize mapping table */
+	for (i = 0; i < mt->nr_total_dir_slots; i++) {
+		directory_slot_t* ds = &mt->dir[i];
+
+		ds->id = i;
+		ds->status = DFTL_DIR_EMPTY;
+		ds->phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
+		ds->phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
+		if (ds->me != NULL)
+			bdbm_free (ds->me);
+		ds->me = NULL;
+	}
+
+	/* empty dirty list */
+	list_for_each_safe (next, temp, &mt->lru_list) {
+		directory_slot_t* ds = NULL;
+		ds = list_entry (next, directory_slot_t, list);
+		list_del (&ds->list);
+	}
+}
+
+mapping_entry_t bdbm_dftl_get_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa)
+{
+	uint64_t dir_idx = lpa / mt->nr_entires_per_dir_slot;
+	uint64_t map_idx = lpa % mt->nr_entires_per_dir_slot;
+	directory_slot_t* ds = NULL;
+	mapping_entry_t me;
+
+	/* get a directory slot */
+	ds = &mt->dir[dir_idx];
+	bdbm_bug_on (ds == NULL);
+
+	/* see if mapping entries are already loaded in DRAM */
+	if (ds->me != NULL) {
+		/* get the mapping entry */
+		me = ds->me[map_idx];
+		goto found;
+	}
+
+	/* this is an error case */
+	bdbm_error ("oops! a mapping entry was not found!!! lpa = %llu, ds id: %llu", lpa, dir_idx);
+
+	me.status = DFTL_PAGE_NOT_EXIST;
+
+found:
+	return me;
+}
+
+int bdbm_dftl_set_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa, mapping_entry_t* me)
+{
+	uint64_t dir_idx = lpa / mt->nr_entires_per_dir_slot;
+	uint64_t map_idx = lpa % mt->nr_entires_per_dir_slot;
+	directory_slot_t* ds = NULL;
+
+	/* get a directory slot */
+	ds = &mt->dir[dir_idx];
+	bdbm_bug_on (ds == NULL);
+	bdbm_bug_on (ds->me == NULL);
+
+	/* update the mapping entry */
+	ds->me[map_idx] = *me;
+	ds->status = DFTL_DIR_DIRTY;
+
+	/* the directory slot is moved to the tail */
+	list_del (&ds->list);
+	list_add_tail (&ds->list, &mt->lru_list);
+
+	return 0;
+}
+
+int bdbm_dftl_invalidate_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa)
+{
+	uint64_t dir_idx = lpa / mt->nr_entires_per_dir_slot;
+	uint64_t map_idx = lpa % mt->nr_entires_per_dir_slot;
+	directory_slot_t* ds = NULL;
+
+	/* get a directory slot */
+	ds = &mt->dir[dir_idx];
+	bdbm_bug_on (ds == NULL);
+	bdbm_bug_on (ds->me == NULL);
+
+	/* update the mapping entry */
+	ds->me[map_idx].status = DFTL_PAGE_INVALID;
+	ds->status = DFTL_DIR_DIRTY;
+
+	return 0;
+}
+
+int bdbm_dftl_check_mapping_entry (
+	dftl_mapping_table_t* mt, 
+	uint64_t lpa)
+{
+	directory_slot_t* ds = NULL;
+
+	/* get a directory slot */
+	ds = &mt->dir[lpa/mt->nr_entires_per_dir_slot];
+	bdbm_bug_on (ds == NULL);
+
+	if (ds->me == NULL) {
+		/* a mapping entry is not available */
+		return 1; 
+	}
+
+	/* a mapping entry is available */
+	return 0; 
+}
+
+directory_slot_t* bdbm_dftl_missing_dir_prepare (
+	dftl_mapping_table_t* mt,
+	uint64_t lpa)
+{
+	directory_slot_t* ds = NULL;
+
+	ds = &mt->dir[lpa/mt->nr_entires_per_dir_slot];
+
+	/* check error cases */
+	bdbm_bug_on (ds == NULL);
+	bdbm_bug_on (ds->me != NULL);
+
+	if (ds->status == DFTL_DIR_EMPTY) {
+		int j = 0;
+
+		/* this directory slot is not written before */
+		ds->me = (mapping_entry_t*)bdbm_malloc
+			(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
+		bdbm_bug_on (ds->me == NULL);
+
+		/* initialize all the entries */
+		for (j = 0; j < mt->nr_entires_per_dir_slot; j++) {
+			ds->me[j].status = DFTL_PAGE_NOT_MAPPED;
+			ds->me[j].phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
+			ds->me[j].phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
+			ds->me[j].phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
+			ds->me[j].phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
+		}
+		ds->status = DFTL_DIR_CLEAN;
+
+		/* add the directory slot to the tail of the dirty linked-list */
+		atomic64_inc (&mt->nr_cached_slots);
+		list_add_tail (&ds->list, &mt->lru_list);
+
+		return NULL;
+	}
+
+	return ds;
+}
+
+int bdbm_dftl_missing_dir_done (
+	dftl_mapping_table_t* mt, 
+	directory_slot_t* ds,
+	mapping_entry_t* me)
+{
+	uint32_t i;
+
+	/* build mapping entires for ds */
+	ds->me = (mapping_entry_t*)bdbm_malloc 
+		(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
+	for (i = 0; i < mt->nr_entires_per_dir_slot; i++) {
+		ds->me[i] = me[i];
+	}
+
+	/* NOTE: initially, the status of ds is clean even if it has invalid pages.
+	 * It becomes dirty only when its mapping entries are updated.  */
+	bdbm_bug_on (ds->phyaddr.channel_no == DFTL_PAGE_INVALID_ADDR);
+	ds->status = DFTL_DIR_CLEAN;
+
+	atomic64_inc (&mt->nr_cached_slots);
+	list_add_tail (&ds->list, &mt->lru_list);
+
+	return 0;
+}
+
+directory_slot_t* bdbm_dftl_prepare_victim_mapblk (
+	dftl_mapping_table_t* mt)
+{
+	directory_slot_t* ds = NULL;
+	struct list_head* pos = NULL;
+	uint64_t nr_slots = 0;
+
+	/* get the number of slots kept in DRAM */
+	nr_slots = atomic64_read (&mt->nr_cached_slots);
+	if (nr_slots < mt->max_cached_dir_slots) {
+		return NULL;
+	}
+
+	/* get a victim dir from lru-list */
+	list_for_each (pos, &mt->lru_list) {
+		ds = list_entry (pos, directory_slot_t, list);
+		bdbm_bug_on (ds == NULL);
+		break;
+	}
+
+	return ds;
+}
+
+void bdbm_dftl_finish_victim_mapblk (
+	dftl_mapping_table_t* mt, 
+	directory_slot_t* ds,
+	bdbm_phyaddr_t* phyaddr)
+{
+	/* update a directory slot */
+	ds->status = DFTL_DIR_FLASH;
+	ds->phyaddr = *phyaddr;
+
+	bdbm_free (ds->me);	
+	ds->me = NULL;
+	list_del (&ds->list);
+
+	atomic64_dec (&mt->nr_cached_slots);
+}
+
+void bdbm_dftl_update_dir_phyaddr (
+	dftl_mapping_table_t* mt, 
+	uint64_t ds_id,
+	bdbm_phyaddr_t* phyaddr)
+{
+	directory_slot_t* ds = NULL;
+
+	ds = &mt->dir[ds_id];
+	bdbm_bug_on (ds == NULL);
+
+	bdbm_msg ("update ds phyaddr: %llu %llu %llu %llu => %llu %llu %llu %llu",
+		ds->phyaddr.channel_no,
+		ds->phyaddr.chip_no,
+		ds->phyaddr.block_no,
+		ds->phyaddr.page_no,
+
+		phyaddr->channel_no,
+		phyaddr->chip_no,
+		phyaddr->block_no,
+		phyaddr->page_no);
+
+	ds->phyaddr = *phyaddr;
+}
 

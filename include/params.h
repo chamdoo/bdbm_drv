@@ -99,8 +99,9 @@ enum LLM_TYPE {
 
 enum HLM_TYPE {
 	HLM_NO_BUFFER = 1,
-	HLM_BUFFER = 2,
-	HLM_RSD = 3,
+	HLM_BUFFER,
+	HLM_DFTL,
+	HLM_RSD,
 };
 
 

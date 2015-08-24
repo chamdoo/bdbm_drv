@@ -47,12 +47,15 @@ THE SOFTWARE.
 #include "llm_mq.h"
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
+#include "hlm_dftl.h"
 #include "hlm_rsd.h"
 #include "hw.h"
+#include "pmu.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
+#include "algo/dftl.h"
 #include "utils/ufile.h"
 
 /* main data structure */
@@ -80,6 +83,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		break;
 	case HLM_BUFFER:
 		bdi->ptr_hlm_inf = &_hlm_buf_inf;
+		break;
+	case HLM_DFTL:
+		bdi->ptr_hlm_inf = &_hlm_dftl_inf;
 		break;
 	case HLM_RSD:
 		bdi->ptr_hlm_inf = &_hlm_rsd_inf;
@@ -114,6 +120,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		break;
 	case MAPPING_POLICY_PAGE:
 		bdi->ptr_ftl_inf = &_ftl_page_ftl;
+		break;
+	case MAPPING_POLICY_DFTL:
+		bdi->ptr_ftl_inf = &_ftl_dftl;
 		break;
 	default:
 		bdbm_error ("invalid ftl type");
@@ -284,8 +293,8 @@ void bdbm_drv_exit(void)
 }
 
 
-/*#define NUM_THREADS	100*/
-#define NUM_THREADS	20
+#define NUM_THREADS	100
+/*#define NUM_THREADS	20*/
 /*#define NUM_THREADS	10*/
 /*#define NUM_THREADS	1*/
 
@@ -301,7 +310,7 @@ void host_thread_fn (void *data)
 	int *val = (int*)(data);
 
 	for (loop = 0; loop < 10000; loop++) {
-	/*for (loop = 0; loop < 100; loop++) {*/
+	/*for (loop = 0; loop < 1000; loop++) {*/
 		bdbm_host_req_t* host_req = NULL;
 
 		host_req = (bdbm_host_req_t*)malloc (sizeof (bdbm_host_req_t));
@@ -310,7 +319,7 @@ void host_thread_fn (void *data)
 		(*val)++;
 		host_req->req_type = REQTYPE_WRITE;
 		host_req->lpa = lpa++;
-		host_req->len = 4;
+		host_req->len = 1;
 		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
 
 		host_req->data[0] = 0xA;
@@ -357,7 +366,6 @@ int main (int argc, char** argv)
 	bdbm_drv_exit ();
 
 	bdbm_msg ("[main] done");
-	for (;;);
 
 	return 0;
 }

@@ -45,6 +45,7 @@ THE SOFTWARE.
 #include "utils/ufile.h"
 #include "algo/abm.h"
 #include "algo/dftl.h"
+#include "algo/dftl_map.h"
 
 
 /* FTL interface */
@@ -65,31 +66,16 @@ bdbm_ftl_inf_t _ftl_dftl = {
 	.store = bdbm_dftl_store,
 
 	/* mapping-blks management */
-	.get_incomp_mapblk = bdbm_dftl_get_incomp_mapblk,
-	.get_victim_mapblk = bdbm_dftl_get_victim_mapblk,
+	.check_mapblk = bdbm_dftl_check_mapblk,
+	.prepare_mapblk_eviction = bdbm_dftl_prepare_mapblk_eviction,
+	.finish_mapblk_eviction = bdbm_dftl_finish_mapblk_eviction,
+	.prepare_mapblk_load = bdbm_dftl_prepare_mapblk_load,
+	.finish_mapblk_load = bdbm_dftl_finish_mapblk_load,
 };
 
-
-/* data structures for block-level FTL */
-enum BDBM_PFTL_PAGE_STATUS {
-	PFTL_PAGE_NOT_ALLOCATED = 0,
-	PFTL_PAGE_VALID,
-	PFTL_PAGE_INVALID,
-	PFTL_PAGE_INVALID_ADDR = -1ULL,
-};
-
-#if PAGE
-struct bdbm_page_mapping_entry {
-	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
-	bdbm_phyaddr_t phyaddr; /* physical location */
-};
-#endif
-
-struct bdbm_dftl_private {
+typedef struct {
 	bdbm_abm_info_t* bai;
-#if PAGE
-	struct bdbm_page_mapping_entry* ptr_mapping_table;
-#endif
+	dftl_mapping_table_t* mt;
 	bdbm_spinlock_t ftl_lock;
 	uint64_t nr_punits;	
 
@@ -103,41 +89,9 @@ struct bdbm_dftl_private {
 	bdbm_hlm_req_gc_t gc_hlm;
 
 	/* for bad-block scanning */
-	bdbm_mutex badblk;
-};
+	bdbm_mutex_t badblk;
+} bdbm_dftl_private_t;
 
-
-struct bdbm_page_mapping_entry* __bdbm_dftl_create_mapping_table (nand_params_t* np)
-{
-	struct bdbm_page_mapping_entry* me;
-	uint64_t loop;
-
-	/* create a page-level mapping table */
-	if ((me = (struct bdbm_page_mapping_entry*)bdbm_zmalloc 
-			(sizeof (struct bdbm_page_mapping_entry) * np->nr_pages_per_ssd)) == NULL) {
-		return NULL;
-	}
-
-	/* initialize a page-level mapping table */
-	for (loop = 0; loop < np->nr_pages_per_ssd; loop++) {
-		me[loop].status = PFTL_PAGE_NOT_ALLOCATED;
-		me[loop].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
-		me[loop].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
-		me[loop].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
-		me[loop].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
-	}
-
-	/* return a set of mapping entries */
-	return me;
-}
-
-void __bdbm_dftl_destroy_mapping_table (
-	struct bdbm_page_mapping_entry* me)
-{
-	if (me == NULL)
-		return;
-	bdbm_free (me);
-}
 
 uint32_t __bdbm_dftl_get_active_blocks (
 	nand_params_t* np,
@@ -209,14 +163,14 @@ void __bdbm_dftl_destroy_active_blocks (
 
 uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_dftl_private* p = NULL;
+	bdbm_dftl_private_t* p = NULL;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint64_t i = 0, j = 0;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* create a private data structure */
-	if ((p = (struct bdbm_dftl_private*)bdbm_zmalloc 
-			(sizeof (struct bdbm_dftl_private))) == NULL) {
+	if ((p = (bdbm_dftl_private_t*)bdbm_zmalloc 
+			(sizeof (bdbm_dftl_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		return 1;
 	}
@@ -234,13 +188,11 @@ uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 	}
 
 	/* create a mapping table */
-#if PAGE
-	if ((p->ptr_mapping_table = __bdbm_dftl_create_mapping_table (np)) == NULL) {
+	if ((p->mt = bdbm_dftl_create_mapping_table (np)) == NULL) {
 		bdbm_error ("__bdbm_dftl_create_mapping_table failed");
 		bdbm_dftl_destroy (bdi);
 		return 1;
 	}
-#endif
 
 	/* allocate active blocks */
 	if ((p->ac_bab = __bdbm_dftl_create_active_blocks (np, p->bai)) == NULL) {
@@ -279,7 +231,7 @@ uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 
 void bdbm_dftl_destroy (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 
 	if (!p)
@@ -302,10 +254,8 @@ void bdbm_dftl_destroy (bdbm_drv_info_t* bdi)
 		bdbm_free (p->gc_bab);
 	if (p->ac_bab)
 		__bdbm_dftl_destroy_active_blocks (p->ac_bab);
-#if PAGE
-	if (p->ptr_mapping_table)
-		__bdbm_dftl_destroy_mapping_table (p->ptr_mapping_table);
-#endif
+	if (p->mt) 
+		bdbm_dftl_destroy_mapping_table (p->mt);
 	if (p->bai)
 		bdbm_abm_destroy (p->bai);
 	bdbm_free (p);
@@ -313,7 +263,7 @@ void bdbm_dftl_destroy (bdbm_drv_info_t* bdi)
 
 uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
@@ -324,7 +274,6 @@ uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyadd
 	curr_chip = p->curr_puid / np->nr_channels;
 
 	/* get the physical offset of the active blocks */
-	/*b = &p->ac_bab[curr_channel][curr_chip];*/
 	b = p->ac_bab[curr_channel * np->nr_chips_per_channel + curr_chip];
 	ppa->channel_no =  b->channel_no;
 	ppa->chip_no = b->chip_no;
@@ -363,8 +312,8 @@ uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyadd
 uint32_t bdbm_dftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)
 {
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
+	mapping_entry_t me;
 
 	/* is it a valid logical address */
 	if (lpa >= np->nr_pages_per_ssd) {
@@ -373,26 +322,30 @@ uint32_t bdbm_dftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phya
 	}
 
 	/* get the mapping entry for lpa */
-#if PAGE
-	me = &p->ptr_mapping_table[lpa];
-#endif
-	bdbm_bug_on (me == NULL);
+	me = bdbm_dftl_get_mapping_entry (p->mt, lpa);
+	if (me.status == DFTL_PAGE_NOT_EXIST) {
+		bdbm_error ("A given lpa is not found in the mapping table (%llu)", lpa);
+		return 1;
+	}
 
-	/* update the mapping table */
-	if (me->status == PFTL_PAGE_VALID) {
+	/* update the block status to dirty */
+	if (me.status == DFTL_PAGE_VALID) {
 		bdbm_abm_invalidate_page (
 			p->bai, 
-			me->phyaddr.channel_no, 
-			me->phyaddr.chip_no,
-			me->phyaddr.block_no,
-			me->phyaddr.page_no
+			me.phyaddr.channel_no, 
+			me.phyaddr.chip_no,
+			me.phyaddr.block_no,
+			me.phyaddr.page_no
 		);
 	}
-	me->status = PFTL_PAGE_VALID;
-	me->phyaddr.channel_no = ptr_phyaddr->channel_no;
-	me->phyaddr.chip_no = ptr_phyaddr->chip_no;
-	me->phyaddr.block_no = ptr_phyaddr->block_no;
-	me->phyaddr.page_no = ptr_phyaddr->page_no;
+
+	/* update the mapping entry to point to a new physical location */
+	me.status = DFTL_PAGE_VALID;
+	me.phyaddr.channel_no = ptr_phyaddr->channel_no;
+	me.phyaddr.chip_no = ptr_phyaddr->chip_no;
+	me.phyaddr.block_no = ptr_phyaddr->block_no;
+	me.phyaddr.page_no = ptr_phyaddr->page_no;
+	bdbm_dftl_set_mapping_entry (p->mt, lpa, &me);
 
 	return 0;
 }
@@ -400,8 +353,8 @@ uint32_t bdbm_dftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phya
 uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
+	mapping_entry_t me;
 	uint32_t ret;
 
 	/* is it a valid logical address */
@@ -411,24 +364,26 @@ uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* 
 	}
 
 	/* get the mapping entry for lpa */
-#if PAGE
-	me = &p->ptr_mapping_table[lpa];
-#endif
+	me = bdbm_dftl_get_mapping_entry (p->mt, lpa);
+	if (me.status == DFTL_PAGE_NOT_EXIST) {
+		bdbm_error ("A given lpa is not found in the mapping table (%llu)", lpa);
+		return 1;
+	}
 
 	/* NOTE: sometimes a file system attempts to read 
 	 * a logical address that was not written before.
 	 * in that case, we return 'address 0' */
-	if (me->status != PFTL_PAGE_VALID) {
+	if (me.status != DFTL_PAGE_VALID) {
 		ppa->channel_no = 0;
 		ppa->chip_no = 0;
 		ppa->block_no = 0;
 		ppa->page_no = 0;
 		ret = 1;
 	} else {
-		ppa->channel_no = me->phyaddr.channel_no;
-		ppa->chip_no = me->phyaddr.chip_no;
-		ppa->block_no = me->phyaddr.block_no;
-		ppa->page_no = me->phyaddr.page_no;
+		ppa->channel_no = me.phyaddr.channel_no;
+		ppa->chip_no = me.phyaddr.chip_no;
+		ppa->block_no = me.phyaddr.block_no;
+		ppa->page_no = me.phyaddr.page_no;
 		ret = 0;
 	}
 
@@ -438,8 +393,8 @@ uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* 
 uint32_t bdbm_dftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)
 {	
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
+	mapping_entry_t me;
 	uint64_t loop;
 
 	/* check the range of input addresses */
@@ -451,18 +406,26 @@ uint32_t bdbm_dftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t 
 
 	/* make them invalid */
 	for (loop = lpa; loop < (lpa + len); loop++) {
-#if PAGE
-		me = &p->ptr_mapping_table[loop];
-#endif
-		if (me->status == PFTL_PAGE_VALID) {
+		me = bdbm_dftl_get_mapping_entry (p->mt, loop);
+		if (me.status == DFTL_PAGE_NOT_EXIST) {
+			bdbm_error ("A given lpa is not found in the mapping table (%llu)", lpa);
+			return 1;
+		}
+
+		if (me.status == DFTL_PAGE_VALID) {
+			/* update a block status to dirty */
 			bdbm_abm_invalidate_page (
 				p->bai, 
-				me->phyaddr.channel_no, 
-				me->phyaddr.chip_no,
-				me->phyaddr.block_no,
-				me->phyaddr.page_no
+				me.phyaddr.channel_no, 
+				me.phyaddr.chip_no,
+				me.phyaddr.block_no,
+				me.phyaddr.page_no
 			);
-			me->status = PFTL_PAGE_INVALID;
+
+			/* update a mapping entry to invalid */
+			bdbm_dftl_invalidate_mapping_entry (p->mt, loop);
+		} else {
+			/* do nothing in other cases */
 		}
 	}
 
@@ -471,7 +434,7 @@ uint32_t bdbm_dftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t 
 
 uint8_t bdbm_dftl_is_gc_needed (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
@@ -482,7 +445,7 @@ uint8_t bdbm_dftl_is_gc_needed (bdbm_drv_info_t* bdi)
 
 	/* invoke gc when there is only one dirty block (for debugging) */
 	/*
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	if (bdbm_abm_get_nr_dirty_blocks (p->bai) > 1) {
 		return 1;
 	}
@@ -498,7 +461,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -522,7 +485,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection_greedy (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -553,7 +516,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection_greedy (
 /* TODO: need to improve it for background gc */
 uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t nr_gc_blks = 0;
@@ -605,12 +568,6 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 		}
 	}
 
-	/*
-	bdbm_msg ("----------------------------------------------");
-	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
-		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-	*/
-
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
 	bdi->ptr_llm_inf->flush (bdi);
@@ -632,18 +589,79 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
 
+	/* load mapping entries that do existing in DRAM */
+	for (i = 0; i < nr_llm_reqs; i++) {
+		uint64_t lpa;
+		bdbm_llm_req_t* r = NULL;
+
+		lpa = ((uint64_t*)hlm_gc->llm_reqs[i].ptr_oob)[0]; /* update LPA */
+
+		if ((int64_t)lpa == -2LL)
+			continue;
+
+		/* see if lpa exists in DRAM */
+		if (bdbm_dftl_check_mapblk (bdi, lpa) == 0) 
+			continue;	/* a mapping entry exists, so go to the next req */
+
+		/* load missing maing entries from Flash */
+		if ((r = bdbm_dftl_prepare_mapblk_load (bdi, lpa)) == NULL)
+			continue;
+
+		/* send reqs to llm */
+		bdbm_mutex_lock (r->done);
+		bdi->ptr_llm_inf->make_req (bdi, r);
+
+		/* wait for llm_reqs to finish */
+		bdbm_mutex_lock (r->done);
+		bdbm_dftl_finish_mapblk_load (bdi, r);
+	}
+
+	for (i = 0; i < nr_llm_reqs; i++) {
+		uint64_t lpa;
+		lpa = ((uint64_t*)hlm_gc->llm_reqs[i].ptr_oob)[0]; /* update LPA */
+
+		if ((int64_t)lpa == -2LL)
+			continue;
+
+		/* see if lpa exists in DRAM */
+		if (bdbm_dftl_check_mapblk (bdi, lpa) == 1) {
+			bdbm_error ("oops!");
+			exit (-1);
+		}
+	}
+
 	/* build hlm_req_gc for writes */
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		r->lpa = ((uint64_t*)r->ptr_oob)[0]; /* update LPA */
-		if (bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
-			bdbm_error ("bdbm_dftl_get_free_ppa failed");
-			bdbm_bug_on (1);
-		}
-		if (bdbm_dftl_map_lpa_to_ppa (bdi, r->lpa, r->phyaddr) != 0) {
-			bdbm_error ("bdbm_dftl_map_lpa_to_ppa failed");
-			bdbm_bug_on (1);
+
+		if ((int64_t)r->lpa == -2LL) {
+			/* This page currently keeps mapping entries;
+			 * its phyaddr in DS must be updated */
+			int64_t id = ((uint64_t*)r->ptr_oob)[1];
+			
+			bdbm_msg ("-----------------------------------------------------------");
+			bdbm_msg ("lpa: %lld, id: %lld", (int64_t)r->lpa, id);
+			bdbm_msg ("-----------------------------------------------------------");
+
+			if (bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
+				bdbm_error ("bdbm_dftl_get_free_ppa failed");
+				bdbm_bug_on (1);
+			}
+
+			bdbm_dftl_update_dir_phyaddr (p->mt, id, r->phyaddr);
+
+		} else {
+			if (bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
+				bdbm_error ("bdbm_dftl_get_free_ppa failed");
+				bdbm_bug_on (1);
+			}
+
+			if (bdbm_dftl_map_lpa_to_ppa (bdi, r->lpa, r->phyaddr) != 0) {
+				bdbm_error ("bdbm_dftl_map_lpa_to_ppa failed");
+				bdbm_bug_on (1);
+			}
 		}
 	}
 
@@ -660,6 +678,24 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 	}
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
+
+	/* drop mapping entries if */
+	while (1) {
+		bdbm_llm_req_t* r2 = NULL;
+
+		/* drop least-recently-used mapping enries to Flash */
+		if ((r2 = bdbm_dftl_prepare_mapblk_eviction (bdi)) == NULL) {
+			break;
+		}
+
+		/* send a req to llm */
+		bdbm_mutex_lock (r2->done);
+		bdi->ptr_llm_inf->make_req (bdi, r2);
+
+		/* wait until it finishes */
+		bdbm_mutex_lock (r2->done);
+		bdbm_dftl_finish_mapblk_eviction (bdi, r2);
+	}
 
 	/* erase blocks */
 erase_blks:
@@ -720,120 +756,21 @@ erase_blks:
 /* for snapshot */
 uint32_t bdbm_dftl_load (bdbm_drv_info_t* bdi, const char* fn)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me;
-	/*struct file* fp = NULL;*/
-	bdbm_file_t fp = 0;
-	uint64_t i, pos = 0;
-
-	/* step1: load abm */
-	if (bdbm_abm_load (p->bai, "/usr/share/bdbm_drv/abm.dat") != 0) {
-		bdbm_error ("bdbm_abm_load failed");
-		return 1;
-	}
-
-	/* step2: load mapping table */
-	if ((fp = bdbm_fopen (fn, O_RDWR, 0777)) == 0) {
-		bdbm_error ("bdbm_fopen failed");
-		return 1;
-	}
-
-#if PAGE
-	me = p->ptr_mapping_table;
-#endif
-	for (i = 0; i < np->nr_pages_per_ssd; i++) {
-		pos += bdbm_fread (fp, pos, (uint8_t*)&me[i], sizeof (struct bdbm_page_mapping_entry));
-		if (me[i].status != PFTL_PAGE_NOT_ALLOCATED &&
-			me[i].status != PFTL_PAGE_VALID &&
-			me[i].status != PFTL_PAGE_INVALID &&
-			me[i].status != PFTL_PAGE_INVALID_ADDR) {
-			bdbm_msg ("snapshot: invalid status = %u", me[i].status);
-		}
-	}
-
-	/* step3: get active blocks */
-	if (__bdbm_dftl_get_active_blocks (np, p->bai, p->ac_bab) != 0) {
-		bdbm_error ("__bdbm_dftl_get_active_blocks failed");
-		bdbm_fclose (fp);
-		return 1;
-	}
-	p->curr_puid = 0;
-	p->curr_page_ofs = 0;
-
-	bdbm_fclose (fp);
-
-	return 0;
+	bdbm_warning ("bdbm_dftl_load is not implemented yet");
+	return 1;
 }
 
 uint32_t bdbm_dftl_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me;
-	bdbm_abm_block_t* b = NULL;
-	/*struct file* fp = NULL;*/
-	bdbm_file_t fp = 0;
-	uint64_t pos = 0;
-	uint64_t i, j;
-	uint32_t ret;
-
-	/* step1: make active blocks invalid (it's ugly!!!) */
-	if ((fp = bdbm_fopen (fn, O_CREAT | O_WRONLY, 0777)) == 0) {
-		bdbm_error ("bdbm_fopen failed");
-		return 1;
-	}
-
-	while (1) {
-		/* get the channel & chip numbers */
-		i = p->curr_puid % np->nr_channels;
-		j = p->curr_puid / np->nr_channels;
-
-		/* get the physical offset of the active blocks */
-		b = p->ac_bab[i*np->nr_chips_per_channel + j];
-
-		/* invalidate remaining pages */
-		bdbm_abm_invalidate_page (p->bai, 
-			b->channel_no, b->chip_no, b->block_no, p->curr_page_ofs);
-		bdbm_bug_on (b->channel_no != i);
-		bdbm_bug_on (b->chip_no != j);
-
-		/* go to the next parallel unit */
-		if ((p->curr_puid + 1) == p->nr_punits) {
-			p->curr_puid = 0;
-			p->curr_page_ofs++;	/* go to the next page */
-
-			/* see if there are sufficient free pages or not */
-			if (p->curr_page_ofs == np->nr_pages_per_block) {
-				p->curr_page_ofs = 0;
-				break;
-			}
-		} else {
-			p->curr_puid++;
-		}
-	}
-
-	/* step2: store mapping table */
-#if PAGE
-	me = p->ptr_mapping_table;
-#endif
-	for (i = 0; i < np->nr_pages_per_ssd; i++) {
-		pos += bdbm_fwrite (fp, pos, (uint8_t*)&me[i], sizeof (struct bdbm_page_mapping_entry));
-	}
-	bdbm_fsync (fp);
-	bdbm_fclose (fp);
-
-	/* step3: store abm */
-	ret = bdbm_abm_store (p->bai, "/usr/share/bdbm_drv/abm.dat");
-
-	return ret;
+	bdbm_warning ("bdbm_dftl_store is not implemented yet");
+	return 1;
 }
 
 static void __bdbm_page_badblock_scan_eraseblks (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
@@ -895,9 +832,8 @@ static void __bdbm_page_badblock_scan_eraseblks (
 
 uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_dftl_private* p = _ftl_dftl.ptr_private;
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me = NULL;
 	uint64_t i = 0;
 	uint32_t ret = 0;
 
@@ -905,16 +841,7 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 
 	/* step1: reset the page-level mapping table */
 	bdbm_msg ("step1: reset the page-level mapping table");
-#if PAGE
-	me = p->ptr_mapping_table;
-#endif
-	for (i = 0; i < np->nr_pages_per_ssd; i++) {
-		me[i].status = PFTL_PAGE_NOT_ALLOCATED;
-		me[i].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
-		me[i].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
-		me[i].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
-		me[i].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
-	}
+	bdbm_dftl_init_mapping_table (p->mt, np);
 
 	/* step2: erase all the blocks */
 	bdi->ptr_llm_inf->flush (bdi);
@@ -943,13 +870,187 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 }
 
 /* for mapping blocks management */
-bdbm_hlm_req_t* bdbm_dftl_get_incomp_mapblk (bdbm_drv_info_t* bdi)
+uint8_t bdbm_dftl_check_mapblk (
+	bdbm_drv_info_t* bdi,
+	uint64_t lpa)
 {
-	return NULL;
+	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
+	return bdbm_dftl_check_mapping_entry (p->mt, lpa);
 }
 
-bdbm_hlm_req_t* bdbm_dftl_get_victim_mapblk (bdbm_drv_info_t* bdi)
+bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
+	bdbm_drv_info_t* bdi,
+	uint64_t lpa)
 {
-	return NULL;
+	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	mapping_entry_t* me = NULL;
+	directory_slot_t* ds = NULL;
+	bdbm_llm_req_t* r = NULL;
+	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
+	uint32_t i;
+
+	/* is there a victim mapblk to evict to flash */
+	if ((ds = bdbm_dftl_missing_dir_prepare (p->mt, lpa)) == NULL) {
+		/* there are enough space to keep in-memory mapping entries */
+		return NULL;
+	}
+
+	/* create a hlm_req that stores mapping entries */
+	r = (bdbm_llm_req_t*)bdbm_zmalloc (sizeof (bdbm_llm_req_t));
+	r->pptr_kpgs = (uint8_t**)bdbm_zmalloc (sizeof (uint8_t*) * nr_kp_per_fp);
+	me = (mapping_entry_t*)bdbm_zmalloc (np->page_main_size);
+	for (i = 0; i < nr_kp_per_fp; i++)
+		r->pptr_kpgs[i] = (uint8_t*)(me + (i * KERNEL_PAGE_SIZE));
+
+	/* build the parameters of the hlm_req */
+	r->req_type = REQTYPE_READ;
+	/*r->lpa = -1ULL;	*//* not available for mapblks */
+	r->lpa = -2ULL;	/* not available for mapblks */
+	r->phyaddr_r = ds->phyaddr;
+	r->phyaddr = &r->phyaddr_r;
+	r->ds = (void*)ds;
+	r->ptr_oob = bdbm_zmalloc (np->page_oob_size);
+
+	r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));
+	bdbm_mutex_init (r->done);
+
+#ifdef DFTL_DEBUG
+	bdbm_msg ("[dftl] [Fetch] dir: %llu (phyaddr: %lld %lld %lld %lld)", 
+		ds->id,
+		ds->phyaddr.channel_no,
+		ds->phyaddr.chip_no,
+		ds->phyaddr.block_no,
+		ds->phyaddr.page_no);
+#endif
+
+	/* ok! return it */
+	return r;
 }
 
+void bdbm_dftl_finish_mapblk_load (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
+{
+	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
+	directory_slot_t* ds = (directory_slot_t*)r->ds;
+	mapping_entry_t* me = NULL;
+
+	/* copy mapping entries to ds */
+	me = (mapping_entry_t*)r->pptr_kpgs[0];
+
+	if (((int64_t*)r->ptr_oob)[0] != -2LL) {
+		bdbm_msg ("---------------------------------------------------------------------");
+		bdbm_warning ("oob is not match: %lld", ((int64_t*)r->ptr_oob)[0]);
+		bdbm_msg ("---------------------------------------------------------------------");
+		exit (-1);
+		/* magic # */
+	}
+
+	/* finish the load */
+	bdbm_dftl_missing_dir_done (p->mt, ds, me);
+
+	/* remove a llm_req */
+	bdbm_free (r->done);
+	bdbm_free (r->pptr_kpgs[0]); /* free an array of mapblks */
+	bdbm_free (r->pptr_kpgs); /* free pptr_kpgs */
+	bdbm_free (r);
+
+#ifdef DFTL_DEBUG
+	bdbm_msg ("[dftl] [Fetch] dir: %llu (done)\n", ds->id);
+#endif
+}
+
+bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
+	bdbm_drv_info_t* bdi)
+{
+	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	mapping_entry_t* me = NULL;
+	directory_slot_t* ds = NULL;
+	bdbm_llm_req_t* r = NULL;
+	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
+	uint32_t i;
+
+	/* is there a victim mapblk to evict to flash */
+	if ((ds = bdbm_dftl_prepare_victim_mapblk (p->mt)) == NULL) {
+		/* there are enough space to keep in-memory mapping entries */
+		return NULL;
+	}
+
+	/* create a hlm_req that stores mapping entries */
+	r = (bdbm_llm_req_t*)bdbm_zmalloc (sizeof (bdbm_llm_req_t));
+	r->pptr_kpgs = (uint8_t**)bdbm_zmalloc (sizeof (uint8_t*) * nr_kp_per_fp);
+	me = (mapping_entry_t*)bdbm_zmalloc (np->page_main_size);
+	for (i = 0; i < nr_kp_per_fp; i++)
+		r->pptr_kpgs[i] = (uint8_t*)(me + (i * KERNEL_PAGE_SIZE));
+
+	/* build the parameters of the hlm_req */
+	r->req_type = REQTYPE_WRITE;
+	/*r->lpa = -1ULL;	*//* not available for me */
+	r->lpa = -2ULL;	/* not available for me */
+	r->phyaddr = &r->phyaddr_w;
+	r->ds = (void*)ds;
+	bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr); /* get a new page */
+	for (i = 0; i < p->mt->nr_entires_per_dir_slot; i++)
+		me[i] = ds->me[i];
+	r->ptr_oob = bdbm_zmalloc (np->page_oob_size);
+	((int64_t*)r->ptr_oob)[0] = -2LL; /* magic # */
+	((int64_t*)r->ptr_oob)[1] = ds->id; /* ds ID */
+
+	r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));
+	bdbm_mutex_init (r->done);
+
+#ifdef DFTL_DEBUG
+	bdbm_msg ("[dftl] [Evict] dir: %llu (phyaddr: %lld %lld %lld %lld)", 
+		ds->id,
+		r->phyaddr->channel_no,
+		r->phyaddr->chip_no,
+		r->phyaddr->block_no,
+		r->phyaddr->page_no);
+#endif
+
+	/* ok! return it */
+	return r;
+}
+
+void bdbm_dftl_finish_mapblk_eviction (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
+{
+	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
+	directory_slot_t* ds = (directory_slot_t*)r->ds;
+
+	/* invalidate an old page if ds was kept in flash before */
+	if (ds->phyaddr.channel_no != DFTL_PAGE_INVALID_ADDR) {
+#ifdef DFTL_DEBUG
+		bdbm_msg ("[dftl] [Evict] dir: %llu (invalidate: %lld %lld %lld %lld)", 
+			ds->id,
+			ds->phyaddr.channel_no, 
+			ds->phyaddr.chip_no,
+			ds->phyaddr.block_no,
+			ds->phyaddr.page_no);
+#endif
+		bdbm_abm_invalidate_page (
+			p->bai, 
+			ds->phyaddr.channel_no, 
+			ds->phyaddr.chip_no,
+			ds->phyaddr.block_no,
+			ds->phyaddr.page_no
+		);
+	}
+
+	/* finish the eviction */
+	bdbm_dftl_finish_victim_mapblk (p->mt, ds, r->phyaddr);
+
+	/* remove a llm_req */
+	bdbm_free (r->done);
+	bdbm_free (r->ptr_oob);
+	bdbm_free (r->pptr_kpgs[0]); /* free an array of mapblks */
+	bdbm_free (r->pptr_kpgs); /* free pptr_kpgs */
+	bdbm_free (r);
+
+#ifdef DFTL_DEBUG
+	bdbm_msg ("[dftl] [Evict] dir: %llu (done)\n", ds->id);
+#endif
+}

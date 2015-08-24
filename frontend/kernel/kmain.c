@@ -48,10 +48,12 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_rsd.h"
 #include "hw.h"
+#include "pmu.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
+#include "algo/dftl.h"
 #include "utils/ufile.h"
 
 /* main data structure */
@@ -62,14 +64,6 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	bdbm_params_t* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
-#if 0
-	bdi->ptr_dm_inf = setup_risa_device (bdi);
-	if (bdi->ptr_dm_inf == NULL) {
-		bdbm_error ("invalid device interfaces");
-		bdbm_bug_on (1);
-		return -1;
-	}
-#endif
 	if (bdbm_dm_init (bdi) != 0)  {
 		bdbm_error ("bdbm_dm_init failed");
 		return 1;
@@ -129,6 +123,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		break;
 	case MAPPING_POLICY_PAGE:
 		bdi->ptr_ftl_inf = &_ftl_page_ftl;
+		break;
+	case MAPPING_POLICY_DFTL:
+		bdi->ptr_ftl_inf = &_ftl_dftl;
 		break;
 	default:
 		bdbm_error ("invalid ftl type");

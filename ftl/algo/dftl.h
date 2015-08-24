@@ -40,8 +40,11 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi);
 uint32_t bdbm_dftl_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t bdbm_dftl_store (bdbm_drv_info_t* bdi, const char* fn);
 
-bdbm_hlm_req_t* bdbm_dftl_get_incomp_mapblk (bdbm_drv_info_t* bdi);
-bdbm_hlm_req_t* bdbm_dftl_get_victim_mapblk (bdbm_drv_info_t* bdi);
+uint8_t bdbm_dftl_check_mapblk (bdbm_drv_info_t* bdi, uint64_t lpa);
+bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (bdbm_drv_info_t* bdi);
+void bdbm_dftl_finish_mapblk_eviction (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (bdbm_drv_info_t* bdi, uint64_t lpa);
+void bdbm_dftl_finish_mapblk_load (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
 #endif /* _BLUEDBM_FTL_DFTL_H */
 

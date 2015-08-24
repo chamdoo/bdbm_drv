@@ -59,9 +59,7 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 /* for performance monitoring */
 typedef struct {
 	bdbm_spinlock_t pmu_lock;
-
 	atomic64_t exetime_us;
-
 	atomic64_t page_read_cnt;
 	atomic64_t page_write_cnt;
 	atomic64_t rmw_read_cnt;
@@ -70,23 +68,18 @@ typedef struct {
 	atomic64_t gc_erase_cnt;
 	atomic64_t gc_read_cnt;
 	atomic64_t gc_write_cnt;
-
 	uint64_t time_r_sw;
 	uint64_t time_r_q;
 	uint64_t time_r_tot;
-
 	uint64_t time_w_sw;
 	uint64_t time_w_q;
 	uint64_t time_w_tot;
-
 	uint64_t time_rmw_sw;
 	uint64_t time_rmw_q;
 	uint64_t time_rmw_tot;
-
 	uint64_t time_gc_sw;
 	uint64_t time_gc_q;
 	uint64_t time_gc_tot;
-
 	atomic64_t* util_r;
 	atomic64_t* util_w;
 } bdbm_perf_monitor_t;
@@ -138,9 +131,11 @@ enum BDBM_HLM_MEMFLAG {
 	MEMFLAG_NOT_SET = 0,
 	MEMFLAG_FRAG_PAGE = 1,
 	MEMFLAG_KMAP_PAGE = 2,
+	MEMFLAG_MAPBLK_PAGE = 3,
 	MEMFLAG_DONE = 0x80,
 	MEMFLAG_FRAG_PAGE_DONE = MEMFLAG_FRAG_PAGE | MEMFLAG_DONE,
 	MEMFLAG_KMAP_PAGE_DONE = MEMFLAG_KMAP_PAGE | MEMFLAG_DONE,
+	MEMFLAG_MAPBLK_PAGE_DONE = MEMFLAG_MAPBLK_PAGE | MEMFLAG_DONE,
 };
 
 /* a high-level request */
@@ -180,6 +175,10 @@ typedef struct {
 	struct list_head list;	/* for list management */
 	void* ptr_qitem;
 	uint8_t ret;	/* old for GC */
+
+	/* for dftl */
+	bdbm_mutex_t* done;
+	void* ds;
 } bdbm_llm_req_t;
 
 /* a high-level request for gc */
@@ -188,12 +187,7 @@ typedef struct {
 	uint64_t nr_done_reqs;
 	uint64_t nr_reqs;
 	bdbm_llm_req_t* llm_reqs;
-#ifdef USE_COMPLETION
-	bdbm_completion gc_done;
-#else
 	bdbm_mutex_t gc_done;
-	/*struct pthread_mutex_t gc_done;*/
-#endif
 } bdbm_hlm_req_gc_t;
 
 /* a generic host interface */
@@ -268,8 +262,11 @@ typedef struct {
 	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);
 
 	/* interfaces for DFTL */
-	bdbm_hlm_req_t* (*get_incomp_mapblk) (bdbm_drv_info_t* bdi);
-	bdbm_hlm_req_t* (*get_victim_mapblk) (bdbm_drv_info_t* bdi);
+	uint8_t (*check_mapblk) (bdbm_drv_info_t* bdi, uint64_t lpa);
+	bdbm_llm_req_t* (*prepare_mapblk_eviction) (bdbm_drv_info_t* bdi);
+	void (*finish_mapblk_eviction) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+	bdbm_llm_req_t* (*prepare_mapblk_load) (bdbm_drv_info_t* bdi, uint64_t lpa);
+	void (*finish_mapblk_load) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 } bdbm_ftl_inf_t;
 
 /* the main data-structure for bdbm_drv */
@@ -283,39 +280,5 @@ struct _bdbm_drv_info_t {
 	bdbm_ftl_inf_t* ptr_ftl_inf;
 	bdbm_perf_monitor_t pm;
 };
-
-/* performance monitor functions */
-void pmu_create (bdbm_drv_info_t* bdi);
-void pmu_destory (bdbm_drv_info_t* bdi);
-void pmu_display (bdbm_drv_info_t* bdi);
-
-void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req);
-void pmu_inc_read (bdbm_drv_info_t* bdi);
-void pmu_inc_write (bdbm_drv_info_t* bdi);
-void pmu_inc_rmw_read (bdbm_drv_info_t* bdi);
-void pmu_inc_rmw_write (bdbm_drv_info_t* bdi);
-void pmu_inc_gc (bdbm_drv_info_t* bdi);
-void pmu_inc_gc_erase (bdbm_drv_info_t* bdi);
-void pmu_inc_gc_read (bdbm_drv_info_t* bdi);
-void pmu_inc_gc_write (bdbm_drv_info_t* bdi);
-void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t pid);
-void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t pid);
-
-void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw);
-
-void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-
-void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw);
 
 #endif /* _BLUEDBM_DRV_H */

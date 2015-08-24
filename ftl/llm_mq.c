@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "llm_mq.h"
 #include "uthread.h"
+#include "pmu.h"
 
 #include "queue/queue.h"
 #include "queue/prior_queue.h"

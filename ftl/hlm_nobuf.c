@@ -256,14 +256,15 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint32_t ret;
 
-	/* see if gc is needed or not */
-	/* TODO: lock */
+#if 0
+	/* see if foreground GC is needed or not */
 	if (ptr_hlm_req->req_type == REQTYPE_WRITE && 
 		ftl->is_gc_needed != NULL && 
 		ftl->is_gc_needed (bdi)) {
+		/* perform GC before sending requests */ 
 		ftl->do_gc (bdi);
 	}
-	/* TODO: release */
+#endif
 
 	switch (ptr_hlm_req->req_type) {
 	case REQTYPE_TRIM:
