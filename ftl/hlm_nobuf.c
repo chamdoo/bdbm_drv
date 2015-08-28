@@ -253,10 +253,10 @@ fail:
 
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint32_t ret;
 
-#if 0
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+
 	/* see if foreground GC is needed or not */
 	if (ptr_hlm_req->req_type == REQTYPE_WRITE && 
 		ftl->is_gc_needed != NULL && 
@@ -264,7 +264,6 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 		/* perform GC before sending requests */ 
 		ftl->do_gc (bdi);
 	}
-#endif
 
 	switch (ptr_hlm_req->req_type) {
 	case REQTYPE_TRIM:

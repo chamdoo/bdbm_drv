@@ -57,23 +57,24 @@ bdbm_hlm_inf_t _hlm_dftl_inf = {
 };
 
 /* data structures for hlm_dftl */
-struct bdbm_hlm_dftl_private {
+typedef struct {
 	bdbm_ftl_inf_t* ftl;	/* for hlm_nobuff (it must be on top of this structure) */
 
 	/* for thread management */
 	bdbm_queue_t* q;
 	bdbm_thread_t* hlm_thread;
 	bdbm_mutex_t ftl_lock;
-};
+} bdbm_hlm_dftl_private_t;
 
 /* kernel thread for _llm_q */
 int __hlm_dftl_thread (void* arg)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
-	struct bdbm_hlm_dftl_private* p = (struct bdbm_hlm_dftl_private*)BDBM_HLM_PRIV(bdi);
-	bdbm_hlm_req_t* r;
+	bdbm_hlm_dftl_private_t* p = (bdbm_hlm_dftl_private_t*)BDBM_HLM_PRIV(bdi);
+	bdbm_hlm_req_t* r = NULL;
 
 	for (;;) {
+		/* Go to sleep if there are not requests in Q */
 		if (bdbm_queue_is_all_empty (p->q)) {
 			if (bdbm_thread_schedule (p->hlm_thread) == SIGKILL) {
 				break;
@@ -82,69 +83,56 @@ int __hlm_dftl_thread (void* arg)
 
 		while (!bdbm_queue_is_empty (p->q, 0)) {
 			if ((r = (bdbm_hlm_req_t*)bdbm_queue_dequeue (p->q, 0)) != NULL) {
-				int i = 0, available = 0;
-				for (i = 0; i < r->len; i++) {
-					bdbm_llm_req_t* r1 = NULL;
-					bdbm_llm_req_t* r2 = NULL;
+				int loop = 0;
+				bdbm_llm_req_t* mr = NULL;
 
-					/* step1: check the availability of mapping entries again */
-					bdbm_mutex_lock (&p->ftl_lock);
-					if (p->ftl->check_mapblk (bdi, r->lpa + i) == 0) {
-						bdbm_mutex_unlock (&p->ftl_lock);
-						continue;
-					}
-
-					/* step2: fetch mapping entries to DRAM from Flash */
-					r1 = p->ftl->prepare_mapblk_load (bdi, r->lpa + i);
-
-					/* step3: evict mapping entries to Flash */
-					r2 = p->ftl->prepare_mapblk_eviction (bdi);
-
-					/* step4: send requests to llm */
-					if (r1) {
-						bdbm_mutex_lock (r1->done);
-						bdi->ptr_llm_inf->make_req (bdi, r1);
-					}
-					if (r2) {
-						bdbm_mutex_lock (r2->done);
-						bdi->ptr_llm_inf->make_req (bdi, r2);
-					}
-					/*bdbm_mutex_unlock (&p->ftl_lock);*/
-
-					/* step5: wait for all jobs to finish */
-					if (r1) {
-						bdbm_mutex_lock (r1->done); /* wait */
-
-						/*bdbm_mutex_lock (&p->ftl_lock);*/
-						p->ftl->finish_mapblk_load (bdi, r1);
-						/*bdbm_mutex_unlock (&p->ftl_lock);*/
-					}
-					if (r2) {
-						bdbm_mutex_lock (r2->done); /* wait */
-
-						/*bdbm_mutex_lock (&p->ftl_lock);*/
-						p->ftl->finish_mapblk_eviction (bdi, r2);
-						/*bdbm_mutex_unlock (&p->ftl_lock);*/
-					}
-					bdbm_mutex_unlock (&p->ftl_lock);
-				}
-
-				available = 1;
 				bdbm_mutex_lock (&p->ftl_lock);
-				for (i = 0; i < r->len; i++) {
-					if (p->ftl->check_mapblk (bdi, r->lpa + i) == 1) {
-						available = 0;
-						break;
-					}
-				}
-				bdbm_bug_on (available == 0);
+				/* STEP1: read missing mapping entries */
+				for (loop = 0; loop < r->len; loop++) {
+					/* check the availability of mapping entries again */
+					if (p->ftl->check_mapblk (bdi, r->lpa + loop) == 0)
+						continue;
 
-				/*bdbm_msg ("[hlm_dftl] send hlm_req to llm (%llu)", r->lpa);*/
+					/* fetch mapping entries to DRAM from Flash */
+					if ((mr = p->ftl->prepare_mapblk_load (bdi, r->lpa + loop)) == NULL)
+						continue;
+
+					/* send read requets to llm */
+					bdbm_mutex_lock (mr->done);
+					bdi->ptr_llm_inf->make_req (bdi, mr);
+
+					/* wait for all jobs to finish */
+					bdbm_mutex_lock (mr->done); 
+					p->ftl->finish_mapblk_load (bdi, mr);
+				}
+
+				/* STEP2: send origianl requests to llm */
+				/*bdbm_msg ("[hlm-Q-2] Q to llm");*/
 				if (hlm_nobuf_make_req (bdi, r)) {
 					/* if it failed, we directly call 'ptr_host_inf->end_req' */
 					bdi->ptr_host_inf->end_req (bdi, r);
 					bdbm_warning ("oops! make_req failed");
 					/* [CAUTION] r is now NULL */
+				}
+				bdbm_mutex_unlock (&p->ftl_lock);
+
+				/* STEP3: give a chance for incoming requests to be served */
+				bdbm_thread_yield (); 
+
+				/* STEP4: evict mapping entries if there is not enough DRAM space */
+				bdbm_mutex_lock (&p->ftl_lock);
+				for (;;) {
+					/* drop mapping enries to Flash */
+					if ((mr = p->ftl->prepare_mapblk_eviction (bdi)) == NULL)
+						break;
+
+					/* send a req to llm */
+					bdbm_mutex_lock (mr->done);
+					bdi->ptr_llm_inf->make_req (bdi, mr);
+
+					/* wait until it finishes */
+					bdbm_mutex_lock (mr->done);
+					p->ftl->finish_mapblk_eviction (bdi, mr);
 				}
 				bdbm_mutex_unlock (&p->ftl_lock);
 			} else {
@@ -160,11 +148,11 @@ int __hlm_dftl_thread (void* arg)
 /* interface functions for hlm_dftl */
 uint32_t hlm_dftl_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_dftl_private* p;
+	bdbm_hlm_dftl_private_t* p;
 
 	/* create private */
-	if ((p = (struct bdbm_hlm_dftl_private*)bdbm_malloc_atomic
-			(sizeof(struct bdbm_hlm_dftl_private))) == NULL) {
+	if ((p = (bdbm_hlm_dftl_private_t*)bdbm_malloc_atomic
+			(sizeof(bdbm_hlm_dftl_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
@@ -199,7 +187,7 @@ uint32_t hlm_dftl_create (bdbm_drv_info_t* bdi)
 
 void hlm_dftl_destroy (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_dftl_private* p = (struct bdbm_hlm_dftl_private*)bdi->ptr_hlm_inf->ptr_private;
+	bdbm_hlm_dftl_private_t* p = (bdbm_hlm_dftl_private_t*)bdi->ptr_hlm_inf->ptr_private;
 
 	/* wait until Q becomes empty */
 	while (!bdbm_queue_is_all_empty (p->q)) {
@@ -224,8 +212,8 @@ uint32_t hlm_dftl_make_req (
 	bdbm_hlm_req_t* r)
 {
 	uint32_t ret, i;
-	uint32_t is_me_avail = 0;
-	struct bdbm_hlm_dftl_private* p = (struct bdbm_hlm_dftl_private*)BDBM_HLM_PRIV(bdi);
+	uint32_t avail = 0;
+	bdbm_hlm_dftl_private_t* p = (bdbm_hlm_dftl_private_t*)BDBM_HLM_PRIV(bdi);
 
 	if (bdbm_queue_is_full (p->q)) {
 		/* FIXME: wait unti queue has a enough room */
@@ -241,18 +229,18 @@ uint32_t hlm_dftl_make_req (
 		p->ftl->is_gc_needed != NULL && 
 		p->ftl->is_gc_needed (bdi)) {
 		/* perform GC before sending requests */ 
-		bdbm_msg ("GC started");
+		/*bdbm_msg ("start - gc");*/
 		p->ftl->do_gc (bdi);
-		bdbm_msg ("GC done");
+		/*bdbm_msg ("stop - gc");*/
 	}
 
 	for (i = 0; i < r->len; i++) {
-		if ((is_me_avail = p->ftl->check_mapblk (bdi, r->lpa + i)) == 1)
+		if ((avail = p->ftl->check_mapblk (bdi, r->lpa + i)) == 1)
 			break;
 	}
 
 	/* handle hlm_req */
-	if (is_me_avail == 0) {
+	if (avail == 0) {
 		/* If all of the mapping entries are available, send a hlm_req to llm directly */
 		if ((ret = hlm_nobuf_make_req (bdi, r))) {
 			/* if it failed, we directly call 'ptr_host_inf->end_req' */
@@ -260,8 +248,6 @@ uint32_t hlm_dftl_make_req (
 			bdbm_warning ("oops! make_req failed");
 			/* [CAUTION] r is now NULL */
 		}
-
-		bdbm_mutex_unlock (&p->ftl_lock);
 	} else {
 		/* If some of the mapping entries are *not* available, put a hlm_req to queue. 
 		 * This allows other incoming requests not to be affected by a hlm_req
@@ -269,12 +255,12 @@ uint32_t hlm_dftl_make_req (
 		if ((ret = bdbm_queue_enqueue (p->q, 0, (void*)r))) {
 			bdbm_msg ("bdbm_queue_enqueue failed");
 		}
-
-		bdbm_mutex_unlock (&p->ftl_lock);
-
-		/* wake up thread if it sleeps */
-		bdbm_thread_wakeup (p->hlm_thread);
 	}
+
+	bdbm_mutex_unlock (&p->ftl_lock);
+
+	/* wake up thread if it sleeps */
+	bdbm_thread_wakeup (p->hlm_thread);
 
 	return ret;
 }

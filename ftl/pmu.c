@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "pmu.h"
+#include "utime.h"
 
 
 #ifdef USE_PMU
@@ -53,7 +54,8 @@ void pmu_create (bdbm_drv_info_t* bdi)
 	bdbm_spin_lock_init (&bdi->pm.pmu_lock);
 
 	/* # of I/O operations */
-	atomic64_set (&bdi->pm.exetime_us, time_get_timestamp_in_us ());
+	/*atomic64_set (&bdi->pm.exetime_us, time_get_timestamp_in_us ());*/
+	bdbm_stopwatch_start (&bdi->pm.exetime);
 	atomic64_set (&bdi->pm.page_read_cnt, 0);
 	atomic64_set (&bdi->pm.page_write_cnt, 0);
 	atomic64_set (&bdi->pm.rmw_read_cnt, 0);
@@ -389,16 +391,15 @@ char str[1024];
 void pmu_display (bdbm_drv_info_t* bdi) 
 {
 	uint64_t i, j;
-	uint32_t exetime;
+	struct timeval exetime;
 	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
 
 	bdbm_msg ("-----------------------------------------------");
 	bdbm_msg ("< PERFORMANCE SUMMARY >");
 
-	exetime = time_get_timestamp_in_us ();
-	bdbm_msg ("(0) Execute Time (us): %ld.%ld", 
-		(exetime - atomic64_read (&bdi->pm.exetime_us)) / 1000000,
-		(exetime - atomic64_read (&bdi->pm.exetime_us)) % 1000000);
+	exetime = bdbm_stopwatch_get_elapsed_time (&bdi->pm.exetime);
+	bdbm_msg ("(0) Execution Time (us): %ld.%ld", 
+		exetime.tv_sec, exetime.tv_usec);
 	bdbm_msg ("");
 
 	bdbm_msg ("(1) Total I/Os");

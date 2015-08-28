@@ -46,6 +46,7 @@ THE SOFTWARE.
 #include "llm_mq.h"
 #include "hlm_nobuf.h"
 #include "hlm_buf.h"
+#include "hlm_dftl.h"
 #include "hlm_rsd.h"
 #include "hw.h"
 #include "pmu.h"
@@ -92,6 +93,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		break;
 	case HLM_RSD:
 		bdi->ptr_hlm_inf = &_hlm_rsd_inf;
+		break;
+	case HLM_DFTL:
+		bdi->ptr_hlm_inf = &_hlm_dftl_inf;
 		break;
 	default:
 		bdbm_error ("invalid hlm type");

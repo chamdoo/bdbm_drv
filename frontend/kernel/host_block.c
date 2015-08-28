@@ -321,10 +321,10 @@ static void __host_block_display_req (
 		bdbm_msg ("[%llu] TRIM\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
 		break;
 	case REQTYPE_READ:
-		/*bdbm_msg ("[%llu] READ\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);*/
+		bdbm_msg ("[%llu] READ\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
 		break;
 	case REQTYPE_WRITE:
-		/*bdbm_msg ("[%llu] WRITE\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);*/
+		bdbm_msg ("[%llu] WRITE\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
 		break;
 	default:
 		bdbm_error ("invalid REQTYPE (%u)", hlm_req->req_type);

@@ -15,6 +15,7 @@ EXTRA_CFLAGS += \
 risa_dev_ramdrive_timing-y := \
 	../../include/utils/ufile.o \
 	../../include/utils/utime.o \
+	../../include/utils/uthread.o \
 	../cpp/dm_main.o \
 	../cpp/dm_params.o \
 	../cpp/dm_stub.o \
@@ -46,5 +47,6 @@ kernel_clean:
  
 .PHONY: clean
 clean: kernel_clean
-	rm -rf Module.markers modules.order
+	@$(RM) -rf Module.markers modules.order
+	@cd ../cpp; rm *.o
 

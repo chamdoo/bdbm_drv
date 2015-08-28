@@ -50,12 +50,16 @@ int _param_host_type				= HOST_BLOCK;
 int _param_llm_type					= LLM_MULTI_QUEUE;
 
 /*#define USE_RISA*/
-#ifdef USE_RISA
+/*#define USE_DFTL*/
+
+#if defined (USE_RISA)
 int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;
 int _param_hlm_type					= HLM_RSD;
-#else
-/*int _param_mapping_policy 			= MAPPING_POLICY_PAGE;*/
+#elif defined (USE_DFTL)
 int _param_mapping_policy 			= MAPPING_POLICY_DFTL;
+int _param_hlm_type					= HLM_DFTL;
+#else
+int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
 /*int _param_hlm_type					= HLM_NO_BUFFER;*/
 int _param_hlm_type					= HLM_BUFFER;
 #endif

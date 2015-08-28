@@ -16,7 +16,6 @@ INCLUDES = -I$(PWD)/../../include \
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
 		  -D CONFIG_ENABLE_DEBUG \
-		  -D USE_KTIMER \
 		  -D USER_MODE \
 		  -D USE_PMU \
 

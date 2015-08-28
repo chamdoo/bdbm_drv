@@ -59,7 +59,8 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 /* for performance monitoring */
 typedef struct {
 	bdbm_spinlock_t pmu_lock;
-	atomic64_t exetime_us;
+	bdbm_stopwatch_t exetime;
+	/*atomic64_t exetime_us;*/
 	atomic64_t page_read_cnt;
 	atomic64_t page_write_cnt;
 	atomic64_t rmw_read_cnt;

@@ -111,7 +111,7 @@ int __llm_mq_thread (void* arg)
 			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
 				continue;
 			}
-
+			
 			if ((r = (bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 				continue;

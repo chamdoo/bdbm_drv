@@ -60,6 +60,7 @@ typedef struct {
 void bdbm_stopwatch_start (bdbm_stopwatch_t* sw);
 int64_t bdbm_stopwatch_get_elapsed_time_ms (bdbm_stopwatch_t* sw);
 int64_t bdbm_stopwatch_get_elapsed_time_us (bdbm_stopwatch_t* sw);
+struct timeval bdbm_stopwatch_get_elapsed_time (bdbm_stopwatch_t* sw);
 
 #endif
 

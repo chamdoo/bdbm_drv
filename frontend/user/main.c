@@ -308,9 +308,9 @@ void host_thread_fn (void *data)
 	int lpa = 0;
 	int unique_id = 0;
 	int *val = (int*)(data);
+	int step = 31;
 
 	for (loop = 0; loop < 10000; loop++) {
-	/*for (loop = 0; loop < 1000; loop++) {*/
 		bdbm_host_req_t* host_req = NULL;
 
 		host_req = (bdbm_host_req_t*)malloc (sizeof (bdbm_host_req_t));
@@ -318,8 +318,8 @@ void host_thread_fn (void *data)
 		host_req->uniq_id = (*val);
 		(*val)++;
 		host_req->req_type = REQTYPE_WRITE;
-		host_req->lpa = lpa++;
-		host_req->len = 1;
+		host_req->lpa = lpa;
+		host_req->len = step;
 		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
 
 		host_req->data[0] = 0xA;
@@ -327,6 +327,8 @@ void host_thread_fn (void *data)
 		host_req->data[2] = 0xC;
 
 		_bdi->ptr_host_inf->make_req (_bdi, host_req);
+
+		lpa+=step;
 	}
 
 	pthread_exit (0);
@@ -347,20 +349,22 @@ int main (int argc, char** argv)
 		return -1;
 	}
 
-	bdbm_msg ("[main] run some simulation");
-	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-		thread_args[loop_thread] = loop_thread;
-		pthread_create (&thread[loop_thread], NULL, 
-			(void*)&host_thread_fn, 
-			(void*)&thread_args[loop_thread]);
-	}
+	do {
+		bdbm_msg ("[main] run some simulation");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			thread_args[loop_thread] = loop_thread;
+			pthread_create (&thread[loop_thread], NULL, 
+				(void*)&host_thread_fn, 
+				(void*)&thread_args[loop_thread]);
+		}
 
-	bdbm_msg ("[main] wait for threads to end...");
-	for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-		pthread_join (
-			thread[loop_thread], NULL
-		);
-	}
+		bdbm_msg ("[main] wait for threads to end...");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			pthread_join (
+				thread[loop_thread], NULL
+			);
+		}
+	} while (1);
 
 	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_exit ();
