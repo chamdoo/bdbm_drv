@@ -334,6 +334,43 @@ void host_thread_fn (void *data)
 	pthread_exit (0);
 }
 
+void host_thread_fn2 (void *data) 
+{
+	int loop;
+	int lpa = 0;
+	int unique_id = 0;
+	int *val = (int*)(data);
+	int step = 31;
+
+	for (loop = 0; loop < 10000; loop++) {
+		bdbm_host_req_t* host_req = NULL;
+
+		host_req = (bdbm_host_req_t*)malloc (sizeof (bdbm_host_req_t));
+
+		host_req->uniq_id = (*val);
+		/*host_req->uniq_id = ((uint64_t)host_req) % (2*1024*1024/4-32);*/
+		(*val)++;
+		host_req->req_type = REQTYPE_WRITE;
+		/*host_req->lpa = lpa;*/
+		host_req->lpa = ((uint64_t)host_req) % (2*1024*1024/4-32);
+		/*bdbm_msg ("%llu", host_req->lpa);*/
+		host_req->len = step;
+		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+
+		host_req->data[0] = 0xA;
+		host_req->data[1] = 0xB;
+		host_req->data[2] = 0xC;
+
+		_bdi->ptr_host_inf->make_req (_bdi, host_req);
+
+		lpa+=step;
+	}
+
+	pthread_exit (0);
+}
+
+
+
 int main (int argc, char** argv)
 {
 	int loop_thread;
@@ -354,6 +391,21 @@ int main (int argc, char** argv)
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 			thread_args[loop_thread] = loop_thread;
 			pthread_create (&thread[loop_thread], NULL, 
+				(void*)&host_thread_fn2, 
+				(void*)&thread_args[loop_thread]);
+		}
+
+		bdbm_msg ("[main] wait for threads to end...");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			pthread_join (
+				thread[loop_thread], NULL
+			);
+		}
+
+		bdbm_msg ("START READ");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			thread_args[loop_thread] = loop_thread;
+			pthread_create (&thread[loop_thread], NULL, 
 				(void*)&host_thread_fn, 
 				(void*)&thread_args[loop_thread]);
 		}
@@ -364,6 +416,7 @@ int main (int argc, char** argv)
 				thread[loop_thread], NULL
 			);
 		}
+
 	} while (1);
 
 	bdbm_msg ("[main] destroy bdbm_drv");

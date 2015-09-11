@@ -80,5 +80,10 @@ void bdbm_thread_stop (bdbm_thread_t* k);
 void bdbm_thread_msleep (uint32_t ms);
 void bdbm_thread_yield (void);
 
+void bdbm_thread_schedule_setup (bdbm_thread_t* k);
+void bdbm_thread_schedule_cancel (bdbm_thread_t* k);
+int bdbm_thread_schedule_sleep (bdbm_thread_t* k);
+
+
 #endif /* _BLUEDBM_THREAD_H */
 

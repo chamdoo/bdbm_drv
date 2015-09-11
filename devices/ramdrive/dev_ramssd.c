@@ -298,6 +298,7 @@ static uint32_t __ramssd_send_cmd (
 	case REQTYPE_RMW_READ:
 		use_partial = 1;
 	case REQTYPE_READ:
+	case REQTYPE_META_READ:
 	case REQTYPE_GC_READ:
 		ret = __ramssd_read_page (
 			ri, 
@@ -313,6 +314,7 @@ static uint32_t __ramssd_send_cmd (
 		break;
 
 	case REQTYPE_WRITE:
+	case REQTYPE_META_WRITE:
 	case REQTYPE_GC_WRITE:
 	case REQTYPE_RMW_WRITE:
 		ret = __ramssd_prog_page (
@@ -596,11 +598,13 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 			case REQTYPE_WRITE:
 			case REQTYPE_GC_WRITE:
 			case REQTYPE_RMW_WRITE:
+			case REQTYPE_META_WRITE:
 				target_elapsed_time_us = ri->nand_params->page_prog_time_us;
 				break;
 			case REQTYPE_READ:
 			case REQTYPE_GC_READ:
 			case REQTYPE_RMW_READ:
+			case REQTYPE_META_READ:
 				target_elapsed_time_us = ri->nand_params->page_read_time_us;
 				break;
 			case REQTYPE_GC_ERASE:

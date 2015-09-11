@@ -169,6 +169,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 		r->lpa = ptr_hlm_req->lpa + i;
 		switch (r->req_type) {
 		case REQTYPE_READ:
+		case REQTYPE_META_READ:
 			/* get the physical addr for reads */
 			r->phyaddr = &r->phyaddr_r;
 			if (ftl->get_ppa (bdi, r->lpa, r->phyaddr) != 0)
@@ -181,6 +182,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 				r->req_type = REQTYPE_WRITE;
 			/* go ahead! */
 		case REQTYPE_WRITE:
+		case REQTYPE_META_WRITE:
 			r->phyaddr = &r->phyaddr_w;
 			/* get the physical addr where new page will be written */
 			if (ftl->get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
@@ -213,7 +215,9 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 			r->ptr_oob = NULL;
 
 		/* keep some metadata in OOB if it is write (e.g., LPA) */
-		if ((r->req_type == REQTYPE_WRITE || r->req_type == REQTYPE_RMW_READ)) {
+		if ((r->req_type == REQTYPE_WRITE || 
+			 r->req_type == REQTYPE_META_WRITE ||
+			 r->req_type == REQTYPE_RMW_READ)) {
 			if (r->ptr_oob)
 				((uint64_t*)r->ptr_oob)[0] = r->lpa;
 		}
@@ -255,6 +259,7 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
 	uint32_t ret;
 
+#if 0
 	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 
 	/* see if foreground GC is needed or not */
@@ -264,6 +269,7 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 		/* perform GC before sending requests */ 
 		ftl->do_gc (bdi);
 	}
+#endif
 
 	switch (ptr_hlm_req->req_type) {
 	case REQTYPE_TRIM:
@@ -375,6 +381,8 @@ void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	case REQTYPE_WRITE:
 	case REQTYPE_RMW_READ:
 	case REQTYPE_RMW_WRITE:
+	case REQTYPE_META_WRITE:
+	case REQTYPE_META_READ:
 		__hlm_nobuf_end_host_req (bdi, llm_req);
 		break;
 	case REQTYPE_GC_ERASE:

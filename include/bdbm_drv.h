@@ -60,7 +60,6 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 typedef struct {
 	bdbm_spinlock_t pmu_lock;
 	bdbm_stopwatch_t exetime;
-	/*atomic64_t exetime_us;*/
 	atomic64_t page_read_cnt;
 	atomic64_t page_write_cnt;
 	atomic64_t rmw_read_cnt;
@@ -69,6 +68,8 @@ typedef struct {
 	atomic64_t gc_erase_cnt;
 	atomic64_t gc_read_cnt;
 	atomic64_t gc_write_cnt;
+	atomic64_t meta_read_cnt;
+	atomic64_t meta_write_cnt;
 	uint64_t time_r_sw;
 	uint64_t time_r_q;
 	uint64_t time_r_tot;
@@ -116,6 +117,9 @@ enum BDBM_REQTYPE {
 	REQTYPE_GC_WRITE = 6,
 	REQTYPE_GC_ERASE = 7,
 	REQTYPE_TRIM = 8,
+
+	REQTYPE_META_READ = 9,
+	REQTYPE_META_WRITE = 10,
 };
 
 /* a physical address */
@@ -160,6 +164,8 @@ typedef struct {
 	uint8_t* org_kpg_flags;
 	uint8_t** org_pptr_kpgs; /* data for individual kernel pages */
 	/* end */
+
+	bdbm_mutex_t* done;
 } bdbm_hlm_req_t;
 
 /* a low-level request */
@@ -173,12 +179,13 @@ typedef struct {
 	uint8_t** pptr_kpgs; /* from bdbm_hlm_req_t */
 	uint8_t* ptr_oob;
 	void* ptr_hlm_req;
-	struct list_head list;	/* for list management */
+	/*struct list_head list;	*//* for list management */
 	void* ptr_qitem;
 	uint8_t ret;	/* old for GC */
 
 	/* for dftl */
-	bdbm_mutex_t* done;
+	/*bdbm_mutex_t* done;*/
+	bdbm_completion_t* done; 
 	void* ds;
 } bdbm_llm_req_t;
 

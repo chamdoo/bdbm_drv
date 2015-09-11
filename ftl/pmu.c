@@ -141,6 +141,14 @@ void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	case REQTYPE_GC_ERASE:
 		pmu_inc_gc_erase (bdi);
 		break;
+	case REQTYPE_META_READ:
+		pmu_inc_meta_read (bdi);
+		pmu_inc_util_r (bdi, pid);
+		break;
+	case REQTYPE_META_WRITE:
+		pmu_inc_meta_write (bdi);
+		pmu_inc_util_w (bdi, pid);
+		break;
 	default:
 		break;
 	}
@@ -196,39 +204,55 @@ void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t id)
 	atomic64_inc (&bdi->pm.util_w[id]);
 }
 
+void pmu_inc_meta_read (bdbm_drv_info_t* bdi)
+{
+	atomic64_inc (&bdi->pm.meta_read_cnt);
+}
+
+void pmu_inc_meta_write (bdbm_drv_info_t* bdi)
+{
+	atomic64_inc (&bdi->pm.meta_write_cnt);
+}
+
 /* update the time taken to run sw algorithms */
 void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) 
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 
-	if (h == NULL) return;
-
 	switch (req->req_type) {
 	case REQTYPE_READ:
+		bdbm_bug_on (h == NULL);
 		pmu_update_r_sw (bdi, &h->sw);
 		break;
 	case REQTYPE_WRITE:
+		bdbm_bug_on (h == NULL);
 		pmu_update_w_sw (bdi, &h->sw);
 		break;
 	case REQTYPE_RMW_READ:
+		bdbm_bug_on (h == NULL);
 		pmu_update_rmw_sw (bdi, &h->sw);
+		break;
+	case REQTYPE_META_READ:
+		break;
+	case REQTYPE_META_WRITE:
 		break;
 	}
 }
 
 void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
 	bdbm_spin_lock_irqsave (&bdi->pm.pmu_lock, flags);
-	flags=10;
 	bdi->pm.time_r_sw = (bdi->pm.time_r_sw * n + delta) / (n + 1);
 	bdbm_spin_unlock_irqrestore (&bdi->pm.pmu_lock, flags);
 }
 
 void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -239,6 +263,7 @@ void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -249,6 +274,7 @@ void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);
@@ -265,23 +291,29 @@ void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 
-	if (h == NULL) return;
-
 	switch (req->req_type) {
 	case REQTYPE_READ:
+		bdbm_bug_on (h == NULL);
 		pmu_update_r_q (bdi, &h->sw);
 		break;
 	case REQTYPE_WRITE:
+		bdbm_bug_on (h == NULL);
 		pmu_update_w_q (bdi, &h->sw);
 		break;
 	case REQTYPE_RMW_READ:
+		bdbm_bug_on (h == NULL);
 		pmu_update_rmw_q (bdi, &h->sw);
+		break;
+	case REQTYPE_META_READ:
+		break;
+	case REQTYPE_META_WRITE:
 		break;
 	}
 }
 
 void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
@@ -292,6 +324,7 @@ void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -302,6 +335,7 @@ void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -312,6 +346,7 @@ void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);
@@ -328,23 +363,29 @@ void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 
-	if (h == NULL) return;
-
 	switch (req->req_type) {
 	case REQTYPE_READ:
+		bdbm_bug_on (h == NULL);
 		pmu_update_r_tot (bdi, &h->sw);
 		break;
 	case REQTYPE_WRITE:
+		bdbm_bug_on (h == NULL);
 		pmu_update_w_tot (bdi, &h->sw);
 		break;
 	case REQTYPE_RMW_WRITE:
+		bdbm_bug_on (h == NULL);
 		pmu_update_rmw_tot (bdi, &h->sw);
+		break;
+	case REQTYPE_META_READ:
+		break;
+	case REQTYPE_META_WRITE:
 		break;
 	}
 }
 
 void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
@@ -355,6 +396,7 @@ void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -365,6 +407,7 @@ void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -375,6 +418,7 @@ void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
+	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);
@@ -406,11 +450,16 @@ void pmu_display (bdbm_drv_info_t* bdi)
 	bdbm_msg ("# of page reads: %ld", 
 		atomic64_read (&bdi->pm.page_read_cnt) + 
 		atomic64_read (&bdi->pm.rmw_read_cnt) + 
-		atomic64_read (&bdi->pm.gc_read_cnt));
+		atomic64_read (&bdi->pm.gc_read_cnt) + 
+		atomic64_read (&bdi->pm.meta_read_cnt)
+	);
 	bdbm_msg ("# of page writes: %ld", 
 		atomic64_read (&bdi->pm.page_write_cnt) +
 		atomic64_read (&bdi->pm.rmw_write_cnt) +
-		atomic64_read (&bdi->pm.gc_write_cnt));
+		atomic64_read (&bdi->pm.gc_write_cnt) +
+		atomic64_read (&bdi->pm.meta_write_cnt)
+	);
+
 	bdbm_msg ("# of block erase: %ld", 
 		atomic64_read (&bdi->pm.gc_erase_cnt));
 	bdbm_msg ("");
@@ -438,6 +487,12 @@ void pmu_display (bdbm_drv_info_t* bdi)
 		atomic64_read (&bdi->pm.gc_erase_cnt));
 	bdbm_msg ("");
 
+	bdbm_msg ("(4) Meta I/Os");
+	bdbm_msg ("# of meta page reads: %ld",
+		atomic64_read (&bdi->pm.meta_read_cnt));
+	bdbm_msg ("# of meta page writes: %ld",
+		atomic64_read (&bdi->pm.meta_write_cnt));
+	bdbm_msg ("");
 
 	bdbm_msg ("(4) Elapsed Time");
 	bdbm_msg ("page read (us): %llu (S:%llu + Q:%llu + D:%llu)",
@@ -499,6 +554,8 @@ void pmu_inc_gc_read (bdbm_drv_info_t* bdi) {}
 void pmu_inc_gc_write (bdbm_drv_info_t* bdi) {}
 void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t id) {}
 void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t id) {}
+void pmu_inc_meta_read (bdbm_drv_info_t* bdi) {}
+void pmu_inc_meta_write (bdbm_drv_info_t* bdi) {}
 
 void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req) {}
 void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) {}

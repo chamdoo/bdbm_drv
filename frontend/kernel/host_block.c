@@ -529,6 +529,9 @@ void host_block_end_req (
 	struct bio* bio = NULL;
 	bdbm_host_block_private_t* p = NULL;
 
+	if (hlm_req->done) {
+		bdbm_mutex_unlock (hlm_req->done);
+	}
 
 	/* get a bio from hlm_req */
 	bio = (struct bio*)hlm_req->ptr_host_req;

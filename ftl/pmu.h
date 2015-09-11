@@ -18,6 +18,8 @@ void pmu_inc_gc (bdbm_drv_info_t* bdi);
 void pmu_inc_gc_erase (bdbm_drv_info_t* bdi);
 void pmu_inc_gc_read (bdbm_drv_info_t* bdi);
 void pmu_inc_gc_write (bdbm_drv_info_t* bdi);
+void pmu_inc_meta_read (bdbm_drv_info_t* bdi);
+void pmu_inc_meta_write (bdbm_drv_info_t* bdi);
 void pmu_inc_util_r (bdbm_drv_info_t* bdi, uint64_t pid);
 void pmu_inc_util_w (bdbm_drv_info_t* bdi, uint64_t pid);
 

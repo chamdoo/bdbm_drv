@@ -50,7 +50,7 @@ int _param_host_type				= HOST_BLOCK;
 int _param_llm_type					= LLM_MULTI_QUEUE;
 
 /*#define USE_RISA*/
-/*#define USE_DFTL*/
+#define USE_DFTL
 
 #if defined (USE_RISA)
 int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;

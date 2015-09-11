@@ -10,3 +10,4 @@ sudo insmod bdbm_drv.ko
 sudo ./bdbm_format /dev/blueDBM
 sudo mkfs -t ext4 -b 4096 /dev/blueDBM
 sudo mount \-t ext4 \-o discard /dev/blueDBM /media/blueDBM
+#sudo mount \-t ext4 /dev/blueDBM /media/blueDBM

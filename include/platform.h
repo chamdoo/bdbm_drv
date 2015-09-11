@@ -33,16 +33,21 @@ THE SOFTWARE.
 #include <linux/slab.h>
 
 /* memory handling */
-#define bdbm_malloc(a) vmalloc(a)
+/*#define bdbm_malloc(a) vmalloc(a)*/
+#define bdbm_malloc(a) vzalloc(a)
 #define bdbm_zmalloc(a) vzalloc(a)
 #define bdbm_free(a) do { vfree(a); a = NULL; } while (0)
-#define bdbm_malloc_atomic(a) kzalloc(a, GFP_ATOMIC)
+/*#define bdbm_malloc_atomic(a) kzalloc(a, GFP_ATOMIC)*/
+#define bdbm_malloc_atomic(a) ({ \
+	void* ret = kzalloc(a, GFP_ATOMIC); \
+	if (ret == NULL) printk (KERN_INFO "what???"); \
+	ret; })
 #define bdbm_free_atomic(a) do { kfree(a); a = NULL; } while (0)
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 
 /* completion lock */
-#define bdbm_completion	struct completion
+#define bdbm_completion_t struct completion
 #define	bdbm_init_completion(a)	init_completion(&a)
 #define bdbm_wait_for_completion(a)	wait_for_completion(&a)
 #define bdbm_try_wait_for_completion(a) try_wait_for_completion(&a)
@@ -54,22 +59,34 @@ THE SOFTWARE.
 #endif
 
 /* mutex */
-#include <linux/mutex.h>
-#define bdbm_mutex_t struct mutex
-#define bdbm_mutex_init(a) mutex_init(a)
-#define bdbm_mutex_lock(a) mutex_lock(a)
-#define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)
-#define bdbm_mutex_unlock(a) mutex_unlock(a)
-#define bdbm_mutex_try_lock(a) mutex_trylock(a)  /* 1: acquire 0: contention */
+/*#include <linux/mutex.h>*/
+/*#define bdbm_mutex_t struct mutex*/
+/*#define bdbm_mutex_init(a) mutex_init(a)*/
+/*#define bdbm_mutex_lock(a) mutex_lock(a)*/
+/*#define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)*/
+/*#define bdbm_mutex_unlock(a) mutex_unlock(a)*/
+/*#define bdbm_mutex_try_lock(a) mutex_trylock(a)  *//* 1: acquire 0: contention */
+/*#define bdbm_mutex_free(a)*/
+
+#include <linux/semaphore.h>
+#define bdbm_mutex_t struct semaphore
+#define bdbm_mutex_init(a) sema_init (a, 1)
+#define bdbm_mutex_lock(a) down (a)
+#define bdbm_mutex_lock_interruptible(a) down_interruptible(a)
+#define bdbm_mutex_unlock(a) up (a)
+#define bdbm_mutex_try_lock(a) down_trylock(a)  /* 1: acquire 0: contention */
 #define bdbm_mutex_free(a)
+
 
 /* spinlock */
 #define bdbm_spinlock_t spinlock_t
 #define bdbm_spin_lock_init(a) spin_lock_init(a)
 #define bdbm_spin_lock(a) spin_lock(a)
-#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)
+/*#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)*/
+#define bdbm_spin_lock_irqsave(a,flag) spin_lock(a)
 #define bdbm_spin_unlock(a) spin_unlock(a)
-#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)
+/*#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)*/
+#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock(a)
 #define bdbm_spin_lock_destory(a)
 
 /* thread */
@@ -102,7 +119,8 @@ THE SOFTWARE.
 /* memory handling */
 #include <string.h>
 #include <stdlib.h>
-#define bdbm_malloc(a) malloc(a)
+/*#define bdbm_malloc(a) malloc(a)*/
+#define bdbm_malloc(a) calloc(1, a)
 #define bdbm_zmalloc(a) calloc(1, a)	/* 1 byte by default */
 #define bdbm_free(a) do { free(a); } while (0)
 #define bdbm_malloc_atomic(a) calloc(1, a) /* 1 byte by default */

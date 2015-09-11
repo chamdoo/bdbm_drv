@@ -411,12 +411,12 @@ uint32_t bdbm_dftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t 
 	/* make them invalid */
 	for (loop = lpa; loop < (lpa + len); loop++) {
 		me = bdbm_dftl_get_mapping_entry (p->mt, loop);
-#if 0
 		if (me.status == DFTL_PAGE_NOT_EXIST) {
-			bdbm_error ("A given lpa is not found in the mapping table (%llu)", lpa);
-			return 1;
+			/* don't do TRIM */
+			return 0;
+			/*bdbm_error ("A given lpa is not found in the mapping table (%llu)", lpa);*/
+			/*return 1;*/
 		}
-#endif
 
 		if (me.status == DFTL_PAGE_VALID) {
 			/* update a block status to dirty */
@@ -445,7 +445,7 @@ uint8_t bdbm_dftl_is_gc_needed (bdbm_drv_info_t* bdi)
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 1) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= 10) {
 		return 1;
 	}
 
@@ -573,6 +573,7 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
+	/*bdbm_msg ("gc-1");*/
 	bdi->ptr_llm_inf->flush (bdi);
 
 	if (nr_llm_reqs == 0) 
@@ -589,13 +590,16 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			bdbm_bug_on (1);
 		}
 	}
+	/*bdbm_msg ("gc-2");*/
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
+	/*bdbm_msg ("gc-2-done");*/
 
 	/* load mapping entries that do existing in DRAM */
 	for (i = 0; i < nr_llm_reqs; i++) {
 		uint64_t lpa;
 		bdbm_llm_req_t* r = NULL;
+		DECLARE_COMPLETION(done);
 
 		lpa = ((uint64_t*)hlm_gc->llm_reqs[i].ptr_oob)[0]; /* update LPA */
 
@@ -611,13 +615,26 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			continue;
 
 		/* send reqs to llm */
-		bdbm_mutex_lock (r->done);
+		/*bdbm_mutex_lock (r->done);*/
+		r->done = &done;
 		bdi->ptr_llm_inf->make_req (bdi, r);
+		/*bdbm_msg ("wait");*/
+		if (wait_for_completion_timeout (&done, msecs_to_jiffies (60000))) {
+			bdbm_dftl_finish_mapblk_load (bdi, r);
+		} else {
+			if (r != NULL) {
+				bdbm_msg ("oops - timeout (%p %p)", r->done, &done);
+			} else {
+				bdbm_msg ("oops - r == NULL");
+			}
+		}
 
 		/* wait for llm_reqs to finish */
-		bdbm_mutex_lock (r->done);
-		bdbm_dftl_finish_mapblk_load (bdi, r);
+		/*bdbm_msg ("gc-2-done-lock");*/
+		/*bdbm_mutex_lock (r->done);*/
+		/*bdbm_msg ("gc-2-done-get");*/
 	}
+	/*bdbm_msg ("gc-2-ok");*/
 
 #if 0
 	for (i = 0; i < nr_llm_reqs; i++) {
@@ -674,25 +691,9 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			bdbm_bug_on (1);
 		}
 	}
+	/*bdbm_msg ("gc-3");*/
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
-
-	/* evict mapping entries if there is insufficient DRAM space */
-	while (1) {
-		bdbm_llm_req_t* r2 = NULL;
-
-		/* drop least-recently-used mapping enries to Flash */
-		if ((r2 = bdbm_dftl_prepare_mapblk_eviction (bdi)) == NULL)
-			break;
-
-		/* send a req to llm */
-		bdbm_mutex_lock (r2->done);
-		bdi->ptr_llm_inf->make_req (bdi, r2);
-
-		/* wait until it finishes */
-		bdbm_mutex_lock (r2->done);
-		bdbm_dftl_finish_mapblk_eviction (bdi, r2);
-	}
 
 	/* erase blocks */
 erase_blks:
@@ -721,6 +722,7 @@ erase_blks:
 			bdbm_bug_on (1);
 		}
 	}
+	/*bdbm_msg ("gc-5");*/
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	bdbm_mutex_unlock (&hlm_gc->gc_done);
 
@@ -746,6 +748,27 @@ erase_blks:
 */
 		bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
 	}
+
+#if 0
+	/* evict mapping entries if there is insufficient DRAM space */
+	while (1) {
+		bdbm_llm_req_t* r2 = NULL;
+
+		/* drop least-recently-used mapping enries to Flash */
+		if ((r2 = bdbm_dftl_prepare_mapblk_eviction (bdi)) == NULL)
+			break;
+
+		/* send a req to llm */
+		bdbm_mutex_lock (r2->done);
+		bdi->ptr_llm_inf->make_req (bdi, r2);
+
+		/* wait until it finishes */
+		bdbm_mutex_lock (r2->done);
+		bdbm_dftl_finish_mapblk_eviction (bdi, r2);
+	}
+
+	/*bdbm_msg ("gc-4");*/
+#endif
 
 	return 0;
 }
@@ -895,27 +918,35 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 	}
 
 	/* create a hlm_req that stores mapping entries */
-	r = (bdbm_llm_req_t*)bdbm_malloc_atomic (sizeof (bdbm_llm_req_t));
-	r->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic (sizeof (uint8_t*) * nr_kp_per_fp);
-	me = (mapping_entry_t*)bdbm_malloc_atomic (np->page_main_size);
+	r = (bdbm_llm_req_t*)bdbm_malloc(sizeof (bdbm_llm_req_t));
+	r->pptr_kpgs = (uint8_t**)bdbm_malloc(sizeof (uint8_t*) * nr_kp_per_fp);
+	me = (mapping_entry_t*)bdbm_malloc(
+			(sizeof (mapping_entry_t) * p->mt->nr_entires_per_dir_slot));
+	bdbm_bug_on ((sizeof (mapping_entry_t) * p->mt->nr_entires_per_dir_slot) != 4096);
 	for (i = 0; i < nr_kp_per_fp; i++)
-		r->pptr_kpgs[i] = (uint8_t*)(me + (i * KERNEL_PAGE_SIZE));
+		r->pptr_kpgs[i] = (uint8_t*)(me) + (i * KERNEL_PAGE_SIZE);
 
 	/* build the parameters of the hlm_req */
-	r->req_type = REQTYPE_READ;
+	r->req_type = REQTYPE_META_READ;
+	/*r->req_type = REQTYPE_READ;*/
 	/*r->lpa = -1ULL;	*//* not available for mapblks */
-	r->lpa = -2ULL;	/* not available for mapblks */
+	/*r->lpa = -2ULL;	*//* not available for mapblks */
+	r->lpa = 0;	/* not available for mapblks */
 	r->phyaddr_r = ds->phyaddr;
+	r->phyaddr_w = ds->phyaddr;
 	r->phyaddr = &r->phyaddr_r;
 	r->ds = (void*)ds;
-	r->ptr_oob = bdbm_malloc_atomic (np->page_oob_size);
+	r->ptr_hlm_req = (void*)NULL;
+	r->ptr_oob = (uint8_t*)bdbm_malloc(sizeof (uint8_t) * np->page_oob_size);
 
-	r->done = (bdbm_mutex_t*)bdbm_malloc_atomic (sizeof (bdbm_mutex_t));
-	bdbm_mutex_init (r->done);
+	r->done = NULL;
+	/*r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));*/
+	/*bdbm_mutex_init (r->done);*/
 
 #ifdef DFTL_DEBUG
-	bdbm_msg ("[dftl] [Fetch] dir: %llu (phyaddr: %lld %lld %lld %lld)", 
+	bdbm_msg ("[dftl] [Fetch] dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
 		ds->id,
+		ds->phyaddr.punit_id,
 		ds->phyaddr.channel_no,
 		ds->phyaddr.chip_no,
 		ds->phyaddr.block_no,
@@ -949,10 +980,12 @@ void bdbm_dftl_finish_mapblk_load (
 	bdbm_dftl_missing_dir_done (p->mt, ds, me);
 
 	/* remove a llm_req */
-	bdbm_free_atomic (r->done);
-	bdbm_free_atomic (r->pptr_kpgs[0]); /* free an array of mapblks */
-	bdbm_free_atomic (r->pptr_kpgs); /* free pptr_kpgs */
-	bdbm_free_atomic (r);
+	bdbm_free(r->ptr_oob);
+	/*bdbm_free(r->done);*/
+	/*bdbm_free_atomic (r->pptr_kpgs[0]); *//* free an array of mapblks */
+	bdbm_free(me); /* free an array of mapblks */
+	bdbm_free(r->pptr_kpgs); /* free pptr_kpgs */
+	bdbm_free(r);
 
 #ifdef DFTL_DEBUG
 	bdbm_msg ("[dftl] [Fetch] dir: %llu (done)\n", ds->id);
@@ -977,36 +1010,44 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 	}
 
 	/* create a hlm_req that stores mapping entries */
-	r = (bdbm_llm_req_t*)bdbm_malloc_atomic (sizeof (bdbm_llm_req_t));
-	r->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic (sizeof (uint8_t*) * nr_kp_per_fp);
-	me = (mapping_entry_t*)bdbm_malloc_atomic (np->page_main_size);
+	r = (bdbm_llm_req_t*)bdbm_malloc(sizeof (bdbm_llm_req_t));
+	r->pptr_kpgs = (uint8_t**)bdbm_malloc(sizeof (uint8_t*) * nr_kp_per_fp);
+	me = (mapping_entry_t*)bdbm_malloc(
+			(sizeof (mapping_entry_t) * p->mt->nr_entires_per_dir_slot));
+	bdbm_bug_on ((sizeof (mapping_entry_t) * p->mt->nr_entires_per_dir_slot) != 4096);
 	for (i = 0; i < nr_kp_per_fp; i++)
-		r->pptr_kpgs[i] = (uint8_t*)(me + (i * KERNEL_PAGE_SIZE));
+		r->pptr_kpgs[i] = (uint8_t*)(me) + (i * KERNEL_PAGE_SIZE);
 
 	/* build the parameters of the hlm_req */
-	r->req_type = REQTYPE_WRITE;
+	r->req_type = REQTYPE_META_WRITE;
+	/*r->req_type = REQTYPE_WRITE;*/
 	/*r->lpa = -1ULL;	*//* not available for me */
-	r->lpa = -2ULL;	/* not available for me */
+	/*r->lpa = -2ULL;	*//* not available for me */
+	r->lpa = 0;	/* not available for me */
 	r->phyaddr = &r->phyaddr_w;
 	r->ds = (void*)ds;
 	bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr); /* get a new page */
+	r->phyaddr_r = r->phyaddr_w;
 	for (i = 0; i < p->mt->nr_entires_per_dir_slot; i++)
 		me[i] = ds->me[i];
-	r->ptr_oob = bdbm_malloc_atomic (np->page_oob_size);
+	r->ptr_oob = (uint8_t*)bdbm_malloc(np->page_oob_size);
+	r->ptr_hlm_req = (void*)NULL;
 	((int64_t*)r->ptr_oob)[0] = -2LL; /* magic # */
 	((int64_t*)r->ptr_oob)[1] = ds->id; /* ds ID */
 
-	r->done = (bdbm_mutex_t*)bdbm_malloc_atomic (sizeof (bdbm_mutex_t));
-	bdbm_mutex_init (r->done);
+	r->done = NULL;
+	/*r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));*/
+	/*bdbm_mutex_init (r->done);*/
 
-#ifdef DFTL_DEBUG
-	bdbm_msg ("[dftl] [Evict] dir: %llu (phyaddr: %lld %lld %lld %lld)", 
+	/*
+	bdbm_msg ("[dftl] [Evict] dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
 		ds->id,
+		r->phyaddr->punit_id,
 		r->phyaddr->channel_no,
 		r->phyaddr->chip_no,
 		r->phyaddr->block_no,
 		r->phyaddr->page_no);
-#endif
+	*/
 
 	/* ok! return it */
 	return r;
@@ -1018,6 +1059,7 @@ void bdbm_dftl_finish_mapblk_eviction (
 {
 	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
 	directory_slot_t* ds = (directory_slot_t*)r->ds;
+	mapping_entry_t* me = (mapping_entry_t*)r->pptr_kpgs[0];
 
 	/* invalidate an old page if ds was kept in flash before */
 	if (ds->phyaddr.channel_no != DFTL_PAGE_INVALID_ADDR) {
@@ -1042,11 +1084,12 @@ void bdbm_dftl_finish_mapblk_eviction (
 	bdbm_dftl_finish_victim_mapblk (p->mt, ds, r->phyaddr);
 
 	/* remove a llm_req */
-	bdbm_free_atomic (r->done);
-	bdbm_free_atomic (r->ptr_oob);
-	bdbm_free_atomic (r->pptr_kpgs[0]); /* free an array of mapblks */
-	bdbm_free_atomic (r->pptr_kpgs); /* free pptr_kpgs */
-	bdbm_free_atomic (r);
+	/*bdbm_free(r->done);*/
+	bdbm_free(r->ptr_oob);
+	/*bdbm_free_atomic (r->pptr_kpgs[0]); *//* free an array of mapblks */
+	bdbm_free(me);
+	bdbm_free(r->pptr_kpgs); /* free pptr_kpgs */
+	bdbm_free(r);
 
 #ifdef DFTL_DEBUG
 	bdbm_msg ("[dftl] [Evict] dir: %llu (done)\n", ds->id);

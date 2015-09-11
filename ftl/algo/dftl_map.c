@@ -62,8 +62,14 @@ dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np)
 	mt->nr_entires_per_dir_slot = np->page_main_size / mt->mapping_entry_size;
 	mt->nr_total_dir_slots = np->nr_pages_per_ssd / mt->nr_entires_per_dir_slot;
 	/*mt->max_cached_dir_slots = 20000;*/
-	mt->max_cached_dir_slots = 20;
+	/*mt->max_cached_dir_slots = 20;*/
+	mt->max_cached_dir_slots = mt->nr_total_dir_slots * 0.1;
 	atomic64_set (&mt->nr_cached_slots, 0);
+
+	bdbm_msg ("DFTL: mapping_entry_size: %llu", mt->mapping_entry_size);
+	bdbm_msg ("DFTL: nr_entires_per_dir_slot: %llu", mt->nr_entires_per_dir_slot);
+	bdbm_msg ("DFTL: nr_total_dir_slots: %llu", mt->nr_total_dir_slots);
+	bdbm_msg ("DFTL: # of cached dir slots: %llu", mt->max_cached_dir_slots);
 
 	/* create a directory */
 	if ((mt->dir = (directory_slot_t*)bdbm_zmalloc (
@@ -126,7 +132,7 @@ void bdbm_dftl_destroy_mapping_table (dftl_mapping_table_t* mt)
 	if (mt->dir) {
 		for (i = 0; i < mt->nr_total_dir_slots; i++)
 			if (mt->dir[i].me != NULL)
-				bdbm_free_atomic (mt->dir[i].me);
+				bdbm_free(mt->dir[i].me);
 		bdbm_free (mt->dir);
 	}
 	bdbm_free (mt);
@@ -148,7 +154,7 @@ void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np)
 		ds->phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
 		ds->phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
 		if (ds->me != NULL)
-			bdbm_free_atomic (ds->me);
+			bdbm_free(ds->me);
 		ds->me = NULL;
 
 #if 0
@@ -183,6 +189,9 @@ mapping_entry_t bdbm_dftl_get_mapping_entry (dftl_mapping_table_t* mt, uint64_t 
 	directory_slot_t* ds = NULL;
 	mapping_entry_t me;
 
+	bdbm_bug_on (dir_idx >= mt->nr_total_dir_slots);
+	bdbm_bug_on (map_idx >= mt->nr_entires_per_dir_slot);
+
 	/* get a directory slot */
 	ds = &mt->dir[dir_idx];
 	bdbm_bug_on (ds == NULL);
@@ -212,6 +221,9 @@ int bdbm_dftl_set_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa, mapping
 	uint64_t map_idx = lpa % mt->nr_entires_per_dir_slot;
 	directory_slot_t* ds = NULL;
 
+	bdbm_bug_on (dir_idx >= mt->nr_total_dir_slots);
+	bdbm_bug_on (map_idx >= mt->nr_entires_per_dir_slot);
+
 	/* get a directory slot */
 	ds = &mt->dir[dir_idx];
 	bdbm_bug_on (ds == NULL);
@@ -234,6 +246,9 @@ int bdbm_dftl_invalidate_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa)
 	uint64_t map_idx = lpa % mt->nr_entires_per_dir_slot;
 	directory_slot_t* ds = NULL;
 
+	bdbm_bug_on (dir_idx >= mt->nr_total_dir_slots);
+	bdbm_bug_on (map_idx >= mt->nr_entires_per_dir_slot);
+
 	/* get a directory slot */
 	ds = &mt->dir[dir_idx];
 	bdbm_bug_on (ds == NULL);
@@ -254,6 +269,7 @@ int bdbm_dftl_check_mapping_entry (
 
 	/* get a directory slot */
 	ds = &mt->dir[lpa/mt->nr_entires_per_dir_slot];
+	bdbm_bug_on (lpa/mt->nr_entires_per_dir_slot >= mt->nr_total_dir_slots);
 	bdbm_bug_on (ds == NULL);
 
 	if (ds->me == NULL) {
@@ -272,6 +288,7 @@ directory_slot_t* bdbm_dftl_missing_dir_prepare (
 	directory_slot_t* ds = NULL;
 
 	ds = &mt->dir[lpa/mt->nr_entires_per_dir_slot];
+	bdbm_bug_on (lpa/mt->nr_entires_per_dir_slot >= mt->nr_total_dir_slots);
 
 	/* check error cases */
 	bdbm_bug_on (ds == NULL);
@@ -281,7 +298,7 @@ directory_slot_t* bdbm_dftl_missing_dir_prepare (
 		int j = 0;
 
 		/* this directory slot is not written before */
-		ds->me = (mapping_entry_t*)bdbm_malloc_atomic
+		ds->me = (mapping_entry_t*)bdbm_malloc
 			(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
 		bdbm_bug_on (ds->me == NULL);
 
@@ -313,7 +330,7 @@ int bdbm_dftl_missing_dir_done (
 	uint32_t i;
 
 	/* build mapping entires for ds */
-	ds->me = (mapping_entry_t*)bdbm_malloc_atomic
+	ds->me = (mapping_entry_t*)bdbm_malloc
 		(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
 	for (i = 0; i < mt->nr_entires_per_dir_slot; i++) {
 		ds->me[i] = me[i];
@@ -361,7 +378,7 @@ void bdbm_dftl_finish_victim_mapblk (
 	/* update a directory slot */
 	ds->status = DFTL_DIR_FLASH;
 	ds->phyaddr = *phyaddr;
-	bdbm_free_atomic (ds->me);	
+	bdbm_free(ds->me);	
 	ds->me = NULL;
 	list_del (&ds->list);
 	atomic64_dec (&mt->nr_cached_slots);
@@ -373,6 +390,7 @@ void bdbm_dftl_update_dir_phyaddr (
 	bdbm_phyaddr_t* phyaddr)
 {
 	directory_slot_t* ds = &mt->dir[ds_id];
+	bdbm_bug_on (ds_id>= mt->nr_total_dir_slots);
 	bdbm_bug_on (ds == NULL);
 	ds->phyaddr = *phyaddr;
 }

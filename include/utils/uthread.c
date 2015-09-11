@@ -112,6 +112,31 @@ int bdbm_thread_schedule (bdbm_thread_t* k)
 	return 0;
 }
 
+void bdbm_thread_schedule_setup (bdbm_thread_t* k)
+{	
+	add_wait_queue (&k->wq, k->wait);
+	set_current_state (TASK_INTERRUPTIBLE);
+}
+
+void bdbm_thread_schedule_cancel (bdbm_thread_t* k)
+{
+	/* FIXME: I'm not sure wether or not to remove wait from queue */
+	remove_wait_queue (&k->wq, k->wait);
+}
+
+int bdbm_thread_schedule_sleep (bdbm_thread_t* k)
+{
+	schedule (); /* go to sleep */
+	remove_wait_queue (&k->wq, k->wait);
+
+	if (signal_pending (current)) {
+		/* get a kill signal */
+		return SIGKILL;
+	}
+
+	return 0;
+}
+
 void bdbm_thread_wakeup (bdbm_thread_t* k)
 {
 	if (k == NULL) {

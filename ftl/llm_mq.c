@@ -97,8 +97,14 @@ int __llm_mq_thread (void* arg)
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
-			if (bdbm_thread_schedule (p->llm_thread) == SIGKILL) {
-				break;
+			bdbm_thread_schedule_setup (p->llm_thread);
+			if (bdbm_prior_queue_is_all_empty (p->q)) {
+				/* ok... go to sleep */
+				if (bdbm_thread_schedule_sleep (p->llm_thread) == SIGKILL)
+					break;
+			} else {
+				/* there are items in Q; wake up */
+				bdbm_thread_schedule_cancel (p->llm_thread);
 			}
 		}
 
@@ -122,6 +128,11 @@ int __llm_mq_thread (void* arg)
 
 			if (cnt % 50000 == 0) {
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
+			}
+
+			if (r->req_type == REQTYPE_META_WRITE ||
+				r->req_type == REQTYPE_META_READ) {
+				/*bdbm_msg ("llm_mq-queue-thread-sending");*/
 			}
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
@@ -268,9 +279,17 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
+		if (r->req_type == REQTYPE_META_WRITE ||
+			r->req_type == REQTYPE_META_READ) {
+			/*bdbm_msg ("llm_mq-queue");*/
+		}
 		if ((ret = bdbm_prior_queue_enqueue (
 				p->q, punit_id, r->lpa, (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
+		}
+		if (r->req_type == REQTYPE_META_WRITE ||
+			r->req_type == REQTYPE_META_READ) {
+			/*bdbm_msg ("llm_mq-queue-done");*/
 		}
 	}
 #else
@@ -326,6 +345,9 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		bdbm_thread_wakeup (p->llm_thread);
 		break;
 
+	case REQTYPE_META_WRITE:
+	case REQTYPE_META_READ:
+		/*bdbm_msg ("llm_mq-done");*/
 	case REQTYPE_READ:
 	case REQTYPE_READ_DUMMY:
 	case REQTYPE_WRITE:
