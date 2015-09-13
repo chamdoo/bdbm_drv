@@ -438,6 +438,81 @@ void bdbm_abm_erase_block (
 	}
 }
 
+void bdbm_abm_set_to_dirty_block (
+	bdbm_abm_info_t* bai,
+	uint64_t channel_no, 
+	uint64_t chip_no, 
+	uint64_t block_no)
+{
+	bdbm_abm_block_t* blk = NULL;
+	uint64_t blk_idx = 
+		__get_block_idx (bai->np, channel_no, chip_no, block_no);
+
+	/* see if blk_idx is correct or not */
+	if (blk_idx >= bai->np->nr_blocks_per_ssd) {
+		bdbm_msg ("%llu %llu %llu", channel_no, chip_no, block_no);
+		bdbm_error ("blk_idx (%llu) is larger than # of blocks in SSD (%llu)",
+			blk_idx, bai->np->nr_blocks_per_ssd);
+		return;
+	} else {
+		blk = &bai->blocks[blk_idx];
+	}
+
+	if (blk->channel_no != channel_no || blk->chip_no != chip_no || blk->block_no != block_no) {
+		bdbm_error ("wrong block is chosen (%llu,%llu,%llu) != (%llu,%llu,%llu)",
+			blk->channel_no, blk->chip_no, blk->block_no,
+			channel_no, chip_no, block_no);
+		return;
+	}
+
+	/*
+	if (blk->status != BDBM_ABM_BLK_CLEAN &&
+		blk->status != BDBM_ABM_BLK_DIRTY) {
+		bdbm_warning ("blk->status is NOT BDBM_ABM_BLK_CLEAN or BDBM_ABM_BLK_DIRTY");
+	}
+	*/
+
+	/* check some error cases */
+	__bdbm_abm_check_status (bai);
+
+	/* change # of blks */
+	if (blk->status == BDBM_ABM_BLK_CLEAN) {
+		bdbm_bug_on (bai->nr_clean_blks == 0);
+		bai->nr_clean_blks--;
+	} else if (blk->status == BDBM_ABM_BLK_DIRTY) {
+		bdbm_bug_on (bai->nr_dirty_blks == 0);
+		bai->nr_dirty_blks--;
+	} else if (blk->status == BDBM_ABM_BLK_FREE) {
+		bdbm_bug_on (bai->nr_free_blks == 0);
+		bai->nr_free_blks--;
+	} else if (blk->status == BDBM_ABM_BLK_FREE_PREPARE) {
+		bdbm_bug_on (bai->nr_free_blks_prepared == 0);
+		bai->nr_free_blks_prepared--;
+	} else if (blk->status == BDBM_ABM_BLK_BAD) {
+		bdbm_bug_on (bai->nr_bad_blks == 0);
+		bai->nr_bad_blks--;
+	} else {
+		bdbm_bug_on (1);
+	}
+
+	/* move it to 'free_list' */
+	list_del (&blk->list);
+	list_add_tail (&blk->list, &(bai->list_head_dirty[blk->channel_no][blk->chip_no]));
+	bai->nr_dirty_blks++;
+	blk->status = BDBM_ABM_BLK_DIRTY;
+
+	__bdbm_abm_check_status (bai);
+
+	/* reset the block */
+	blk->nr_invalid_pages = bai->np->nr_pages_per_block;
+	if (blk->pst) {
+		bdbm_memset (blk->pst, 
+			BDBM_ABM_PAGE_INVALID, 
+			sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block);
+	}
+
+}
+
 void bdbm_abm_invalidate_page (
 	bdbm_abm_info_t* bai, 
 	uint64_t channel_no, 

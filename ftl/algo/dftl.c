@@ -445,7 +445,19 @@ uint8_t bdbm_dftl_is_gc_needed (bdbm_drv_info_t* bdi)
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 10) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= 2) {
+		if (bdbm_abm_get_nr_dirty_blocks (p->bai) == 0) {
+			/* there are no blocks to garbage collect */
+			return 0;
+		}
+		/*
+		bdbm_msg ("free_blks: %llu clean_blks: %llu, dirty_blks: %llu, total_blks: %llu",
+				nr_free_blks,
+				bdbm_abm_get_nr_clean_blocks (p->bai),
+				bdbm_abm_get_nr_dirty_blocks (p->bai),
+				bdbm_abm_get_nr_total_blocks (p->bai)
+				);
+		*/
 		return 1;
 	}
 
@@ -786,7 +798,7 @@ uint32_t bdbm_dftl_store (bdbm_drv_info_t* bdi, const char* fn)
 	return 1;
 }
 
-static void __bdbm_page_badblock_scan_eraseblks (
+static void __bdbm_dftl_badblock_scan_eraseblks (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
@@ -850,8 +862,32 @@ static void __bdbm_page_badblock_scan_eraseblks (
 	/* measure gc elapsed time */
 }
 
+static void __bdbm_dftl_mark_it_dead (
+	bdbm_drv_info_t* bdi,
+	uint64_t block_no)
+{
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	int i, j;
+
+	for (i = 0; i < np->nr_channels; i++) {
+		for (j = 0; j < np->nr_chips_per_channel; j++) {
+			bdbm_abm_block_t* b = NULL;
+
+			if ((b = bdbm_abm_get_block (p->bai, i, j, block_no)) == NULL) {
+				bdbm_error ("oops! bdbm_abm_get_block failed");
+				bdbm_bug_on (1);
+			}
+
+			bdbm_abm_set_to_dirty_block (p->bai, i, j, block_no);
+		}
+	}
+}
+
+
 uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
+#if 0
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint64_t i = 0;
@@ -866,7 +902,7 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 	/* step2: erase all the blocks */
 	bdi->ptr_llm_inf->flush (bdi);
 	for (i = 0; i < np->nr_blocks_per_chip; i++) {
-		__bdbm_page_badblock_scan_eraseblks (bdi, i);
+		__bdbm_dftl_badblock_scan_eraseblks (bdi, i);
 	}
 
 	/* step3: store abm */
@@ -887,6 +923,56 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 	 
 	return 0;
+#endif
+
+	/* TEMP: on-demand format */
+	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	uint64_t i = 0;
+	uint32_t ret = 0;
+	uint32_t erased_blocks = 0;
+
+	bdbm_msg ("[WARNING] 'bdbm_page_badblock_scan' is called! All of the flash blocks will be dirty!!!");
+
+	/* step1: reset the page-level mapping table */
+	bdbm_msg ("step1: reset the page-level mapping table");
+	bdbm_dftl_init_mapping_table (p->mt, np);
+
+	/* step2: erase all the blocks */
+	bdi->ptr_llm_inf->flush (bdi);
+	for (i = 0; i < np->nr_blocks_per_chip; i++) {
+		if (erased_blocks <= p->nr_punits)
+			__bdbm_dftl_badblock_scan_eraseblks (bdi, i);
+		else
+			__bdbm_dftl_mark_it_dead (bdi, i);
+		erased_blocks += np->nr_channels;
+	}
+
+	/* step3: store abm */
+	if ((ret = bdbm_abm_store (p->bai, "/usr/share/bdbm_drv/abm.dat"))) {
+		bdbm_error ("bdbm_abm_store failed");
+		return 1;
+	}
+
+	/* step4: get active blocks */
+	bdbm_msg ("step2: get active blocks");
+	if (__bdbm_dftl_get_active_blocks (np, p->bai, p->ac_bab) != 0) {
+		bdbm_error ("__bdbm_dftl_get_active_blocks failed");
+		return 1;
+	}
+	p->curr_puid = 0;
+	p->curr_page_ofs = 0;
+
+	bdbm_msg ("[summary] Total: %llu, Free: %llu, Clean: %llu, Dirty: %llu",
+		bdbm_abm_get_nr_total_blocks (p->bai),
+		bdbm_abm_get_nr_free_blocks (p->bai),
+		bdbm_abm_get_nr_clean_blocks (p->bai),
+		bdbm_abm_get_nr_dirty_blocks (p->bai)
+	);
+	bdbm_msg ("done");
+	 
+	return 0;
+
 }
 
 /* for mapping blocks management */

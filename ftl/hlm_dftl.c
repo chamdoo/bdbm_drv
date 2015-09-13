@@ -180,22 +180,25 @@ int __hlm_dftl_thread (void* arg)
 int __hlm_dftl_thread (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 {
 	bdbm_hlm_dftl_private_t* p = (bdbm_hlm_dftl_private_t*)BDBM_HLM_PRIV(bdi);
-
-	int loop = 0;
 	bdbm_llm_req_t* mr = NULL;
+	int loop = 0;
 
 	/*bdbm_msg ("thread-1");*/
 	/*bdbm_mutex_lock (&p->ftl_lock);*/
 	/*bdbm_msg ("thread-1-get-it");*/
 
 	/* see if foreground GC is needed or not */
-	if (r->req_type == REQTYPE_WRITE && 
-			p->ftl->is_gc_needed != NULL && 
-			p->ftl->is_gc_needed (bdi)) {
-		/* perform GC before sending requests */ 
-		/*bdbm_msg ("[thread] start - gc");*/
-		p->ftl->do_gc (bdi);
-		/*bdbm_msg ("[thread] stop - gc");*/
+	for (loop = 0; loop < 10; loop++) {
+		if (r->req_type == REQTYPE_WRITE && 
+				p->ftl->is_gc_needed != NULL && 
+				p->ftl->is_gc_needed (bdi)) {
+			/* perform GC before sending requests */ 
+			p->ftl->do_gc (bdi);
+		} else
+			break;
+	}
+	if (loop > 1) {
+		bdbm_msg ("GC invokation: %d", loop);
 	}
 
 	/*bdbm_msg ("thread-2");*/

@@ -398,7 +398,13 @@ static uint32_t __host_block_register_block_device (bdbm_drv_info_t* bdi)
 	bdbm_device.gd->queue = bdbm_device.queue;
 	bdbm_device.gd->private_data = NULL;
 	strcpy (bdbm_device.gd->disk_name, "blueDBM");
-	set_capacity (bdbm_device.gd, p->nand.device_capacity_in_byte / KERNEL_SECTOR_SIZE);
+
+	{
+		uint64_t capacity;
+		capacity = p->nand.device_capacity_in_byte * 0.9;
+		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
+	}
 	add_disk (bdbm_device.gd);
 
 	return 0;

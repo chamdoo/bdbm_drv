@@ -37,11 +37,7 @@ THE SOFTWARE.
 #define bdbm_malloc(a) vzalloc(a)
 #define bdbm_zmalloc(a) vzalloc(a)
 #define bdbm_free(a) do { vfree(a); a = NULL; } while (0)
-/*#define bdbm_malloc_atomic(a) kzalloc(a, GFP_ATOMIC)*/
-#define bdbm_malloc_atomic(a) ({ \
-	void* ret = kzalloc(a, GFP_ATOMIC); \
-	if (ret == NULL) printk (KERN_INFO "what???"); \
-	ret; })
+#define bdbm_malloc_atomic(a) kzalloc(a, GFP_ATOMIC)
 #define bdbm_free_atomic(a) do { kfree(a); a = NULL; } while (0)
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
@@ -82,11 +78,9 @@ THE SOFTWARE.
 #define bdbm_spinlock_t spinlock_t
 #define bdbm_spin_lock_init(a) spin_lock_init(a)
 #define bdbm_spin_lock(a) spin_lock(a)
-/*#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)*/
-#define bdbm_spin_lock_irqsave(a,flag) spin_lock(a)
+#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)
 #define bdbm_spin_unlock(a) spin_unlock(a)
-/*#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)*/
-#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock(a)
+#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)
 #define bdbm_spin_lock_destory(a)
 
 /* thread */

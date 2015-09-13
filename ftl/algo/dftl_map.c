@@ -63,7 +63,7 @@ dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np)
 	mt->nr_total_dir_slots = np->nr_pages_per_ssd / mt->nr_entires_per_dir_slot;
 	/*mt->max_cached_dir_slots = 20000;*/
 	/*mt->max_cached_dir_slots = 20;*/
-	mt->max_cached_dir_slots = mt->nr_total_dir_slots * 0.1;
+	mt->max_cached_dir_slots = mt->nr_total_dir_slots * 0.2;
 	atomic64_set (&mt->nr_cached_slots, 0);
 
 	bdbm_msg ("DFTL: mapping_entry_size: %llu", mt->mapping_entry_size);
@@ -156,22 +156,6 @@ void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np)
 		if (ds->me != NULL)
 			bdbm_free(ds->me);
 		ds->me = NULL;
-
-#if 0
-		if (ds->me == NULL) {
-			ds->me = (mapping_entry_t*)bdbm_malloc_atomic
-				(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
-		}
-
-		for (j = 0; j < mt->nr_entires_per_dir_slot; j++) {
-			ds->me[j].status = DFTL_PAGE_NOT_MAPPED;
-			ds->me[j].phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
-			ds->me[j].phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
-			ds->me[j].phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
-			ds->me[j].phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
-		}
-		ds->status = DFTL_DIR_CLEAN;
-#endif
 	}
 
 	/* empty dirty list */

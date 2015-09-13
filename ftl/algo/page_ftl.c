@@ -73,14 +73,14 @@ enum BDBM_PFTL_PAGE_STATUS {
 	PFTL_PAGE_INVALID_ADDR = -1ULL,
 };
 
-struct bdbm_page_mapping_entry {
+typedef struct {
 	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
 	bdbm_phyaddr_t phyaddr; /* physical location */
-};
+} bdbm_page_mapping_entry_t;
 
-struct bdbm_page_ftl_private {
+typedef struct {
 	bdbm_abm_info_t* bai;
-	struct bdbm_page_mapping_entry* ptr_mapping_table;
+	bdbm_page_mapping_entry_t* ptr_mapping_table;
 	bdbm_spinlock_t ftl_lock;
 	uint64_t nr_punits;	
 
@@ -95,17 +95,17 @@ struct bdbm_page_ftl_private {
 
 	/* for bad-block scanning */
 	bdbm_mutex_t badblk;
-};
+} bdbm_page_ftl_private_t;
 
 
-struct bdbm_page_mapping_entry* __bdbm_page_ftl_create_mapping_table (nand_params_t* np)
+bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (nand_params_t* np)
 {
-	struct bdbm_page_mapping_entry* me;
+	bdbm_page_mapping_entry_t* me;
 	uint64_t loop;
 
 	/* create a page-level mapping table */
-	if ((me = (struct bdbm_page_mapping_entry*)bdbm_zmalloc 
-			(sizeof (struct bdbm_page_mapping_entry) * np->nr_pages_per_ssd)) == NULL) {
+	if ((me = (bdbm_page_mapping_entry_t*)bdbm_zmalloc 
+			(sizeof (bdbm_page_mapping_entry_t) * np->nr_pages_per_ssd)) == NULL) {
 		return NULL;
 	}
 
@@ -123,7 +123,7 @@ struct bdbm_page_mapping_entry* __bdbm_page_ftl_create_mapping_table (nand_param
 }
 
 void __bdbm_page_ftl_destroy_mapping_table (
-	struct bdbm_page_mapping_entry* me)
+	bdbm_page_mapping_entry_t* me)
 {
 	if (me == NULL)
 		return;
@@ -200,14 +200,14 @@ void __bdbm_page_ftl_destroy_active_blocks (
 
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_page_ftl_private* p = NULL;
+	bdbm_page_ftl_private_t* p = NULL;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint64_t i = 0, j = 0;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* create a private data structure */
-	if ((p = (struct bdbm_page_ftl_private*)bdbm_zmalloc 
-			(sizeof (struct bdbm_page_ftl_private))) == NULL) {
+	if ((p = (bdbm_page_ftl_private_t*)bdbm_zmalloc 
+			(sizeof (bdbm_page_ftl_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		return 1;
 	}
@@ -268,7 +268,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 
 void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 
 	if (!p)
@@ -300,7 +300,7 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 
 uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
@@ -351,8 +351,8 @@ uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_ph
 uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)
 {
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
 
 	/* is it a valid logical address */
 	if (lpa >= np->nr_pages_per_ssd) {
@@ -386,8 +386,8 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_
 uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
 	uint32_t ret;
 
 	/* is it a valid logical address */
@@ -424,8 +424,8 @@ uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr
 uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)
 {	
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
 	uint64_t loop;
 
 	/* check the range of input addresses */
@@ -455,18 +455,18 @@ uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint6
 
 uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 1) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= 2) {
 		return 1;
 	}
 
 	/* invoke gc when there is only one dirty block (for debugging) */
 	/*
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	if (bdbm_abm_get_nr_dirty_blocks (p->bai) > 1) {
 		return 1;
 	}
@@ -482,7 +482,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -506,7 +506,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -537,7 +537,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 /* TODO: need to improve it for background gc */
 uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t nr_gc_blks = 0;
@@ -704,9 +704,9 @@ erase_blks:
 /* for snapshot */
 uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me;
+	bdbm_page_mapping_entry_t* me;
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
 	uint64_t i, pos = 0;
@@ -725,7 +725,7 @@ uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 
 	me = p->ptr_mapping_table;
 	for (i = 0; i < np->nr_pages_per_ssd; i++) {
-		pos += bdbm_fread (fp, pos, (uint8_t*)&me[i], sizeof (struct bdbm_page_mapping_entry));
+		pos += bdbm_fread (fp, pos, (uint8_t*)&me[i], sizeof (bdbm_page_mapping_entry_t));
 		if (me[i].status != PFTL_PAGE_NOT_ALLOCATED &&
 			me[i].status != PFTL_PAGE_VALID &&
 			me[i].status != PFTL_PAGE_INVALID &&
@@ -750,9 +750,9 @@ uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 
 uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me;
+	bdbm_page_mapping_entry_t* me;
 	bdbm_abm_block_t* b = NULL;
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
@@ -798,7 +798,7 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 	/* step2: store mapping table */
 	me = p->ptr_mapping_table;
 	for (i = 0; i < np->nr_pages_per_ssd; i++) {
-		pos += bdbm_fwrite (fp, pos, (uint8_t*)&me[i], sizeof (struct bdbm_page_mapping_entry));
+		pos += bdbm_fwrite (fp, pos, (uint8_t*)&me[i], sizeof (bdbm_page_mapping_entry_t));
 	}
 	bdbm_fsync (fp);
 	bdbm_fclose (fp);
@@ -813,7 +813,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
@@ -873,11 +873,34 @@ void __bdbm_page_badblock_scan_eraseblks (
 	/* measure gc elapsed time */
 }
 
+static void __bdbm_page_mark_it_dead (
+	bdbm_drv_info_t* bdi,
+	uint64_t block_no)
+{
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	int i, j;
+
+	for (i = 0; i < np->nr_channels; i++) {
+		for (j = 0; j < np->nr_chips_per_channel; j++) {
+			bdbm_abm_block_t* b = NULL;
+
+			if ((b = bdbm_abm_get_block (p->bai, i, j, block_no)) == NULL) {
+				bdbm_error ("oops! bdbm_abm_get_block failed");
+				bdbm_bug_on (1);
+			}
+
+			bdbm_abm_set_to_dirty_block (p->bai, i, j, block_no);
+		}
+	}
+}
+
 uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_page_ftl_private* p = _ftl_page_ftl.ptr_private;
+#if 0
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
-	struct bdbm_page_mapping_entry* me = NULL;
+	bdbm_page_mapping_entry_t* me = NULL;
 	uint64_t i = 0;
 	uint32_t ret = 0;
 
@@ -918,5 +941,63 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 	 
 	return 0;
+#endif
+
+	/* TEMP: on-demand format */
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_page_mapping_entry_t* me = NULL;
+	uint64_t i = 0;
+	uint32_t ret = 0;
+	uint32_t erased_blocks = 0;
+
+	bdbm_msg ("[WARNING] 'bdbm_page_badblock_scan' is called! All of the flash blocks will be dirty!!!");
+
+	/* step1: reset the page-level mapping table */
+	bdbm_msg ("step1: reset the page-level mapping table");
+	me = p->ptr_mapping_table;
+	for (i = 0; i < np->nr_pages_per_ssd; i++) {
+		me[i].status = PFTL_PAGE_NOT_ALLOCATED;
+		me[i].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
+		me[i].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
+		me[i].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
+		me[i].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+	}
+
+	/* step2: erase all the blocks */
+	bdi->ptr_llm_inf->flush (bdi);
+	for (i = 0; i < np->nr_blocks_per_chip; i++) {
+		if (erased_blocks <= p->nr_punits)
+			__bdbm_page_badblock_scan_eraseblks (bdi, i);
+		else 
+			__bdbm_page_mark_it_dead (bdi, i);
+		erased_blocks += np->nr_channels;
+	}
+
+	/* step3: store abm */
+	if ((ret = bdbm_abm_store (p->bai, "/usr/share/bdbm_drv/abm.dat"))) {
+		bdbm_error ("bdbm_abm_store failed");
+		return 1;
+	}
+
+	/* step4: get active blocks */
+	bdbm_msg ("step2: get active blocks");
+	if (__bdbm_page_ftl_get_active_blocks (np, p->bai, p->ac_bab) != 0) {
+		bdbm_error ("__bdbm_page_ftl_get_active_blocks failed");
+		return 1;
+	}
+	p->curr_puid = 0;
+	p->curr_page_ofs = 0;
+
+	bdbm_msg ("[summary] Total: %llu, Free: %llu, Clean: %llu, Dirty: %llu",
+		bdbm_abm_get_nr_total_blocks (p->bai),
+		bdbm_abm_get_nr_free_blocks (p->bai),
+		bdbm_abm_get_nr_clean_blocks (p->bai),
+		bdbm_abm_get_nr_dirty_blocks (p->bai)
+	);
+	bdbm_msg ("done");
+	 
+	return 0;
+
 }
 

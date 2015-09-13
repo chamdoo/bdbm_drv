@@ -59,9 +59,9 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 };
 
 struct dm_bluedbm_private {
-	bdbm_completion event_handler_completion;
-	bdbm_completion connectal_completion;
-	bdbm_completion connectal_completion_init;
+	bdbm_completion_t event_handler_completion;
+	bdbm_completion_t connectal_completion;
+	bdbm_completion_t connectal_completion_init;
 
 	/* for Connectal */
 	DmaManagerPrivate dma;
@@ -572,6 +572,7 @@ uint32_t dm_bluedbm_make_req (
 	case REQTYPE_WRITE:
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_GC_WRITE:
+	case REQTYPE_META_WRITE:
 		__copy_bio_to_dma (bdi, r);
 		FlashRequest_writePage (
 			&priv->intarr[3], 
@@ -585,6 +586,7 @@ uint32_t dm_bluedbm_make_req (
 	case REQTYPE_READ:
 	case REQTYPE_RMW_READ:
 	case REQTYPE_GC_READ:
+	case REQTYPE_META_READ:
 		FlashRequest_readPage (
 			&priv->intarr[3], 
 			r->phyaddr->channel_no, 
