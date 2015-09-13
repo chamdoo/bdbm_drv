@@ -184,8 +184,8 @@ typedef struct {
 	uint8_t ret;	/* old for GC */
 
 	/* for dftl */
-	/*bdbm_mutex_t* done;*/
-	bdbm_completion_t* done; 
+	bdbm_mutex_t* done;
+	/*bdbm_completion_t* done; */
 	void* ds;
 } bdbm_llm_req_t;
 

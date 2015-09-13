@@ -289,6 +289,7 @@ uint32_t bdbm_block_ftl_get_ppa (
 		ppa->chip_no = 0;
 		ppa->block_no = 0;
 		ppa->page_no = 0;
+		ppa->punit_id = 0;
 		return 0;
 	} 
 
@@ -549,6 +550,7 @@ uint32_t __bdbm_block_ftl_erase_block (
 		r->phyaddr->chip_no = b->chip_no;
 		r->phyaddr->block_no = b->block_no;
 		r->phyaddr->page_no = 0;
+		r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 		r->ret = 0;
 	}
 
@@ -712,6 +714,7 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t bl
 			r->phyaddr->chip_no = b->chip_no;
 			r->phyaddr->block_no = b->block_no;
 			r->phyaddr->page_no = 0;
+			r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 			r->ret = 0;
 		}
 	}

@@ -311,14 +311,12 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	punit_id = r->phyaddr->punit_id;
 
 #ifdef USE_RD_QUEUE
-	if (type == RD_PRIORITY_WRITE) {
-		while (bdbm_rd_prior_queue_get_nr_items (p->q) >= 256) {
-			/*yield ();*/
-			bdbm_thread_yield ();
-		}
+	while (bdbm_rd_prior_queue_get_nr_items (p->q) >= 96) {
+		/*yield ();*/
+		bdbm_thread_yield ();
 	}
 #else
-	while (bdbm_prior_queue_get_nr_items (p->q) >= 256) {
+	while (bdbm_prior_queue_get_nr_items (p->q) >= 96) {
 		bdbm_thread_yield ();
 	}
 #endif

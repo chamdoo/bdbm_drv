@@ -351,6 +351,11 @@ directory_slot_t* bdbm_dftl_prepare_victim_mapblk (
 		break;
 	}
 
+	/* temp */
+	list_del (&ds->list);
+	atomic64_dec (&mt->nr_cached_slots);
+	/* end */
+
 	return ds;
 }
 
@@ -364,8 +369,10 @@ void bdbm_dftl_finish_victim_mapblk (
 	ds->phyaddr = *phyaddr;
 	bdbm_free(ds->me);	
 	ds->me = NULL;
-	list_del (&ds->list);
-	atomic64_dec (&mt->nr_cached_slots);
+
+	/*list_del (&ds->list);*/
+	/*atomic64_dec (&mt->nr_cached_slots);*/
+
 }
 
 void bdbm_dftl_update_dir_phyaddr (
