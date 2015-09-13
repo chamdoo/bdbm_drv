@@ -38,16 +38,16 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "platform.h"
-#include "prior_queue.h"
+#include "rd_prior_queue.h"
 
 
 /*static uint64_t max_queue_items = 0;*/
 
 static uint64_t get_highest_priority_tag (
-	bdbm_prior_queue_t* mq, 
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t lpa)
 {
-	bdbm_prior_lpa_item_t* q = NULL;
+	bdbm_rd_prior_lpa_item_t* q = NULL;
 
 	HASH_FIND_INT (mq->hash_lpa, &lpa, q);
 	if (q)
@@ -56,10 +56,10 @@ static uint64_t get_highest_priority_tag (
 }
 
 static void remove_highest_priority_tag (
-	bdbm_prior_queue_t* mq, 
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t lpa)
 {
-	bdbm_prior_lpa_item_t* q = NULL;
+	bdbm_rd_prior_lpa_item_t* q = NULL;
 
 	HASH_FIND_INT (mq->hash_lpa, &lpa, q);
 	if (q && q->lpa == lpa) {
@@ -77,15 +77,15 @@ static void remove_highest_priority_tag (
 }
 
 static uint64_t get_new_priority_tag (
-	bdbm_prior_queue_t* mq, 
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t lpa)
 {
-	bdbm_prior_lpa_item_t* q = NULL;
+	bdbm_rd_prior_lpa_item_t* q = NULL;
 
 	HASH_FIND_INT (mq->hash_lpa, &lpa, q);
 	if (q == NULL) {
-		if ((q = (bdbm_prior_lpa_item_t*)bdbm_malloc_atomic 
-				(sizeof (bdbm_prior_lpa_item_t))) == NULL) {
+		if ((q = (bdbm_rd_prior_lpa_item_t*)bdbm_malloc_atomic 
+				(sizeof (bdbm_rd_prior_lpa_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 			bdbm_bug_on (1);
 		}
@@ -99,15 +99,15 @@ static uint64_t get_new_priority_tag (
 	return q->max_tag;
 }
 
-bdbm_prior_queue_t* bdbm_prior_queue_create (
+bdbm_rd_prior_queue_t* bdbm_rd_prior_queue_create (
 	uint64_t nr_queues, 
 	int64_t max_size)
 {
-	bdbm_prior_queue_t* mq;
+	bdbm_rd_prior_queue_t* mq;
 	uint64_t loop;
 
 	/* create a private structure */
-	if ((mq = bdbm_malloc_atomic (sizeof (bdbm_prior_queue_t))) == NULL) {
+	if ((mq = bdbm_malloc_atomic (sizeof (bdbm_rd_prior_queue_t))) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		return NULL;
 	}
@@ -128,13 +128,15 @@ bdbm_prior_queue_t* bdbm_prior_queue_create (
 	/* create hash */
 	mq->hash_lpa = NULL;
 
+	bdbm_msg ("** rd_prior_queue is created! **");
+
 	return mq;
 }
 
 /* NOTE: it must be called when mq is empty. */
-void bdbm_prior_queue_destroy (bdbm_prior_queue_t* mq)
+void bdbm_rd_prior_queue_destroy (bdbm_rd_prior_queue_t* mq)
 {
-	bdbm_prior_lpa_item_t *c, *tmp;
+	bdbm_rd_prior_lpa_item_t *c, *tmp;
 
 	if (mq == NULL)
 		return;
@@ -148,11 +150,12 @@ void bdbm_prior_queue_destroy (bdbm_prior_queue_t* mq)
 	bdbm_free_atomic (mq);
 }
 
-uint8_t bdbm_prior_queue_enqueue (
-	bdbm_prior_queue_t* mq, 
+uint8_t bdbm_rd_prior_queue_enqueue (
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t qid, 
 	uint64_t lpa, 
-	void* req)
+	void* req,
+	rd_prior_iotype_t type)
 {
 	uint32_t ret = 1;
 	unsigned long flags;
@@ -163,9 +166,9 @@ uint8_t bdbm_prior_queue_enqueue (
 	}
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
-	if (mq->max_size == INFINITE_PRIOR_QUEUE || mq->qic < mq->max_size) {
-		bdbm_prior_queue_item_t* q = NULL;
-		if ((q = bdbm_malloc_atomic (sizeof (bdbm_prior_queue_item_t))) == NULL) {
+	if (mq->max_size == INFINITE_RD_PRIOR_QUEUE || mq->qic < mq->max_size) {
+		bdbm_rd_prior_queue_item_t* q = NULL;
+		if ((q = bdbm_malloc_atomic (sizeof (bdbm_rd_prior_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 			bdbm_bug_on (1);
 		} else {
@@ -173,6 +176,7 @@ uint8_t bdbm_prior_queue_enqueue (
 			q->lpa = lpa;
 			q->lock = 0;
 			q->ptr_req = (void*)req;
+			q->type = type;
 			list_add_tail (&q->list, &mq->qlh[qid]);	/* add to tail */
 			mq->qic++;
 			ret = 0;
@@ -190,19 +194,19 @@ uint8_t bdbm_prior_queue_enqueue (
 	return ret;
 }
 
-uint8_t bdbm_prior_queue_is_empty (
-	bdbm_prior_queue_t* mq, 
+uint8_t bdbm_rd_prior_queue_is_empty (
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t qid)
 {
 	unsigned long flags;
 	struct list_head* pos = NULL;
-	bdbm_prior_queue_item_t* q = NULL;
+	bdbm_rd_prior_queue_item_t* q = NULL;
 	uint8_t ret = 1;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->qic > 0) {
 		list_for_each (pos, &mq->qlh[qid]) {
-			q = list_entry (pos, bdbm_prior_queue_item_t, list);
+			q = list_entry (pos, bdbm_rd_prior_queue_item_t, list);
 			if (q && q->lock == 0)
 				break;
 			q = NULL;
@@ -216,28 +220,37 @@ uint8_t bdbm_prior_queue_is_empty (
 	return ret;
 }
 
-void* bdbm_prior_queue_dequeue (
-	bdbm_prior_queue_t* mq, 
+void* bdbm_rd_prior_queue_dequeue (
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t qid,
-	bdbm_prior_queue_item_t** oq)
+	bdbm_rd_prior_queue_item_t** oq)
 {
 	unsigned long flags;
 	struct list_head* pos = NULL;
-	bdbm_prior_queue_item_t* q = NULL;
+	bdbm_rd_prior_queue_item_t* q = NULL;
+	bdbm_rd_prior_queue_item_t* q_tmp = NULL;
 	void* req = NULL;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->qic > 0) {
 		list_for_each (pos, &mq->qlh[qid]) {
-			if ((q = list_entry (pos, bdbm_prior_queue_item_t, list))) {
-				if (q->lock == 0) {
-					uint64_t highest_tag = get_highest_priority_tag (mq, q->lpa);
-					if (highest_tag == q->tag)
-						break;
+			if ((q_tmp = list_entry (pos, bdbm_rd_prior_queue_item_t, list))) {
+				if (q_tmp->lock == 0) {
+					uint64_t highest_tag = get_highest_priority_tag (mq, q_tmp->lpa);
+					if (highest_tag == q_tmp->tag) {
+						if (q_tmp->type == RD_PRIORITY_READ) {
+							/* reads are served first */
+							q = q_tmp;
+							break;
+						} else if (q == NULL) {
+							/* choose writes if q is NULL */
+							q = q_tmp;
+						}
+					}
 				}
 			}
-			q = NULL;
-			break; /* [CAUSION] it could incur a dead-lock problem */
+			/*q = NULL;*/
+			/*break; *//* [CAUSION] it could incur a dead-lock problem */
 		}
 		if (q != NULL) {
 			q->lock = 1;	/* mark it use */
@@ -250,9 +263,9 @@ void* bdbm_prior_queue_dequeue (
 	return req;
 }
 
-uint8_t bdbm_prior_queue_remove (
-	bdbm_prior_queue_t* mq, 
-	bdbm_prior_queue_item_t* q)
+uint8_t bdbm_rd_prior_queue_remove (
+	bdbm_rd_prior_queue_t* mq, 
+	bdbm_rd_prior_queue_item_t* q)
 {
 	unsigned long flags;
 
@@ -269,10 +282,10 @@ uint8_t bdbm_prior_queue_remove (
 	return 0;
 }
 
-uint8_t bdbm_prior_queue_move (
-	bdbm_prior_queue_t* mq, 
+uint8_t bdbm_rd_prior_queue_move (
+	bdbm_rd_prior_queue_t* mq, 
 	uint64_t qid,
-	bdbm_prior_queue_item_t* q)
+	bdbm_rd_prior_queue_item_t* q)
 {
 	unsigned long flags;
 
@@ -287,13 +300,13 @@ uint8_t bdbm_prior_queue_move (
 	return 0;
 }
 
-uint8_t bdbm_prior_queue_is_full (bdbm_prior_queue_t* mq)
+uint8_t bdbm_rd_prior_queue_is_full (bdbm_rd_prior_queue_t* mq)
 {
 	uint8_t ret = 0;
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
-	if (mq->max_size != INFINITE_PRIOR_QUEUE) {
+	if (mq->max_size != INFINITE_RD_PRIOR_QUEUE) {
 		if (mq->qic > mq->max_size) {
  			bdbm_error ("oops!!!");
 			bdbm_bug_on (mq->qic > mq->max_size);
@@ -306,7 +319,7 @@ uint8_t bdbm_prior_queue_is_full (bdbm_prior_queue_t* mq)
 	return ret;
 }
 
-uint8_t bdbm_prior_queue_is_all_empty (bdbm_prior_queue_t* mq)
+uint8_t bdbm_rd_prior_queue_is_all_empty (bdbm_rd_prior_queue_t* mq)
 {
 	uint8_t ret = 0;
 	unsigned long flags;
@@ -322,7 +335,7 @@ uint8_t bdbm_prior_queue_is_all_empty (bdbm_prior_queue_t* mq)
 	return ret;
 }
 
-uint64_t bdbm_prior_queue_get_nr_items (bdbm_prior_queue_t* mq)
+uint64_t bdbm_rd_prior_queue_get_nr_items (bdbm_rd_prior_queue_t* mq)
 {
 	uint64_t nr_items = 0;
 	unsigned long flags;

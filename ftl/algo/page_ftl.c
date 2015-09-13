@@ -583,6 +583,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 				r->phyaddr->chip_no = b->chip_no;
 				r->phyaddr->block_no = b->block_no;
 				r->phyaddr->page_no = j;
+				r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 				r->ret = 0;
 				nr_llm_reqs++;
 			}
@@ -658,6 +659,7 @@ erase_blks:
 		r->phyaddr->chip_no = b->chip_no;
 		r->phyaddr->block_no = b->block_no;
 		r->phyaddr->page_no = 0;
+		r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 		r->ret = 0;
 	}
 
@@ -841,6 +843,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 			r->phyaddr->chip_no = b->chip_no;
 			r->phyaddr->block_no = b->block_no;
 			r->phyaddr->page_no = 0;
+			r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
 			r->ret = 0;
 		}
 	}

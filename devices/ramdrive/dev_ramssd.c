@@ -381,6 +381,10 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
 
 				/* call the interrupt handler */
+				/*{*/
+					/*bdbm_llm_req_t* r = (bdbm_llm_req_t*)ptr_req;*/
+					/*bdbm_msg ("[dev] req done - %llu (%llu)", r->lpa, r->phyaddr->punit_id);*/
+				/*}*/
 				ri->intr_handler (ptr_req);
 			} else {
 				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
@@ -411,7 +415,7 @@ static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *pt
 	/* call a tasklet */
 	tasklet_schedule (ri->tasklet); 
 
-	ktime = ktime_set (0, 50 * 1000);
+	ktime = ktime_set (0, 5 * 1000);
 	hrtimer_start (&ri->hrtimer, ktime, HRTIMER_MODE_REL);
 
 	return HRTIMER_NORESTART;
@@ -626,6 +630,8 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		}
 
 		/* register reqs */
+		/*bdbm_msg ("elapsed = %llu", target_elapsed_time_us);*/
+		/*bdbm_msg ("[dev] send req - %llu (%llu)", r->lpa, r->phyaddr->punit_id);*/
 		bdbm_spin_lock_irqsave (&ri->ramssd_lock, flags);
 		if (ri->ptr_punits[punit_id].ptr_req == NULL) {
 			ri->ptr_punits[punit_id].ptr_req = (void*)r;

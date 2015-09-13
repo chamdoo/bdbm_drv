@@ -20,10 +20,11 @@ sudo fio --randrepeat=1 \
 	--filename=/media/blueDBM/fio \
 	--bs=4k \
 	--blockalign=4k \
-	--iodepth=1 \
+	--iodepth=128 \
 	--size=1000M \
 	--readwrite=randrw \
-	--rwmixread=0 \
+	--rwmixread=50 \
+	--rwmixwrite=50 \
 	--overwrite=1 \
-	--direct=1
+	--direct=0
 

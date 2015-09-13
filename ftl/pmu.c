@@ -219,6 +219,8 @@ void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
 
+	/*return;*/
+
 	switch (req->req_type) {
 	case REQTYPE_READ:
 		bdbm_bug_on (h == NULL);
@@ -241,7 +243,6 @@ void pmu_update_sw (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 
 void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
@@ -252,7 +253,6 @@ void pmu_update_r_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -263,7 +263,6 @@ void pmu_update_w_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -274,7 +273,6 @@ void pmu_update_rmw_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);
@@ -290,6 +288,8 @@ void pmu_update_gc_sw (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
+
+	/*return;*/
 
 	switch (req->req_type) {
 	case REQTYPE_READ:
@@ -313,7 +313,6 @@ void pmu_update_q (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 
 void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
@@ -324,7 +323,6 @@ void pmu_update_r_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -335,7 +333,6 @@ void pmu_update_w_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -346,7 +343,6 @@ void pmu_update_rmw_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);
@@ -362,6 +358,8 @@ void pmu_update_gc_q (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 {
 	bdbm_hlm_req_t* h = (bdbm_hlm_req_t*)req->ptr_hlm_req;
+
+	/*return;*/
 
 	switch (req->req_type) {
 	case REQTYPE_READ:
@@ -385,7 +383,6 @@ void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 
 void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_read_cnt);
@@ -396,7 +393,6 @@ void pmu_update_r_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw) 
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.page_write_cnt);
@@ -407,7 +403,6 @@ void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.rmw_read_cnt);
@@ -418,7 +413,6 @@ void pmu_update_rmw_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 
 void pmu_update_gc_tot (bdbm_drv_info_t* bdi, bdbm_stopwatch_t* sw)
 {
-	return;
 	unsigned long flags;
 	int64_t delta = bdbm_stopwatch_get_elapsed_time_us (sw);
 	int64_t n = atomic64_read (&bdi->pm.gc_cnt);

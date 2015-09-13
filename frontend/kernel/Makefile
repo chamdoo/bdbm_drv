@@ -16,7 +16,7 @@ EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
 EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D USE_PMU
-#EXTRA_CFLAGS += -D USE_KTIMER
+EXTRA_CFLAGS += -D USE_KTIMER
 EXTRA_CFLAGS += -D KERNEL_MODE
 #EXTRA_CFLAGS += -D SNAPSHOT_ENABLE
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
@@ -42,6 +42,7 @@ bdbm_drv-y := \
 	$(FTL)/algo/dftl_map.o \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
+	$(FTL)/queue/rd_prior_queue.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \

@@ -70,7 +70,12 @@ THE SOFTWARE.
 #define bdbm_mutex_lock(a) down (a)
 #define bdbm_mutex_lock_interruptible(a) down_interruptible(a)
 #define bdbm_mutex_unlock(a) up (a)
-#define bdbm_mutex_try_lock(a) down_trylock(a)  /* 1: acquire 0: contention */
+/*#define bdbm_mutex_try_lock(a) down_trylock(a)  *//* 1: acquire 0: contention */
+#define bdbm_mutex_try_lock(a) ({ \
+	int z = down_trylock(a); int ret; \
+	if (z == 0) ret = 1; \
+	else ret = 0; \
+	ret; })
 #define bdbm_mutex_free(a)
 
 
@@ -135,7 +140,7 @@ THE SOFTWARE.
 #define bdbm_mutex_try_lock(a) ({ \
 	int z = pthread_mutex_trylock(a); int ret; \
 	if (z == 0) ret = 1; \
-	else ret = -z; \
+	else ret = 0; \
 	ret; })
 #define bdbm_mutex_free(a) pthread_mutex_destroy(a)
 

@@ -44,6 +44,7 @@ THE SOFTWARE.
 
 #include "queue/queue.h"
 #include "queue/prior_queue.h"
+#include "queue/rd_prior_queue.h"
 #include "utils/utime.h"
 
 
@@ -54,6 +55,7 @@ THE SOFTWARE.
 /* NOTE: This is just a quick fix to support RMW; 
  * it must be improved later for better performance */
 #define QUICK_FIX_FOR_RWM	
+#define USE_RD_QUEUE
 
 
 /* llm interface */
@@ -70,7 +72,11 @@ bdbm_llm_inf_t _llm_mq_inf = {
 struct bdbm_llm_mq_private {
 	uint64_t nr_punits;
 	bdbm_mutex_t* punit_locks;
+#ifdef USE_RD_QUEUE
+	bdbm_rd_prior_queue_t* q;
+#else
 	bdbm_prior_queue_t* q;
+#endif
 
 	/* for debugging */
 #if defined(ENABLE_SEQ_DBG)
@@ -96,9 +102,17 @@ int __llm_mq_thread (void* arg)
 
 	for (;;) {
 		/* give a chance to other processes if Q is empty */
+#ifdef USE_RD_QUEUE
+		if (bdbm_rd_prior_queue_is_all_empty (p->q)) {
+#else
 		if (bdbm_prior_queue_is_all_empty (p->q)) {
+#endif
 			bdbm_thread_schedule_setup (p->llm_thread);
+#ifdef USE_RD_QUEUE
+			if (bdbm_rd_prior_queue_is_all_empty (p->q)) {
+#else
 			if (bdbm_prior_queue_is_all_empty (p->q)) {
+#endif
 				/* ok... go to sleep */
 				if (bdbm_thread_schedule_sleep (p->llm_thread) == SIGKILL)
 					break;
@@ -110,29 +124,36 @@ int __llm_mq_thread (void* arg)
 
 		/* send reqs until Q becomes empty */
 		for (loop = 0; loop < p->nr_punits; loop++) {
+#ifdef USE_RD_QUEUE
+			bdbm_rd_prior_queue_item_t* qitem = NULL;
+#else
 			bdbm_prior_queue_item_t* qitem = NULL;
+#endif
 			bdbm_llm_req_t* r = NULL;
 
 			/* if pu is busy, then go to the next pnit */
-			if (!bdbm_mutex_try_lock (&p->punit_locks[loop])) {
+			if (!bdbm_mutex_try_lock (&p->punit_locks[loop]))
 				continue;
-			}
 			
+#ifdef USE_RD_QUEUE
+			if ((r = (bdbm_llm_req_t*)bdbm_rd_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
+#else
 			if ((r = (bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
+#endif
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
 				continue;
 			}
+
 			r->ptr_qitem = qitem;
 
 			pmu_update_q (bdi, r);
 
 			if (cnt % 50000 == 0) {
+#ifdef USE_RD_QUEUE
+				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_rd_prior_queue_get_nr_items (p->q));
+#else
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
-			}
-
-			if (r->req_type == REQTYPE_META_WRITE ||
-				r->req_type == REQTYPE_META_READ) {
-				/*bdbm_msg ("llm_mq-queue-thread-sending");*/
+#endif
 			}
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
@@ -168,7 +189,11 @@ uint32_t llm_mq_create (bdbm_drv_info_t* bdi)
 		bdi->ptr_bdbm_params->nand.nr_chips_per_channel;
 
 	/* create queue */
+#ifdef USE_RD_QUEUE
+	if ((p->q = bdbm_rd_prior_queue_create (p->nr_punits, INFINITE_QUEUE)) == NULL) {
+#else
 	if ((p->q = bdbm_prior_queue_create (p->nr_punits, INFINITE_QUEUE)) == NULL) {
+#endif
 		bdbm_error ("bdbm_prior_queue_create failed");
 		goto fail;
 	}
@@ -204,7 +229,11 @@ fail:
 	if (p->punit_locks)
 		bdbm_free_atomic (p->punit_locks);
 	if (p->q)
+#ifdef USE_RD_QUEUE
+		bdbm_rd_prior_queue_destroy (p->q);
+#else
 		bdbm_prior_queue_destroy (p->q);
+#endif
 	if (p)
 		bdbm_free_atomic (p);
 	return -1;
@@ -222,8 +251,13 @@ void llm_mq_destroy (bdbm_drv_info_t* bdi)
 		return;
 
 	/* wait until Q becomes empty */
+#ifdef USE_RD_QUEUE
+	while (!bdbm_rd_prior_queue_is_all_empty (p->q)) {
+		bdbm_msg ("llm items = %llu", bdbm_rd_prior_queue_get_nr_items (p->q));
+#else
 	while (!bdbm_prior_queue_is_all_empty (p->q)) {
 		bdbm_msg ("llm items = %llu", bdbm_prior_queue_get_nr_items (p->q));
+#endif
 		bdbm_thread_msleep (1);
 	}
 
@@ -236,9 +270,14 @@ void llm_mq_destroy (bdbm_drv_info_t* bdi)
 
 	/* release all the relevant data structures */
 	if (p->q)
+#ifdef USE_RD_QUEUE
+		bdbm_rd_prior_queue_destroy (p->q);
+#else
 		bdbm_prior_queue_destroy (p->q);
+#endif
 	if (p) 
 		bdbm_free_atomic (p);
+	bdbm_msg ("done");
 }
 
 uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
@@ -246,6 +285,20 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	uint32_t ret;
 	uint64_t punit_id;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+
+#ifdef USE_RD_QUEUE
+	/* FIXME: ugry */
+	rd_prior_iotype_t type;
+	if (r->req_type == REQTYPE_READ ||
+		r->req_type == REQTYPE_READ_DUMMY ||
+		r->req_type == REQTYPE_RMW_READ || 
+		r->req_type == REQTYPE_GC_READ ||
+		r->req_type == REQTYPE_META_READ) {
+		type = RD_PRIORITY_READ;
+	} else {
+		type = RD_PRIORITY_WRITE;
+	}
+#endif
 
 #if defined(ENABLE_SEQ_DBG)
 	bdbm_mutex_lock (&p->dbg_seq);
@@ -257,44 +310,57 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	/* get a parallel unit ID */
 	punit_id = r->phyaddr->punit_id;
 
+#ifdef USE_RD_QUEUE
+	if (type == RD_PRIORITY_WRITE) {
+		while (bdbm_rd_prior_queue_get_nr_items (p->q) >= 256) {
+			/*yield ();*/
+			bdbm_thread_yield ();
+		}
+	}
+#else
 	while (bdbm_prior_queue_get_nr_items (p->q) >= 256) {
-		/*yield ();*/
 		bdbm_thread_yield ();
 	}
+#endif
 
 	/* put a request into Q */
 #if defined(QUICK_FIX_FOR_RWM)
 	if (r->req_type == REQTYPE_RMW_READ) {
+		bdbm_bug_on (1);
 		/* FIXME: this is a quick fix to support RMW; it must be improved later */
 		/* step 1: put READ first */
-		if ((ret = bdbm_prior_queue_enqueue (
-				p->q, punit_id, r->lpa, (void*)r))) {
+#ifdef USE_RD_QUEUE
+		if ((ret = bdbm_rd_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r, type))) {
+#else
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+#endif
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 
 		/* step 2: put WRITE second with the same LPA */
 		punit_id = r->phyaddr_w.punit_id;
-		if ((ret = bdbm_prior_queue_enqueue (
-				p->q, punit_id, r->lpa, (void*)r))) {
+#ifdef USE_RD_QUEUE
+		if ((ret = bdbm_rd_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r, type))) {
+#else
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+#endif
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
-		if (r->req_type == REQTYPE_META_WRITE ||
-			r->req_type == REQTYPE_META_READ) {
-			/*bdbm_msg ("llm_mq-queue");*/
-		}
-		if ((ret = bdbm_prior_queue_enqueue (
-				p->q, punit_id, r->lpa, (void*)r))) {
+#ifdef USE_RD_QUEUE
+		if ((ret = bdbm_rd_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r, type))) {
+#else
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+#endif
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
-		}
-		if (r->req_type == REQTYPE_META_WRITE ||
-			r->req_type == REQTYPE_META_READ) {
-			/*bdbm_msg ("llm_mq-queue-done");*/
 		}
 	}
 #else
-	if ((ret = bdbm_prior_queue_enqueue (
-			p->q, punit_id, r->lpa, (void*)r))) {
+#ifdef USE_RD_QUEUE
+	if ((ret = bdbm_rd_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r, type))) {
+#else
+	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+#endif
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
 #endif
@@ -309,7 +375,11 @@ void llm_mq_flush (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
+#ifdef USE_RD_QUEUE
+	while (bdbm_rd_prior_queue_is_all_empty (p->q) != 1) {
+#else
 	while (bdbm_prior_queue_is_all_empty (p->q) != 1) {
+#endif
 		/*cond_resched ();*/
 		bdbm_thread_yield ();
 	}
@@ -318,7 +388,11 @@ void llm_mq_flush (bdbm_drv_info_t* bdi)
 void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+#ifdef USE_RD_QUEUE
+	bdbm_rd_prior_queue_item_t* qitem = (bdbm_rd_prior_queue_item_t*)r->ptr_qitem;
+#else
 	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)r->ptr_qitem;
+#endif
 
 	switch (r->req_type) {
 	case REQTYPE_RMW_READ:
@@ -330,10 +404,18 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		r->req_type = REQTYPE_RMW_WRITE;
 
 #ifdef QUICK_FIX_FOR_RWM
+#ifdef USE_RD_QUEUE
+		bdbm_rd_prior_queue_remove (p->q, qitem);
+#else
 		bdbm_prior_queue_remove (p->q, qitem);
+#endif
 #else
 		/* put it to Q again */
+#ifdef USE_RD_QUEUE
+		if (bdbm_rd_prior_queue_move (p->q, r->phyaddr->punit_id, qitem)) {
+#else
 		if (bdbm_prior_queue_move (p->q, r->phyaddr->punit_id, qitem)) {
+#endif
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 			bdbm_bug_on (1);
 		}
@@ -347,7 +429,6 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 
 	case REQTYPE_META_WRITE:
 	case REQTYPE_META_READ:
-		/*bdbm_msg ("llm_mq-done");*/
 	case REQTYPE_READ:
 	case REQTYPE_READ_DUMMY:
 	case REQTYPE_WRITE:
@@ -357,7 +438,11 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	case REQTYPE_GC_ERASE:
 	case REQTYPE_TRIM:
 		/* get a parallel unit ID */
+#ifdef USE_RD_QUEUE
+		bdbm_rd_prior_queue_remove (p->q, qitem);
+#else
 		bdbm_prior_queue_remove (p->q, qitem);
+#endif
 
 		/* complete a lock */
 		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);
