@@ -61,6 +61,8 @@ typedef struct {
 	dir_stat status;
 	bdbm_phyaddr_t phyaddr;	/* the physical location where mapping entries are stored */
 	mapping_entry_t* me;	/* the size of me is equal to a single flash size */
+
+	uint32_t is_under_load;
 } directory_slot_t;
 
 typedef struct {

@@ -83,6 +83,7 @@ dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np)
 
 		ds->id = i;
 		ds->status = DFTL_DIR_EMPTY;
+		ds->is_under_load = 0;
 		ds->phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
 		ds->phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
 		ds->phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
@@ -149,6 +150,7 @@ void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np)
 
 		ds->id = i;
 		ds->status = DFTL_DIR_EMPTY;
+		ds->is_under_load = 0;
 		ds->phyaddr.channel_no = DFTL_PAGE_INVALID_ADDR;
 		ds->phyaddr.chip_no = DFTL_PAGE_INVALID_ADDR;
 		ds->phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
@@ -294,7 +296,7 @@ directory_slot_t* bdbm_dftl_missing_dir_prepare (
 			ds->me[j].phyaddr.block_no = DFTL_PAGE_INVALID_ADDR;
 			ds->me[j].phyaddr.page_no = DFTL_PAGE_INVALID_ADDR;
 		}
-		ds->status = DFTL_DIR_CLEAN;
+		ds->status = DFTL_DIR_DIRTY; /* this table is newly created, so it starts with dirty */
 
 		/* add the directory slot to the tail of the dirty linked-list */
 		atomic64_inc (&mt->nr_cached_slots);
@@ -302,6 +304,11 @@ directory_slot_t* bdbm_dftl_missing_dir_prepare (
 
 		return NULL;
 	}
+
+	if (ds->is_under_load == 1)
+		return NULL;
+
+	ds->is_under_load = 1;
 
 	return ds;
 }
@@ -324,6 +331,7 @@ int bdbm_dftl_missing_dir_done (
 	 * It becomes dirty only when its mapping entries are updated.  */
 	bdbm_bug_on (ds->phyaddr.channel_no == DFTL_PAGE_INVALID_ADDR);
 	ds->status = DFTL_DIR_CLEAN;
+	ds->is_under_load = 0;
 
 	atomic64_inc (&mt->nr_cached_slots);
 	list_add_tail (&ds->list, &mt->lru_list);
@@ -365,14 +373,15 @@ void bdbm_dftl_finish_victim_mapblk (
 	bdbm_phyaddr_t* phyaddr)
 {
 	/* update a directory slot */
+	if (ds->status != DFTL_DIR_CLEAN) {
+		ds->phyaddr = *phyaddr;
+	}
 	ds->status = DFTL_DIR_FLASH;
-	ds->phyaddr = *phyaddr;
 	bdbm_free(ds->me);	
 	ds->me = NULL;
 
 	/*list_del (&ds->list);*/
 	/*atomic64_dec (&mt->nr_cached_slots);*/
-
 }
 
 void bdbm_dftl_update_dir_phyaddr (

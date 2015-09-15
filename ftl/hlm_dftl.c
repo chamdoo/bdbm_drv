@@ -99,9 +99,9 @@ int __hlm_dftl_thread (void* arg)
 
 				/* see if foreground GC is needed or not */
 				for (loop = 0; loop < 10; loop++) {
-					if (r->req_type == REQTYPE_WRITE && 
-						p->ftl->is_gc_needed != NULL && 
-						p->ftl->is_gc_needed (bdi)) {
+					if ((r->req_type == REQTYPE_WRITE || r->req_type == REQTYPE_READ) &&
+						 p->ftl->is_gc_needed != NULL && 
+						 p->ftl->is_gc_needed (bdi)) {
 						/* perform GC before sending requests */ 
 						p->ftl->do_gc (bdi);
 					} else {
@@ -150,9 +150,9 @@ int __hlm_dftl_thread (void* arg)
 
 				/* STEP3: evict mapping entries if there is not enough DRAM space */
 				{
-					bdbm_llm_req_t** rr = (bdbm_llm_req_t**)bdbm_malloc (sizeof (bdbm_llm_req_t*)*nr_len);
+					bdbm_llm_req_t** rr = (bdbm_llm_req_t**)bdbm_malloc (sizeof (bdbm_llm_req_t*)*nr_len*2);
 
-					for (loop = 0;loop < nr_len; loop++) {
+					for (loop = 0;loop < nr_len*2; loop++) {
 						bdbm_llm_req_t* mr = rr[loop];
 
 						/* drop mapping enries to Flash */
@@ -164,7 +164,7 @@ int __hlm_dftl_thread (void* arg)
 						bdi->ptr_llm_inf->make_req (bdi, mr);
 					}
 
-					for (loop = 0; loop < nr_len; loop++) {
+					for (loop = 0; loop < nr_len*2; loop++) {
 						bdbm_llm_req_t* mr = rr[loop];
 						/* wait until it finishes */
 						if (mr != NULL) {
@@ -195,9 +195,9 @@ int __fetch_me_and_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 
 	/* see if foreground GC is needed or not */
 	for (i = 0; i < 10; i++) {
-		if (r->req_type == REQTYPE_WRITE && 
-			p->ftl->is_gc_needed != NULL && 
-			p->ftl->is_gc_needed (bdi)) {
+		if ((r->req_type == REQTYPE_WRITE || r->req_type == REQTYPE_READ) &&
+			 p->ftl->is_gc_needed != NULL && 
+			 p->ftl->is_gc_needed (bdi)) {
 			/* perform GC before sending requests */ 
 			p->ftl->do_gc (bdi);
 		} else
@@ -226,9 +226,12 @@ int __fetch_me_and_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 			/* send read requets to llm */
 			bdbm_mutex_lock (rr[i]->done);
 			bdi->ptr_llm_inf->make_req (bdi, rr[i]);
-
-			bdbm_mutex_lock (rr[i]->done);
-			p->ftl->finish_mapblk_load (bdi, rr[i]);
+		}
+		for (i = 0; i < nr_missed_dir; i++) {
+			if (rr[i]) {
+				bdbm_mutex_lock (rr[i]->done);
+				p->ftl->finish_mapblk_load (bdi, rr[i]);
+			}
 		}
 		bdbm_free (rr);
 	}
@@ -247,14 +250,19 @@ int __fetch_me_and_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 
 		memset (rr, 0x00, sizeof (bdbm_llm_req_t*) * nr_missed_dir);
 		for (i = 0; i < nr_missed_dir; i++) {
+#include "algo/dftl_map.h"
+			directory_slot_t* ds;
+
 			/* drop mapping enries to Flash */
 			if ((rr[i] = p->ftl->prepare_mapblk_eviction (bdi)) == NULL)
 				break;
 
 			/* send a req to llm */
-			bdbm_mutex_lock (rr[i]->done);
-			bdi->ptr_llm_inf->make_req (bdi, rr[i]);
-
+			ds = (directory_slot_t*)rr[i]->ds;
+			if (ds->status != DFTL_DIR_CLEAN) {
+				bdbm_mutex_lock (rr[i]->done);
+				bdi->ptr_llm_inf->make_req (bdi, rr[i]);
+			}
 			/*bdbm_mutex_lock (rr[i]->done);*/
 			/*p->ftl->finish_mapblk_eviction (bdi, rr[i]);*/
 		}
@@ -359,9 +367,9 @@ uint32_t hlm_dftl_make_req (
 
 	/* see if foreground GC is needed or not */
 	for (loop = 0; loop < 10; loop++) {
-		if (r->req_type == REQTYPE_WRITE && 
-			p->ftl->is_gc_needed != NULL && 
-			p->ftl->is_gc_needed (bdi)) {
+		if ((r->req_type == REQTYPE_WRITE || r->req_type == REQTYPE_READ) &&
+			 p->ftl->is_gc_needed != NULL && 
+			 p->ftl->is_gc_needed (bdi)) {
 			p->ftl->do_gc (bdi);
 		} else
 			break;

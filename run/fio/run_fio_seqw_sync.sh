@@ -7,9 +7,11 @@ sudo fio --randrepeat=1 \
 	--bs=4k \
 	--iodepth=128 \
 	--size=1000M \
-	--readwrite=randwrite \
-	--rwmixwrite=100 \
+	--readwrite=write \
+	--rwmixread=100 \
 	--overwrite=1 \
 	--numjobs=1 \
 	--direct=0 \
-	--buffer=0
+	--sync=1
+
+	#--buffered=1 \

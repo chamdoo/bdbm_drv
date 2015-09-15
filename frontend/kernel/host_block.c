@@ -402,6 +402,7 @@ static uint32_t __host_block_register_block_device (bdbm_drv_info_t* bdi)
 	{
 		uint64_t capacity;
 		capacity = p->nand.device_capacity_in_byte * 0.9;
+		/*capacity = p->nand.device_capacity_in_byte;*/
 		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 	}

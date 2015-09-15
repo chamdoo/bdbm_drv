@@ -295,6 +295,14 @@ uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyadd
 		if (p->curr_page_ofs == np->nr_pages_per_block) {
 			/* get active blocks */
 			if (__bdbm_dftl_get_active_blocks (np, p->bai, p->ac_bab) != 0) {
+				/*
+				bdbm_msg ("free_blks: %llu clean_blks: %llu, dirty_blks: %llu, total_blks: %llu",
+						bdbm_abm_get_nr_free_blocks (p->bai),
+						bdbm_abm_get_nr_clean_blocks (p->bai),
+						bdbm_abm_get_nr_dirty_blocks (p->bai),
+						bdbm_abm_get_nr_total_blocks (p->bai)
+						);
+				*/
 				bdbm_error ("__bdbm_dftl_get_active_blocks failed");
 				return 1;
 			}
@@ -628,9 +636,12 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			/* send reqs to llm */
 			bdbm_mutex_lock (rr[i]->done);
 			bdi->ptr_llm_inf->make_req (bdi, rr[i]);
-
-			bdbm_mutex_lock (rr[i]->done);
-			bdbm_dftl_finish_mapblk_load (bdi, rr[i]);
+		}
+		for (i = 0; i < nr_llm_reqs; i++) {
+			if (rr[i]) {
+				bdbm_mutex_lock (rr[i]->done);
+				bdbm_dftl_finish_mapblk_load (bdi, rr[i]);
+			}
 		}
 
 		bdbm_free (rr);
@@ -1016,7 +1027,8 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 	bdbm_mutex_init (r->done);
 
 #ifdef DFTL_DEBUG
-	bdbm_msg ("[dftl] [Fetch] dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
+	bdbm_msg ("[dftl] [Fetch] lpa: %llu dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
+		lpa,
 		ds->id,
 		ds->phyaddr.punit_id,
 		ds->phyaddr.channel_no,
@@ -1024,7 +1036,6 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 		ds->phyaddr.block_no,
 		ds->phyaddr.page_no);
 #endif
-
 	/* ok! return it */
 	return r;
 }
@@ -1098,7 +1109,12 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 	r->lpa = 0;	/* not available for me */
 	r->phyaddr = &r->phyaddr_w;
 	r->ds = (void*)ds;
-	bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr); /* get a new page */
+	if (ds->status != DFTL_DIR_CLEAN) {
+		bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr); /* get a new page */
+	} else {
+		/* if ds->status is not dirty, 
+		 * we don't need to write it to NAND flash */
+	}
 	r->phyaddr_r = r->phyaddr_w;
 	for (i = 0; i < p->mt->nr_entires_per_dir_slot; i++)
 		me[i] = ds->me[i];
@@ -1111,16 +1127,17 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 	r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));
 	bdbm_mutex_init (r->done);
 
-	/*
-	bdbm_msg ("[dftl] [Evict] dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
-		ds->id,
-		r->phyaddr->punit_id,
-		r->phyaddr->channel_no,
-		r->phyaddr->chip_no,
-		r->phyaddr->block_no,
-		r->phyaddr->page_no);
-	*/
-
+#ifdef DFTL_DEBUG
+	if (ds->status != DFTL_DIR_CLEAN) {
+		bdbm_msg ("[dftl] [Evict] dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
+			ds->id,
+			r->phyaddr->punit_id,
+			r->phyaddr->channel_no,
+			r->phyaddr->chip_no,
+			r->phyaddr->block_no,
+			r->phyaddr->page_no);
+	}
+#endif
 	/* ok! return it */
 	return r;
 }

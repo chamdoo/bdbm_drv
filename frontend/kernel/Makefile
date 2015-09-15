@@ -4,8 +4,8 @@
 FTL := ../../ftl
 COMMON := ../../include
 
-KBUILD_EXTRA_SYMBOLS := \
-	$(PWD)/../../devices/ramdrive/Module.symvers \
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \
