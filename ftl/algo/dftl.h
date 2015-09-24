@@ -46,5 +46,9 @@ void bdbm_dftl_finish_mapblk_eviction (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (bdbm_drv_info_t* bdi, uint64_t lpa);
 void bdbm_dftl_finish_mapblk_load (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
+void bdbm_dftl_finish_mapblk_load_2 (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r);
+
 #endif /* _BLUEDBM_FTL_DFTL_H */
 

@@ -778,7 +778,6 @@ static void __bdbm_block_mark_it_dead (
 
 uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
-#if 0
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
@@ -817,8 +816,8 @@ uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 	*/
-#endif
 
+#if 0	
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
@@ -893,7 +892,7 @@ uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 	*/
-
+#endif
 	bdbm_msg ("done");
 	 
 	return ret;

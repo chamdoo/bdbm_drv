@@ -183,7 +183,9 @@ mapping_entry_t bdbm_dftl_get_mapping_entry (dftl_mapping_table_t* mt, uint64_t 
 	bdbm_bug_on (ds == NULL);
 
 	/* see if mapping entries are already loaded in DRAM */
-	if (ds->me != NULL) {
+	/*if (ds->me != NULL) {*/
+	if (ds->status == DFTL_DIR_DIRTY || 
+		ds->status == DFTL_DIR_CLEAN) {
 		/* get the mapping entry */
 		me = ds->me[map_idx];
 		goto found;
@@ -255,10 +257,16 @@ int bdbm_dftl_check_mapping_entry (
 
 	/* get a directory slot */
 	ds = &mt->dir[lpa/mt->nr_entires_per_dir_slot];
-	bdbm_bug_on (lpa/mt->nr_entires_per_dir_slot >= mt->nr_total_dir_slots);
+	/*bdbm_bug_on (lpa/mt->nr_entires_per_dir_slot >= mt->nr_total_dir_slots);*/
+	if (lpa/mt->nr_entires_per_dir_slot >= mt->nr_total_dir_slots) {
+		bdbm_msg ("%llu (%llu) %llu",
+			lpa/mt->nr_entires_per_dir_slot, lpa, mt->nr_total_dir_slots);
+		bdbm_bug_on (1);
+	}
 	bdbm_bug_on (ds == NULL);
 
-	if (ds->me == NULL) {
+	if (ds->status == DFTL_DIR_EMPTY || 
+		ds->status == DFTL_DIR_FLASH) {
 		/* a mapping entry is not available */
 		return 1; 
 	}
@@ -278,7 +286,11 @@ directory_slot_t* bdbm_dftl_missing_dir_prepare (
 
 	/* check error cases */
 	bdbm_bug_on (ds == NULL);
-	bdbm_bug_on (ds->me != NULL);
+	/*bdbm_bug_on (ds->me != NULL);*/
+	if (ds->status != DFTL_DIR_FLASH && 
+		ds->status != DFTL_DIR_EMPTY) {
+		bdbm_bug_on (1);
+	}
 
 	if (ds->status == DFTL_DIR_EMPTY) {
 		int j = 0;
@@ -321,8 +333,12 @@ int bdbm_dftl_missing_dir_done (
 	uint32_t i;
 
 	/* build mapping entires for ds */
-	ds->me = (mapping_entry_t*)bdbm_malloc
-		(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
+	if (ds->me == NULL) {
+		bdbm_bug_on (ds->status != DFTL_DIR_EMPTY);
+		ds->me = (mapping_entry_t*)bdbm_malloc
+			(sizeof (mapping_entry_t) * mt->nr_entires_per_dir_slot);
+	}
+
 	for (i = 0; i < mt->nr_entires_per_dir_slot; i++) {
 		ds->me[i] = me[i];
 	}
@@ -335,6 +351,25 @@ int bdbm_dftl_missing_dir_done (
 
 	atomic64_inc (&mt->nr_cached_slots);
 	list_add_tail (&ds->list, &mt->lru_list);
+
+	return 0;
+}
+
+int bdbm_dftl_missing_dir_done_error (
+	dftl_mapping_table_t* mt, 
+	directory_slot_t* ds,
+	mapping_entry_t* me)
+{
+	uint32_t i;
+
+	bdbm_bug_on (ds->status == DFTL_DIR_EMPTY);
+
+	if (ds->status == DFTL_DIR_FLASH) {
+		atomic64_inc (&mt->nr_cached_slots);
+		list_add_tail (&ds->list, &mt->lru_list);
+		ds->status = DFTL_DIR_CLEAN;
+	}
+	ds->is_under_load = 0;
 
 	return 0;
 }
@@ -376,9 +411,12 @@ void bdbm_dftl_finish_victim_mapblk (
 	if (ds->status != DFTL_DIR_CLEAN) {
 		ds->phyaddr = *phyaddr;
 	}
+
 	ds->status = DFTL_DIR_FLASH;
+#ifdef REMOVE_ME
 	bdbm_free(ds->me);	
 	ds->me = NULL;
+#endif
 
 	/*list_del (&ds->list);*/
 	/*atomic64_dec (&mt->nr_cached_slots);*/

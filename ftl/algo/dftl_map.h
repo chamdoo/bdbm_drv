@@ -104,4 +104,11 @@ void bdbm_dftl_update_dir_phyaddr (
 	uint64_t ds_id,
 	bdbm_phyaddr_t* phyaddr);
 
+int 
+bdbm_dftl_missing_dir_done_error (
+	dftl_mapping_table_t* mt, 
+	directory_slot_t* ds,
+	mapping_entry_t* me);
+
+
 #endif

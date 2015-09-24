@@ -622,8 +622,14 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			uint64_t lpa = ((uint64_t*)hlm_gc->llm_reqs[i].ptr_oob)[0]; /* update LPA */
 
 			/* is it a mapping entry? */
-			if ((int64_t)lpa == -2LL)
+			if ((int64_t)lpa == -2LL) {
 				continue;
+			}
+
+			if ((int64_t)lpa >= np->nr_pages_per_ssd || (int64_t)lpa < 0) {
+				/*bdbm_msg ("what??? %llu", lpa);*/
+				continue;
+			}
 
 			/* see if lpa exists in DRAM */
 			if (bdbm_dftl_check_mapblk (bdi, lpa) == 0) 
@@ -664,6 +670,8 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 			}
 
 			bdbm_dftl_update_dir_phyaddr (p->mt, id, r->phyaddr);
+		} else if ((int64_t)r->lpa >= np->nr_pages_per_ssd || (int64_t)r->lpa < 0) {
+			/*bdbm_msg ("what??? %llu", r->lpa);*/
 		} else {
 			if (bdbm_dftl_get_free_ppa (bdi, r->lpa, r->phyaddr) != 0) {
 				bdbm_error ("bdbm_dftl_get_free_ppa failed");
@@ -683,6 +691,12 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 	hlm_gc->nr_reqs = nr_llm_reqs;
 	bdbm_mutex_lock (&hlm_gc->gc_done);
 	for (i = 0; i < nr_llm_reqs; i++) {
+		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
+		if ((int64_t)r->lpa >= np->nr_pages_per_ssd || (int64_t)r->lpa < 0) {
+			/*bdbm_msg ("what??? %llu", r->lpa);*/
+			hlm_gc->nr_reqs--;
+			continue;
+		}
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
@@ -732,51 +746,6 @@ erase_blks:
 			ret = 1;	/* bad block */
 		bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
 	}
-
-#if 0
-	/* evict mapping entries if there is insufficient DRAM space */
-	while (1) {
-		bdbm_llm_req_t* r2 = NULL;
-
-		/* drop least-recently-used mapping enries to Flash */
-		if ((r2 = bdbm_dftl_prepare_mapblk_eviction (bdi)) == NULL)
-			break;
-
-		/* send a req to llm */
-		bdbm_mutex_lock (r2->done);
-		bdi->ptr_llm_inf->make_req (bdi, r2);
-
-		/* wait until it finishes */
-		bdbm_mutex_lock (r2->done);
-		bdbm_dftl_finish_mapblk_eviction (bdi, r2);
-	}
-
-	/*bdbm_msg ("gc-4");*/
-
-	{
-		bdbm_llm_req_t** rr = (bdbm_llm_req_t**)bdbm_malloc (sizeof (bdbm_llm_req_t*)*nr_llm_reqs);
-		for (i = 0;i < nr_llm_reqs; i++) {
-			bdbm_llm_req_t* mr = rr[i];
-
-			/* drop mapping enries to Flash */
-			if ((mr = bdbm_dftl_prepare_mapblk_eviction (bdi)) == NULL)
-				break;
-
-			/* send a req to llm */
-			bdbm_mutex_lock (mr->done);
-			bdi->ptr_llm_inf->make_req (bdi, mr);
-		}
-		for (i= 0; i < nr_llm_reqs; i++) {
-			bdbm_llm_req_t* mr = rr[i];
-			/* wait until it finishes */
-			if (mr != NULL) {
-				bdbm_mutex_lock (mr->done);
-				bdbm_dftl_finish_mapblk_eviction (bdi, mr);
-			}
-		}
-		bdbm_free (rr);
-	}
-#endif
 
 	return 0;
 }
@@ -884,7 +853,7 @@ static void __bdbm_dftl_mark_it_dead (
 
 uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
-#if 0
+	/*#if 0*/
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	uint64_t i = 0;
@@ -920,8 +889,9 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 	 
 	return 0;
-#endif
+	/*#endif*/
 
+#if 0
 	/* TEMP: on-demand format */
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
@@ -966,6 +936,7 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 		bdbm_abm_get_nr_clean_blocks (p->bai),
 		bdbm_abm_get_nr_dirty_blocks (p->bai)
 	);
+#endif
 	bdbm_msg ("done");
 	 
 	return 0;
@@ -1011,10 +982,7 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 
 	/* build the parameters of the hlm_req */
 	r->req_type = REQTYPE_META_READ;
-	/*r->req_type = REQTYPE_READ;*/
-	/*r->lpa = -1ULL;	*//* not available for mapblks */
-	/*r->lpa = -2ULL;	*//* not available for mapblks */
-	r->lpa = 0;	/* not available for mapblks */
+	r->lpa = -2ULL;	/* not available for mapblks */
 	r->phyaddr_r = ds->phyaddr;
 	r->phyaddr_w = ds->phyaddr;
 	r->phyaddr = &r->phyaddr_r;
@@ -1052,20 +1020,30 @@ void bdbm_dftl_finish_mapblk_load (
 	me = (mapping_entry_t*)r->pptr_kpgs[0];
 
 	if (((int64_t*)r->ptr_oob)[0] != -2LL) {
+		/*
 		bdbm_msg ("---------------------------------------------------------------------");
 		bdbm_warning ("oob is not match: %lld", ((int64_t*)r->ptr_oob)[0]);
+		bdbm_warning ("lpa: %lld", r->lpa);
+		bdbm_warning ("dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
+			ds->id,
+			ds->phyaddr.punit_id,
+			ds->phyaddr.channel_no,
+			ds->phyaddr.chip_no,
+			ds->phyaddr.block_no,
+			ds->phyaddr.page_no);
+		bdbm_warning ("flash-dir: %lld", ((int64_t*)r->ptr_oob)[1]);
 		bdbm_msg ("---------------------------------------------------------------------");
-		bdbm_bug_on (1);
-		/* magic # */
-	}
+		*/
 
-	/* finish the load */
-	bdbm_dftl_missing_dir_done (p->mt, ds, me);
+		bdbm_dftl_missing_dir_done_error (p->mt, ds, me);
+	} else {
+		/* finish the load */
+		bdbm_dftl_missing_dir_done (p->mt, ds, me);
+	}
 
 	/* remove a llm_req */
 	bdbm_free(r->ptr_oob);
 	bdbm_free(r->done);
-	/*bdbm_free_atomic (r->pptr_kpgs[0]); *//* free an array of mapblks */
 	bdbm_free(me); /* free an array of mapblks */
 	bdbm_free(r->pptr_kpgs); /* free pptr_kpgs */
 	bdbm_free(r);
@@ -1103,10 +1081,7 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 
 	/* build the parameters of the hlm_req */
 	r->req_type = REQTYPE_META_WRITE;
-	/*r->req_type = REQTYPE_WRITE;*/
-	/*r->lpa = -1ULL;	*//* not available for me */
-	/*r->lpa = -2ULL;	*//* not available for me */
-	r->lpa = 0;	/* not available for me */
+	r->lpa = -2ULL;	/* not available for me */
 	r->phyaddr = &r->phyaddr_w;
 	r->ds = (void*)ds;
 	if (ds->status != DFTL_DIR_CLEAN) {
@@ -1151,22 +1126,24 @@ void bdbm_dftl_finish_mapblk_eviction (
 	mapping_entry_t* me = (mapping_entry_t*)r->pptr_kpgs[0];
 
 	/* invalidate an old page if ds was kept in flash before */
-	if (ds->phyaddr.channel_no != DFTL_PAGE_INVALID_ADDR) {
+	if (ds->status != DFTL_DIR_CLEAN) {
+		if (ds->phyaddr.channel_no != DFTL_PAGE_INVALID_ADDR) {
 #ifdef DFTL_DEBUG
-		bdbm_msg ("[dftl] [Evict] dir: %llu (invalidate: %lld %lld %lld %lld)", 
-			ds->id,
-			ds->phyaddr.channel_no, 
-			ds->phyaddr.chip_no,
-			ds->phyaddr.block_no,
-			ds->phyaddr.page_no);
+			bdbm_msg ("[dftl] [Evict] dir: %llu (invalidate: %lld %lld %lld %lld)", 
+				ds->id,
+				ds->phyaddr.channel_no, 
+				ds->phyaddr.chip_no,
+				ds->phyaddr.block_no,
+				ds->phyaddr.page_no);
 #endif
-		bdbm_abm_invalidate_page (
-			p->bai, 
-			ds->phyaddr.channel_no, 
-			ds->phyaddr.chip_no,
-			ds->phyaddr.block_no,
-			ds->phyaddr.page_no
-		);
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				ds->phyaddr.channel_no, 
+				ds->phyaddr.chip_no,
+				ds->phyaddr.block_no,
+				ds->phyaddr.page_no
+			);
+		}
 	}
 
 	/* finish the eviction */
@@ -1175,7 +1152,6 @@ void bdbm_dftl_finish_mapblk_eviction (
 	/* remove a llm_req */
 	bdbm_free(r->done);
 	bdbm_free(r->ptr_oob);
-	/*bdbm_free_atomic (r->pptr_kpgs[0]); *//* free an array of mapblks */
 	bdbm_free(me);
 	bdbm_free(r->pptr_kpgs); /* free pptr_kpgs */
 	bdbm_free(r);

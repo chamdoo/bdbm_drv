@@ -540,8 +540,10 @@ void bdbm_abm_invalidate_page (
 		if (b->nr_invalid_pages == 0) {
 			/*bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);*/
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
+				/*
 				bdbm_msg ("b->status: %u (%llu %llu %llu %llu)", b->status, channel_no, chip_no, block_no, page_no);
 				bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);
+				*/
 			}
 
 			/* if so, its status is changed and then moved to a dirty list */
@@ -549,15 +551,21 @@ void bdbm_abm_invalidate_page (
 			list_del (&b->list);
 			list_add_tail (&b->list, &(bai->list_head_dirty[b->channel_no][b->chip_no]));
 
-			bdbm_bug_on (bai->nr_clean_blks == 0);
-			__bdbm_abm_check_status (bai);
+			if (bai->nr_clean_blks > 0) {
+				bdbm_bug_on (bai->nr_clean_blks == 0);
+				__bdbm_abm_check_status (bai);
 
-			bai->nr_clean_blks--;
-			bai->nr_dirty_blks++;
+				bai->nr_clean_blks--;
+				bai->nr_dirty_blks++;
+			}
 		}
 		/* increase # of invalid pages in the block */
 		b->nr_invalid_pages++;
-		bdbm_bug_on (b->nr_invalid_pages > bai->np->nr_pages_per_block);
+		if (b->nr_invalid_pages > bai->np->nr_pages_per_block) {
+			b->nr_invalid_pages = bai->np->nr_pages_per_block;
+		} else {
+			bdbm_bug_on (b->nr_invalid_pages > bai->np->nr_pages_per_block);
+		}
 	} else {
 		/* ignore if it was invalidated before */
 	}

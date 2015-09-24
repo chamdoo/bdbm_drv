@@ -148,6 +148,7 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, r);
 
+			/*
 			if (cnt % 50000 == 0) {
 #ifdef USE_RD_QUEUE
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_rd_prior_queue_get_nr_items (p->q));
@@ -155,6 +156,7 @@ int __llm_mq_thread (void* arg)
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 #endif
 			}
+			*/
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
@@ -441,6 +443,18 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 #else
 		bdbm_prior_queue_remove (p->q, qitem);
 #endif
+
+		/*
+		if (r->req_type == REQTYPE_GC_WRITE && (int64_t)r->lpa == -2LL) {
+			bdbm_msg ("done - writing mapping pages: llu phy: %lld %lld %lld %lld, oob: %lld %lld", 
+				r->phyaddr->channel_no, 
+				r->phyaddr->chip_no,
+				r->phyaddr->block_no,
+				r->phyaddr->page_no,
+				((uint64_t*)r->ptr_oob)[0],
+				((uint64_t*)r->ptr_oob)[1]);
+		}
+		*/
 
 		/* complete a lock */
 		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);

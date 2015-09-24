@@ -260,6 +260,8 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 	driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
 	uint32_t ret;
 	int loop = 0;
+	bdbm_stopwatch_t sw;
+	bdbm_stopwatch_start (&sw);
 
 	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
 		bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
@@ -295,6 +297,13 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 		bdbm_bug_on (1);
 		ret = 1;
 		break;
+	}
+
+	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
+		if (ptr_hlm_req->req_type == REQTYPE_WRITE) {
+			bdbm_msg ("%llu us", 
+				bdbm_stopwatch_get_elapsed_time_us (&sw));
+		}
 	}
 
 	return ret;

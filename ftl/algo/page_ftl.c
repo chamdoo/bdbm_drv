@@ -900,7 +900,6 @@ static void __bdbm_page_mark_it_dead (
 
 uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 {
-#if 0
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
 	bdbm_page_mapping_entry_t* me = NULL;
@@ -944,8 +943,8 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 	 
 	return 0;
-#endif
 
+#if 0
 	/* TEMP: on-demand format */
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
@@ -998,6 +997,7 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 		bdbm_abm_get_nr_clean_blocks (p->bai),
 		bdbm_abm_get_nr_dirty_blocks (p->bai)
 	);
+#endif
 	bdbm_msg ("done");
 	 
 	return 0;

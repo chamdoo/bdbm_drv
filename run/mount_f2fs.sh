@@ -8,7 +8,8 @@ make
 sudo make install
 cd -
 
-sudo insmod risa_dev_ramdrive_intr.ko
+#sudo insmod risa_dev_ramdrive_intr.ko
+sudo insmod risa_dev_bluedbm.ko
 sudo insmod bdbm_drv_page.ko
 sudo insmod f2fs.ko
 sudo ./bdbm_format /dev/blueDBM
