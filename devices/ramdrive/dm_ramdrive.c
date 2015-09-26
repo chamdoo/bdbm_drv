@@ -116,6 +116,7 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
 	struct dm_ramssd_private* p = NULL;
 
 	/* setup NAND parameters according to users' inputs */
+	bdbm_msg ("[dm_ramdrive_probe] get nand params");
 	__dm_setup_device_params (params);
 
 	/* create a private structure for ramdrive */
@@ -125,20 +126,23 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
 		goto fail;
 	}
 
+	bdbm_msg ("[dm_ramdrive_probe] create ramssd");
 	/* create RAMSSD based on user-specified NAND parameters */
-	if ((p ->ramssd = dev_ramssd_create (
+	if ((p->ramssd = dev_ramssd_create (
 			params,	__dm_ramdrive_ih)) == NULL) {
 		bdbm_error ("dev_ramssd_create failed");
 		bdbm_free_atomic (p);
 		goto fail;
 	} 
-	bdbm_msg ("ramssd is detected!");
+	bdbm_msg ("[dm_ramdrive_probe] ramssd is detected!");
 
 	/* display RAMSSD */
 	/*dev_ramssd_summary (p->ramssd);*/
 
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;
+
+	bdbm_msg ("[dm_ramdrive_probe] done!");
 
 	return 0;
 
