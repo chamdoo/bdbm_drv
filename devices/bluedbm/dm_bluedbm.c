@@ -134,7 +134,10 @@ void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag
 	}
 	priv->llm_reqs[tag] = NULL;
 	if (status != 0) {
-		bdbm_msg ("*** bad block detected! ***");
+		bdbm_msg ("*** bad block detected! (%llu, %llu, %llu) ***", 
+			r->phyaddr->channel_no,
+			r->phyaddr->chip_no,
+			r->phyaddr->block_no);
 		r->ret = 1; /* oops! it is a bad block */
 	}
 	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
