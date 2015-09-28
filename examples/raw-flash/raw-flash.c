@@ -35,12 +35,12 @@ typedef enum {
 	FLASH_RAW_ERASE = 0x0010,
 	FLASH_RAW_READ = 0x0020,
 	FLASH_RAW_WRITE = 0x0030,
-} bdbm_flash_raw_io_t;
+} bdbm_raw_flash_io_t;
 
 typedef enum {
 	FLASH_RAW_PUNIT_IDLE = 0,
 	FLASH_RAW_PUNIT_BUSY = 1,
-} bdbm_flash_punit_status_t;
+} bdbm_raw_flash_punit_status_t;
 
 static void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
@@ -79,17 +79,39 @@ static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 	if (!rf)
 		return;
 
-	/* delete llm_req */
-	for (i = 0; i < rf->nr_punits; i++) {
-		bdbm_mutex_free (rf->rr[i].done);
-		bdbm_free (rf->rr[i].done);
-		bdbm_free (rf->rr[i].pptr_kpgs);
+	/* wait for all the on-going jobs to finish */
+	bdbm_msg ("[%s] wait for all the on-going jobs to finish...", __FUNCTION__);
+	if (rf->rr) {
+		for (i = 0; i < rf->nr_punits; i++) {
+			if (rf->rr[i].done) {
+				bdbm_mutex_lock (rf->rr[i].done);
+			}
+		}
 	}
+
+	/* delete llm_req */
+	if (rf->rr) {
+		for (i = 0; i < rf->nr_punits; i++) {
+			if (rf->rr[i].done) {
+				bdbm_mutex_unlock (rf->rr[i].done);
+				bdbm_mutex_free (rf->rr[i].done);
+				bdbm_free (rf->rr[i].done);
+			}
+			if (rf->rr[i].pptr_kpgs) {
+				bdbm_free (rf->rr[i].pptr_kpgs);
+			}
+		}
+	}
+
+	if (rf->punit_status)
+		bdbm_free (rf->punit_status);
 
 	if (rf->bdi.ptr_bdbm_params)
 		bdbm_free (rf->bdi.ptr_bdbm_params);
 
-	bdbm_free (rf->rr);
+	if (rf->rr)
+		bdbm_free (rf->rr);
+
 	bdbm_free (rf);
 }
 
@@ -258,7 +280,7 @@ static bdbm_llm_req_t* __bdbm_raw_flash_get_llm_req (
 
 int __bdbm_raw_flash_rwe_async (
 	bdbm_raw_flash_t* rf,
-	bdbm_flash_raw_io_t io,
+	bdbm_raw_flash_io_t io,
 	uint64_t channel,
 	uint64_t chip,
 	uint64_t block,
@@ -337,7 +359,7 @@ int __bdbm_raw_flash_rwe_async (
 
 int __bdbm_raw_flash_rwe (
 	bdbm_raw_flash_t* rf,
-	bdbm_flash_raw_io_t io,
+	bdbm_raw_flash_io_t io,
 	uint64_t channel,
 	uint64_t chip,
 	uint64_t block,
