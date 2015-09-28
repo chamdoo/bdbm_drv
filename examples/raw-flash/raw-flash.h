@@ -46,7 +46,7 @@ nand_params_t* bdbm_raw_flash_get_nand_params (bdbm_raw_flash_t* rf);
 void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf);
 
 int bdbm_raw_flash_wait (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip);
-int bdbm_raw_flash_is_done (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip);
+int bdbm_raw_flash_is_done (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip); /* return 1 if it is done; otherwise return 0 */
 int bdbm_raw_flash_read_page_async (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip, uint64_t block, uint64_t page, uint64_t lpa, uint8_t* ptr_data, uint8_t* ptr_oob);
 int bdbm_raw_flash_read_page (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip, uint64_t block, uint64_t page, uint64_t lpa, uint8_t* ptr_data, uint8_t* ptr_oob);
 int bdbm_raw_flash_write_page_async (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip, uint64_t block, uint64_t page, uint64_t lpa, uint8_t* ptr_data, uint8_t* ptr_oob);

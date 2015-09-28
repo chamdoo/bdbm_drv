@@ -441,7 +441,12 @@ int bdbm_raw_flash_is_done (
 	uint64_t channel,
 	uint64_t chip)
 {
-	return 1;
+	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
+
+	if (atomic_read (&rf->punit_status[punit_id]) == FLASH_RAW_PUNIT_IDLE) {
+		return 1;
+	}
+	return 0;
 }
 
 int bdbm_raw_flash_read_page_async (
