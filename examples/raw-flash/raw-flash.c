@@ -29,7 +29,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "hw.h"
 
-#define DEBUG_FLASH_RAW
+/*#define DEBUG_FLASH_RAW*/
 
 typedef enum {
 	FLASH_RAW_ERASE = 0x0010,
@@ -238,7 +238,7 @@ static void __dm_intr_handler (
 #endif
 
 	bdbm_bug_on (r->phyaddr->punit_id >= GET_NR_PUNITS ((*rf->np)));
-	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr->punit_id]) != FLASH_RAW_PUNIT_IDLE);
+	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr->punit_id]) != FLASH_RAW_PUNIT_BUSY);
 
 	/* free mutex & free punit */
 	atomic_set (&rf->punit_status[r->phyaddr->punit_id], FLASH_RAW_PUNIT_IDLE); 
@@ -311,7 +311,7 @@ int __bdbm_raw_flash_rwe_async (
 	} 
 
 	/* get a lock for r; set the corresponding punit to busy */
-	atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_BUSY); 
+	atomic_set (&rf->punit_status[phyaddr.punit_id], FLASH_RAW_PUNIT_BUSY); 
 
 	/* let's fill up llm_req for READ */
 	switch (io) {
@@ -343,7 +343,10 @@ int __bdbm_raw_flash_rwe_async (
 	bdbm_bug_on (dm == NULL);
 
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[%s] submit - punit_id = %llu", __FUNCTION__, r->phyaddr->punit_id);
+	bdbm_msg ("[%s] submit - punit_id = %llu (status = %d)", 
+		__FUNCTION__, 
+		r->phyaddr->punit_id, 
+		atomic_read (&rf->punit_status[r->phyaddr->punit_id]));
 #endif
 
 	if ((ret = dm->make_req (bdi, r)) != 0) {

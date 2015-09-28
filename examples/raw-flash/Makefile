@@ -13,7 +13,10 @@ EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
 
-module_main-y := kmain.o raw-flash.o
+module_main-y := \
+	kmain.o \
+	raw-flash.o \
+	$(COMMON)/utils/utime.o	# for bdbm_stopwatch
 
 obj-m := module_main.o
 

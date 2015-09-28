@@ -33,19 +33,25 @@ THE SOFTWARE.
 
 #include <linux/kernel.h>
 #include "raw-flash.h"
+#include "utils/utime.h"
+
 
 bdbm_raw_flash_t* rf = NULL;
+uint8_t* temp_main = NULL;
+uint8_t* temp_oob = NULL;
 
-
-static void run_async_test (nand_params_t* np)
+static void run_async_test (nand_params_t* np, int check_value)
 {
 	int channel = 0, chip = 0, block = 0, page = 0, lpa = 0, tagid = 0;
 	uint8_t** main_page = NULL;
 	uint8_t** oob_page = NULL;
+	bdbm_stopwatch_t sw;
+	int64_t data_sent = 0;
 
 
+	/* ---------------------------------------------------------------------------------------------- */
 	/* alloc memory */
-	printk (KERN_INFO "[run_async_test] alloc memory");
+	printk (KERN_INFO "[run_async_test] alloc memory\n");
 	main_page = (uint8_t**)vmalloc (np->nr_channels * np->nr_chips_per_channel * sizeof (uint8_t*));
 	oob_page = (uint8_t**)vmalloc (np->nr_channels * np->nr_chips_per_channel * sizeof (uint8_t*));
 	for (chip = 0; chip < np->nr_chips_per_channel; chip++) {
@@ -56,42 +62,143 @@ static void run_async_test (nand_params_t* np)
 		}
 	}
 
-	/* send erase reqs */
-
-	/* send reqs */
-	printk (KERN_INFO "[run_async_test] send reqs");
-	for (page = 0; page < np->nr_pages_per_block; page++) {
-		for (block = 0; block < np->nr_blocks_per_chip; block++) {
-			for (chip = 0; chip < np->nr_chips_per_channel; chip++) {
-				for (channel = 0; channel < np->nr_channels; channel++) {
-					tagid = np->nr_chips_per_channel * channel + chip;
-
-					/* sleep if it is bysy */
-					bdbm_raw_flash_wait (
-						rf, 
-						channel, 
-						chip);
-
-					/* send a request */
-					bdbm_raw_flash_read_page_async (
-						rf, 
-						channel, chip, block, page, lpa,
-						main_page[tagid],
-						oob_page[tagid]);
-
-					lpa++;
-				}
-			}
-		}
+	if (check_value == 1) {
+		temp_main = (uint8_t*)vmalloc (np->page_main_size * sizeof (uint8_t));
+		temp_oob = (uint8_t*)vmalloc (np->page_oob_size * sizeof (uint8_t));
 	}
 
+
+	/* ---------------------------------------------------------------------------------------------- */
+	/* send erase reqs */
+	printk (KERN_INFO "[run_async_test] block-erasure test\n");
+	data_sent = 0;
+	bdbm_stopwatch_start (&sw);
+	for (block = 0; block < np->nr_blocks_per_chip; block++)
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++) {
+		tagid = np->nr_chips_per_channel * channel + chip;
+
+		/* sleep if it is bysy */
+		bdbm_raw_flash_wait (rf, channel, chip);
+
+		/* send a request */
+		bdbm_raw_flash_erase_block_async (rf, channel, chip, block);
+
+		data_sent += np->nr_pages_per_block * np->page_main_size;
+	}
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++)
+		bdbm_raw_flash_wait (rf, channel, chip);
+
+	printk (" - erase throughput: %llu (MB/s) (%llu B, %llu ms)", 
+		(data_sent/1024) / bdbm_stopwatch_get_elapsed_time_ms (&sw),
+		data_sent, bdbm_stopwatch_get_elapsed_time_ms (&sw));
+
+
+	/* ---------------------------------------------------------------------------------------------- */
+	/* send write reqs */
+	data_sent = 0;
+	bdbm_stopwatch_start (&sw);
+	printk (KERN_INFO "[run_async_test] page-write test\n");
+	for (page = 0; page < np->nr_pages_per_block; page++)
+	for (block = 0; block < np->nr_blocks_per_chip; block++)
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++) {
+		uint8_t testbits;
+		
+		testbits = (page << 6 & 0xC0) | (block << 4 & 0x30) | (chip << 2 & 0x0C) | (channel & 0x03);
+		tagid = np->nr_chips_per_channel * channel + chip;
+
+		/* sleep if it is bysy */
+		bdbm_raw_flash_wait (rf, channel, chip);
+
+		if (check_value == 1) {
+			memset (main_page[tagid], testbits, np->page_main_size);
+			memset (oob_page[tagid], testbits, np->page_oob_size);
+		}
+
+		/* send a request */
+		bdbm_raw_flash_write_page_async (
+				rf, 
+				channel, chip, block, page, lpa,
+				main_page[tagid],
+				oob_page[tagid]);
+
+		data_sent += np->page_main_size;
+		lpa++;
+	}
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++)
+		bdbm_raw_flash_wait (rf, channel, chip);
+	printk (" - write throughput: %llu (MB/s) (%llu B, %llu ms)", 
+		(data_sent/1024) / (bdbm_stopwatch_get_elapsed_time_ms (&sw)),
+		data_sent, bdbm_stopwatch_get_elapsed_time_ms (&sw));
+
+
+	/* ---------------------------------------------------------------------------------------------- */
+	/* send read reqs */
+	lpa = 0;
+	data_sent = 0;
+	bdbm_stopwatch_start (&sw);
+	printk (KERN_INFO "[run_async_test] page-read test\n");
+	for (page = 0; page < np->nr_pages_per_block; page++)
+	for (block = 0; block < np->nr_blocks_per_chip; block++)
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++) {
+		uint8_t testbits;
+		
+		testbits = (page << 6 & 0xC0) | (block << 4 & 0x30) | (chip << 2 & 0x0C) | (channel & 0x03);
+
+		tagid = np->nr_chips_per_channel * channel + chip;
+
+		/* sleep if it is bysy */
+		bdbm_raw_flash_wait (rf, channel, chip);
+
+		/* send a request */
+		bdbm_raw_flash_read_page_async (
+				rf, 
+				channel, chip, block, page, lpa,
+				main_page[tagid],
+				oob_page[tagid]);
+
+		if (check_value == 1) {
+			memset (temp_main, testbits, np->page_main_size);
+			memset (temp_oob, testbits, np->page_oob_size);
+
+			bdbm_raw_flash_wait (rf, channel, chip);
+
+			if (memcmp (main_page[tagid], temp_main, np->page_main_size) != 0) {
+				printk ("OOPS! found mismatch in the main (%u %u %u %u ... != %u %u %u %u ...)\n",
+						main_page[tagid][0], main_page[tagid][1], main_page[tagid][2], main_page[tagid][3],
+						temp_main[0], temp_main[1], temp_main[2], temp_main[3]);
+			}
+
+			if (memcmp (oob_page[tagid], temp_oob, np->page_oob_size) != 0) {
+				printk ("OOPS! found mismatch in the oob (%u %u %u %u ... != %u %u %u %u ...)\n",
+						oob_page[tagid][0], oob_page[tagid][1], oob_page[tagid][2], oob_page[tagid][3],
+						temp_oob[0], temp_oob[1], temp_oob[2], temp_oob[3]);
+			}
+		}
+
+		data_sent += np->page_main_size;
+		lpa++;
+	}
+	for (chip = 0; chip < np->nr_chips_per_channel; chip++)
+	for (channel = 0; channel < np->nr_channels; channel++)
+		bdbm_raw_flash_wait (rf, channel, chip);
+
+	printk (" - read throughput: %llu (MB/s) (%llu B, %llu ms)", 
+		(data_sent/1024) / (bdbm_stopwatch_get_elapsed_time_ms (&sw)),
+		data_sent, bdbm_stopwatch_get_elapsed_time_ms (&sw));
+
+
+	/* ---------------------------------------------------------------------------------------------- */
 	/* free memory */
-	printk (KERN_INFO "[run_async_test] free memory");
+	printk (KERN_INFO "[run_async_test] free memory\n");
 	for (chip = 0; chip < np->nr_chips_per_channel; chip++) {
 		for (channel = 0; channel < np->nr_channels; channel++) {
 			tagid = np->nr_chips_per_channel * channel + chip;
 
-			/* sleep if it is bysy */
 			bdbm_raw_flash_wait (rf, channel, chip);
 
 			vfree (main_page[tagid]);
@@ -117,7 +224,8 @@ static int __init raw_flash_init (void)
 		return -1;
 
 	/* do a test */
-	run_async_test (np);
+	run_async_test (np, 0); /* don't check values; throughput test */
+	/*run_async_test (np, 1); *//* check values */
 	/* done */
 
 	return 0;
