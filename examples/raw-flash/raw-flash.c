@@ -29,8 +29,10 @@ THE SOFTWARE.
 #include "debug.h"
 #include "hw.h"
 
+#define DEBUG_FLASH_RAW
 
-void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+
+static void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
 bdbm_llm_inf_t _bdbm_llm_inf = {
 	.ptr_private = NULL,
@@ -41,48 +43,47 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 	.end_req = __dm_intr_handler, /* 'dm' automatically calls 'end_req' when it gets acks from devices */
 };
 
-void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
-{
-}
-
 bdbm_params_t* read_driver_params (void)
 {
-	bdbm_params_t* ptr_params = NULL;
+	bdbm_params_t* p = NULL;
 
 	/* allocate the memory for parameters */
-	if ((ptr_params = (bdbm_params_t*)bdbm_zmalloc (sizeof (bdbm_params_t))) == NULL) {
-		bdbm_error ("failed to allocate the memory for ptr_params");
+	if ((p = (bdbm_params_t*)bdbm_zmalloc (sizeof (bdbm_params_t))) == NULL) {
+		bdbm_error ("failed to allocate the memory for params");
 		return NULL;
 	}
 
 	/* setup driver parameters */
-#if 0
-	ptr_params->driver.mapping_policy = ;
-	ptr_params->driver.gc_policy = ;
-	ptr_params->driver.wl_policy = ;
-	ptr_params->driver.kernel_sector_size = ;
-	ptr_params->driver.trim = ;
-	ptr_params->driver.host_type = ; 
-	ptr_params->driver.llm_type = ;
-	ptr_params->driver.hlm_type = ;
-	ptr_params->driver.mapping_type = ;
-#endif
+	/* NOTE: FTL-specific parameters must be decided by custom FTL
+	 * implementation. For this reason, all the parameters for the FTL are set
+	 * to zero by default */
+	bdbm_memset (&p->driver, 0x00, sizeof (driver_params_t));
 
-	return ptr_params;
+	return p;
 }
 
-
-void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
+static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 {
+	uint64_t i;
+
 	if (!rf)
 		return;
 
+	/* delete llm_req */
+	for (i = 0; i < rf->nr_punits; i++) {
+		bdbm_mutex_free (rf->rr[i].done);
+		bdbm_free (rf->rr[i].done);
+		bdbm_free (rf->rr[i].pptr_kpgs);
+	}
+
 	if (rf->bdi.ptr_bdbm_params)
 		bdbm_free (rf->bdi.ptr_bdbm_params);
+
+	bdbm_free (rf->rr);
 	bdbm_free (rf);
 }
 
-void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
+static void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
 {
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("< NAND PARAMETERS >");
@@ -94,6 +95,8 @@ void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
 	bdbm_msg ("page main size  = %llu bytes", p->nand.page_main_size);
 	bdbm_msg ("page oob size = %llu bytes", p->nand.page_oob_size);
 	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", p->nand.device_type);
+	bdbm_msg ("# of punits: %llu", GET_NR_PUNITS (p->nand));
+	bdbm_msg ("# of kernel pages per flash page: %llu", p->nand.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_msg ("");
 }
 
@@ -111,8 +114,9 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 	bdi = &rf->bdi; /* for convenience */
 
 	/* create params_t */
-	if ((bdi->ptr_bdbm_params = (bdbm_params_t*)bdbm_malloc (sizeof (bdbm_params_t))) == NULL) {
-		bdbm_error ("bdbm_malloc () failed");
+	if ((bdi->ptr_bdbm_params = (bdbm_params_t*)bdbm_zmalloc 
+			(sizeof (bdbm_params_t))) == NULL) {
+		bdbm_error ("bdbm_zmalloc () failed");
 		goto fail;
 	}
 
@@ -132,10 +136,33 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 		bdbm_error ("dm->probe () failed");
 		goto fail;
 	} else {
+		/* get the number of parallel units in the device;
+		 * it is commonly obtained by # of channels * # of chips per channels */
+		rf->np = BDBM_GET_NAND_PARAMS (bdi);
+		rf->nr_punits = GET_NR_PUNITS ((*rf->np));
+		rf->nr_kp_per_fp = rf->np->page_main_size / KERNEL_PAGE_SIZE;
+
+		/* NOTE: disply device parameters. note that these parameters can be
+		 * set manually by modifying the "include/params.h" file. */
 		__bdbm_raw_flash_show_nand_params (bdi->ptr_bdbm_params);
 	}
 
-	/* setup function points */
+	/* create llm_reqs */
+	if ((rf->rr = (bdbm_llm_req_t*)bdbm_zmalloc 
+			(sizeof (bdbm_llm_req_t) * rf->nr_punits)) == NULL) {
+		bdbm_error ("bdbm_zmalloc () failed");
+		goto fail;
+	} else {
+		uint64_t i = 0;
+		uint32_t nr_kp_per_fp = 1;
+		for (i = 0; i < rf->nr_punits; i++) {
+			rf->rr[i].pptr_kpgs = bdbm_zmalloc (nr_kp_per_fp * sizeof (uint8_t*));
+			rf->rr[i].done = bdbm_malloc (sizeof (bdbm_mutex_t));
+			bdbm_mutex_init (rf->rr[i].done);
+		}
+	}
+
+	/* setup function points; this is just to handle responses from the device */
 	bdi->ptr_llm_inf = &_bdbm_llm_inf;
 
 	/* assign rf to bdi's private_data */
@@ -146,6 +173,7 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 fail:
 	/* oops! it fails */
 	__bdbm_raw_flash_destory (rf);
+
 	return NULL;
 }
 
@@ -161,6 +189,201 @@ int bdbm_raw_flash_open (bdbm_raw_flash_t* rf)
 	}
 
 	return 0;
+}
+
+static void __dm_intr_handler (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
+{
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[__dm_intr_handler] punit_id = %llu", r->phyaddr->punit_id);
+#endif
+	bdbm_mutex_unlock (r->done);
+}
+
+int bdbm_raw_flash_wait (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip)
+{
+	bdbm_llm_req_t* r = NULL;
+	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
+
+	bdbm_bug_on (channel >= rf->np->nr_channels);
+	bdbm_bug_on (chip >= rf->np->nr_chips_per_channel);
+	bdbm_bug_on (punit_id >= GET_NR_PUNITS ((*rf->np)));
+
+	r = &rf->rr[punit_id];
+
+	/* wait... */
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[bdbm_raw_flash_wait] wait - punit_id = %llu", punit_id);
+#endif
+	bdbm_mutex_lock (r->done);
+
+	/* do something */
+
+
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[bdbm_raw_flash_wait] done - punit_id = %llu", punit_id);
+#endif
+	/* we got it; unlock it again for future use */
+	bdbm_mutex_unlock (r->done);
+
+	return 0;
+}
+
+static int __bdbm_raw_flash_fill_phyaddr (
+	bdbm_raw_flash_t* rf,
+	bdbm_drv_info_t* bdi,
+	uint64_t channel,
+	uint64_t chip,
+	uint64_t block,
+	uint64_t page,
+	bdbm_phyaddr_t* phyaddr)
+{
+	bdbm_bug_on (channel >= rf->np->nr_channels);
+	bdbm_bug_on (chip >= rf->np->nr_chips_per_channel);
+	bdbm_bug_on (block >= rf->np->nr_blocks_per_chip);
+	bdbm_bug_on (page >= rf->np->nr_pages_per_block);
+
+	phyaddr->channel_no = channel;
+	phyaddr->chip_no = chip;
+	phyaddr->block_no = block;
+	phyaddr->page_no = page;
+	phyaddr->punit_id = GET_PUNIT_ID (bdi, phyaddr);
+
+	return 0;
+}
+
+static bdbm_llm_req_t* __bdbm_raw_flash_get_llm_req (
+	bdbm_raw_flash_t* rf,
+	bdbm_phyaddr_t* phyaddr)
+{
+	/* get llm_req from rr */
+	bdbm_bug_on (phyaddr->punit_id >= GET_NR_PUNITS ((*rf->np)));
+	
+	return &rf->rr[phyaddr->punit_id];
+}
+
+int bdbm_raw_flash_read_page_async (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip,
+	uint64_t block,
+	uint64_t page,
+	uint64_t lpa,
+	uint8_t* ptr_data,
+	uint8_t* ptr_oob)
+{
+	bdbm_phyaddr_t phyaddr;
+	bdbm_llm_req_t* r = NULL;
+	bdbm_drv_info_t* bdi = &rf->bdi;
+	bdbm_dm_inf_t* dm = NULL;
+	uint64_t i = 0;
+
+	/* fill up phyaddr */
+	if ((__bdbm_raw_flash_fill_phyaddr (rf, bdi, channel, chip, block, page, &phyaddr)) != 0)
+		return 1; /* failed to fill up bdbm_phyaddr_t */
+
+	/* get llm_req */
+	if ((r = __bdbm_raw_flash_get_llm_req (rf, &phyaddr)) == NULL)
+		return 2; /* failed to get an empty bdgm_llm_req_t */
+
+	/* see if llm_req is busy or not */
+	if (bdbm_mutex_try_lock (r->done) == 0) {
+		/* oops! r is being used by other threads. The client should wait for
+		 * the on-going request to finish */
+		return 3; /* busy */
+	}
+
+	/* ok! we get a lock for r; 
+	 * let's fill up llm_req for READ */
+	r->req_type = REQTYPE_READ;
+	r->lpa = lpa;
+	r->phyaddr_r = phyaddr;
+	r->phyaddr = &r->phyaddr_r;
+	for (i = 0; i < rf->nr_kp_per_fp; i++)
+		r->pptr_kpgs[i] = ptr_data + ((KERNEL_PAGE_SIZE) * i);
+	r->ptr_oob = ptr_oob;
+
+	/* send the reqest to the device */
+	dm = BDBM_GET_DM_INF (bdi);
+	bdbm_bug_on (dm == NULL);
+
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[bdbm_raw_flash_read_page_async] submit - punit_id = %llu", 
+		r->phyaddr->punit_id);
+#endif
+
+	return dm->make_req (bdi, r);
+}
+
+int bdbm_raw_flash_read_page (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip,
+	uint64_t block,
+	uint64_t page,
+	uint64_t lpa,
+	uint8_t* ptr_data,
+	uint8_t* ptr_oob)
+{
+	int ret;
+
+	/* (1) submit the request to the device */
+#ifdef DEBUG_FLASH_RAW
+	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
+	bdbm_msg ("[bdbm_raw_flash_read_page] submit - punit_id = %llu", punit_id);
+#endif
+
+	ret = bdbm_raw_flash_read_page_async (
+		rf, channel, chip, block, page, lpa,
+		ptr_data, ptr_oob);
+
+	/* (2) is it successful? */
+	if (ret != 0) {
+#ifdef DEBUG_FLASH_RAW
+		bdbm_msg ("[bdbm_raw_flash_read_page] error - punit_id = %llu", punit_id);
+#endif
+		goto done;
+	}
+
+	/* (3) wait for the request to finish */
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[bdbm_raw_flash_read_page] wait - punit_id = %llu", punit_id);
+#endif
+	ret = bdbm_raw_flash_wait (rf, channel, chip);
+
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[bdbm_raw_flash_read_page] done - punit_id = %llu", punit_id);
+#endif
+done:
+	return ret;
+}
+
+/*
+int bdbm_raw_falsh_page_write ()
+{
+}
+
+int bdbm_raw_flash_block_erase ()
+{
+}
+
+int bdbm_raw_flash_page_read_async ()
+{
+}
+
+int bdbm_raw_falsh_page_write_async ()
+{
+}
+*/
+
+nand_params_t* bdbm_raw_flash_get_nand_params (
+	bdbm_raw_flash_t* rf)
+{
+	return BDBM_GET_NAND_PARAMS ((&rf->bdi));
 }
 
 void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf)

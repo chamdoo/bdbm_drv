@@ -55,22 +55,12 @@ THE SOFTWARE.
 #endif
 
 /* mutex */
-/*#include <linux/mutex.h>*/
-/*#define bdbm_mutex_t struct mutex*/
-/*#define bdbm_mutex_init(a) mutex_init(a)*/
-/*#define bdbm_mutex_lock(a) mutex_lock(a)*/
-/*#define bdbm_mutex_lock_interruptible(a) mutex_lock_interruptible(a)*/
-/*#define bdbm_mutex_unlock(a) mutex_unlock(a)*/
-/*#define bdbm_mutex_try_lock(a) mutex_trylock(a)  *//* 1: acquire 0: contention */
-/*#define bdbm_mutex_free(a)*/
-
 #include <linux/semaphore.h>
 #define bdbm_mutex_t struct semaphore
 #define bdbm_mutex_init(a) sema_init (a, 1)
 #define bdbm_mutex_lock(a) down (a)
 #define bdbm_mutex_lock_interruptible(a) down_interruptible(a)
 #define bdbm_mutex_unlock(a) up (a)
-/*#define bdbm_mutex_try_lock(a) down_trylock(a)  *//* 1: acquire 0: contention */
 #define bdbm_mutex_try_lock(a) ({ \
 	int z = down_trylock(a); int ret; \
 	if (z == 0) ret = 1; \

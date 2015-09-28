@@ -100,6 +100,8 @@ typedef struct {
 #define BDBM_LLM_PRIV(bdi) bdi->ptr_llm_inf->ptr_private
 #define BDBM_FTL_PRIV(bdi) bdi->ptr_ftl_inf->ptr_private
 
+#define GET_NR_PUNITS(np) \
+	np.nr_channels * np.nr_chips_per_channel
 #define GET_PUNIT_ID(bdi,phyaddr) \
 	phyaddr->channel_no * \
 	bdi->ptr_bdbm_params->nand.nr_chips_per_channel + \
