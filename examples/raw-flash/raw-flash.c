@@ -31,6 +31,16 @@ THE SOFTWARE.
 
 #define DEBUG_FLASH_RAW
 
+typedef enum {
+	FLASH_RAW_ERASE = 0x0010,
+	FLASH_RAW_READ = 0x0020,
+	FLASH_RAW_WRITE = 0x0030,
+} bdbm_flash_raw_io_t;
+
+typedef enum {
+	FLASH_RAW_PUNIT_IDLE = 0,
+	FLASH_RAW_PUNIT_BUSY = 1,
+} bdbm_flash_punit_status_t;
 
 static void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
@@ -139,8 +149,8 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 		/* get the number of parallel units in the device;
 		 * it is commonly obtained by # of channels * # of chips per channels */
 		rf->np = BDBM_GET_NAND_PARAMS (bdi);
-		rf->nr_punits = GET_NR_PUNITS ((*rf->np));
 		rf->nr_kp_per_fp = rf->np->page_main_size / KERNEL_PAGE_SIZE;
+		rf->nr_punits = GET_NR_PUNITS ((*rf->np));
 
 		/* NOTE: disply device parameters. note that these parameters can be
 		 * set manually by modifying the "include/params.h" file. */
@@ -155,10 +165,14 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 	} else {
 		uint64_t i = 0;
 		uint32_t nr_kp_per_fp = 1;
+
+		rf->punit_status = bdbm_malloc (sizeof (atomic_t) * rf->nr_punits);
 		for (i = 0; i < rf->nr_punits; i++) {
 			rf->rr[i].pptr_kpgs = bdbm_zmalloc (nr_kp_per_fp * sizeof (uint8_t*));
 			rf->rr[i].done = bdbm_malloc (sizeof (bdbm_mutex_t));
-			bdbm_mutex_init (rf->rr[i].done);
+
+			bdbm_mutex_init (rf->rr[i].done); /* start with unlock */
+			atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_IDLE); /* start with unused */
 		}
 	}
 
@@ -195,42 +209,18 @@ static void __dm_intr_handler (
 	bdbm_drv_info_t* bdi, 
 	bdbm_llm_req_t* r)
 {
+	bdbm_raw_flash_t* rf = (bdbm_raw_flash_t*)bdi->private_data;
+
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[__dm_intr_handler] punit_id = %llu", r->phyaddr->punit_id);
+	bdbm_msg ("[%s] punit_id = %llu", __FUNCTION__, r->phyaddr->punit_id);
 #endif
+
+	bdbm_bug_on (r->phyaddr->punit_id >= GET_NR_PUNITS ((*rf->np)));
+	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr->punit_id]) != FLASH_RAW_PUNIT_IDLE);
+
+	/* free mutex & free punit */
+	atomic_set (&rf->punit_status[r->phyaddr->punit_id], FLASH_RAW_PUNIT_IDLE); 
 	bdbm_mutex_unlock (r->done);
-}
-
-int bdbm_raw_flash_wait (
-	bdbm_raw_flash_t* rf,
-	uint64_t channel,
-	uint64_t chip)
-{
-	bdbm_llm_req_t* r = NULL;
-	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
-
-	bdbm_bug_on (channel >= rf->np->nr_channels);
-	bdbm_bug_on (chip >= rf->np->nr_chips_per_channel);
-	bdbm_bug_on (punit_id >= GET_NR_PUNITS ((*rf->np)));
-
-	r = &rf->rr[punit_id];
-
-	/* wait... */
-#ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[bdbm_raw_flash_wait] wait - punit_id = %llu", punit_id);
-#endif
-	bdbm_mutex_lock (r->done);
-
-	/* do something */
-
-
-#ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[bdbm_raw_flash_wait] done - punit_id = %llu", punit_id);
-#endif
-	/* we got it; unlock it again for future use */
-	bdbm_mutex_unlock (r->done);
-
-	return 0;
 }
 
 static int __bdbm_raw_flash_fill_phyaddr (
@@ -266,8 +256,9 @@ static bdbm_llm_req_t* __bdbm_raw_flash_get_llm_req (
 	return &rf->rr[phyaddr->punit_id];
 }
 
-int bdbm_raw_flash_read_page_async (
+int __bdbm_raw_flash_rwe_async (
 	bdbm_raw_flash_t* rf,
+	bdbm_flash_raw_io_t io,
 	uint64_t channel,
 	uint64_t chip,
 	uint64_t block,
@@ -280,7 +271,7 @@ int bdbm_raw_flash_read_page_async (
 	bdbm_llm_req_t* r = NULL;
 	bdbm_drv_info_t* bdi = &rf->bdi;
 	bdbm_dm_inf_t* dm = NULL;
-	uint64_t i = 0;
+	uint64_t i = 0, ret = 0;
 
 	/* fill up phyaddr */
 	if ((__bdbm_raw_flash_fill_phyaddr (rf, bdi, channel, chip, block, page, &phyaddr)) != 0)
@@ -295,14 +286,32 @@ int bdbm_raw_flash_read_page_async (
 		/* oops! r is being used by other threads. The client should wait for
 		 * the on-going request to finish */
 		return 3; /* busy */
-	}
+	} 
 
-	/* ok! we get a lock for r; 
-	 * let's fill up llm_req for READ */
-	r->req_type = REQTYPE_READ;
+	/* get a lock for r; set the corresponding punit to busy */
+	atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_BUSY); 
+
+	/* let's fill up llm_req for READ */
+	switch (io) {
+	case FLASH_RAW_ERASE:
+		r->req_type = REQTYPE_GC_ERASE;
+		r->phyaddr_w = phyaddr;
+		r->phyaddr = &r->phyaddr_w;
+		break;
+	case FLASH_RAW_READ:
+		r->req_type = REQTYPE_READ;
+		r->phyaddr_r = phyaddr;
+		r->phyaddr = &r->phyaddr_r;
+		break;
+	case FLASH_RAW_WRITE:
+		r->req_type = REQTYPE_WRITE;
+		r->phyaddr_w = phyaddr;
+		r->phyaddr = &r->phyaddr_w;
+		break;
+	default:
+		break;
+	}
 	r->lpa = lpa;
-	r->phyaddr_r = phyaddr;
-	r->phyaddr = &r->phyaddr_r;
 	for (i = 0; i < rf->nr_kp_per_fp; i++)
 		r->pptr_kpgs[i] = ptr_data + ((KERNEL_PAGE_SIZE) * i);
 	r->ptr_oob = ptr_oob;
@@ -312,15 +321,23 @@ int bdbm_raw_flash_read_page_async (
 	bdbm_bug_on (dm == NULL);
 
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[bdbm_raw_flash_read_page_async] submit - punit_id = %llu", 
-		r->phyaddr->punit_id);
+	bdbm_msg ("[%s] submit - punit_id = %llu", __FUNCTION__, r->phyaddr->punit_id);
 #endif
 
-	return dm->make_req (bdi, r);
+	if ((ret = dm->make_req (bdi, r)) != 0) {
+		bdbm_error ("[%s] dm->make_req () failed (ret = %llu)", __FUNCTION__, ret);
+	
+		/* free mutex & free the punit */
+		atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_IDLE); 
+		bdbm_mutex_unlock (r->done);
+	}
+
+	return ret;
 }
 
-int bdbm_raw_flash_read_page (
+int __bdbm_raw_flash_rwe (
 	bdbm_raw_flash_t* rf,
+	bdbm_flash_raw_io_t io,
 	uint64_t channel,
 	uint64_t chip,
 	uint64_t block,
@@ -334,51 +351,145 @@ int bdbm_raw_flash_read_page (
 	/* (1) submit the request to the device */
 #ifdef DEBUG_FLASH_RAW
 	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
-	bdbm_msg ("[bdbm_raw_flash_read_page] submit - punit_id = %llu", punit_id);
+	bdbm_msg ("[%s] submit - punit_id = %llu", __FUNCTION__, punit_id);
 #endif
 
-	ret = bdbm_raw_flash_read_page_async (
-		rf, channel, chip, block, page, lpa,
-		ptr_data, ptr_oob);
+	ret = __bdbm_raw_flash_rwe_async (
+			rf, 
+			io, 
+			channel, chip, block, page, lpa,
+			ptr_data, ptr_oob);
 
 	/* (2) is it successful? */
 	if (ret != 0) {
 #ifdef DEBUG_FLASH_RAW
-		bdbm_msg ("[bdbm_raw_flash_read_page] error - punit_id = %llu", punit_id);
+		bdbm_msg ("[%s] error - punit_id = %llu, ret = %d", __FUNCTION__, punit_id, ret);
 #endif
 		goto done;
 	}
 
 	/* (3) wait for the request to finish */
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[bdbm_raw_flash_read_page] wait - punit_id = %llu", punit_id);
+	bdbm_msg ("[%s] wait - punit_id = %llu", __FUNCTION__, punit_id);
 #endif
 	ret = bdbm_raw_flash_wait (rf, channel, chip);
 
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[bdbm_raw_flash_read_page] done - punit_id = %llu", punit_id);
+	bdbm_msg ("[%s] done - punit_id = %llu", __FUNCTION__, punit_id);
 #endif
+
 done:
 	return ret;
 }
 
-/*
-int bdbm_raw_falsh_page_write ()
+int bdbm_raw_flash_wait (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip)
 {
+	bdbm_llm_req_t* r = NULL;
+	uint64_t punit_id = (channel * rf->np->nr_chips_per_channel) + chip;
+
+	bdbm_bug_on (channel >= rf->np->nr_channels);
+	bdbm_bug_on (chip >= rf->np->nr_chips_per_channel);
+	bdbm_bug_on (punit_id >= GET_NR_PUNITS ((*rf->np)));
+
+	r = &rf->rr[punit_id];
+
+	/* wait... */
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[%s] wait - punit_id = %llu", __FUNCTION__, punit_id);
+#endif
+	bdbm_mutex_lock (r->done);
+
+	/* do something */
+	bdbm_bug_on (atomic_read (&rf->punit_status[punit_id]) != FLASH_RAW_PUNIT_IDLE);
+
+#ifdef DEBUG_FLASH_RAW
+	bdbm_msg ("[%s] done - punit_id = %llu", __FUNCTION__, punit_id);
+#endif
+	/* we got it; unlock it again for future use */
+	bdbm_mutex_unlock (r->done);
+
+	return 0;
 }
 
-int bdbm_raw_flash_block_erase ()
+int bdbm_raw_flash_is_done (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip)
 {
+	return 1;
 }
 
-int bdbm_raw_flash_page_read_async ()
+int bdbm_raw_flash_read_page_async (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip,
+	uint64_t block,
+	uint64_t page,
+	uint64_t lpa,
+	uint8_t* ptr_data,
+	uint8_t* ptr_oob)
 {
+	return __bdbm_raw_flash_rwe_async (rf, FLASH_RAW_READ, channel, chip, block, page, lpa, ptr_data, ptr_oob);
 }
 
-int bdbm_raw_falsh_page_write_async ()
+int bdbm_raw_flash_read_page (
+	bdbm_raw_flash_t* rf,
+	uint64_t channel,
+	uint64_t chip,
+	uint64_t block,
+	uint64_t page,
+	uint64_t lpa,
+	uint8_t* ptr_data,
+	uint8_t* ptr_oob)
 {
+	return __bdbm_raw_flash_rwe (rf, FLASH_RAW_READ, channel, chip, block, page, lpa, ptr_data, ptr_oob);
 }
-*/
+
+int bdbm_raw_flash_write_page_async (
+	bdbm_raw_flash_t* rf, 
+	uint64_t channel, 
+	uint64_t chip, 
+	uint64_t block, 
+	uint64_t page, 
+	uint64_t lpa, 
+	uint8_t* ptr_data, 
+	uint8_t* ptr_oob)
+{
+	return __bdbm_raw_flash_rwe_async (rf, FLASH_RAW_WRITE, channel, chip, block, page, lpa, ptr_data, ptr_oob);
+}
+
+int bdbm_raw_flash_write_page (
+	bdbm_raw_flash_t* rf, 
+	uint64_t channel, 
+	uint64_t chip, 
+	uint64_t block, 
+	uint64_t page, 
+	uint64_t lpa, 
+	uint8_t* ptr_data, uint8_t* ptr_oob)
+{
+	return __bdbm_raw_flash_rwe (rf, FLASH_RAW_WRITE, channel, chip, block, page, lpa, ptr_data, ptr_oob);
+}
+
+int bdbm_raw_flash_erase_block_async (
+	bdbm_raw_flash_t* rf, 
+	uint64_t channel, 
+	uint64_t chip, 
+	uint64_t block)
+{
+	return __bdbm_raw_flash_rwe_async (rf, FLASH_RAW_ERASE, channel, chip, block, 0, -1ULL, NULL, NULL);
+}
+
+int bdbm_raw_flash_erase_block (
+	bdbm_raw_flash_t* rf, 
+	uint64_t channel, 
+	uint64_t chip, 
+	uint64_t block)
+{
+	return __bdbm_raw_flash_rwe (rf, FLASH_RAW_ERASE, channel, chip, block, 0, -1ULL, NULL, NULL);
+}
 
 nand_params_t* bdbm_raw_flash_get_nand_params (
 	bdbm_raw_flash_t* rf)
@@ -388,18 +499,21 @@ nand_params_t* bdbm_raw_flash_get_nand_params (
 
 void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf)
 {
-	if (rf) {
-		bdbm_drv_info_t* bdi = &rf->bdi;
-		bdbm_dm_inf_t* dm = bdi->ptr_dm_inf;
+	bdbm_drv_info_t* bdi = NULL;
+	bdbm_dm_inf_t* dm = NULL;
 
-		/* close the device interface */
-		dm->close (bdi);
+	if (!rf) return;
 
-		/* close the device module */
-		bdbm_dm_exit (bdi);
+	bdi = &rf->bdi;
+	dm = bdi->ptr_dm_inf;
 
-		/* destory the raw-flash module */
-		__bdbm_raw_flash_destory (rf);
-	}
+	/* close the device interface */
+	bdi->ptr_dm_inf->close (bdi);
+
+	/* close the device module */
+	bdbm_dm_exit (&rf->bdi);
+
+	/* destory the raw-flash module */
+	__bdbm_raw_flash_destory (rf);
 }
 
