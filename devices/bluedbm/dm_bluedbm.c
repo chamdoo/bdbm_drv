@@ -187,6 +187,7 @@ int event_handler_fn (void* arg)
 		manual_event (priv);
 		yield ();
 		/*msleep (0);*/
+		/*udelay(1);*/
 		if (kthread_should_stop ()) {
 			bdbm_msg ("event_handler_fn ends");
 			break;
