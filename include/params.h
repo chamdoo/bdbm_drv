@@ -30,7 +30,7 @@ THE SOFTWARE.
 
 
 /* default NAND parameters (just for convenience purpose) */
-enum DEFAULT_NAND_PARAMS {
+enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096,
 	NAND_PAGE_OOB_SIZE = 64,
 	NR_PAGES_PER_BLOCK = 128,
@@ -46,7 +46,7 @@ enum DEFAULT_NAND_PARAMS {
 };
 
 /* device-type parameters */
-enum DEVICE_TYPE {
+enum BDBM_DEVICE_TYPE {
 	DEVICE_TYPE_NOT_SPECIFIED = 0,
 	DEVICE_TYPE_RAMDRIVE = 1,
 	DEVICE_TYPE_RAMDRIVE_INTR,
@@ -58,7 +58,7 @@ enum DEVICE_TYPE {
 };
 
 /* default parameters for a device driver */
-enum MAPPING_POLICY {
+enum BDBM_MAPPING_POLICY {
 	MAPPING_POLICY_NOT_SPECIFIED = 0,
 	MAPPING_POLICY_NO_FTL,
 	MAPPING_POLICY_SEGMENT,
@@ -66,7 +66,7 @@ enum MAPPING_POLICY {
 	MAPPING_POLICY_DFTL,
 };
 
-enum GC_POLICY {
+enum BDBM_GC_POLICY {
 	GC_POLICY_NOT_SPECIFIED = 0,
 	GC_POLICY_MERGE,
 	GC_POLICY_RAMDOM,
@@ -74,44 +74,49 @@ enum GC_POLICY {
 	GC_POLICY_COST_BENEFIT,
 };
 
-enum WL_POLICY {
+enum BDBM_WL_POLICY {
 	WL_POLICY_NOT_SPECIFIED = 0,
 	WL_POLICY_NONE,
 	WL_DUAL_POOL,
 };
 
-enum QUEUE_POLICY {
+enum BDBM_QUEUE_POLICY {
 	QUEUE_NOT_SPECIFIED = 0,
 	QUEUE_NO,
 	QUEUE_SINGLE_FIFO,
 	QUEUE_MULTI_FIFO,
 };
 
-enum TRIM {
+enum BDBM_TRIM {
 	TRIM_NOT_SPECIFIED = 0, 
 	TRIM_ENABLE = 1, /* 1: enable, 2: disable */
 	TRIM_DISABLE = 2,
 };
 
-enum HOST_TYPE {
+enum BDBM_HOST_TYPE {
 	HOST_NOT_SPECIFIED = 0,
 	HOST_BLOCK,
 	HOST_DIRECT,
 };
 
-enum LLM_TYPE {
+enum BDBM_LLM_TYPE {
 	LLM_NOT_SPECIFIED = 0,
 	LLM_NO_QUEUE,
 	LLM_MULTI_QUEUE,
 };
 
-enum HLM_TYPE {
+enum BDBM_HLM_TYPE {
 	HLM_NOT_SPECIFIED = 0,
 	HLM_NO_BUFFER,
 	HLM_BUFFER,
 	HLM_DFTL,
 	HLM_RSD,
-	HLM_PROXY,
+	HLM_USER_PROXY,
+};
+
+enum BDBM_SNAPSHOT {
+	SNAPSHOT_DISABLE = 0,
+	SNAPSHOT_ENABLE,
 };
 
 
@@ -127,6 +132,7 @@ typedef struct {
 	uint32_t llm_type;
 	uint32_t hlm_type;
 	uint32_t mapping_type;
+	uint32_t snapshot;	/* 0: disable (default), 1: enable */
 } driver_params_t;
 
 typedef struct {

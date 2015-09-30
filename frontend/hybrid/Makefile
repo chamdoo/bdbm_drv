@@ -26,10 +26,15 @@ EXTRA_CFLAGS += -D USE_PMU
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
 bdbm_drv-y := \
+	hlm_user_proxy.o \
 	$(KERN)/kmain.o \
 	$(KERN)/kparams.o \
 	$(KERN)/ioctl.o \
-	$(KERN)/host_block.o
+	$(KERN)/host_block.o \
+	$(COMMON)/utils/utime.o \
+	$(COMMON)/utils/ufile.o \
+	$(COMMON)/utils/uthread.o \
+	$(FTL)/pmu.o \
 
 obj-m := bdbm_drv.o
 

@@ -41,6 +41,7 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_dftl.h"
 #include "hlm_rsd.h"
+#include "hlm_user_proxy.h"
 #include "hw.h"
 #include "pmu.h"
 
@@ -58,11 +59,15 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	bdbm_params_t* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
+#if !defined (USE_HLM_USER_PROXY)
 	if (bdbm_dm_init (bdi) != 0)  {
 		bdbm_error ("bdbm_dm_init failed");
 		return 1;
 	}
 	bdi->ptr_dm_inf = bdbm_dm_get_inf (bdi);
+#else
+	bdi->ptr_dm_inf = NULL;
+#endif
 
 	/* set functions for host */
 	switch (p->driver.host_type) {
@@ -94,6 +99,8 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	case HLM_DFTL:
 		bdi->ptr_hlm_inf = &_hlm_dftl_inf;
 		break;
+	case HLM_USER_PROXY:
+		bdi->ptr_hlm_inf = &_hlm_user_prox_inf;
 	default:
 		bdbm_error ("invalid hlm type");
 		bdbm_bug_on (1);
@@ -151,10 +158,7 @@ static int __init bdbm_drv_init (void)
 	bdbm_hlm_inf_t* hlm = NULL;
 	bdbm_llm_inf_t* llm = NULL;
 	bdbm_ftl_inf_t* ftl = NULL;
-	/*bdbm_params_t* ptr_params = NULL;*/
-#ifdef SNAPSHOT_ENABLE
 	uint32_t load = 0;
-#endif
 
 	/* allocate the memory for bdbm_drv_info_t */
 	if ((bdi = (bdbm_drv_info_t*)bdbm_malloc_atomic (sizeof (bdbm_drv_info_t))) == NULL) {
@@ -176,64 +180,70 @@ static int __init bdbm_drv_init (void)
 	}
 
 	/* probe a device to get its geometry information */
-	dm = bdi->ptr_dm_inf;
-	if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
-		bdbm_error ("failed to probe a flash device");
-		goto fail;
+	if (bdi->ptr_dm_inf) {
+		dm = bdi->ptr_dm_inf;
+
+		/* get the device information */
+		if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
+			bdbm_error ("failed to probe a flash device");
+			goto fail;
+		}
+		/* open a flash device */
+		if (dm->open (bdi) != 0) {
+			bdbm_error ("failed to open a flash device");
+			goto fail;
+		}
+		/* do we need to read a snapshot? */
+		if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+			dm->load != NULL) {
+			if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
+				bdbm_msg ("loading 'dm.dat' failed");
+				load = 0;
+			} else 
+				load = 1;
+		}
 	}
-	/* open a flash device */
-	if (dm->open (bdi) != 0) {
-		bdbm_error ("failed to open a flash device");
-		goto fail;
-	}
-#ifdef SNAPSHOT_ENABLE
-	if (dm->load != NULL) {
-		if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
-			bdbm_msg ("loading 'dm.dat' failed");
-			load = 0;
-		} else 
-			load = 1;
-	}
-#endif
 
 	/* create a low-level memory manager */
-	llm = bdi->ptr_llm_inf;
-	if (llm->create (bdi) != 0) {
-		bdbm_error ("failed to create llm");
-		goto fail;
+	if (bdi->ptr_llm_inf) {
+		llm = bdi->ptr_llm_inf;
+		if (llm->create (bdi) != 0) {
+			bdbm_error ("failed to create llm");
+			goto fail;
+		}
 	}
 
 	/* create a logical-to-physical mapping manager */
-	ftl = bdi->ptr_ftl_inf;
-	if (ftl->create (bdi) != 0) {
-		bdbm_error ("failed to create ftl");
-		goto fail;
-	}
-#ifdef SNAPSHOT_ENABLE
-	if (load == 1) {
-		if (ftl->load != NULL) {
+	if (bdi->ptr_ftl_inf) {
+		ftl = bdi->ptr_ftl_inf;
+		if (ftl->create (bdi) != 0) {
+			bdbm_error ("failed to create ftl");
+			goto fail;
+		}
+		if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+			load == 1 && ftl->load != NULL) {
 			if (ftl->load (bdi, "/usr/share/bdbm_drv/ftl.dat") != 0) {
 				bdbm_msg ("loading 'ftl.dat' failed");
-				/*goto fail;*/
 			}
-		} else {
-			/*goto fail;*/
 		}
 	}
-#endif
 
 	/* create a high-level memory manager */
-	hlm = bdi->ptr_hlm_inf;
-	if (hlm->create (bdi) != 0) {
-		bdbm_error ("failed to create hlm");
-		goto fail;
+	if (bdi->ptr_hlm_inf) {
+		hlm = bdi->ptr_hlm_inf;
+		if (hlm->create (bdi) != 0) {
+			bdbm_error ("failed to create hlm");
+			goto fail;
+		}
 	}
 
 	/* create a host interface */
-	host = bdi->ptr_host_inf;
-	if (host->open (bdi) != 0) {
-		bdbm_error ("failed to open a host interface");
-		goto fail;
+	if (bdi->ptr_host_inf) {
+		host = bdi->ptr_host_inf;
+		if (host->open (bdi) != 0) {
+			bdbm_error ("failed to open a host interface");
+			goto fail;
+		}
 	}
 
 	/* display default parameters */
@@ -265,39 +275,40 @@ fail:
 
 static void __exit bdbm_drv_exit(void)
 {
-	if (_bdi == NULL)
+	driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+	bdbm_drv_info_t* bdi = _bdi;
+
+	if (bdi == NULL)
 		return;
 
 	/* display performance results */
-	pmu_display (_bdi);
-	pmu_destory (_bdi);
+	pmu_display (bdi);
+	pmu_destory (bdi);
 
-	if (_bdi->ptr_host_inf != NULL)
-		_bdi->ptr_host_inf->close (_bdi);
+	if (bdi->ptr_host_inf != NULL)
+		bdi->ptr_host_inf->close (bdi);
 
-	if (_bdi->ptr_hlm_inf != NULL)
-		_bdi->ptr_hlm_inf->destroy (_bdi);
+	if (bdi->ptr_hlm_inf != NULL)
+		bdi->ptr_hlm_inf->destroy (bdi);
 
-	if (_bdi->ptr_ftl_inf != NULL)
-#ifdef SNAPSHOT_ENABLE
-		if (_bdi->ptr_ftl_inf->store)
-			_bdi->ptr_ftl_inf->store (_bdi, "/usr/share/bdbm_drv/ftl.dat");
+	if (bdi->ptr_ftl_inf != NULL)
+		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_ftl_inf->store)
+			bdi->ptr_ftl_inf->store (bdi, "/usr/share/bdbm_drv/ftl.dat");
+		bdi->ptr_ftl_inf->destroy (bdi);
+
+	if (bdi->ptr_llm_inf != NULL)
+		bdi->ptr_llm_inf->destroy (bdi);
+
+	if (bdi->ptr_dm_inf != NULL) {
+		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_dm_inf->store)
+			bdi->ptr_dm_inf->store (bdi, "/usr/share/bdbm_drv/dm.dat");
+		bdi->ptr_dm_inf->close (bdi);
+#if !defined (USE_HLM_USER_PROXY)
+		bdbm_dm_exit (bdi);
 #endif
-		_bdi->ptr_ftl_inf->destroy (_bdi);
-
-	if (_bdi->ptr_llm_inf != NULL)
-		_bdi->ptr_llm_inf->destroy (_bdi);
-
-	if (_bdi->ptr_dm_inf != NULL) {
-#ifdef SNAPSHOT_ENABLE
-		if (_bdi->ptr_dm_inf->store)
-			_bdi->ptr_dm_inf->store (_bdi, "/usr/share/bdbm_drv/dm.dat");
-#endif
-		_bdi->ptr_dm_inf->close (_bdi);
-		bdbm_dm_exit (_bdi);
 	}
 
-	bdbm_free_atomic (_bdi);
+	bdbm_free_atomic (bdi);
 
 	bdbm_msg ("[blueDBM is removed]");
 }

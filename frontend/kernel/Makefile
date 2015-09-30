@@ -18,7 +18,6 @@ EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D USE_PMU
 #EXTRA_CFLAGS += -D USE_KTIMER
 EXTRA_CFLAGS += -D KERNEL_MODE
-#EXTRA_CFLAGS += -D SNAPSHOT_ENABLE
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
@@ -27,6 +26,7 @@ bdbm_drv-y := \
 	kparams.o \
 	ioctl.o \
 	host_block.o \
+	
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/hlm_buf.o \
@@ -46,7 +46,6 @@ bdbm_drv-y := \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
-
 
 obj-m := bdbm_drv.o
 

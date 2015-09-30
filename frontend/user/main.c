@@ -141,10 +141,7 @@ int bdbm_drv_init (void)
 	bdbm_hlm_inf_t* hlm = NULL;
 	bdbm_llm_inf_t* llm = NULL;
 	bdbm_ftl_inf_t* ftl = NULL;
-	/*bdbm_params_t* ptr_params = NULL;*/
-#ifdef SNAPSHOT_ENABLE
 	uint32_t load = 0;
-#endif
 
 	/* allocate the memory for bdbm_drv_info_t */
 	if ((bdi = (bdbm_drv_info_t*)bdbm_malloc_atomic (sizeof (bdbm_drv_info_t))) == NULL) {
@@ -176,15 +173,14 @@ int bdbm_drv_init (void)
 		bdbm_error ("failed to open a flash device");
 		goto fail;
 	}
-#ifdef SNAPSHOT_ENABLE
-	if (dm->load != NULL) {
+	if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+		dm->load != NULL) {
 		if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
 			bdbm_msg ("loading 'dm.dat' failed");
 			load = 0;
 		} else 
 			load = 1;
 	}
-#endif
 
 	/* create a low-level memory manager */
 	llm = bdi->ptr_llm_inf;
@@ -199,18 +195,13 @@ int bdbm_drv_init (void)
 		bdbm_error ("failed to create ftl");
 		goto fail;
 	}
-#ifdef SNAPSHOT_ENABLE
-	if (load == 1) {
-		if (ftl->load != NULL) {
-			if (ftl->load (bdi, "/usr/share/bdbm_drv/ftl.dat") != 0) {
-				bdbm_msg ("loading 'ftl.dat' failed");
-				/*goto fail;*/
-			}
-		} else {
+	if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+		load == 1 && ftl->load != NULL) {
+		if (ftl->load (bdi, "/usr/share/bdbm_drv/ftl.dat") != 0) {
+			bdbm_msg ("loading 'ftl.dat' failed");
 			/*goto fail;*/
 		}
 	}
-#endif
 
 	/* create a high-level memory manager */
 	hlm = bdi->ptr_hlm_inf;
@@ -265,20 +256,16 @@ void bdbm_drv_exit(void)
 		_bdi->ptr_hlm_inf->destroy (_bdi);
 
 	if (_bdi->ptr_ftl_inf != NULL)
-#ifdef SNAPSHOT_ENABLE
-		if (_bdi->ptr_ftl_inf->store)
+		if (dp->snapshot == SNAPSHOT_ENABLE && _bdi->ptr_ftl_inf->store)
 			_bdi->ptr_ftl_inf->store (_bdi, "/usr/share/bdbm_drv/ftl.dat");
-#endif
 		_bdi->ptr_ftl_inf->destroy (_bdi);
 
 	if (_bdi->ptr_llm_inf != NULL)
 		_bdi->ptr_llm_inf->destroy (_bdi);
 
 	if (_bdi->ptr_dm_inf != NULL) {
-#ifdef SNAPSHOT_ENABLE
-		if (_bdi->ptr_dm_inf->store)
+		if (dp->snapshot == SNAPSHOT_ENABLE && _bdi->ptr_dm_inf->store)
 			_bdi->ptr_dm_inf->store (_bdi, "/usr/share/bdbm_drv/dm.dat");
-#endif
 		_bdi->ptr_dm_inf->close (_bdi);
 		bdbm_dm_exit (_bdi);
 	}
