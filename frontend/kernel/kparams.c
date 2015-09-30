@@ -22,25 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
-
-#elif defined(USER_MODE)
-#include <stdint.h>
-#include <stdio.h>
-
-#else
-#error Invalid Platform (KERNEL_MODE or USER_MODE)
-
-#endif
 
 #include "params.h"
 #include "platform.h"
 #include "debug.h"
 #include "bdbm_drv.h"
 
+/* 
+ * setup parameters according to user configurations 
+ */
+#if !defined (USE_HLM_USER_PROXY)
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
@@ -48,10 +42,6 @@ int _param_queuing_policy			= QUEUE_NO;
 int _param_trim						= TRIM_ENABLE;
 int _param_host_type				= HOST_BLOCK;
 int _param_llm_type					= LLM_MULTI_QUEUE;
-
-/*#define USE_RISA*/
-#define USE_DFTL
-
 #if defined (USE_RISA)
 int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;
 int _param_hlm_type					= HLM_RSD;
@@ -62,6 +52,21 @@ int _param_hlm_type					= HLM_DFTL;
 int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 #endif
+
+#else /* USE_HLM_USER_PROXY */
+int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
+int _param_host_type				= HOST_BLOCK;
+
+int _param_gc_policy 				= GC_POLICY_NOT_SPECIFIED;
+int _param_wl_policy 				= WL_POLICY_NOT_SPECIFIED;
+int _param_queuing_policy			= QUEUE_NOT_SPECIFIED;
+int _param_trim						= TRIM_NOT_SPECIFIED;
+int _param_llm_type					= LLM_NOT_SPECIFIED;
+int _param_mapping_policy 			= MAPPING_POLICY_NOT_SPECIFIED;
+int _param_hlm_type					= HLM_NOT_SPECIFIED;
+
+#endif
+
 
 /* for kernel modules (nothing for user-level applications */
 module_param (_param_mapping_policy, int, 0000);

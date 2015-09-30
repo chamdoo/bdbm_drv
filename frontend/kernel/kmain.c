@@ -22,18 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#if defined(KERNEL_MODE)
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/version.h>
 #include <linux/slab.h>
-
-#elif defined(USER_MODE)
-#include <stdio.h>
-#include <stdint.h>
-
-#endif
 
 #include "bdbm_drv.h"
 #include "platform.h"
@@ -77,6 +70,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		bdi->ptr_host_inf = &_host_block_inf;
 		break;
 	case HOST_DIRECT:
+	case HOST_NOT_SPECIFIED:
 	default:
 		bdbm_error ("invalid host type");
 		bdbm_bug_on (1);
@@ -85,6 +79,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 
 	/* set functions for hlm */
 	switch (p->driver.hlm_type) {
+	case HLM_NOT_SPECIFIED:
+		bdi->ptr_hlm_inf = NULL;
+		break;
 	case HLM_NO_BUFFER:
 		bdi->ptr_hlm_inf = &_hlm_nobuf_inf;
 		break;
@@ -105,6 +102,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 
 	/* set functions for llm */
 	switch (p->driver.llm_type) {
+	case LLM_NOT_SPECIFIED:
+		bdi->ptr_llm_inf = NULL;
+		break;
 	case LLM_NO_QUEUE:
 		bdi->ptr_llm_inf = &_llm_noq_inf;
 		break;
@@ -119,6 +119,9 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 
 	/* set functions for ftl */
 	switch (p->driver.mapping_type) {
+	case MAPPING_POLICY_NOT_SPECIFIED:
+		bdi->ptr_ftl_inf = NULL;
+		break;
 	case MAPPING_POLICY_NO_FTL:
 		bdi->ptr_ftl_inf = &_ftl_no_ftl;
 		break;
@@ -140,12 +143,6 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	return 0;
 }
 
-/*#define RAM_CONSUMER*/
-
-#ifdef RAM_CONSUMER
-uint8_t* ptr_ram_consumer = NULL;
-#endif
-
 static int __init bdbm_drv_init (void)
 {
 	bdbm_drv_info_t* bdi = NULL;
@@ -157,15 +154,6 @@ static int __init bdbm_drv_init (void)
 	/*bdbm_params_t* ptr_params = NULL;*/
 #ifdef SNAPSHOT_ENABLE
 	uint32_t load = 0;
-#endif
-
-#ifdef RAM_CONSUMER
-	if ((ptr_ram_consumer = (void*)bdbm_malloc (45000000000 * sizeof (uint8_t))) == NULL) {
-		bdbm_error ("bdbm_malloc failed");
-		return -ENXIO;
-	} else {
-		bdbm_error ("RAM_CONSUMER is allocated");
-	}
 #endif
 
 	/* allocate the memory for bdbm_drv_info_t */
@@ -310,10 +298,6 @@ static void __exit bdbm_drv_exit(void)
 	}
 
 	bdbm_free_atomic (_bdi);
-
-#ifdef RAM_CONSUMER
-	bdbm_free (ptr_ram_consumer);
-#endif
 
 	bdbm_msg ("[blueDBM is removed]");
 }

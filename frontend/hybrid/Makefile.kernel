@@ -10,6 +10,7 @@ default:
 
 clean:
 	@rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd Module.symvers modules.order bdbm_drv.ko bdbm_drv.mod.c
-	@cd ../kernel; rm -rf Module.symvers modules.order
-	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../kernel; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd Module.symvers modules.order bdbm_drv.ko bdbm_drv.mod.c
+	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd Module.symvers modules.order bdbm_drv.ko bdbm_drv.mod.c
+
 
