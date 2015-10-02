@@ -33,8 +33,13 @@ THE SOFTWARE.
 		do {    \
 			printk(KERN_INFO "bdbm: " fmt "\n", ##__VA_ARGS__);  \
 		} while (0);
+	#define bdbm_check(id) \
+		do {	\
+			printk(KERN_INFO "bdbm: [%d:%s] - %d", __LINE__, __FUNCTION__, id); \
+		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
+	#define bdbm_check(id)
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \
@@ -52,8 +57,13 @@ THE SOFTWARE.
 		do {    \
 			printf("bdbm: " fmt "\n", ##__VA_ARGS__);  \
 		} while (0);
+	#define bdbm_check(id) \
+		do {	\
+			printf("bdbm: [%d:%s] - %d", __LINE__, __FUNCTION__, id); \
+		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
+	#define bdbm_check(id)
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \

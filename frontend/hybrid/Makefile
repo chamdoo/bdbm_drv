@@ -14,23 +14,15 @@ EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
 EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D KERNEL_MODE
-EXTRA_CFLAGS += -D USE_HLM_USER_PROXY
 EXTRA_CFLAGS += -D USE_PMU
-
-#EXTRA_CFLAGS += -D USE_RISA
-#EXTRA_CFLAGS += -D USE_DFTL
-
+EXTRA_CFLAGS += -D USE_BLOCKIO_PROXY
 #EXTRA_CFLAGS += -D USE_KTIMER
-#EXTRA_CFLAGS += -D SNAPSHOT_ENABLE
-#EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
-#EXTRA_CFLAGS += -D USE_COMPLETION
 
 bdbm_drv-y := \
-	hlm_user_proxy.o \
+	host_blockio_proxy.o \
 	$(KERN)/kmain.o \
 	$(KERN)/kparams.o \
 	$(KERN)/ioctl.o \
-	$(KERN)/host_block.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \

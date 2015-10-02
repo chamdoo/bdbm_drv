@@ -147,7 +147,6 @@ enum BDBM_HLM_MEMFLAG {
 
 /* a high-level request */
 typedef struct {
-	uint64_t uniq_id; /* for debugging */
 	uint32_t req_type; /* read, write, or trim */
 	uint64_t lpa; /* logical page address */
 	uint64_t len; /* legnth */
@@ -156,13 +155,13 @@ typedef struct {
 	uint8_t** pptr_kpgs; /* data for individual kernel pages */
 	void* ptr_host_req; /* struct bio or I/O trace */
 	uint8_t ret;
-	uint8_t queued;
 	bdbm_spinlock_t lock; /* spinlock */
 
 	/* for performance monitoring */
 	bdbm_stopwatch_t sw;
 
 	/* temp */
+	uint8_t queued;
 	uint8_t* org_kpg_flags;
 	uint8_t** org_pptr_kpgs; /* data for individual kernel pages */
 	/* end */

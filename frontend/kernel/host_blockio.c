@@ -23,18 +23,28 @@ THE SOFTWARE.
 */
 
 #include <linux/module.h>
-#include <linux/blkdev.h>
+#include <linux/blkdev.h> /* bio */
 
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "platform.h"
-#include "host_block.h"
 #include "params.h"
-#include "ioctl.h"
-
 #include "utils/utime.h"
 
+#include "host_blockio.h"
+#include "host_blkdev.h"
+#include "host_blkdev_ioctl.h"
+
 /*#define ENABLE_DISPLAY*/
+
+/* global data structure */
+extern bdbm_drv_info_t* _bdi;
+
+/* private data structure for host_blockio */
+typedef struct {
+	atomic64_t nr_reqs;
+	bdbm_mutex_t host_lock;
+} bdbm_host_block_private_t;
 
 /* interface for host */
 bdbm_host_inf_t _host_block_inf = {
@@ -45,22 +55,14 @@ bdbm_host_inf_t _host_block_inf = {
 	.end_req = host_block_end_req,
 };
 
-static struct bdbm_device_t {
-	struct gendisk *gd;
-	struct request_queue *queue;
-	bdbm_mutex_t make_request_lock;
-} bdbm_device;
 
-static uint32_t bdbm_device_major_num = 0;
-static struct block_device_operations bdops = {
-	.owner = THIS_MODULE,
-	.ioctl = bdbm_blk_ioctl,
-	//.getgeo = bdbm_blk_getgeo,
-};
-
-/* global data structure */
-extern bdbm_drv_info_t* _bdi;
-
+/* This is a call-back function invoked by a block-device layer */
+static void __host_blkio_make_request_fn (
+	struct request_queue *q, 
+	struct bio *bio)
+{
+	host_block_make_req (_bdi, (void*)bio);
+}
 
 static bdbm_hlm_req_t* __host_block_create_hlm_trim_req (
 	bdbm_drv_info_t* bdi, 
@@ -333,93 +335,6 @@ static void __host_block_display_req (
 #endif
 }
 
-static void __host_block_make_request (
-	struct request_queue *q, 
-	struct bio *bio)
-{
-	/* see if q or bio is valid or not */
-	if (q == NULL || bio == NULL) {
-		bdbm_msg ("q or bio is NULL; ignore incoming requests");
-		return;
-	}
-
-	/* grab the lock until a host request is sent to hlm */
-	bdbm_mutex_lock (&bdbm_device.make_request_lock);
-
-	host_block_make_req (_bdi, (void*)bio);
-
-	/* free the lock*/
-	bdbm_mutex_unlock (&bdbm_device.make_request_lock);          
-}
-
-static uint32_t __host_block_register_block_device (bdbm_drv_info_t* bdi)
-{
-	bdbm_params_t* p = bdi->ptr_bdbm_params;
-
-	/* create a completion lock */
-	bdbm_mutex_init (&bdbm_device.make_request_lock);
-
-	/* create a blk queue */
-	if (!(bdbm_device.queue = blk_alloc_queue (GFP_KERNEL))) {
-		bdbm_error ("blk_alloc_queue failed");
-		return -ENOMEM;
-	}
-	blk_queue_make_request (bdbm_device.queue, __host_block_make_request);
-	blk_queue_logical_block_size (bdbm_device.queue, p->driver.kernel_sector_size);
-	blk_queue_io_min (bdbm_device.queue, p->nand.page_main_size);
-	blk_queue_io_opt (bdbm_device.queue, p->nand.page_main_size);
-
-	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
-
-	/* see if a TRIM command is used or not */
-	if (p->driver.trim == TRIM_ENABLE) {
-		bdbm_device.queue->limits.discard_granularity = KERNEL_PAGE_SIZE;
-		bdbm_device.queue->limits.max_discard_sectors = UINT_MAX;
-		/*bdbm_device.queue->limits.discard_zeroes_data = 1;*/
-		queue_flag_set_unlocked (QUEUE_FLAG_DISCARD, bdbm_device.queue);
-		bdbm_msg ("TRIM is enabled");
-	} else {
-		bdbm_msg ("TRIM is disabled");
-	}
-
-	/* register a blk device */
-	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
-		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
-		return bdbm_device_major_num;
-	}
-	if (!(bdbm_device.gd = alloc_disk (1))) {
-		bdbm_msg ("alloc_disk failed");
-		unregister_blkdev (bdbm_device_major_num, "blueDBM");
-		return -ENOMEM;
-	}
-	bdbm_device.gd->major = bdbm_device_major_num;
-	bdbm_device.gd->first_minor = 0;
-	bdbm_device.gd->fops = &bdops;
-	bdbm_device.gd->queue = bdbm_device.queue;
-	bdbm_device.gd->private_data = NULL;
-	strcpy (bdbm_device.gd->disk_name, "blueDBM");
-
-	{
-		uint64_t capacity;
-		capacity = p->nand.device_capacity_in_byte * 0.9;
-		/*capacity = p->nand.device_capacity_in_byte;*/
-		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
-		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
-	}
-	add_disk (bdbm_device.gd);
-
-	return 0;
-}
-
-void __host_block_unregister_block_device (bdbm_drv_info_t* bdi)
-{
-	/* unregister a BlueDBM device driver */
-	del_gendisk (bdbm_device.gd);
-	put_disk (bdbm_device.gd);
-	unregister_blkdev (bdbm_device_major_num, "blueDBM");
-	blk_cleanup_queue (bdbm_device.queue);
-}
-
 uint32_t host_block_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
@@ -431,12 +346,13 @@ uint32_t host_block_open (bdbm_drv_info_t* bdi)
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
-	p->nr_host_reqs = 0;
-	bdbm_spin_lock_init (&p->lock); 
+	bdbm_mutex_init (&p->host_lock);
+	atomic64_set (&p->nr_reqs, 0);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
 	/* register blueDBM */
-	if ((ret = __host_block_register_block_device (bdi)) != 0) {
+	if ((ret = host_blkdev_register_device
+			(bdi, __host_blkio_make_request_fn)) != 0) {
 		bdbm_error ("failed to register blueDBM");
 		bdbm_free_atomic (p);
 		return 1;
@@ -447,45 +363,39 @@ uint32_t host_block_open (bdbm_drv_info_t* bdi)
 
 void host_block_close (bdbm_drv_info_t* bdi)
 {
-	unsigned long flags;
 	bdbm_host_block_private_t* p = NULL;
 
 	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* wait for host reqs to finish */
 	bdbm_msg ("wait for host reqs to finish");
-	for (;;) {
-		bdbm_spin_lock_irqsave (&p->lock, flags);
-		if (p->nr_host_reqs == 0) {
-			bdbm_spin_unlock_irqrestore (&p->lock, flags);
+	while (1) {
+		if (atomic64_read (&p->nr_reqs) == 0)
 			break;
-		}
-		bdbm_spin_unlock_irqrestore (&p->lock, flags);
 		schedule (); /* sleep */
 	}
 
 	/* unregister a block device */
-	__host_block_unregister_block_device (bdi);
+	/*__host_block_unregister_block_device (bdi);*/
+	host_blkdev_unregister_block_device (bdi);
 
 	/* free private */
 	bdbm_free_atomic (p);
 }
 
-void host_block_make_req (
-	bdbm_drv_info_t* bdi, 
-	void* req)
+void host_block_make_req (bdbm_drv_info_t* bdi, void* req)
 {
-	unsigned long flags;
-	nand_params_t* np = NULL;
+	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_host_block_private_t* p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_hlm_req_t* hlm_req = NULL;
-	bdbm_host_block_private_t* p = NULL;
 	struct bio* bio = (struct bio*)req;
 
-	np = &bdi->ptr_bdbm_params->nand;
-	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
+	/* lock a global mutex -- this function must be finished as soon as possible */
+	bdbm_mutex_lock (&p->host_lock);
 
 	/* see if the address range of bio is beyond storage space */
 	if (bio->bi_sector + bio_sectors (bio) > np->device_capacity_in_byte / KERNEL_SECTOR_SIZE) {
+		bdbm_mutex_unlock (&p->host_lock);
 		bdbm_error ("bio is beyond storage space (%lu > %llu)",
 			bio->bi_sector + bio_sectors (bio),
 			np->device_capacity_in_byte / KERNEL_SECTOR_SIZE);
@@ -495,6 +405,7 @@ void host_block_make_req (
 
 	/* create a hlm_req using a bio */
 	if ((hlm_req = __host_block_create_hlm_req (bdi, bio)) == NULL) {
+		bdbm_mutex_unlock (&p->host_lock);
 		bdbm_error ("the creation of hlm_req failed");
 		bio_io_error (bio);
 		return;
@@ -503,10 +414,8 @@ void host_block_make_req (
 	/* display req info */
 	__host_block_display_req (bdi, hlm_req);
 
-	/* if success, increase # of host reqs */
-	bdbm_spin_lock_irqsave (&p->lock, flags);
-	p->nr_host_reqs++;
-	bdbm_spin_unlock_irqrestore (&p->lock, flags);
+	/* if success, increase # of host reqs before sending the request to hlm */
+	atomic64_inc (&p->nr_reqs);
 
 	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
 	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
@@ -514,31 +423,28 @@ void host_block_make_req (
 		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 
 		/* decreate # of reqs */
-		bdbm_spin_lock_irqsave (&p->lock, flags);
-		if (p->nr_host_reqs > 0)
-			p->nr_host_reqs--;
-		else
-			bdbm_error ("p->nr_host_reqs is 0");
-		bdbm_spin_unlock_irqrestore (&p->lock, flags);
+		atomic64_dec (&p->nr_reqs);
+		if (atomic64_read (&p->nr_reqs) < 0) {
+			bdbm_error ("p->nr_reqs is negative (%ld)", atomic64_read (&p->nr_reqs));
+		}
 
 		/* finish a bio */
 		__host_block_delete_hlm_req (bdi, hlm_req);
 		bio_io_error (bio);
 	}
+
+	bdbm_mutex_unlock (&p->host_lock);
 }
 
-void host_block_end_req (
-	bdbm_drv_info_t* bdi, 
-	bdbm_hlm_req_t* hlm_req)
+void host_block_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 {
 	uint32_t ret;
-	unsigned long flags;
 	struct bio* bio = NULL;
 	bdbm_host_block_private_t* p = NULL;
 
-	if (hlm_req->done) {
+	/* unlock hlm_req's lock if it is available */
+	if (hlm_req->done)
 		bdbm_mutex_unlock (hlm_req->done);
-	}
 
 	/* get a bio from hlm_req */
 	bio = (struct bio*)hlm_req->ptr_host_req;
@@ -550,18 +456,14 @@ void host_block_end_req (
 
 	/* get the result and end a bio */
 	if (bio != NULL) {
-		if (ret == 0)
-			bio_endio (bio, 0);
-		else
-			bio_io_error (bio);
+		if (ret == 0) bio_endio (bio, 0);
+		else bio_io_error (bio);
 	}
 
 	/* decreate # of reqs */
-	bdbm_spin_lock_irqsave (&p->lock, flags);
-	if (p->nr_host_reqs > 0)
-		p->nr_host_reqs--;
-	else
-		bdbm_bug_on (1);
-	bdbm_spin_unlock_irqrestore (&p->lock, flags);
+	atomic64_dec (&p->nr_reqs);
+	if (atomic64_read (&p->nr_reqs) < 0) {
+		bdbm_error ("p->nr_reqs is negative (%ld)", atomic64_read (&p->nr_reqs));
+	}
 }
 

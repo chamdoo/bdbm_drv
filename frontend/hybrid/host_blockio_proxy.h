@@ -22,10 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-/*#define BDBM_DM_IOCTL_NAME		"bdbm_hlm_user_proxy"*/
+#ifndef _BLUEDBM_BLOCKIO_PROXY_PROXY_H
+#define _BLUEDBM_BLOCKIO_PROXY_PROXY_H
 
-#define BDBM_HLM_USER_IOCTL_NAME	"bdbm_hlm_user_proxy"
-#define BDBM_HLM_USER_IOCTL_DEVNAME	"/dev/bdbm_hlm_user_proxy"
-#define BDBM_HLM_USER_IOCTL_MAGIC	'Y'
+/* All of them are fake interfaces */
+extern bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;
+extern bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
+extern bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
 
-#define BDBM_HLM_USER_IOCTL_DONE	_IOWR (BDBM_HLM_USER_IOCTL_MAGIC, 0, int)
+/* This is a real one */
+extern bdbm_hlm_inf_t _hlm_user_prox_inf;
+
+uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi);
+void blockio_proxy_close (bdbm_drv_info_t* bdi);
+void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* bio);
+void blockio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+
+#endif

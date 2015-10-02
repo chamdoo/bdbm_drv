@@ -4,8 +4,8 @@
 FTL := ../../ftl
 COMMON := ../../include
 
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \
@@ -24,9 +24,8 @@ EXTRA_CFLAGS += -D KERNEL_MODE
 bdbm_drv-y := \
 	kmain.o \
 	kparams.o \
-	ioctl.o \
-	host_block.o \
-	
+	host_blkdev.o \
+	host_blockio.o \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/hlm_buf.o \

@@ -33,7 +33,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "kparams.h"
 #include "debug.h"
-#include "host_block.h"
+#include "host_blockio.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -41,7 +41,6 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_dftl.h"
 #include "hlm_rsd.h"
-#include "hlm_user_proxy.h"
 #include "hw.h"
 #include "pmu.h"
 
@@ -51,6 +50,10 @@ THE SOFTWARE.
 #include "algo/dftl.h"
 #include "utils/ufile.h"
 
+#if defined (USE_BLOCKIO_PROXY)
+#include "host_blockio_proxy.h"
+#endif
+
 /* main data structure */
 bdbm_drv_info_t* _bdi = NULL;
 
@@ -59,7 +62,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	bdbm_params_t* p = bdi->ptr_bdbm_params;
 
 	/* set functions for device manager (dm) */
-#if !defined (USE_HLM_USER_PROXY)
+#if !defined (USE_BLOCKIO_PROXY)
 	if (bdbm_dm_init (bdi) != 0)  {
 		bdbm_error ("bdbm_dm_init failed");
 		return 1;
@@ -71,11 +74,15 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 
 	/* set functions for host */
 	switch (p->driver.host_type) {
+	case HOST_NOT_SPECIFIED:
+		bdi->ptr_host_inf = NULL;
+		break;
 	case HOST_BLOCK:
 		bdi->ptr_host_inf = &_host_block_inf;
 		break;
+	case HOST_PROXY:
+		/* TODO */
 	case HOST_DIRECT:
-	case HOST_NOT_SPECIFIED:
 	default:
 		bdbm_error ("invalid host type");
 		bdbm_bug_on (1);
@@ -99,8 +106,6 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	case HLM_DFTL:
 		bdi->ptr_hlm_inf = &_hlm_dftl_inf;
 		break;
-	case HLM_USER_PROXY:
-		bdi->ptr_hlm_inf = &_hlm_user_prox_inf;
 	default:
 		bdbm_error ("invalid hlm type");
 		bdbm_bug_on (1);
@@ -303,7 +308,7 @@ static void __exit bdbm_drv_exit(void)
 		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_dm_inf->store)
 			bdi->ptr_dm_inf->store (bdi, "/usr/share/bdbm_drv/dm.dat");
 		bdi->ptr_dm_inf->close (bdi);
-#if !defined (USE_HLM_USER_PROXY)
+#if !defined (USE_BLOCKIO_PROXY)
 		bdbm_dm_exit (bdi);
 #endif
 	}

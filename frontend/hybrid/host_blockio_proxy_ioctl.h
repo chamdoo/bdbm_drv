@@ -22,20 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_HOST_BLOCK_H
-#define _BLUEDBM_HOST_BLOCK_H
-
-extern bdbm_host_inf_t _host_block_inf;
-
 typedef struct {
-	uint64_t nr_host_reqs;
-	bdbm_spinlock_t lock;
-} bdbm_host_block_private_t;
+	uint32_t req_type; /* read, write, or trim */
+	uint64_t lpa; /* logical page address */
+	uint64_t len; /* legnth */
+	uint32_t kpg_flags_cnt;
+	uint8_t* kpg_flags;
+	uint32_t pptr_kpgs_cnt;
+	uint8_t** pptr_kpgs; /* data for individual kernel pages */
+	uint8_t ret;
+} bdbm_blockio_proxy_req_t;
 
-uint32_t host_block_open (bdbm_drv_info_t* bdi);
-void host_block_close (bdbm_drv_info_t* bdi);
-void host_block_make_req (bdbm_drv_info_t* bdi, void* req);
-void host_block_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#define BDBM_BLOCKIO_PROXY_IOCTL_NAME		"bdbm_blockio_proxy"
+#define BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME	"/dev/bdbm_blockio_proxy"
+#define BDBM_BLOCKIO_PROXY_IOCTL_MAGIC		'Y'
 
-#endif
-
+#define BDBM_BLOCKIO_PROXY_IOCTL_DONE		_IOWR (BDBM_BLOCKIO_PROXY_IOCTL_MAGIC, 0, int)

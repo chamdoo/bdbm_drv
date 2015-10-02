@@ -34,7 +34,7 @@ THE SOFTWARE.
 /* 
  * setup parameters according to user configurations 
  */
-#if !defined (USE_HLM_USER_PROXY)
+#if !defined (USE_BLOCKIO_PROXY)
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
@@ -54,7 +54,7 @@ int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 #endif
 
-#else /* USE_HLM_USER_PROXY */
+#else /* USE_BLOCKIO_PROXY */
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_host_type				= HOST_BLOCK;
 int _param_gc_policy 				= GC_POLICY_NOT_SPECIFIED;

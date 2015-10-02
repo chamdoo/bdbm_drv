@@ -22,20 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_HLM_USER_PROXY_H
-#define _BLUEDBM_HLM_USER_PROXY_H
+#ifndef _BLUEDBM_HOST_BLOCKIO_H
+#define _BLUEDBM_HOST_BLOCKIO_H
 
-/* All of them are fake interfaces */
-extern bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;
-extern bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
-extern bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
+extern bdbm_host_inf_t _host_block_inf;
 
-/* This is a real one */
-extern bdbm_hlm_inf_t _hlm_user_prox_inf;
-
-uint32_t hlm_user_proxy_create (bdbm_drv_info_t* bdi);
-void hlm_user_proxy_destroy (bdbm_drv_info_t* bdi);
-uint32_t hlm_user_proxy_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
-void hlm_user_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+uint32_t host_block_open (bdbm_drv_info_t* bdi);
+void host_block_close (bdbm_drv_info_t* bdi);
+void host_block_make_req (bdbm_drv_info_t* bdi, void* req);
+void host_block_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 
 #endif
+

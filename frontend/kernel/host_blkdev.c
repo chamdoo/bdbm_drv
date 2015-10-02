@@ -22,27 +22,36 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#if defined(KERNEL_MODE)
-
 #include <linux/module.h>
-#include <linux/blkdev.h>
+#include <linux/blkdev.h> /* bio */
 #include <linux/hdreg.h>
 #include <linux/kthread.h>
 #include <linux/delay.h> /* mdelay */
 
-#include "debug.h"
-#include "params.h"
 #include "bdbm_drv.h"
-#include "ioctl.h"
+#include "debug.h"
+#include "host_blkdev.h"
+#include "host_blkdev_ioctl.h"
 
 
-/* NOTE: refer to the following URLs 
- * [1] linux-source/drivers/mtd/mtd_blkdevs.c
- * [2] linux-source/drivers/mtd/nftlcore.c */
+int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsigned long arg);
+int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo);
+
+static struct bdbm_device_t {
+	struct gendisk *gd;
+	struct request_queue *queue;
+} bdbm_device;
+
+static uint32_t bdbm_device_major_num = 0;
+static struct block_device_operations bdops = {
+	.owner = THIS_MODULE,
+	.ioctl = bdbm_blk_ioctl,
+	.getgeo = bdbm_blk_getgeo,
+};
 
 extern bdbm_drv_info_t* _bdi;
 
-DECLARE_COMPLETION(task_completion);
+DECLARE_COMPLETION (task_completion);
 static struct task_struct *task = NULL;
 
 
@@ -87,7 +96,11 @@ int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 	return 0;
 }
 
-int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsigned long arg)
+int bdbm_blk_ioctl (
+	struct block_device *bdev, 
+	fmode_t mode, 
+	unsigned cmd, 
+	unsigned long arg)
 {
 	struct hd_geometry geo;
 	struct gendisk *disk = bdev->bd_disk;
@@ -174,4 +187,71 @@ int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsig
 	return 0;
 }
 
-#endif
+uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
+{
+	bdbm_params_t* p = bdi->ptr_bdbm_params;
+
+	/* create a completion lock */
+	/*bdbm_mutex_init (&bdbm_device.make_request_lock);*/
+
+	/* create a blk queue */
+	if (!(bdbm_device.queue = blk_alloc_queue (GFP_KERNEL))) {
+		bdbm_error ("blk_alloc_queue failed");
+		return -ENOMEM;
+	}
+	blk_queue_make_request (bdbm_device.queue, fn);
+	blk_queue_logical_block_size (bdbm_device.queue, p->driver.kernel_sector_size);
+	blk_queue_io_min (bdbm_device.queue, p->nand.page_main_size);
+	blk_queue_io_opt (bdbm_device.queue, p->nand.page_main_size);
+
+	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
+
+	/* see if a TRIM command is used or not */
+	if (p->driver.trim == TRIM_ENABLE) {
+		bdbm_device.queue->limits.discard_granularity = KERNEL_PAGE_SIZE;
+		bdbm_device.queue->limits.max_discard_sectors = UINT_MAX;
+		/*bdbm_device.queue->limits.discard_zeroes_data = 1;*/
+		queue_flag_set_unlocked (QUEUE_FLAG_DISCARD, bdbm_device.queue);
+		bdbm_msg ("TRIM is enabled");
+	} else {
+		bdbm_msg ("TRIM is disabled");
+	}
+
+	/* register a blk device */
+	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
+		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
+		return bdbm_device_major_num;
+	}
+	if (!(bdbm_device.gd = alloc_disk (1))) {
+		bdbm_msg ("alloc_disk failed");
+		unregister_blkdev (bdbm_device_major_num, "blueDBM");
+		return -ENOMEM;
+	}
+	bdbm_device.gd->major = bdbm_device_major_num;
+	bdbm_device.gd->first_minor = 0;
+	bdbm_device.gd->fops = &bdops;
+	bdbm_device.gd->queue = bdbm_device.queue;
+	bdbm_device.gd->private_data = NULL;
+	strcpy (bdbm_device.gd->disk_name, "blueDBM");
+
+	{
+		uint64_t capacity;
+		capacity = p->nand.device_capacity_in_byte * 0.9;
+		/*capacity = p->nand.device_capacity_in_byte;*/
+		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
+	}
+	add_disk (bdbm_device.gd);
+
+	return 0;
+}
+
+void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
+{
+	/* unregister a BlueDBM device driver */
+	del_gendisk (bdbm_device.gd);
+	put_disk (bdbm_device.gd);
+	unregister_blkdev (bdbm_device_major_num, "blueDBM");
+	blk_cleanup_queue (bdbm_device.queue);
+}
+

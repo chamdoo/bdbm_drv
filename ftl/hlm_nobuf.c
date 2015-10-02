@@ -299,12 +299,14 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 		break;
 	}
 
+#if 0
 	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
 		if (ptr_hlm_req->req_type == REQTYPE_WRITE) {
 			bdbm_msg ("%llu us", 
 				bdbm_stopwatch_get_elapsed_time_us (&sw));
 		}
 	}
+#endif
 
 	return ret;
 }
