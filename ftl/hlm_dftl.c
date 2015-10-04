@@ -47,10 +47,6 @@ THE SOFTWARE.
 #include "queue/queue.h"
 
 
-int _nr_total = 0;
-int _nr_hit = 0;
-int _nr_miss = 0;
-
 /*#define USE_THREAD*/
 
 /* interface for hlm_dftl */
@@ -243,8 +239,6 @@ void hlm_dftl_destroy (bdbm_drv_info_t* bdi)
 {
 	bdbm_hlm_dftl_private_t* p = (bdbm_hlm_dftl_private_t*)bdi->ptr_hlm_inf->ptr_private;
 
-	bdbm_msg ("%d (= hit: %d / total: %d)", _nr_hit * 100 / _nr_total, _nr_hit, _nr_total);
-
 	/* wait until Q becomes empty */
 	while (!bdbm_queue_is_all_empty (p->q)) {
 		bdbm_msg ("hlm items = %llu", bdbm_queue_get_nr_items (p->q));
@@ -317,8 +311,6 @@ uint32_t hlm_dftl_make_req (
 	if (avail == 0) {
 		/* If all of the mapping entries are available, send a hlm_req to llm directly */
 		/*bdbm_msg ("main-3");*/
-		_nr_hit++;
-		_nr_total++;
 		if ((ret = hlm_nobuf_make_req (bdi, r))) {
 			/* if it failed, we directly call 'ptr_host_inf->end_req' */
 			bdi->ptr_host_inf->end_req (bdi, r);
@@ -326,7 +318,6 @@ uint32_t hlm_dftl_make_req (
 			/* [CAUTION] r is now NULL */
 		}
 	} else {
-		_nr_total++;
 #ifdef USE_THREAD
 		/* If some of the mapping entries are *not* available, put a hlm_req to queue. 
 		 * This allows other incoming requests not to be affected by a hlm_req

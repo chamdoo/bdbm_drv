@@ -246,6 +246,8 @@ fail:
 
 void bdbm_drv_exit(void)
 {
+	driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+
 	if (_bdi == NULL)
 		return;
 

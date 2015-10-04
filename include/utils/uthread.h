@@ -63,7 +63,7 @@ typedef struct {
 	bdbm_mutex_t thread_sleep;
 	pthread_cond_t thread_con;
 	pthread_t thread;
-	atomic64_t is_sleep;
+	/*atomic64_t is_sleep;*/
 
 	/* user management */
 	void* user_data;

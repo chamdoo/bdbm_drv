@@ -64,7 +64,6 @@ static bdbm_hlm_req_t* __host_block_create_hlm_req (
 		return NULL;
 	}
 
-	hlm_req->uniq_id = host_req->uniq_id;
 	hlm_req->req_type = host_req->req_type;
 	hlm_req->lpa = host_req->lpa;
 	hlm_req->len = host_req->len;

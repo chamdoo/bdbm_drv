@@ -217,7 +217,6 @@ bdbm_thread_t* bdbm_thread_create (
 	}
 
 	/* initialize bdbm_thread_t */
-	atomic64_set (&k->is_sleep, 0);
 	k->user_threadfn = user_threadfn;
 	k->user_data = (void*)user_data;
 	bdbm_mutex_init (&k->thread_done);
@@ -251,12 +250,10 @@ int bdbm_thread_schedule (bdbm_thread_t* k)
 	/* sleep until wake-up signal */
 	if ((ret = bdbm_mutex_lock (&k->thread_sleep)) == 0) {
 		/* FIXME: need to fix a time-out bug that occasionally occurs in an exceptional case */
-		atomic64_set (&k->is_sleep, 1);
 		if ((ret = pthread_cond_timedwait 
 				(&k->thread_con, &k->thread_sleep, &ts)) != 0) {
 			bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
 		}
-		atomic64_set (&k->is_sleep, 0);
 		bdbm_mutex_unlock (&k->thread_sleep);
 	} else {
 		bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));
@@ -265,10 +262,40 @@ int bdbm_thread_schedule (bdbm_thread_t* k)
 	return 0;
 }
 
+void bdbm_thread_schedule_setup (bdbm_thread_t* k)
+{	
+	int ret = 0;
+	if ((ret = bdbm_mutex_lock (&k->thread_sleep)) != 0) {
+		bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));
+	}
+}
+
+void bdbm_thread_schedule_cancel (bdbm_thread_t* k)
+{
+	bdbm_mutex_unlock (&k->thread_sleep);
+}
+
+int bdbm_thread_schedule_sleep (bdbm_thread_t* k)
+{
+	int ret = 0;
+	struct timespec ts;
+
+	/* setup waiting time */
+	clock_gettime (CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+
+	if ((ret = pthread_cond_timedwait 
+			(&k->thread_con, &k->thread_sleep, &ts)) != 0) {
+		bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
+	}
+	bdbm_mutex_unlock (&k->thread_sleep);
+
+	return ret;
+}
+
 void bdbm_thread_wakeup (bdbm_thread_t* k)
 {
 	int ret = 0;
-	int is_sleep = 0;
 
 	if (k == NULL) {
 		bdbm_warning ("k is NULL");
@@ -276,13 +303,11 @@ void bdbm_thread_wakeup (bdbm_thread_t* k)
 	}
 
 	/* send a wake-up signal */
-	if (atomic64_read (&k->is_sleep) == 1) {
-		if ((ret = bdbm_mutex_try_lock (&k->thread_sleep)) == 1) {
-			pthread_cond_signal (&k->thread_con);
-			bdbm_mutex_unlock (&k->thread_sleep);
-		} else {
-			/*bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));*/
-		}
+	if ((ret = bdbm_mutex_try_lock (&k->thread_sleep)) == 1) {
+		pthread_cond_signal (&k->thread_con);
+		bdbm_mutex_unlock (&k->thread_sleep);
+	} else {
+		/*bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));*/
 	}
 }
 

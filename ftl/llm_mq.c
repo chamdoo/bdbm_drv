@@ -148,7 +148,6 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, r);
 
-			/*
 			if (cnt % 50000 == 0) {
 #ifdef USE_RD_QUEUE
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_rd_prior_queue_get_nr_items (p->q));
@@ -156,7 +155,6 @@ int __llm_mq_thread (void* arg)
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 #endif
 			}
-			*/
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);

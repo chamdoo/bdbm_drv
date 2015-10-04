@@ -54,7 +54,6 @@ clean-kernel:
 clean-user:
 	@$(MAKE) -f Makefile.user clean
 
-
 mount:
 	sudo insmod bdbm_drv.ko
 
