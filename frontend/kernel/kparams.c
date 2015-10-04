@@ -56,11 +56,12 @@ int _param_hlm_type					= HLM_NO_BUFFER;
 
 #else /* USE_BLOCKIO_PROXY */
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
-int _param_host_type				= HOST_BLOCK;
+int _param_host_type				= HOST_PROXY;
+int _param_trim						= TRIM_ENABLE;
+
 int _param_gc_policy 				= GC_POLICY_NOT_SPECIFIED;
 int _param_wl_policy 				= WL_POLICY_NOT_SPECIFIED;
 int _param_queuing_policy			= QUEUE_NOT_SPECIFIED;
-int _param_trim						= TRIM_NOT_SPECIFIED;
 int _param_llm_type					= LLM_NOT_SPECIFIED;
 int _param_mapping_policy 			= MAPPING_POLICY_NOT_SPECIFIED;
 int _param_hlm_type					= HLM_NOT_SPECIFIED;

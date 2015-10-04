@@ -22,15 +22,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef _BDBM_HOST_BLOCKIO_PROXY_IOCTL_H
+#define _BDBM_HOST_BLOCKIO_PROXY_IOCTL_H
+
+#define BDBM_PROXY_MAX_VECS	32
+
+typedef enum {
+	PROXY_REQ_STT_FREE = 0,
+	PROXY_REQ_STT_ALLOC = 0x0100,
+	PROXY_REQ_STT_KERNEL_ALLOC = PROXY_REQ_STT_ALLOC | 0x1, 
+	PROXY_REQ_STT_USER_PROG = PROXY_REQ_STT_ALLOC | 0x2,
+	PROXY_REQ_STT_USER_DONE = PROXY_REQ_STT_ALLOC | 0x3,
+} bdbm_proxy_req_status_t;
+
 typedef struct {
-	uint32_t req_type; /* read, write, or trim */
-	uint64_t lpa; /* logical page address */
-	uint64_t len; /* legnth */
-	uint32_t kpg_flags_cnt;
-	uint8_t* kpg_flags;
-	uint32_t pptr_kpgs_cnt;
-	uint8_t** pptr_kpgs; /* data for individual kernel pages */
+	uint32_t id;
+	bdbm_proxy_req_status_t stt;
+	uint64_t bi_rw;
+	uint64_t bi_sector;	
+	uint64_t bi_size;
+	uint64_t bi_bvec_cnt;
+	uint8_t bi_bvec_data[BDBM_PROXY_MAX_VECS][KERNEL_PAGE_SIZE];	/* # of bvec is fixed to 32 by default */
 	uint8_t ret;
+	void* bio; /* not used by user-level FTL */
 } bdbm_blockio_proxy_req_t;
 
 #define BDBM_BLOCKIO_PROXY_IOCTL_NAME		"bdbm_blockio_proxy"
@@ -38,3 +52,5 @@ typedef struct {
 #define BDBM_BLOCKIO_PROXY_IOCTL_MAGIC		'Y'
 
 #define BDBM_BLOCKIO_PROXY_IOCTL_DONE		_IOWR (BDBM_BLOCKIO_PROXY_IOCTL_MAGIC, 0, int)
+
+#endif

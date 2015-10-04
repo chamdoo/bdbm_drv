@@ -9,6 +9,7 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/../../include \
 	-I$(PWD)/../../include/utils \
 	-I$(PWD)/$(FTL) \
+	-I$(PWD)/$(KERN) \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
@@ -20,9 +21,10 @@ EXTRA_CFLAGS += -D USE_BLOCKIO_PROXY
 
 bdbm_drv-y := \
 	host_blockio_proxy.o \
+	proxy_reqs_pool.o \
 	$(KERN)/kmain.o \
 	$(KERN)/kparams.o \
-	$(KERN)/ioctl.o \
+	$(KERN)/host_blkdev.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
@@ -51,3 +53,10 @@ clean-kernel:
 
 clean-user:
 	@$(MAKE) -f Makefile.user clean
+
+
+mount:
+	sudo insmod bdbm_drv.ko
+
+umount:
+	sudo rmmod bdbm_drv

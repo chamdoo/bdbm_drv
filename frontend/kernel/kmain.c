@@ -78,10 +78,14 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		bdi->ptr_host_inf = NULL;
 		break;
 	case HOST_BLOCK:
-		bdi->ptr_host_inf = &_host_block_inf;
+		bdi->ptr_host_inf = &_host_blockio_inf;
 		break;
+#if defined (USE_BLOCKIO_PROXY)
 	case HOST_PROXY:
-		/* TODO */
+		bdbm_msg ("HOST_PROXY is used");
+		bdi->ptr_host_inf = &_host_blockio_proxy_inf;
+		break;
+#endif
 	case HOST_DIRECT:
 	default:
 		bdbm_error ("invalid host type");
@@ -290,21 +294,22 @@ static void __exit bdbm_drv_exit(void)
 	pmu_display (bdi);
 	pmu_destory (bdi);
 
-	if (bdi->ptr_host_inf != NULL)
+	if (bdi->ptr_host_inf)
 		bdi->ptr_host_inf->close (bdi);
 
-	if (bdi->ptr_hlm_inf != NULL)
+	if (bdi->ptr_hlm_inf)
 		bdi->ptr_hlm_inf->destroy (bdi);
 
-	if (bdi->ptr_ftl_inf != NULL)
+	if (bdi->ptr_ftl_inf) {
 		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_ftl_inf->store)
 			bdi->ptr_ftl_inf->store (bdi, "/usr/share/bdbm_drv/ftl.dat");
 		bdi->ptr_ftl_inf->destroy (bdi);
+	}
 
-	if (bdi->ptr_llm_inf != NULL)
+	if (bdi->ptr_llm_inf)
 		bdi->ptr_llm_inf->destroy (bdi);
 
-	if (bdi->ptr_dm_inf != NULL) {
+	if (bdi->ptr_dm_inf) {
 		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_dm_inf->store)
 			bdi->ptr_dm_inf->store (bdi, "/usr/share/bdbm_drv/dm.dat");
 		bdi->ptr_dm_inf->close (bdi);

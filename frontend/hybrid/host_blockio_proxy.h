@@ -31,7 +31,7 @@ extern bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
 extern bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
 
 /* This is a real one */
-extern bdbm_hlm_inf_t _hlm_user_prox_inf;
+extern bdbm_host_inf_t _host_blockio_proxy_inf;
 
 uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi);
 void blockio_proxy_close (bdbm_drv_info_t* bdi);
