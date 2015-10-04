@@ -27,6 +27,7 @@ DMLIB := ../../devices/libramdrive/libramdrive.a
 
 SRCS := \
 	main.c \
+	host_blockio_stub.c \
 	$(USER)/uparams.c \
 	$(USER)/host_user.c \
 	$(FTL)/pmu.c \

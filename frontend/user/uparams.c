@@ -46,20 +46,22 @@ int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
 int _param_queuing_policy			= QUEUE_NO;
 int _param_trim						= TRIM_ENABLE;
+#if defined (USE_BLOCKIO_STUB)
+int _param_host_type				= HOST_STUB;
+#else
 int _param_host_type				= HOST_BLOCK;
+#endif
 int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_snapshot					= SNAPSHOT_DISABLE;
-
-/*#define USE_RISA*/
-#ifdef USE_RISA
+#if defined (USE_RISA)
 int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;
 int _param_hlm_type					= HLM_RSD;
-#else
-/*int _param_mapping_policy 			= MAPPING_POLICY_PAGE;*/
+#elif defined (USE_DFTL)
 int _param_mapping_policy 			= MAPPING_POLICY_DFTL;
-/*int _param_hlm_type					= HLM_NO_BUFFER;*/
-/*int _param_hlm_type					= HLM_BUFFER;*/
 int _param_hlm_type					= HLM_DFTL;
+#else
+int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
+int _param_hlm_type					= HLM_NO_BUFFER;
 #endif
 
 /* for kernel modules (nothing for user-level applications */
@@ -122,7 +124,7 @@ void display_default_params (bdbm_drv_info_t* bdi)
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("DRIVER CONFIGURATION");
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("mapping policy = %d (0: no ftl, 1: block-mapping, 2: page-mapping)", p->driver.mapping_policy);
+	bdbm_msg ("mapping policy = %d (1: no ftl, 2: block-mapping, 3: page-mapping)", p->driver.mapping_policy);
 	bdbm_msg ("gc policy = %d (1: merge 2: random, 3: greedy, 4: cost-benefit)", p->driver.gc_policy);
 	bdbm_msg ("wl policy = %d (1: none, 2: swap)", p->driver.wl_policy);
 	bdbm_msg ("trim mode = %d (1: enable, 2: disable)", p->driver.trim);

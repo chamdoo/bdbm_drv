@@ -236,24 +236,33 @@ int bdbm_thread_run (bdbm_thread_t* k)
 int bdbm_thread_schedule (bdbm_thread_t* k)
 {
 	int ret = 0;
+#ifdef PTHREAD_TIMEOUT
 	struct timespec ts;
+
+	/* setup waiting time */
+	clock_gettime (CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+#endif
 
 	if (k == NULL) {
 		bdbm_warning ("k is NULL");
 		return 0;
 	}
 
-	/* setup waiting time */
-	clock_gettime (CLOCK_REALTIME, &ts);
-    ts.tv_sec += 5;
-
 	/* sleep until wake-up signal */
 	if ((ret = bdbm_mutex_lock (&k->thread_sleep)) == 0) {
 		/* FIXME: need to fix a time-out bug that occasionally occurs in an exceptional case */
+#ifdef PTHREAD_TIMEOUT
 		if ((ret = pthread_cond_timedwait 
 				(&k->thread_con, &k->thread_sleep, &ts)) != 0) {
 			bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
 		}
+#else
+		if ((ret = pthread_cond_wait
+				(&k->thread_con, &k->thread_sleep)) != 0) {
+			bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
+		}
+#endif
 		bdbm_mutex_unlock (&k->thread_sleep);
 	} else {
 		bdbm_warning ("pthread lock failed: %u %s", ret, strerror (ret));
@@ -278,6 +287,7 @@ void bdbm_thread_schedule_cancel (bdbm_thread_t* k)
 int bdbm_thread_schedule_sleep (bdbm_thread_t* k)
 {
 	int ret = 0;
+#ifdef PTHREAD_TIMEOUT
 	struct timespec ts;
 
 	/* setup waiting time */
@@ -288,6 +298,13 @@ int bdbm_thread_schedule_sleep (bdbm_thread_t* k)
 			(&k->thread_con, &k->thread_sleep, &ts)) != 0) {
 		bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
 	}
+#else
+	if ((ret = pthread_cond_wait 
+			(&k->thread_con, &k->thread_sleep)) != 0) {
+		bdbm_warning ("pthread timeout: %u %s", ret, strerror (ret));
+	}
+#endif
+
 	bdbm_mutex_unlock (&k->thread_sleep);
 
 	return ret;
