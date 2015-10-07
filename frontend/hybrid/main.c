@@ -42,7 +42,6 @@ THE SOFTWARE.
 #include "params.h"
 #include "uparams.h"
 #include "debug.h"
-#include "host_user.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -58,6 +57,9 @@ THE SOFTWARE.
 #include "algo/page_ftl.h"
 #include "algo/dftl.h"
 #include "utils/ufile.h"
+
+#include "host_user.h"
+#include "host_blockio_stub.h"
 
 /* main data structure */
 bdbm_drv_info_t* _bdi = NULL;
@@ -87,8 +89,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 		bdbm_bug_on (1);
 		break;
 	case HOST_STUB:
-		bdi->ptr_host_inf = &_host_user_inf;
-		/* TODO: ***** */
+		bdi->ptr_host_inf = &_host_blockio_stub_inf;
 		break;
 	default:
 		bdbm_error ("invalid host type");
@@ -243,7 +244,7 @@ int bdbm_drv_init (void)
 	/* init performance monitor */
 	pmu_create (bdi);
 
-	bdbm_msg ("[blueDBM is registered]");
+	bdbm_msg ("[user-main] blueDBM is registered");
 
 	return 0;
 
@@ -298,12 +299,27 @@ void bdbm_drv_exit(void)
 
 	bdbm_free_atomic (_bdi);
 
-	bdbm_msg ("[blueDBM is removed]");
+	bdbm_msg ("[user-main] blueDBM is removed");
 }
 
 void signal_callback (int signum)
 {
 	bdbm_mutex_unlock (&exit_signal);
+}
+
+void run_user_ftl ()
+{
+	bdbm_drv_info_t* bdi = _bdi;
+	bdbm_host_inf_t* host = BDBM_GET_HOST_INF (bdi);
+
+	bdbm_track ();
+
+	/* do something */
+
+	/* wait for interrupts */
+	bdbm_mutex_lock (&exit_signal);
+
+	bdbm_track ();
 }
 
 int main (int argc, char** argv)
@@ -314,19 +330,19 @@ int main (int argc, char** argv)
 	bdbm_mutex_lock (&exit_signal);
 	signal (SIGINT, signal_callback);
 
-	bdbm_msg ("[main] initialize bdbm_drv");
+	bdbm_msg ("[user-main] initialize bdbm_drv");
 	if (bdbm_drv_init () == -1) {
-		bdbm_msg ("[main] initialization failed");
+		bdbm_msg ("[user-main] initialization failed");
 		return -1;
 	}
 
-	bdbm_msg ("[main] the user-level FTL is running...");
-	bdbm_mutex_lock (&exit_signal);
+	bdbm_msg ("[user-main] the user-level FTL is running...");
+	run_user_ftl ();
 
-	bdbm_msg ("[main] destroy bdbm_drv");
+	bdbm_msg ("[user-main] destroy bdbm_drv");
 	bdbm_drv_exit ();
 
-	bdbm_msg ("[main] done");
+	bdbm_msg ("[user-main] done");
 
 	return 0;
 }

@@ -159,6 +159,46 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	return 0;
 }
 
+static void __dm_setup_device_params (nand_params_t* params)
+{
+	/* user-specified parameters */
+	params->nr_channels = NR_CHANNELS;
+	params->nr_chips_per_channel = NR_CHIPS_PER_CHANNEL;
+	params->nr_blocks_per_chip = NR_BLOCKS_PER_CHIP;
+	params->nr_pages_per_block = NR_PAGES_PER_BLOCK;
+	params->page_main_size = NAND_PAGE_SIZE;
+	params->page_oob_size = NAND_PAGE_OOB_SIZE;
+	params->page_prog_time_us = NAND_PAGE_PROG_TIME_US;
+	params->page_read_time_us = NAND_PAGE_READ_TIME_US;
+	params->block_erase_time_us = NAND_BLOCK_ERASE_TIME_US;
+	params->device_type = DEVICE_TYPE_USER_RAMDRIVE;
+
+	/* other parameters derived from user parameters */
+	params->nr_blocks_per_channel = 
+		params->nr_chips_per_channel * 
+		params->nr_blocks_per_chip;
+
+	params->nr_blocks_per_ssd = 
+		params->nr_channels * 
+		params->nr_chips_per_channel * 
+		params->nr_blocks_per_chip;
+
+	params->nr_chips_per_ssd =
+		params->nr_channels * 
+		params->nr_chips_per_channel;
+
+	params->nr_pages_per_ssd =
+		params->nr_pages_per_block * 
+		params->nr_blocks_per_ssd;
+
+	params->device_capacity_in_byte = 0;
+	params->device_capacity_in_byte += params->nr_channels;
+	params->device_capacity_in_byte *= params->nr_chips_per_channel;
+	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
+	params->device_capacity_in_byte *= params->nr_pages_per_block;
+	params->device_capacity_in_byte *= params->page_main_size;
+}
+
 static int __init bdbm_drv_init (void)
 {
 	bdbm_drv_info_t* bdi = NULL;
@@ -211,6 +251,9 @@ static int __init bdbm_drv_init (void)
 			} else 
 				load = 1;
 		}
+	} else {
+		/* TEMP: fill the nand parameters */
+		__dm_setup_device_params (&bdi->ptr_bdbm_params->nand);
 	}
 
 	/* create a low-level memory manager */

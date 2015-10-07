@@ -46,7 +46,7 @@ bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (
 	bdbm_proxy_reqs_pool_t* pool = NULL;
 	int64_t i;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 	
 	/* are input arguments correct? */
 	if (nr_reqs <= 0 || reqs == NULL) {
@@ -66,12 +66,12 @@ bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (
 	INIT_LIST_HEAD (&pool->free_list);
 	pool->nr_reqs = nr_reqs;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* add items to the free list */
 	for (i = 0; i < nr_reqs; i++) {
 		pool_item_t* item = NULL;
-		bdbm_track ();
+		/*bdbm_track ();*/
 		if ((item = (pool_item_t*)bdbm_malloc 
 				(sizeof (pool_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc () failed");
@@ -79,16 +79,16 @@ bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (
 		}
 		item->mmap_req = &reqs[i];
 		item->mmap_req->id = i;
-		item->mmap_req->stt = PROXY_REQ_STT_FREE;
+		item->mmap_req->stt = REQ_STT_FREE;
 		list_add_tail (&item->list, &pool->free_list);
 	}
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* ok.. */
 	return pool;
 
 fail:
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	if (pool) {
 		bdbm_spin_lock_destory (&pool->lock);
@@ -105,11 +105,11 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 	pool_item_t* item = NULL;
 	uint64_t count = 0;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	if (!pool) return;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* free & remove items from the used_list */
 	list_for_each_safe (next, temp, &pool->used_list) {
@@ -119,7 +119,7 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 		count++;
 	}
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* free & remove items from the free_list */
 	list_for_each_safe (next, temp, &pool->free_list) {
@@ -129,20 +129,20 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 		count++;
 	}
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	if (count != pool->nr_reqs) {
 		bdbm_warning ("oops! count != pool->nr_reqs (%lld != %lld)",
 			count, pool->nr_reqs);
 	}
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* free other stuff */
 	bdbm_spin_lock_destory (&pool->lock);
 	bdbm_free (pool);
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 }
 
 bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
@@ -151,7 +151,7 @@ bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
 	struct list_head* pos = NULL;
 	pool_item_t* item = NULL;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* see if there are free items in the free_list */
 	list_for_each (pos, &pool->free_list) {
@@ -160,22 +160,21 @@ bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
 	}
 
 	if (item) {
-		bdbm_track ();
+		/*bdbm_track ();*/
 
 		/* move it to the used_list */
-		bdbm_bug_on (item->mmap_req->stt != PROXY_REQ_STT_FREE);
-		item->mmap_req->stt = PROXY_REQ_STT_KERNEL_ALLOC;
+		bdbm_bug_on (item->mmap_req->stt != REQ_STT_FREE);
 		list_del (&item->list);
 		list_add_tail (&item->list, &pool->used_list);
 		
-		bdbm_track ();
+		/*bdbm_track ();*/
 	} else {
-		bdbm_track ();
+		/*bdbm_track ();*/
 		/* oops! there is no free item */
 		return NULL;
 	}
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 	return item->mmap_req;
 }
 
@@ -186,7 +185,7 @@ void bdbm_proxy_reqs_pool_free_item (
 	struct list_head* pos = NULL;
 	pool_item_t* item = NULL;
 
-	bdbm_track ();
+	/*bdbm_track ();*/
 
 	/* see if there are free items in the free_list.
 	 * NOTE: there are only few items in the lists, so it does not affect the
@@ -196,9 +195,9 @@ void bdbm_proxy_reqs_pool_free_item (
 		item = list_entry (pos, pool_item_t, list);
 		if (item && item->mmap_req) {
 			if (item->mmap_req->id == req->id) {
-				bdbm_track ();
+				/*bdbm_track ();*/
 				bdbm_bug_on (item->mmap_req != req);
-				bdbm_bug_on (item->mmap_req->stt == PROXY_REQ_STT_FREE);
+				bdbm_bug_on (item->mmap_req->stt == REQ_STT_FREE);
 				/* found it! */
 				break;
 			}
@@ -207,13 +206,13 @@ void bdbm_proxy_reqs_pool_free_item (
 	}
 
 	if (item) {
-		bdbm_track ();
+		/*bdbm_track ();*/
 		/* move it to the used_list */
-		item->mmap_req->stt = PROXY_REQ_STT_FREE;
+		item->mmap_req->stt = REQ_STT_FREE;
 		list_del (&item->list);
 		list_add_tail (&item->list, &pool->free_list);
 	} else {
-		bdbm_track ();
+		/*bdbm_track ();*/
 		/* oops! there is no free item */
 		bdbm_warning ("oops! cannot find the request in the used_list (%u)", req->id);
 	}

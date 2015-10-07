@@ -28,11 +28,13 @@ THE SOFTWARE.
 #define BDBM_PROXY_MAX_VECS	32
 
 typedef enum {
-	PROXY_REQ_STT_FREE = 0,
-	PROXY_REQ_STT_ALLOC = 0x0100,
-	PROXY_REQ_STT_KERNEL_ALLOC = PROXY_REQ_STT_ALLOC | 0x1, 
-	PROXY_REQ_STT_USER_PROG = PROXY_REQ_STT_ALLOC | 0x2,
-	PROXY_REQ_STT_USER_DONE = PROXY_REQ_STT_ALLOC | 0x3,
+	REQ_STT_ALLOC = 0x0100,
+
+	REQ_STT_FREE = 0,
+	REQ_STT_KERN_INIT = REQ_STT_ALLOC | 0x1, 
+	REQ_STT_KERN_SENT = REQ_STT_ALLOC | 0x2,
+	REQ_STT_USER_PROG = REQ_STT_ALLOC | 0x3,
+	REQ_STT_USER_DONE = REQ_STT_ALLOC | 0x4,
 } bdbm_proxy_req_status_t;
 
 typedef struct {
@@ -44,7 +46,7 @@ typedef struct {
 	uint64_t bi_bvec_cnt;
 	uint8_t bi_bvec_data[BDBM_PROXY_MAX_VECS][KERNEL_PAGE_SIZE];	/* # of bvec is fixed to 32 by default */
 	uint8_t ret;
-	void* bio; /* not used by user-level FTL */
+	void* bio; /* only used by the kernel proxy */
 } bdbm_blockio_proxy_req_t;
 
 #define BDBM_BLOCKIO_PROXY_IOCTL_NAME		"bdbm_blockio_proxy"
