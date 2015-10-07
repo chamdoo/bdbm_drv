@@ -384,8 +384,8 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 
 	bdbm_mutex_lock (&p->mutex);
 
+	/* blockio_proxy was closed */
 	if (!_bdi) {
-		/* blockio_proxy was closed */
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
 		return;
