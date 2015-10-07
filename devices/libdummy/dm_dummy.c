@@ -32,12 +32,11 @@ THE SOFTWARE.
 #include "debug.h"
 #include "platform.h"
 #include "params.h"
+#include "utime.h"
 
 #include "dm_dummy.h"
 #include "dm_params.h"
-#include "utils/utime.h"
 
-/*#include "utils/uthread.h"*/
 
 bdbm_dm_inf_t _bdbm_dm_inf = {
 	.ptr_private = NULL,

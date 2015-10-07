@@ -42,12 +42,12 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "hlm_nobuf.h"
 #include "hlm_rsd.h"
+#include "uthash.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "queue/queue.h"
-#include "3rd/uthash.h"
 
 
 /* interface for hlm_rsd */

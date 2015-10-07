@@ -697,10 +697,8 @@ int bdbm_dm_stub_init (void)
 		cdev_del (&c_dev);
 		unregister_chrdev_region (devnum, MINOR_CNT);
 		return PTR_ERR (dev_ret);
+	}
 	
-	
-	proxy_req->bio = (void*)bio;}
-
 	bdbm_msg ("bdbm_dm_stub is installed: %s (major:%d minor:%d)", 
 		BDBM_DM_IOCTL_DEVNAME, 
 		MAJOR(devnum), MINOR(devnum));

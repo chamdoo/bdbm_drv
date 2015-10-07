@@ -2,22 +2,25 @@
 #
 
 FTL := ../../ftl
-COMMON := ../../include
+INCLUDE := ../../include
+LIB := ../../lib
 
 KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
-	-I$(PWD)/../../include \
-	-I$(PWD)/../../include/utils \
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(LIB)/utils \
+	-I$(PWD)/$(LIB)/3rd \
 	-I$(PWD)/$(FTL) \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
 EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D USE_PMU
-#EXTRA_CFLAGS += -D USE_KTIMER
 EXTRA_CFLAGS += -D KERNEL_MODE
+
+#EXTRA_CFLAGS += -D USE_KTIMER
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
@@ -42,9 +45,9 @@ bdbm_drv-y := \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
 	$(FTL)/queue/rd_prior_queue.o \
-	$(COMMON)/utils/utime.o \
-	$(COMMON)/utils/ufile.o \
-	$(COMMON)/utils/uthread.o \
+	$(LIB)/utils/utime.o \
+	$(LIB)/utils/ufile.o \
+	$(LIB)/utils/uthread.o \
 
 obj-m := bdbm_drv.o
 

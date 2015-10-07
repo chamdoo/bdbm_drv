@@ -3,15 +3,16 @@
 
 CC = gcc
 FTL := ../../ftl
-COMMON := ../../include
+INCLUDE := ../../include
+LIB := ../../lib
+
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
-#CFLAGS := -Wall -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
 
-INCLUDES = -I$(PWD)/../../include \
-		   -I$(PWD)/../../include/utils \
-		   -I$(PWD)/$(FTL) \
-		   -I$(PWD)/../../devices/cpp 	# temp
+INCLUDES = -I$(PWD)/$(INCLUDE) \
+		   -I$(PWD)/$(LIB)/utils \
+		   -I$(PWD)/$(LIB)/3rd \
+		   -I$(PWD)/$(FTL)
 
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
@@ -43,11 +44,11 @@ SRCS := \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(FTL)/queue/rd_prior_queue.c \
-	$(COMMON)/utils/utime.c \
-	$(COMMON)/utils/ufile.c \
-	$(COMMON)/utils/uthread.c \
-	$(COMMON)/utils/upage.c \
-	$(COMMON)/3rd/uilog.c \
+	$(LIB)/utils/utime.c \
+	$(LIB)/utils/ufile.c \
+	$(LIB)/utils/uthread.c \
+	$(LIB)/utils/upage.c \
+	$(LIB)/3rd/uilog.c \
 	$(DMLIB) \
 
 

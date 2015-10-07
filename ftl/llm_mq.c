@@ -41,11 +41,11 @@ THE SOFTWARE.
 #include "llm_mq.h"
 #include "uthread.h"
 #include "pmu.h"
+#include "utime.h"
 
 #include "queue/queue.h"
 #include "queue/prior_queue.h"
 #include "queue/rd_prior_queue.h"
-#include "utils/utime.h"
 
 
 /* NOTE: This serializes all of the requests from the host file system; 

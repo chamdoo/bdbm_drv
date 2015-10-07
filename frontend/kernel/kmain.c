@@ -41,14 +41,14 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_dftl.h"
 #include "hlm_rsd.h"
-#include "hw.h"
+#include "devices.h"
 #include "pmu.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "algo/dftl.h"
-#include "utils/ufile.h"
+#include "ufile.h"
 
 #if defined (USE_BLOCKIO_PROXY)
 #include "host_blockio_proxy.h"

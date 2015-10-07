@@ -30,8 +30,8 @@ THE SOFTWARE.
 #elif defined (USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
-#include "3rd/uilog.h"
-#include "utils/upage.h"
+#include "uilog.h"
+#include "upage.h"
 
 #else
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
@@ -40,9 +40,9 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "params.h"
 #include "debug.h"
+#include "utime.h"
+#include "ufile.h"
 
-#include "utils/utime.h"
-#include "utils/ufile.h"
 #include "algo/abm.h"
 #include "algo/dftl_map.h"
 

@@ -2,11 +2,15 @@
 #
 CC = gcc 
 OUT = libdummy.a
+INCLUDE = ../../include
+LIB = ../../lib
+COMMON = ../common
 
 INCLUDES := \
-	-I$(PWD)/../../include \
-	-I$(PWD)/../../include/utils \
-	-I$(PWD)/../cpp
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(LIB)/utils \
+	-I$(PWD)/$(LIB)/3rd \
+	-I$(PWD)/$(COMMON)
 
 CFLAGS := \
 	-g \
@@ -23,8 +27,8 @@ CFLAGS += \
 
 LIBSRC := \
 	dm_dummy.c \
-	../cpp/dm_main.c \
-	../cpp/dm_params.c \
+	$(COMMON)/dm_main.c \
+	$(COMMON)/dm_params.c \
 
 LIBOBJ=$(LIBSRC:.c=.o)
 
@@ -36,4 +40,4 @@ $(OUT): $(LIBOBJ) $(LIBSRC)
 
 clean:
 	@$(RM) *.o core *~ libdummy.a
-	@cd ../cpp; $(RM) *.o
+	@cd $(COMMON); $(RM) *.o

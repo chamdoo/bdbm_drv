@@ -2,12 +2,15 @@
 #
 CC = gcc 
 OUT = libramdrive.a
-#LIBS =  -lpthread
+INCLUDE = ../../include
+LIB = ../../lib
+COMMON = ../common
 
 INCLUDES := \
-	-I$(PWD)/../../include \
-	-I$(PWD)/../../include/utils \
-	-I$(PWD)/../cpp
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(LIB)/utils \
+	-I$(PWD)/$(LIB)/3rd \
+	-I$(PWD)/$(COMMON)
 
 CFLAGS := \
 	-g \
@@ -22,17 +25,9 @@ CFLAGS += \
 	-D USE_KTIMER \
 	-D USER_MODE
 
-#LIBSRC := \
-	../../include/utils/ufile.c \
-	../../include/utils/utime.c \
-	../cpp/dm_main.c \
-	../cpp/dm_params.c \
-	../ramdrive/dev_ramssd.c \
-	../ramdrive/dm_ramdrive.c \
-
 LIBSRC := \
-	../cpp/dm_main.c \
-	../cpp/dm_params.c \
+	$(COMMON)/dm_main.c \
+	$(COMMON)/dm_params.c \
 	../ramdrive/dev_ramssd.c \
 	../ramdrive/dm_ramdrive.c \
 
@@ -46,5 +41,5 @@ $(OUT): $(LIBOBJ)
 
 clean:
 	@$(RM) *.o core *~ libramdrive.a
-	@cd ../cpp; $(RM) *.o
+	@cd $(COMMON); $(RM) *.o
 	@cd ../ramdrive; $(RM) *.o

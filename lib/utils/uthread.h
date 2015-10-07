@@ -53,7 +53,7 @@ typedef struct {
 #include <stdint.h>
 #include <pthread.h>
 
-#include "3rd/uatomic64.h"
+#include "uatomic64.h"
 
 #define SIGKILL	0xCCCC
 

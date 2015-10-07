@@ -1,23 +1,28 @@
 # Makefile for BlueDBM
 #
 
+INCLUDE = ../../include
+LIB = ../../lib
+COMMON = ../common
+
 EXTRA_CFLAGS := \
-	-I$(PWD)/../../include \
-	-I$(PWD)/../../include/utils \
-	-I$(PWD)/../cpp \
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(LIB)/utils \
+	-I$(PWD)/$(LIB)/3rd \
+	-I$(PWD)/$(COMMON) \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
 	-D CONFIG_DEVICE_TYPE_RAMDRIVE_INTR \
-	-D KERNEL_MODE \
+	-D KERNEL_MODE
 
 risa_dev_ramdrive_intr-y := \
-	../../include/utils/ufile.o \
-	../../include/utils/utime.o \
-	../cpp/dm_main.o \
-	../cpp/dm_params.o \
-	../cpp/dm_stub.o \
+	$(LIB)/utils/ufile.o \
+	$(LIB)/utils/utime.o \
+	$(COMMON)/dm_main.o \
+	$(COMMON)/dm_params.o \
+	$(COMMON)/dm_stub.o \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
 

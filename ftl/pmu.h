@@ -1,7 +1,7 @@
 #ifndef __BLUEDBM_PMU_H
 #define __BLUEDBM_PMU_H
 
-#include "utils/utime.h"
+#include "utime.h"
 #include "platform.h"
 
 /* performance monitor functions */

@@ -32,8 +32,8 @@ THE SOFTWARE.
 #include "host_user.h"
 #include "params.h"
 
-#include "utils/utime.h"
-#include "utils/uthread.h"
+#include "utime.h"
+#include "uthread.h"
 
 
 bdbm_host_inf_t _host_user_inf = {

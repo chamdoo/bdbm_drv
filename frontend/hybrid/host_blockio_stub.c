@@ -35,8 +35,8 @@ THE SOFTWARE.
 #include "debug.h"
 #include "platform.h"
 #include "params.h"
-#include "utils/utime.h"
-#include "utils/uthread.h"
+#include "utime.h"
+#include "uthread.h"
 
 #include "host_blockio_stub.h"
 #include "host_blockio_proxy_ioctl.h"

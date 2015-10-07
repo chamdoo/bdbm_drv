@@ -37,8 +37,8 @@ THE SOFTWARE.
 #include "debug.h"
 #include "platform.h"
 #include "bdbm_drv.h"
+#include "ufile.h"
 #include "dev_ramssd.h"
-#include "utils/ufile.h"
 
 /* Functions for Managing DRAM SSD */
 static uint8_t* __ramssd_page_addr (

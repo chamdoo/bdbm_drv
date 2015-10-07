@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "uparams.h"
 #include "debug.h"
 #include "host_user.h"
+#include "ufile.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -49,14 +50,13 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_dftl.h"
 #include "hlm_rsd.h"
-#include "hw.h"
+#include "devices.h"
 #include "pmu.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "algo/dftl.h"
-#include "utils/ufile.h"
 
 /* main data structure */
 bdbm_drv_info_t* _bdi = NULL;
@@ -289,7 +289,7 @@ void bdbm_drv_exit(void)
 
 #include "bdbm_drv.h"
 #include "platform.h"
-#include "3rd/uatomic64.h"
+#include "uatomic64.h"
 
 void host_thread_fn (void *data) 
 {

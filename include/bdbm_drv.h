@@ -30,9 +30,9 @@ THE SOFTWARE.
 
 #elif defined(USER_MODE)
 #include <stdint.h>
-#include "3rd/uatomic.h"
-#include "3rd/uatomic64.h"
-#include "3rd/ulist.h"
+#include "uatomic.h"
+#include "uatomic64.h"
+#include "ulist.h"
 
 #define KERNEL_PAGE_SIZE	4096	/* a default page size */
 
@@ -41,7 +41,7 @@ THE SOFTWARE.
 #endif
 
 #include "params.h"
-#include "utils/utime.h"
+#include "utime.h"
 #include "platform.h"
 
 /* useful macros */

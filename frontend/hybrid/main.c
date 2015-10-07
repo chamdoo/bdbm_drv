@@ -42,6 +42,8 @@ THE SOFTWARE.
 #include "params.h"
 #include "uparams.h"
 #include "debug.h"
+#include "devices.h"
+#include "ufile.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -49,14 +51,12 @@ THE SOFTWARE.
 #include "hlm_buf.h"
 #include "hlm_dftl.h"
 #include "hlm_rsd.h"
-#include "hw.h"
 #include "pmu.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "algo/dftl.h"
-#include "utils/ufile.h"
 
 #include "host_user.h"
 #include "host_blockio_stub.h"
