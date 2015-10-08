@@ -3,14 +3,14 @@
 CC = gcc 
 OUT = libramdrive.a
 INCLUDE = ../../include
-LIB = ../../lib
-COMMON = ../common
+COMMON = ../../common
+DM_COMMON = ../common
 
 INCLUDES := \
 	-I$(PWD)/$(INCLUDE) \
-	-I$(PWD)/$(LIB)/utils \
-	-I$(PWD)/$(LIB)/3rd \
-	-I$(PWD)/$(COMMON)
+	-I$(PWD)/$(COMMON)/utils \
+	-I$(PWD)/$(COMMON)/3rd \
+	-I$(PWD)/$(DM_COMMON)
 
 CFLAGS := \
 	-g \
@@ -26,8 +26,8 @@ CFLAGS += \
 	-D USER_MODE
 
 LIBSRC := \
-	$(COMMON)/dm_main.c \
-	$(COMMON)/dm_params.c \
+	$(DM_COMMON)/dm_main.c \
+	$(DM_COMMON)/dm_params.c \
 	../ramdrive/dev_ramssd.c \
 	../ramdrive/dm_ramdrive.c \
 
@@ -41,5 +41,5 @@ $(OUT): $(LIBOBJ)
 
 clean:
 	@$(RM) *.o core *~ libramdrive.a
-	@cd $(COMMON); $(RM) *.o
+	@cd $(DM_COMMON); $(RM) *.o
 	@cd ../ramdrive; $(RM) *.o

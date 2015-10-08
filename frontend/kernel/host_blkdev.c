@@ -78,7 +78,7 @@ exit:
 
 int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 {
-	nand_params_t* np = &_bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (_bdi);
 	int nr_sectors = np->device_capacity_in_byte >> 9;
 
 	/* NOTE: Heads * Cylinders * Sectors = # of sectors (512B) in SSDs */
@@ -201,8 +201,8 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	}
 	blk_queue_make_request (bdbm_device.queue, fn);
 	blk_queue_logical_block_size (bdbm_device.queue, p->driver.kernel_sector_size);
-	blk_queue_io_min (bdbm_device.queue, p->nand.page_main_size);
-	blk_queue_io_opt (bdbm_device.queue, p->nand.page_main_size);
+	blk_queue_io_min (bdbm_device.queue, p->device.page_main_size);
+	blk_queue_io_opt (bdbm_device.queue, p->device.page_main_size);
 
 	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
 
@@ -236,7 +236,7 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 
 	{
 		uint64_t capacity;
-		capacity = p->nand.device_capacity_in_byte * 0.9;
+		capacity = p->device.device_capacity_in_byte * 0.9;
 		/*capacity = p->nand.device_capacity_in_byte;*/
 		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);

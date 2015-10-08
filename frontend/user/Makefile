@@ -4,14 +4,14 @@
 CC = gcc
 FTL := ../../ftl
 INCLUDE := ../../include
-LIB := ../../lib
+COMMON := ../../common
 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
 
 INCLUDES = -I$(PWD)/$(INCLUDE) \
-		   -I$(PWD)/$(LIB)/utils \
-		   -I$(PWD)/$(LIB)/3rd \
+		   -I$(PWD)/$(COMMON)/utils \
+		   -I$(PWD)/$(COMMON)/3rd \
 		   -I$(PWD)/$(FTL)
 
 CFLAGS += -D HASH_BLOOM=20 \
@@ -20,9 +20,9 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USER_MODE \
 		  -D USE_PMU \
 
-#DMLIB := ../../devices/libdummy/libdummy.a
-DMLIB := ../../devices/libramdrive/libramdrive.a
-#DMLIB := dm_proxy.c
+#DMCOMMON := ../../devices/libdummy/libdummy.a
+DMCOMMON := ../../devices/libramdrive/libramdrive.a
+#DMCOMMON := dm_proxy.c
 
 SRCS := \
 	main.c \
@@ -44,15 +44,15 @@ SRCS := \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(FTL)/queue/rd_prior_queue.c \
-	$(LIB)/utils/utime.c \
-	$(LIB)/utils/ufile.c \
-	$(LIB)/utils/uthread.c \
-	$(LIB)/utils/upage.c \
-	$(LIB)/3rd/uilog.c \
-	$(DMLIB) \
+	$(COMMON)/utils/utime.c \
+	$(COMMON)/utils/ufile.c \
+	$(COMMON)/utils/uthread.c \
+	$(COMMON)/utils/upage.c \
+	$(COMMON)/3rd/uilog.c \
+	$(DMCOMMON) \
 
 
-libftl: $(SRCS) $(DMLIB)
+libftl: $(SRCS) $(DMCOMMON)
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:

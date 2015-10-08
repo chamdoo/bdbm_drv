@@ -76,9 +76,9 @@ typedef struct {
 } dftl_mapping_table_t;
 
 
-dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np);
+dftl_mapping_table_t* bdbm_dftl_create_mapping_table (bdbm_device_params_t* np);
 void bdbm_dftl_destroy_mapping_table (dftl_mapping_table_t* mt);
-void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np);
+void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, bdbm_device_params_t* np);
 
 /* management of mapping entres */
 mapping_entry_t bdbm_dftl_get_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa);

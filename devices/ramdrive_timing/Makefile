@@ -2,14 +2,14 @@
 #
 
 INCLUDE = ../../include
-LIB = ../../lib
-COMMON = ../common
+COMMON = ../../common
+DM_COMMON = ../common
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
-	-I$(PWD)/$(LIB)/utils \
-	-I$(PWD)/$(LIB)/3rd \
-	-I$(PWD)/$(COMMON) \
+	-I$(PWD)/$(COMMON)/utils \
+	-I$(PWD)/$(COMMON)/3rd \
+	-I$(PWD)/$(DM_COMMON) \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
@@ -18,12 +18,12 @@ EXTRA_CFLAGS += \
 	-D KERNEL_MODE
 
 risa_dev_ramdrive_timing-y := \
-	$(LIB)/utils/ufile.o \
-	$(LIB)/utils/utime.o \
-	$(LIB)/utils/uthread.o \
-	$(COMMON)/dm_main.o \
-	$(COMMON)/dm_params.o \
-	$(COMMON)/dm_stub.o \
+	$(COMMON)/utils/ufile.o \
+	$(COMMON)/utils/utime.o \
+	$(COMMON)/utils/uthread.o \
+	$(DM_COMMON)/dm_main.o \
+	$(DM_COMMON)/dm_params.o \
+	$(DM_COMMON)/dm_stub.o \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
 
@@ -53,5 +53,3 @@ kernel_clean:
 .PHONY: clean
 clean: kernel_clean
 	@$(RM) -rf Module.markers modules.order
-	@cd ../cpp; rm *.o
-

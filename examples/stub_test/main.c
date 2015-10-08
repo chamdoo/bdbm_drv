@@ -122,7 +122,7 @@ void delete_llm_req (bdbm_llm_req_t* r)
 }
 
 
-nand_params_t np;
+bdbm_device_params_t np;
 
 int main2(int argc, char** argv)
 {
@@ -130,7 +130,7 @@ int main2(int argc, char** argv)
 	int ret = 0;
 	struct pollfd fds[1];
 	uint8_t* punit_status = NULL;
-	nand_params_t np;
+	bdbm_device_params_t np;
 
 	if ((fd = open (BDBM_DM_IOCTL_DEVNAME, O_RDWR)) < 0) {
 		printf ("error: could not open a character device (re = %d)\n", fd);

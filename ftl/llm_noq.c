@@ -70,8 +70,8 @@ uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 
 	/* get the total number of parallel units */
 	p->nr_punits =
-		bdi->ptr_bdbm_params->nand.nr_channels *
-		bdi->ptr_bdbm_params->nand.nr_chips_per_channel;
+		bdi->ptr_bdbm_params->device.nr_channels *
+		bdi->ptr_bdbm_params->device.nr_chips_per_channel;
 
 	/* create completion locks for parallel units */
 	if ((p->punit_locks = (bdbm_mutex_t*)bdbm_malloc_atomic
@@ -122,7 +122,7 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 	/* get a parallel unit ID */
 	punit_id = llm_req->phyaddr->channel_no * 
-		BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
+		BDBM_GET_DEVICE_PARAMS (bdi)->nr_chips_per_channel +
 		llm_req->phyaddr->chip_no;
 
 	/* wait until a parallel unit becomes idle */
@@ -162,7 +162,7 @@ void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 	/* get a parallel unit ID */
 	punit_id = llm_req->phyaddr->channel_no * 
-		BDBM_GET_NAND_PARAMS (bdi)->nr_chips_per_channel +
+		BDBM_GET_DEVICE_PARAMS (bdi)->nr_chips_per_channel +
 		llm_req->phyaddr->chip_no;
 
 	/* complete a lock */

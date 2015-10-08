@@ -135,13 +135,13 @@ void display_default_params (bdbm_drv_info_t* bdi)
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("DEVICE PARAMETERS");
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("# of channels = %llu", p->nand.nr_channels);
-	bdbm_msg ("# of chips per channel = %llu", p->nand.nr_chips_per_channel);
-	bdbm_msg ("# of blocks per chip = %llu", p->nand.nr_blocks_per_chip);
-	bdbm_msg ("# of pages per block = %llu", p->nand.nr_pages_per_block);
-	bdbm_msg ("page main size  = %llu bytes", p->nand.page_main_size);
-	bdbm_msg ("page oob size = %llu bytes", p->nand.page_oob_size);
-	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", p->nand.device_type);
+	bdbm_msg ("# of channels = %llu", p->device.nr_channels);
+	bdbm_msg ("# of chips per channel = %llu", p->device.nr_chips_per_channel);
+	bdbm_msg ("# of blocks per chip = %llu", p->device.nr_blocks_per_chip);
+	bdbm_msg ("# of pages per block = %llu", p->device.nr_pages_per_block);
+	bdbm_msg ("page main size  = %llu bytes", p->device.page_main_size);
+	bdbm_msg ("page oob size = %llu bytes", p->device.page_oob_size);
+	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", p->device.device_type);
 	bdbm_msg ("");
 }
 

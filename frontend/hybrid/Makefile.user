@@ -4,15 +4,15 @@
 CC = gcc
 FTL := ../../ftl
 INCLUDE := ../../include
-LIB := ../../lib
+COMMON := ../../common
 USER := ../user
 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
 
 INCLUDES = -I$(PWD)/$(INCLUDE) \
-		   -I$(PWD)/$(LIB)/utils \
-		   -I$(PWD)/$(LIB)/3rd \
+		   -I$(PWD)/$(COMMON)/utils \
+		   -I$(PWD)/$(COMMON)/3rd \
 		   -I$(PWD)/$(FTL) \
 		   -I$(PWD)/$(USER)
 
@@ -47,11 +47,11 @@ SRCS := \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(FTL)/queue/rd_prior_queue.c \
-	$(LIB)/utils/utime.c \
-	$(LIB)/utils/ufile.c \
-	$(LIB)/utils/uthread.c \
-	$(LIB)/utils/upage.c \
-	$(LIB)/3rd/uilog.c \
+	$(COMMON)/utils/utime.c \
+	$(COMMON)/utils/ufile.c \
+	$(COMMON)/utils/uthread.c \
+	$(COMMON)/utils/upage.c \
+	$(COMMON)/3rd/uilog.c \
 	$(DMLIB) \
 
 libftl: $(SRCS) $(DMLIB)

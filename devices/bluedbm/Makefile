@@ -7,6 +7,10 @@ EXTRA_CFLAGS = -D BOARD_VC707
 BOARDDIR = $(BOARD)/jni
 CPPDIR = connectal/cpp
 
+INCLUDE = ../../include
+COMMON = ../../common
+DM_COMMON = ../common
+
 KBUILD_EXTRA_SYMBOLS := \
 	$(PWD)/connectal/drivers/pcieportal/Module.symvers \
 	$(PWD)/connectal/drivers/portalmem/Module.symvers
@@ -20,9 +24,10 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/connectal/cpp \
 	-I$(PWD)/connectal/drivers/pcieportal \
 	-I$(PWD)/connectal/drivers/portalmem \
-	-I$(PWD)/../../include \
-	-I$(PWD)/../../include/utils \
-	-I$(PWD)/../cpp \
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(COMMON)/utils \
+	-I$(PWD)/$(COMMON)/3rd \
+	-I$(PWD)/$(DM_COMMON) \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
@@ -31,10 +36,10 @@ EXTRA_CFLAGS += \
 	-D KERNEL_MODE \
 
 risa_dev_bluedbm-y := \
-	../cpp/dm_main.o \
-	../cpp/dm_params.o \
-	../cpp/dm_stub.o \
 	dm_bluedbm.o \
+	$(DM_COMMON)/dm_main.o \
+	$(DM_COMMON)/dm_params.o \
+	$(DM_COMMON)/dm_stub.o \
 	$(BOARDDIR)/MMURequest.o \
 	$(BOARDDIR)/MMUIndication.o \
 	$(BOARDDIR)/FlashIndication.o \

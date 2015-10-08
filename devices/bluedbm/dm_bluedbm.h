@@ -29,7 +29,7 @@ THE SOFTWARE.
 
 extern bdbm_dm_inf_t _dm_bluedbm_inf;
 
-uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, nand_params_t* params);
+uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
 uint32_t dm_bluedbm_open (bdbm_drv_info_t* bdi);
 void dm_bluedbm_close (bdbm_drv_info_t* bdi);
 uint32_t dm_bluedbm_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);

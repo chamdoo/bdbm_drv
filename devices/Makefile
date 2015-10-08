@@ -1,24 +1,26 @@
-.PHONY: all bluedbm ramdrive ramdrive_intr ramdrive_timing libdummy #dragonfire  
-all: all bluedbm ramdrive ramdrive_intr ramdrive_timing libdummy #dragonfire
+.PHONY: all bluedbm ramdrive ramdrive_intr ramdrive_timing libdummy libramdrive #dragonfire  
+all: all bluedbm ramdrive ramdrive_intr ramdrive_timing libdummy libramdrive #dragonfire
 
 bluedbm:
-	cd bluedbm; $(MAKE) 
+	cd bluedbm; $(MAKE) clean; $(MAKE)
 
 ramdrive:
-	cd ramdrive; $(MAKE)
+	cd ramdrive; $(MAKE) clean; $(MAKE)
 
 ramdrive_intr:
-	cd ramdrive_intr; $(MAKE)
+	cd ramdrive_intr; $(MAKE) clean; $(MAKE)
 
 ramdrive_timing:
-	cd ramdrive_timing; $(MAKE)
+	cd ramdrive_timing; $(MAKE) clean; $(MAKE)
 
 libdummy:
-	cd libdummy; $(MAKE)
+	cd libdummy; $(MAKE) clean; $(MAKE)
+
+libramdrive:
+	cd libramdrive; $(MAKE) clean; $(MAKE)
 
 dragonfire:
-	cd dragonfire; $(MAKE)
-
+	cd dragonfire; $(MAKE) clean; $(MAKE)
 
 .PHONY: clean 
 clean: 
@@ -27,4 +29,5 @@ clean:
 	@cd ramdrive_intr; $(MAKE) clean
 	@cd ramdrive_timing; $(MAKE) clean
 	@cd libdummy; $(MAKE) clean
+	@cd libramdrive; $(MAKE) clean
 	#@cd ramdrive_dragonfire; $(MAKE) clean

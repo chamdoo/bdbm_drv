@@ -40,7 +40,7 @@ bdbm_raw_flash_t* rf = NULL;
 uint8_t* temp_main = NULL;
 uint8_t* temp_oob = NULL;
 
-static void run_sync_test (nand_params_t* np)
+static void run_sync_test (bdbm_device_params_t* np)
 {
 	int channel = 0, chip = 0, block = 0, page = 0, lpa = 0, tagid = 0;
 	uint8_t** main_page = NULL;
@@ -187,7 +187,7 @@ static void run_sync_test (nand_params_t* np)
 	vfree (oob_page);
 }
 
-static void run_async_test (nand_params_t* np, int check_value)
+static void run_async_test (bdbm_device_params_t* np, int check_value)
 {
 	int channel = 0, chip = 0, block = 0, page = 0, lpa = 0, tagid = 0;
 	uint8_t** main_page = NULL;
@@ -376,7 +376,7 @@ static void run_async_test (nand_params_t* np, int check_value)
 
 static int __init raw_flash_init (void)
 {
-	nand_params_t* np;
+	bdbm_device_params_t* np;
 
 	if ((rf = bdbm_raw_flash_init ()) == NULL)
 		return -1;

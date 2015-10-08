@@ -67,8 +67,8 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_trim_req (
 	struct bio* bio)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
-	driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	uint64_t nr_secs_per_fp = 0;
 
 	nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;
@@ -116,7 +116,7 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_rq_req (
 {
 	struct bio_vec *bvec = NULL;
 	bdbm_hlm_req_t* hlm_req = NULL;
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	uint32_t loop = 0;
 	uint32_t kpg_loop = 0;
@@ -229,7 +229,7 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_req (
 	struct bio* bio)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t nr_secs_per_kp = 0;
 
 	/* get # of sectors per flash page */
@@ -268,11 +268,11 @@ static void __host_blockio_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
-	nand_params_t* np = NULL;
+	bdbm_device_params_t* np = NULL;
 	uint32_t kpg_loop = 0;
 	uint32_t nr_kp_per_fp = 0;
 
-	np = &bdi->ptr_bdbm_params->nand;
+	np = BDBM_GET_DEVICE_PARAMS (bdi);
 	nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* temp */
@@ -382,7 +382,7 @@ void host_blockio_close (bdbm_drv_info_t* bdi)
 
 void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
 {
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_host_blockio_private_t* p = (bdbm_host_blockio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_hlm_req_t* hlm_req = NULL;
 	struct bio* bio = (struct bio*)req;

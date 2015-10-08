@@ -47,7 +47,7 @@ THE SOFTWARE.
 #include "algo/dftl_map.h"
 
 
-dftl_mapping_table_t* bdbm_dftl_create_mapping_table (nand_params_t* np)
+dftl_mapping_table_t* bdbm_dftl_create_mapping_table (bdbm_device_params_t* np)
 {
 	dftl_mapping_table_t* mt = NULL;
 	uint64_t i;
@@ -139,7 +139,7 @@ void bdbm_dftl_destroy_mapping_table (dftl_mapping_table_t* mt)
 	bdbm_free (mt);
 }
 
-void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, nand_params_t* np)
+void bdbm_dftl_init_mapping_table (dftl_mapping_table_t* mt, bdbm_device_params_t* np)
 {
 	uint64_t i = 0;
 	struct list_head* next, *temp;

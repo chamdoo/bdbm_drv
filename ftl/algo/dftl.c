@@ -94,7 +94,7 @@ typedef struct {
 
 
 uint32_t __bdbm_dftl_get_active_blocks (
-	nand_params_t* np,
+	bdbm_device_params_t* np,
 	bdbm_abm_info_t* bai,
 	bdbm_abm_block_t** bab)
 {
@@ -119,7 +119,7 @@ uint32_t __bdbm_dftl_get_active_blocks (
 }
 
 bdbm_abm_block_t** __bdbm_dftl_create_active_blocks (
-	nand_params_t* np,
+	bdbm_device_params_t* np,
 	bdbm_abm_info_t* bai)
 {
 	uint64_t nr_punits;
@@ -164,7 +164,7 @@ void __bdbm_dftl_destroy_active_blocks (
 uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 {
 	bdbm_dftl_private_t* p = NULL;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t i = 0, j = 0;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
@@ -232,7 +232,7 @@ uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 void bdbm_dftl_destroy (bdbm_drv_info_t* bdi)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	if (!p)
 		return;
@@ -264,7 +264,7 @@ void bdbm_dftl_destroy (bdbm_drv_info_t* bdi)
 uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
 	uint64_t curr_chip;
@@ -279,7 +279,7 @@ uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyadd
 	ppa->chip_no = b->chip_no;
 	ppa->block_no = b->block_no;
 	ppa->page_no = p->curr_page_ofs;
-	ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+	ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 
 	/* check some error cases before returning the physical address */
 	bdbm_bug_on (ppa->channel_no != curr_channel);
@@ -320,7 +320,7 @@ uint32_t bdbm_dftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyadd
 
 uint32_t bdbm_dftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)
 {
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	mapping_entry_t me;
 
@@ -361,7 +361,7 @@ uint32_t bdbm_dftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phya
 
 uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
 {
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	mapping_entry_t me;
 	uint32_t ret;
@@ -395,7 +395,7 @@ uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* 
 		ppa->chip_no = me.phyaddr.chip_no;
 		ppa->block_no = me.phyaddr.block_no;
 		ppa->page_no = me.phyaddr.page_no;
-		ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+		ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 		ret = 0;
 	}
 
@@ -404,7 +404,7 @@ uint32_t bdbm_dftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* 
 
 uint32_t bdbm_dftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)
 {	
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
 	mapping_entry_t me;
 	uint64_t loop;
@@ -488,7 +488,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection (
 	uint64_t chip_no)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
 	struct list_head* pos = NULL;
@@ -512,7 +512,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection_greedy (
 	uint64_t chip_no)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
 	bdbm_abm_block_t* v = NULL;
@@ -543,7 +543,7 @@ bdbm_abm_block_t* __bdbm_dftl_victim_selection_greedy (
 uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t nr_gc_blks = 0;
 	uint64_t nr_llm_reqs = 0;
@@ -585,7 +585,7 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 				r->phyaddr->chip_no = b->chip_no;
 				r->phyaddr->block_no = b->block_no;
 				r->phyaddr->page_no = j;
-				r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+				r->phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 				r->ret = 0;
 				nr_llm_reqs++;
 			}
@@ -719,7 +719,7 @@ erase_blks:
 		r->phyaddr->chip_no = b->chip_no;
 		r->phyaddr->block_no = b->block_no;
 		r->phyaddr->page_no = 0;
-		r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+		r->phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 		r->ret = 0;
 	}
 
@@ -768,7 +768,7 @@ static void __bdbm_dftl_badblock_scan_eraseblks (
 	uint64_t block_no)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
@@ -795,7 +795,7 @@ static void __bdbm_dftl_badblock_scan_eraseblks (
 			r->phyaddr->chip_no = b->chip_no;
 			r->phyaddr->block_no = b->block_no;
 			r->phyaddr->page_no = 0;
-			r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+			r->phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 			r->ret = 0;
 		}
 	}
@@ -833,7 +833,7 @@ static void __bdbm_dftl_mark_it_dead (
 	uint64_t block_no)
 {
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	int i, j;
 
 	for (i = 0; i < np->nr_channels; i++) {
@@ -855,7 +855,7 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
 	/*#if 0*/
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t i = 0;
 	uint32_t ret = 0;
 
@@ -894,7 +894,7 @@ uint32_t bdbm_dftl_badblock_scan (bdbm_drv_info_t* bdi)
 #if 0
 	/* TEMP: on-demand format */
 	bdbm_dftl_private_t* p = _ftl_dftl.ptr_private;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t i = 0;
 	uint32_t ret = 0;
 	uint32_t erased_blocks = 0;
@@ -958,7 +958,7 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 	uint64_t lpa)
 {
 	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	mapping_entry_t* me = NULL;
 	directory_slot_t* ds = NULL;
 	bdbm_llm_req_t* r = NULL;
@@ -1057,7 +1057,7 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 	bdbm_drv_info_t* bdi)
 {
 	bdbm_dftl_private_t* p = (bdbm_dftl_private_t*)BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	mapping_entry_t* me = NULL;
 	directory_slot_t* ds = NULL;
 	bdbm_llm_req_t* r = NULL;

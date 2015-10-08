@@ -185,7 +185,7 @@ int bdbm_drv_init (void)
 
 	/* probe a device to get its geometry information */
 	dm = bdi->ptr_dm_inf;
-	if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
+	if (dm->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
 		bdbm_error ("failed to probe a flash device");
 		goto fail;
 	}
@@ -267,7 +267,7 @@ fail:
 
 void bdbm_drv_exit(void)
 {
-	driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
 
 	if (_bdi == NULL)
 		return;

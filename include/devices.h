@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef __BDBM_HW__
-#define __BDBM_HW__
+#ifndef __BDBM_DEVICES__
+#define __BDBM_DEVICES__
 
 #if defined (USER_MODE)
 #include <stdint.h>

@@ -43,22 +43,22 @@ THE SOFTWARE.
 
 
 static inline 
-uint64_t __get_channel_ofs (nand_params_t* np, uint64_t blk_idx) {
+uint64_t __get_channel_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return (blk_idx / np->nr_blocks_per_channel);
 }
 
 static inline 
-uint64_t __get_chip_ofs (nand_params_t* np, uint64_t blk_idx) {
+uint64_t __get_chip_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return ((blk_idx % np->nr_blocks_per_channel) / np->nr_blocks_per_chip);
 }
 
 static inline 
-uint64_t __get_block_ofs (nand_params_t* np, uint64_t blk_idx) {
+uint64_t __get_block_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return (blk_idx % np->nr_blocks_per_chip);
 }
 
 static inline
-uint64_t __get_block_idx (nand_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
+uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
 	return channel_no * np->nr_blocks_per_channel + 
 		chip_no * np->nr_blocks_per_chip + 
 		block_no;
@@ -89,7 +89,7 @@ void __bdbm_abm_display_status (bdbm_abm_info_t* bai)
 	__bdbm_abm_check_status (bai);
 }
 
-babm_abm_page_t* __bdbm_abm_create_pst (nand_params_t* np)
+babm_abm_page_t* __bdbm_abm_create_pst (bdbm_device_params_t* np)
 {
 	babm_abm_page_t* pst = NULL;
 
@@ -106,7 +106,7 @@ void __bdbm_abm_destory_pst (babm_abm_page_t* pst)
 }
 
 bdbm_abm_info_t* bdbm_abm_create (
-	nand_params_t* np,
+	bdbm_device_params_t* np,
 	uint8_t use_pst)
 {
 	uint64_t loop;

@@ -67,7 +67,7 @@ bdbm_params_t* read_driver_params (void)
 	/* NOTE: FTL-specific parameters must be decided by custom FTL
 	 * implementation. For this reason, all the parameters for the FTL are set
 	 * to zero by default */
-	bdbm_memset (&p->driver, 0x00, sizeof (driver_params_t));
+	bdbm_memset (&p->driver, 0x00, sizeof (bdbm_driver_params_t));
 
 	return p;
 }
@@ -127,7 +127,7 @@ static void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
 	bdbm_msg ("page main size  = %llu bytes", p->nand.page_main_size);
 	bdbm_msg ("page oob size = %llu bytes", p->nand.page_oob_size);
 	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", p->nand.device_type);
-	bdbm_msg ("# of punits: %llu", GET_NR_PUNITS (p->nand));
+	bdbm_msg ("# of punits: %llu", BDBM_GET_NR_PUNITS (p->nand));
 	bdbm_msg ("# of kernel pages per flash page: %llu", p->nand.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_msg ("");
 }
@@ -170,9 +170,9 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 	} else {
 		/* get the number of parallel units in the device;
 		 * it is commonly obtained by # of channels * # of chips per channels */
-		rf->np = BDBM_GET_NAND_PARAMS (bdi);
+		rf->np = BDBM_GET_DEVICE_PARAMS (bdi);
 		rf->nr_kp_per_fp = rf->np->page_main_size / KERNEL_PAGE_SIZE;
-		rf->nr_punits = GET_NR_PUNITS ((*rf->np));
+		rf->nr_punits = BDBM_GET_NR_PUNITS ((*rf->np));
 
 		/* NOTE: disply device parameters. note that these parameters can be
 		 * set manually by modifying the "include/params.h" file. */
@@ -237,7 +237,7 @@ static void __dm_intr_handler (
 	bdbm_msg ("[%s] punit_id = %llu", __FUNCTION__, r->phyaddr->punit_id);
 #endif
 
-	bdbm_bug_on (r->phyaddr->punit_id >= GET_NR_PUNITS ((*rf->np)));
+	bdbm_bug_on (r->phyaddr->punit_id >= BDBM_GET_NR_PUNITS ((*rf->np)));
 	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr->punit_id]) != FLASH_RAW_PUNIT_BUSY);
 
 #ifdef DEBUG_FLASH_RAW
@@ -273,7 +273,7 @@ static int __bdbm_raw_flash_fill_phyaddr (
 	phyaddr->chip_no = chip;
 	phyaddr->block_no = block;
 	phyaddr->page_no = page;
-	phyaddr->punit_id = GET_PUNIT_ID (bdi, phyaddr);
+	phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, phyaddr);
 
 	return 0;
 }
@@ -283,7 +283,7 @@ static bdbm_llm_req_t* __bdbm_raw_flash_get_llm_req (
 	bdbm_phyaddr_t* phyaddr)
 {
 	/* get llm_req from rr */
-	bdbm_bug_on (phyaddr->punit_id >= GET_NR_PUNITS ((*rf->np)));
+	bdbm_bug_on (phyaddr->punit_id >= BDBM_GET_NR_PUNITS ((*rf->np)));
 	
 	return &rf->rr[phyaddr->punit_id];
 }
@@ -430,7 +430,7 @@ int bdbm_raw_flash_wait (
 
 	bdbm_bug_on (channel >= rf->np->nr_channels);
 	bdbm_bug_on (chip >= rf->np->nr_chips_per_channel);
-	bdbm_bug_on (punit_id >= GET_NR_PUNITS ((*rf->np)));
+	bdbm_bug_on (punit_id >= BDBM_GET_NR_PUNITS ((*rf->np)));
 
 	r = &rf->rr[punit_id];
 
@@ -540,10 +540,10 @@ int bdbm_raw_flash_erase_block (
 	return __bdbm_raw_flash_rwe (rf, FLASH_RAW_ERASE, channel, chip, block, 0, -1ULL, NULL, NULL, ptr_ret);
 }
 
-nand_params_t* bdbm_raw_flash_get_nand_params (
+bdbm_device_params_t* bdbm_raw_flash_get_nand_params (
 	bdbm_raw_flash_t* rf)
 {
-	return BDBM_GET_NAND_PARAMS ((&rf->bdi));
+	return BDBM_GET_DEVICE_PARAMS ((&rf->bdi));
 }
 
 void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf)

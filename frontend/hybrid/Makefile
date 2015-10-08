@@ -3,13 +3,13 @@
 
 FTL := ../../ftl
 INCLUDE := ../../include
-LIB := ../../lib
+COMMON := ../../common
 KERN := ../kernel
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
-	-I$(PWD)/$(LIB)/utils \
-	-I$(PWD)/$(LIB)/3rd \
+	-I$(PWD)/$(COMMON)/utils \
+	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(FTL) \
 	-I$(PWD)/$(KERN) \
 
@@ -27,9 +27,9 @@ bdbm_drv-y := \
 	$(KERN)/kmain.o \
 	$(KERN)/kparams.o \
 	$(KERN)/host_blkdev.o \
-	$(LIB)/utils/utime.o \
-	$(LIB)/utils/ufile.o \
-	$(LIB)/utils/uthread.o \
+	$(COMMON)/utils/utime.o \
+	$(COMMON)/utils/ufile.o \
+	$(COMMON)/utils/uthread.o \
 	$(FTL)/pmu.o \
 
 obj-m := bdbm_drv.o

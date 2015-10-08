@@ -30,7 +30,7 @@ THE SOFTWARE.
 
 extern bdbm_dm_inf_t _dm_ramdrive_inf;
 
-uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, nand_params_t* param);
+uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* param);
 uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi);
 void dm_ramdrive_close (bdbm_drv_info_t* bdi);
 uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);

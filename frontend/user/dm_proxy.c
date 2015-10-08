@@ -76,7 +76,7 @@ int __dm_proxy_thread (void* arg);
 
 uint32_t dm_proxy_probe (
 	bdbm_drv_info_t* bdi, 
-	nand_params_t* params)
+	bdbm_device_params_t* params)
 {
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	int ret;
@@ -184,10 +184,10 @@ uint32_t dm_proxy_make_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_llm_req_t* r)
 {
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	bdbm_llm_req_ioctl_t ior;
-	int loop, punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+	int loop, punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 	int nr_kp_per_fp = 1;
 	int ret;
 
@@ -239,7 +239,7 @@ uint32_t dm_proxy_make_req (
 int __dm_proxy_thread (void* arg) 
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_dm_inf_t* dm_inf = (bdbm_dm_inf_t*)BDBM_GET_DM_INF(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	int nr_kp_per_fp = 1;
@@ -313,7 +313,7 @@ void dm_proxy_end_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_llm_req_t* r)
 {
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS(bdi);
 
 	bdi->ptr_llm_inf->end_req (bdi, r);
 }

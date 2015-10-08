@@ -62,7 +62,7 @@ typedef struct {
 int __host_proxy_stub_thread (void* arg) 
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_host_inf_t* host_inf = (bdbm_host_inf_t*)BDBM_GET_HOST_INF (bdi);
 	bdbm_blockio_stub_private_t* p = (bdbm_blockio_stub_private_t*)BDBM_HOST_PRIV (bdi);
 	struct pollfd fds[1];
@@ -110,7 +110,7 @@ int __host_proxy_stub_thread (void* arg)
 			}
 
 			if (bug > 10000) {
-				*test = 0x00;
+				/**test = 0x00;*/
 			}
 			bug++;
 		}
@@ -203,8 +203,8 @@ static bdbm_hlm_req_t* __blockio_stub_create_hlm_trim_req (
 	bdbm_blockio_proxy_req_t* proxy_req)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS (bdi);
-	driver_params_t* dp = (driver_params_t*)BDBM_GET_DRIVER_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_driver_params_t* dp = (bdbm_driver_params_t*)BDBM_GET_DRIVER_PARAMS (bdi);
 	uint64_t nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;
 
 	/* create bdbm_hm_req_t */
@@ -244,7 +244,7 @@ bdbm_hlm_req_t* __blockio_stub_create_hlm_req (
 	bdbm_blockio_proxy_req_t* proxy_req)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;
 	uint64_t nr_secs_per_kp = KERNEL_PAGE_SIZE / KERNEL_SECTOR_SIZE;
 	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
@@ -314,7 +314,7 @@ void __blockio_stub_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
 	uint32_t kpg_loop = 0;
 

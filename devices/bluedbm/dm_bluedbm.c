@@ -300,7 +300,7 @@ int connectal_handler_fn (void* arg)
 /**
  * the implementation of call-back functions for bdbm_drv
  **/
-static void __dm_setup_device_params (nand_params_t* params)
+static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -340,10 +340,10 @@ static void __dm_setup_device_params (nand_params_t* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
+uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 {
 	struct dm_bluedbm_private* priv = NULL;
-	/*nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);*/
+	/*bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);*/
 	/*uint32_t nr_punit = np->nr_channels * np->nr_chips_per_channel;*/
 	uint32_t nr_punit;
 
@@ -452,7 +452,7 @@ void __copy_dma_to_bio (
 	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;
@@ -490,7 +490,7 @@ void __copy_bio_to_dma (
 	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
  	uint8_t* ptr_dma_addr = NULL;
 	uint32_t nr_pages = 0;
 	uint32_t loop = 0;

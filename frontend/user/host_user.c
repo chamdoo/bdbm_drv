@@ -108,10 +108,8 @@ static void __host_block_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
-	nand_params_t* np = NULL;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint32_t kpg_loop = 0;
-
-	np = &bdi->ptr_bdbm_params->nand;
 
 	/* temp */
 	if (hlm_req->org_pptr_kpgs) {
@@ -206,13 +204,10 @@ void host_user_make_req (
 	void *bio)
 {
 	unsigned long flags;
-	nand_params_t* np = NULL;
-	bdbm_hlm_req_t* hlm_req = NULL;
-	bdbm_host_block_private_t* p = NULL;
+	bdbm_host_block_private_t* p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_host_req_t* host_req = (bdbm_host_req_t*)bio;
-
-	np = &bdi->ptr_bdbm_params->nand;
-	p = (bdbm_host_block_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_hlm_req_t* hlm_req = NULL;
 
 	bdbm_mutex_lock (&p->host_lock);
 

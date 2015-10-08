@@ -56,7 +56,7 @@ struct dm_user_private {
 	uint64_t w_cnt_done;
 };
 
-static void __dm_setup_device_params (nand_params_t* params)
+static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -97,7 +97,7 @@ static void __dm_setup_device_params (nand_params_t* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_user_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
+uint32_t dm_user_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 {
 	struct dm_user_private* p = NULL;
 

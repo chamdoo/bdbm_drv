@@ -53,7 +53,7 @@ typedef struct {
 typedef struct {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
 	uint8_t emul_mode;
-	nand_params_t* nand_params;
+	bdbm_device_params_t* nand_params;
 	void* ptr_ssdram; /* DRAM memory for SSD */
 	dev_ramssd_punit_t* ptr_punits;	/* parallel units */
 	bdbm_spinlock_t ramssd_lock;
@@ -65,7 +65,7 @@ typedef struct {
 #endif
 } dev_ramssd_info_t;
 
-dev_ramssd_info_t* dev_ramssd_create (nand_params_t* ptr_nand_params, void (*intr_handler)(void*));
+dev_ramssd_info_t* dev_ramssd_create (bdbm_device_params_t* ptr_nand_params, void (*intr_handler)(void*));
 void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info);
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* ptr_llm_req );
 void dev_ramssd_summary (dev_ramssd_info_t* ptr_ramssd_info);

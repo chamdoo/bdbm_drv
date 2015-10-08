@@ -83,7 +83,7 @@ static uint8_t* __ramssd_block_addr (
 	return ptr_ramssd;
 }
 
-static void* __ramssd_alloc_ssdram (nand_params_t* ptr_nand_params)
+static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_nand_params)
 {
 	void* ptr_ramssd = NULL;
 	uint64_t page_size_in_bytes;
@@ -510,7 +510,7 @@ void __ramssd_timing_destory (dev_ramssd_info_t* ri)
 
 /* Functions Exposed to External Files */
 dev_ramssd_info_t* dev_ramssd_create (
-	nand_params_t* ptr_nand_params, 
+	bdbm_device_params_t* ptr_nand_params, 
 	void (*intr_handler)(void*))
 {
 	uint64_t loop, nr_parallel_units;

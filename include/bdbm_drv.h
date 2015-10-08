@@ -56,41 +56,12 @@ THE SOFTWARE.
 
 typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 
-/* for performance monitoring */
-typedef struct {
-	bdbm_spinlock_t pmu_lock;
-	bdbm_stopwatch_t exetime;
-	atomic64_t page_read_cnt;
-	atomic64_t page_write_cnt;
-	atomic64_t rmw_read_cnt;
-	atomic64_t rmw_write_cnt;
-	atomic64_t gc_cnt;
-	atomic64_t gc_erase_cnt;
-	atomic64_t gc_read_cnt;
-	atomic64_t gc_write_cnt;
-	atomic64_t meta_read_cnt;
-	atomic64_t meta_write_cnt;
-	uint64_t time_r_sw;
-	uint64_t time_r_q;
-	uint64_t time_r_tot;
-	uint64_t time_w_sw;
-	uint64_t time_w_q;
-	uint64_t time_w_tot;
-	uint64_t time_rmw_sw;
-	uint64_t time_rmw_q;
-	uint64_t time_rmw_tot;
-	uint64_t time_gc_sw;
-	uint64_t time_gc_q;
-	uint64_t time_gc_tot;
-	atomic64_t* util_r;
-	atomic64_t* util_w;
-} bdbm_perf_monitor_t;
-
 #define BDBM_GET_HOST_INF(bdi) bdi->ptr_host_inf
 #define BDBM_GET_DM_INF(bdi) bdi->ptr_dm_inf
 #define BDBM_GET_HLM_INF(bdi) bdi->ptr_hlm_inf
 #define BDBM_GET_LLM_INF(bdi) bdi->ptr_llm_inf
-#define BDBM_GET_NAND_PARAMS(bdi) (&bdi->ptr_bdbm_params->nand)
+#define BDBM_GET_PARAMS(bdi) (bdi->ptr_bdbm_params)
+#define BDBM_GET_DEVICE_PARAMS(bdi) (&bdi->ptr_bdbm_params->device)
 #define BDBM_GET_DRIVER_PARAMS(bdi) (&bdi->ptr_bdbm_params->driver)
 #define BDBM_GET_FTL_INF(bdi) bdi->ptr_ftl_inf
 
@@ -100,11 +71,11 @@ typedef struct {
 #define BDBM_LLM_PRIV(bdi) bdi->ptr_llm_inf->ptr_private
 #define BDBM_FTL_PRIV(bdi) bdi->ptr_ftl_inf->ptr_private
 
-#define GET_NR_PUNITS(np) \
+#define BDBM_GET_NR_PUNITS(np) \
 	np.nr_channels * np.nr_chips_per_channel
-#define GET_PUNIT_ID(bdi,phyaddr) \
+#define BDBM_GET_PUNIT_ID(bdi,phyaddr) \
 	phyaddr->channel_no * \
-	bdi->ptr_bdbm_params->nand.nr_chips_per_channel + \
+	bdi->ptr_bdbm_params->device.nr_chips_per_channel + \
 	phyaddr->chip_no
 
 /* request types */
@@ -180,13 +151,11 @@ typedef struct {
 	uint8_t** pptr_kpgs; /* from bdbm_hlm_req_t */
 	uint8_t* ptr_oob;
 	void* ptr_hlm_req;
-	/*struct list_head list;	*//* for list management */
 	void* ptr_qitem;
 	uint8_t ret;	/* old for GC */
 
 	/* for dftl */
 	bdbm_mutex_t* done;
-	/*bdbm_completion_t* done; */
 	void* ds;
 } bdbm_llm_req_t;
 
@@ -230,7 +199,7 @@ typedef struct {
 /* a generic device interface */
 typedef struct {
 	void* ptr_private;
-	uint32_t (*probe) (bdbm_drv_info_t* bdi, nand_params_t* param);
+	uint32_t (*probe) (bdbm_drv_info_t* bdi, bdbm_device_params_t* param);
 	uint32_t (*open) (bdbm_drv_info_t* bdi);
 	void (*close) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
@@ -277,6 +246,36 @@ typedef struct {
 	bdbm_llm_req_t* (*prepare_mapblk_load) (bdbm_drv_info_t* bdi, uint64_t lpa);
 	void (*finish_mapblk_load) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 } bdbm_ftl_inf_t;
+
+/* for performance monitoring */
+typedef struct {
+	bdbm_spinlock_t pmu_lock;
+	bdbm_stopwatch_t exetime;
+	atomic64_t page_read_cnt;
+	atomic64_t page_write_cnt;
+	atomic64_t rmw_read_cnt;
+	atomic64_t rmw_write_cnt;
+	atomic64_t gc_cnt;
+	atomic64_t gc_erase_cnt;
+	atomic64_t gc_read_cnt;
+	atomic64_t gc_write_cnt;
+	atomic64_t meta_read_cnt;
+	atomic64_t meta_write_cnt;
+	uint64_t time_r_sw;
+	uint64_t time_r_q;
+	uint64_t time_r_tot;
+	uint64_t time_w_sw;
+	uint64_t time_w_q;
+	uint64_t time_w_tot;
+	uint64_t time_rmw_sw;
+	uint64_t time_rmw_q;
+	uint64_t time_rmw_tot;
+	uint64_t time_gc_sw;
+	uint64_t time_gc_q;
+	uint64_t time_gc_tot;
+	atomic64_t* util_r;
+	atomic64_t* util_w;
+} bdbm_perf_monitor_t;
 
 /* the main data-structure for bdbm_drv */
 struct _bdbm_drv_info_t {

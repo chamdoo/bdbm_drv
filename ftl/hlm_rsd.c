@@ -80,7 +80,7 @@ struct bdbm_hlm_rsd_private {
 uint32_t hlm_rsd_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_rsd_private* p = NULL;
-	driver_params_t* parms = BDBM_GET_DRIVER_PARAMS(bdi);
+	bdbm_driver_params_t* parms = BDBM_GET_DRIVER_PARAMS(bdi);
 
 	/* create private */
 	if ((p = (struct bdbm_hlm_rsd_private*)bdbm_malloc_atomic
@@ -116,7 +116,7 @@ bdbm_hlm_req_t* __hlm_rsd_duplicate_hlm_req (
 	bdbm_hlm_req_t* hlm_req)
 {
 	bdbm_hlm_req_t* new_hlm_req = NULL;
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
 	uint32_t i = 0;
 
@@ -164,7 +164,7 @@ void __hlm_rsd_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
-	nand_params_t* np = &bdi->ptr_bdbm_params->nand;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint32_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
 	uint32_t i = 0;
 
@@ -198,8 +198,8 @@ uint32_t __hlm_rsd_make_req_r (
 	bdbm_hlm_req_t* new_hlm_req)
 {
 	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
-	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_hlm_req_t* old_hlm_req = NULL;
 	struct segment_buf* b = NULL;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
@@ -286,8 +286,8 @@ uint32_t __hlm_rsd_make_req_w (
 	bdbm_hlm_req_t* new_hlm_req)
 {
 	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
-	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_hlm_req_t* old_hlm_req = NULL;
 	struct segment_buf* b = NULL;
 	uint32_t ret = 0;

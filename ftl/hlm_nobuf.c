@@ -108,8 +108,8 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 
 uint32_t __hlm_nobuf_get_req_type (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req, uint32_t index)
 {
-	driver_params_t* dp = (driver_params_t*)BDBM_GET_DRIVER_PARAMS(bdi);
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	uint32_t nr_kp_per_fp, req_type, j;
 
 	nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
@@ -134,8 +134,8 @@ uint32_t __hlm_nobuf_get_req_type (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm
 
 uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_llm_req_t** pptr_llm_req;
 	uint32_t nr_kp_per_fp;
 	uint32_t hlm_len;
@@ -257,7 +257,7 @@ fail:
 
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
+	bdbm_driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
 	uint32_t ret;
 	int loop = 0;
 	bdbm_stopwatch_t sw;
@@ -333,10 +333,10 @@ void __hlm_nobuf_end_host_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req
 
 	/* change flags of hlm */
 	if (ptr_hlm_req->kpg_flags != NULL) {
-		nand_params_t* np;
+		bdbm_device_params_t* np;
 		uint32_t nr_kp_per_fp, ofs, loop;
 
-		np = &bdi->ptr_bdbm_params->nand;
+		np = BDBM_GET_DEVICE_PARAMS(bdi);
 		nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 		ofs = (ptr_llm_req->lpa - ptr_hlm_req->lpa) * nr_kp_per_fp;
 

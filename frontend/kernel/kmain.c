@@ -59,7 +59,7 @@ bdbm_drv_info_t* _bdi = NULL;
 
 static int init_func_pointers (bdbm_drv_info_t* bdi)
 {
-	bdbm_params_t* p = bdi->ptr_bdbm_params;
+	bdbm_params_t* p = (bdbm_params_t*)BDBM_GET_PARAMS (bdi);
 
 	/* set functions for device manager (dm) */
 #if !defined (USE_BLOCKIO_PROXY)
@@ -159,7 +159,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	return 0;
 }
 
-static void __dm_setup_device_params (nand_params_t* params)
+static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = NR_CHANNELS;
@@ -233,7 +233,7 @@ static int __init bdbm_drv_init (void)
 		dm = bdi->ptr_dm_inf;
 
 		/* get the device information */
-		if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
+		if (dm->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
 			bdbm_error ("failed to probe a flash device");
 			goto fail;
 		}
@@ -253,7 +253,7 @@ static int __init bdbm_drv_init (void)
 		}
 	} else {
 		/* TEMP: fill the nand parameters */
-		__dm_setup_device_params (&bdi->ptr_bdbm_params->nand);
+		__dm_setup_device_params (&bdi->ptr_bdbm_params->device);
 	}
 
 	/* create a low-level memory manager */
@@ -327,7 +327,7 @@ fail:
 
 static void __exit bdbm_drv_exit(void)
 {
-	driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
 	bdbm_drv_info_t* bdi = _bdi;
 
 	if (bdi == NULL)

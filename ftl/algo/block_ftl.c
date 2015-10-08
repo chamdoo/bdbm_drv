@@ -141,7 +141,7 @@ uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)
 {
 	bdbm_abm_info_t* abm = NULL;
 	bdbm_block_ftl_private_t* p = NULL;
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	uint64_t nr_segments;
 	uint64_t nr_blocks_per_segment;
@@ -303,7 +303,7 @@ uint32_t bdbm_block_ftl_get_ppa (
 	ppa->chip_no = e->chip_no;
 	ppa->block_no = e->block_no;
 	ppa->page_no = page_ofs;
-	ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+	ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 
 	return 0;
 }
@@ -355,7 +355,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = e->chip_no;
 			ppa->block_no = e->block_no;
 			ppa->page_no = page_ofs;
-			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+			ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 
 			if ((e->rw_pg_ofs + 1) != page_ofs) {
@@ -371,7 +371,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = e->chip_no;
 			ppa->block_no = e->block_no;
 			ppa->page_no = page_ofs;
-			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+			ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 
 			problem_seg_no = segment_no;
@@ -392,7 +392,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 		uint64_t channel_no;
 		uint64_t chip_no;
 		bdbm_abm_block_t* b = NULL;
-		nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+		bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 		channel_no = block_no % np->nr_channels;
 		chip_no = block_no / np->nr_channels;
@@ -404,7 +404,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 			ppa->chip_no = b->chip_no;
 			ppa->block_no = b->block_no;
 			ppa->page_no = page_ofs;
-			ppa->punit_id = GET_PUNIT_ID (bdi, ppa);
+			ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
 			ret = 0;
 		} else {
 			bdbm_error ("oops! bdbm_abm_get_free_block_prepare failed (%llu %llu)", channel_no, chip_no);
@@ -550,7 +550,7 @@ uint32_t __bdbm_block_ftl_erase_block (
 		r->phyaddr->chip_no = b->chip_no;
 		r->phyaddr->block_no = b->block_no;
 		r->phyaddr->page_no = 0;
-		r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+		r->phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 		r->ret = 0;
 	}
 
@@ -586,7 +586,7 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 	bdbm_drv_info_t* bdi,
 	uint64_t seg_no)
 {
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t i;
@@ -686,7 +686,7 @@ uint32_t bdbm_block_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t block_no)
 {
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
@@ -714,7 +714,7 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t bl
 			r->phyaddr->chip_no = b->chip_no;
 			r->phyaddr->block_no = b->block_no;
 			r->phyaddr->page_no = 0;
-			r->phyaddr->punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+			r->phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 			r->ret = 0;
 		}
 	}
@@ -759,7 +759,7 @@ static void __bdbm_block_mark_it_dead (
 	uint64_t block_no)
 {
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	int i, j;
 
 	for (i = 0; i < np->nr_channels; i++) {
@@ -779,7 +779,7 @@ static void __bdbm_block_mark_it_dead (
 uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
 	uint64_t i = 0, j = 0;
 	uint32_t ret = 0;
@@ -819,7 +819,7 @@ uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 
 #if 0	
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	nand_params_t* np = BDBM_GET_NAND_PARAMS (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
 	uint64_t i = 0, j = 0;
 	uint32_t ret = 0;

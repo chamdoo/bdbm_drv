@@ -87,7 +87,7 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
-	uint64_t punit_id = GET_PUNIT_ID (bdi, r->phyaddr);
+	uint64_t punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
 	unsigned long flags;
 
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
@@ -145,7 +145,7 @@ static bdbm_llm_req_t* __get_llm_req (
 	r->kpg_flags = (uint8_t*)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t));
 	r->pptr_kpgs = (uint8_t**)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t*));
 
-  	punit_id = GET_PUNIT_ID (s->bdi, r->phyaddr);
+  	punit_id = BDBM_GET_PUNIT_ID (s->bdi, r->phyaddr);
 	for (loop = 0; loop < nr_kp_per_fp; loop++) {
 		r->kpg_flags[loop] = kr.kpg_flags[loop];
 		r->pptr_kpgs[loop] = 
@@ -193,7 +193,7 @@ static int dm_stub_probe (bdbm_dm_stub_t* s)
 	}
 
 	/* call probe; just get NAND parameters from the device */
-	if (bdi->ptr_dm_inf->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
+	if (bdi->ptr_dm_inf->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
 		bdbm_warning ("dm->probe () failed");
 		return -EIO;
 	} 
@@ -225,9 +225,9 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	} 
 
 	/* initialize internal variables */
-	s->punit = s->params.nand.nr_chips_per_channel * s->params.nand.nr_channels;
+	s->punit = s->params.device.nr_chips_per_channel * s->params.device.nr_channels;
 	s->mmap_shared_size = KERNEL_PAGE_SIZE + PAGE_ALIGN (
-		s->punit * (s->params.nand.page_main_size + s->params.nand.page_oob_size));
+		s->punit * (s->params.device.page_main_size + s->params.device.page_oob_size));
 
 	s->kr = (bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_t*));
 	s->ur = (bdbm_llm_req_ioctl_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_ioctl_t*));
@@ -242,9 +242,9 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	mmap_ofs += KERNEL_PAGE_SIZE;
 	for (loop = 0; loop < s->punit; loop++) {
 		s->punit_main_pages[loop] = s->mmap_shared + mmap_ofs;
-		mmap_ofs += s->params.nand.page_main_size;
+		mmap_ofs += s->params.device.page_main_size;
 		s->punit_oob_pages[loop] = s->mmap_shared + mmap_ofs;
-		mmap_ofs += s->params.nand.page_oob_size;
+		mmap_ofs += s->params.device.page_oob_size;
 	}
 
 	bdbm_msg ("mmap_shared_size = %llu, mmap_ofs = %llu", 
@@ -366,7 +366,7 @@ static int dm_stub_make_req (
 	}
 
 	/* get punit_id */
-	punit_id = GET_PUNIT_ID (bdi, kr->phyaddr);
+	punit_id = BDBM_GET_PUNIT_ID (bdi, kr->phyaddr);
 
 	/* see if there is an on-going request */
 	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
@@ -626,7 +626,7 @@ static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 	switch (cmd) {
 	case BDBM_DM_IOCTL_PROBE:
 		if ((ret = dm_stub_probe (s)) == 0)
-			copy_to_user ((nand_params_t*)arg, &s->params.nand, sizeof (nand_params_t));
+			copy_to_user ((bdbm_device_params_t*)arg, &s->params.device, sizeof (bdbm_device_params_t));
 		break;
 	case BDBM_DM_IOCTL_OPEN:
 		ret = dm_stub_open (s);

@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-uint32_t dm_proxy_probe (bdbm_drv_info_t* bdi, nand_params_t* params);
+uint32_t dm_proxy_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
 uint32_t dm_proxy_open (bdbm_drv_info_t* bdi);
 void dm_proxy_close (bdbm_drv_info_t* bdi);
 uint32_t dm_proxy_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);

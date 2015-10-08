@@ -70,7 +70,7 @@ static void __dm_ramdrive_ih (void* arg)
 	bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
 }
 
-static void __dm_setup_device_params (nand_params_t* params)
+static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
@@ -111,7 +111,7 @@ static void __dm_setup_device_params (nand_params_t* params)
 	params->device_capacity_in_byte *= params->page_main_size;
 }
 
-uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, nand_params_t* params)
+uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 {
 	struct dm_ramssd_private* p = NULL;
 

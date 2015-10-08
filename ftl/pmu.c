@@ -49,7 +49,7 @@ THE SOFTWARE.
 void pmu_create (bdbm_drv_info_t* bdi)
 {
 	uint64_t i, punit;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 
 	bdbm_spin_lock_init (&bdi->pm.pmu_lock);
 
@@ -430,7 +430,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
 {
 	uint64_t i, j;
 	struct timeval exetime;
-	nand_params_t* np = (nand_params_t*)BDBM_GET_NAND_PARAMS(bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 
 	bdbm_msg ("-----------------------------------------------");
 	bdbm_msg ("< PERFORMANCE SUMMARY >");

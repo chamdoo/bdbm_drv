@@ -34,7 +34,7 @@ THE SOFTWARE.
 typedef struct {
 	bdbm_drv_info_t bdi; 
 	bdbm_llm_req_t* rr;
-	nand_params_t* np;
+	bdbm_device_params_t* np;
 	uint64_t nr_punits;
 	atomic_t* punit_status;
 	uint64_t nr_kp_per_fp;
@@ -42,7 +42,7 @@ typedef struct {
 
 bdbm_raw_flash_t* bdbm_raw_flash_init (void);
 int bdbm_raw_flash_open (bdbm_raw_flash_t* rf);
-nand_params_t* bdbm_raw_flash_get_nand_params (bdbm_raw_flash_t* rf);
+bdbm_device_params_t* bdbm_raw_flash_get_nand_params (bdbm_raw_flash_t* rf);
 void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf);
 
 int bdbm_raw_flash_wait (bdbm_raw_flash_t* rf, uint64_t channel, uint64_t chip, uint8_t* ret);
