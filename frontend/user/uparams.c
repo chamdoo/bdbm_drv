@@ -44,7 +44,7 @@ THE SOFTWARE.
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
-int _param_queuing_policy			= QUEUE_NO;
+int _param_queuing_policy			= QUEUE_POLICY_NO;
 int _param_trim						= TRIM_ENABLE;
 #if defined (USE_BLOCKIO_STUB)
 int _param_host_type				= HOST_STUB;
