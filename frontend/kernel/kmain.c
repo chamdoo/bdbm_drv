@@ -31,9 +31,9 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "params.h"
-#include "kparams.h"
+#include "ftl_params.h"
 #include "debug.h"
-#include "host_blockio.h"
+#include "host_blkio.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -51,7 +51,7 @@ THE SOFTWARE.
 #include "ufile.h"
 
 #if defined (USE_BLOCKIO_PROXY)
-#include "host_blockio_proxy.h"
+#include "host_blkio_proxy.h"
 #endif
 
 /* main data structure */
@@ -59,7 +59,8 @@ bdbm_drv_info_t* _bdi = NULL;
 
 static int init_func_pointers (bdbm_drv_info_t* bdi)
 {
-	bdbm_params_t* p = (bdbm_params_t*)BDBM_GET_PARAMS (bdi);
+	/*bdbm_params_t* p = (bdbm_params_t*)BDBM_GET_PARAMS (bdi);*/
+	bdbm_ftl_params* p = BDBM_GET_DRIVER_PARAMS (bdi);
 
 	/* set functions for device manager (dm) */
 #if !defined (USE_BLOCKIO_PROXY)
@@ -73,7 +74,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 #endif
 
 	/* set functions for host */
-	switch (p->driver.host_type) {
+	switch (p->host_type) {
 	case HOST_NOT_SPECIFIED:
 		bdi->ptr_host_inf = NULL;
 		break;
@@ -94,7 +95,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	}
 
 	/* set functions for hlm */
-	switch (p->driver.hlm_type) {
+	switch (p->hlm_type) {
 	case HLM_NOT_SPECIFIED:
 		bdi->ptr_hlm_inf = NULL;
 		break;
@@ -117,7 +118,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	}
 
 	/* set functions for llm */
-	switch (p->driver.llm_type) {
+	switch (p->llm_type) {
 	case LLM_NOT_SPECIFIED:
 		bdi->ptr_llm_inf = NULL;
 		break;
@@ -134,7 +135,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	}
 
 	/* set functions for ftl */
-	switch (p->driver.mapping_type) {
+	switch (p->mapping_type) {
 	case MAPPING_POLICY_NOT_SPECIFIED:
 		bdi->ptr_ftl_inf = NULL;
 		break;
@@ -217,10 +218,19 @@ static int __init bdbm_drv_init (void)
 	_bdi = bdi;
 
 	/* get default driver paramters */
-	if ((bdi->ptr_bdbm_params = read_driver_params ()) == NULL) {
-		bdbm_error ("failed to read the default parameters");
-		goto fail;
-	}
+	bdi->parm_ftl = get_default_driver_params ();
+
+#if defined (USE_BLOCKIO_PROXY)
+	bdi->parm_ftl.host_type = HOST_PROXY;
+	bdi->parm_ftl.trim = TRIM_ENABLE;
+	bdi->parm_ftl.gc_policy = GC_POLICY_NOT_SPECIFIED;
+	bdi->parm_ftl.wl_policy = WL_POLICY_NOT_SPECIFIED;
+	bdi->parm_ftl.queueing_policy = QUEUE_POLICY_NOT_SPECIFIED;
+	bdi->parm_ftl.llm_type = LLM_NOT_SPECIFIED;
+	bdi->parm_ftl.mapping_type = MAPPING_POLICY_NOT_SPECIFIED;
+	bdi->parm_ftl.hlm_type = HLM_NOT_SPECIFIED;
+	bdi->parm_ftl.snapshot = SNAPSHOT_DISABLE;
+#endif
 
 	/* set function pointers */
 	if (init_func_pointers (bdi) != 0) {
@@ -233,7 +243,7 @@ static int __init bdbm_drv_init (void)
 		dm = bdi->ptr_dm_inf;
 
 		/* get the device information */
-		if (dm->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
+		if (dm->probe (bdi, &bdi->parm_dev) != 0) {
 			bdbm_error ("failed to probe a flash device");
 			goto fail;
 		}
@@ -243,7 +253,7 @@ static int __init bdbm_drv_init (void)
 			goto fail;
 		}
 		/* do we need to read a snapshot? */
-		if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+		if (bdi->parm_ftl.snapshot == SNAPSHOT_ENABLE &&
 			dm->load != NULL) {
 			if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
 				bdbm_msg ("loading 'dm.dat' failed");
@@ -253,7 +263,7 @@ static int __init bdbm_drv_init (void)
 		}
 	} else {
 		/* TEMP: fill the nand parameters */
-		__dm_setup_device_params (&bdi->ptr_bdbm_params->device);
+		__dm_setup_device_params (&bdi->parm_dev);
 	}
 
 	/* create a low-level memory manager */
@@ -272,7 +282,7 @@ static int __init bdbm_drv_init (void)
 			bdbm_error ("failed to create ftl");
 			goto fail;
 		}
-		if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+		if (bdi->parm_ftl.snapshot == SNAPSHOT_ENABLE &&
 			load == 1 && ftl->load != NULL) {
 			if (ftl->load (bdi, "/usr/share/bdbm_drv/ftl.dat") != 0) {
 				bdbm_msg ("loading 'ftl.dat' failed");
@@ -299,7 +309,7 @@ static int __init bdbm_drv_init (void)
 	}
 
 	/* display default parameters */
-	display_default_params (bdi);
+	display_driver_params (&bdi->parm_ftl);
 
 	/* init performance monitor */
 	pmu_create (bdi);
@@ -327,7 +337,7 @@ fail:
 
 static void __exit bdbm_drv_exit(void)
 {
-	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+	bdbm_ftl_params* p = BDBM_GET_DRIVER_PARAMS (_bdi);
 	bdbm_drv_info_t* bdi = _bdi;
 
 	if (bdi == NULL)
@@ -344,7 +354,7 @@ static void __exit bdbm_drv_exit(void)
 		bdi->ptr_hlm_inf->destroy (bdi);
 
 	if (bdi->ptr_ftl_inf) {
-		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_ftl_inf->store)
+		if (p->snapshot == SNAPSHOT_ENABLE && bdi->ptr_ftl_inf->store)
 			bdi->ptr_ftl_inf->store (bdi, "/usr/share/bdbm_drv/ftl.dat");
 		bdi->ptr_ftl_inf->destroy (bdi);
 	}
@@ -353,7 +363,7 @@ static void __exit bdbm_drv_exit(void)
 		bdi->ptr_llm_inf->destroy (bdi);
 
 	if (bdi->ptr_dm_inf) {
-		if (dp->snapshot == SNAPSHOT_ENABLE && bdi->ptr_dm_inf->store)
+		if (p->snapshot == SNAPSHOT_ENABLE && bdi->ptr_dm_inf->store)
 			bdi->ptr_dm_inf->store (bdi, "/usr/share/bdbm_drv/dm.dat");
 		bdi->ptr_dm_inf->close (bdi);
 #if !defined (USE_BLOCKIO_PROXY)

@@ -39,8 +39,8 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#include "host_blockio_proxy.h"
-#include "host_blockio_proxy_ioctl.h"
+#include "host_blkio_proxy.h"
+#include "host_blkio_proxy_ioctl.h"
 #include "host_blkdev.h"
 #include "proxy_reqs_pool.h"
 

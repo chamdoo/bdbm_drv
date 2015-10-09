@@ -184,9 +184,7 @@ uint32_t llm_mq_create (bdbm_drv_info_t* bdi)
 	}
 
 	/* get the total number of parallel units */
-	p->nr_punits =
-		bdi->ptr_bdbm_params->device.nr_channels *
-		bdi->ptr_bdbm_params->device.nr_chips_per_channel;
+	p->nr_punits = BDBM_GET_NR_PUNITS (bdi->parm_dev);
 
 	/* create queue */
 #ifdef USE_RD_QUEUE

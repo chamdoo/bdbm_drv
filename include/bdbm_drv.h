@@ -60,9 +60,8 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 #define BDBM_GET_DM_INF(bdi) bdi->ptr_dm_inf
 #define BDBM_GET_HLM_INF(bdi) bdi->ptr_hlm_inf
 #define BDBM_GET_LLM_INF(bdi) bdi->ptr_llm_inf
-#define BDBM_GET_PARAMS(bdi) (bdi->ptr_bdbm_params)
-#define BDBM_GET_DEVICE_PARAMS(bdi) (&bdi->ptr_bdbm_params->device)
-#define BDBM_GET_DRIVER_PARAMS(bdi) (&bdi->ptr_bdbm_params->driver)
+#define BDBM_GET_DEVICE_PARAMS(bdi) (&bdi->parm_dev)
+#define BDBM_GET_DRIVER_PARAMS(bdi) (&bdi->parm_ftl)
 #define BDBM_GET_FTL_INF(bdi) bdi->ptr_ftl_inf
 
 #define BDBM_HOST_PRIV(bdi) bdi->ptr_host_inf->ptr_private
@@ -75,7 +74,7 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 	np.nr_channels * np.nr_chips_per_channel
 #define BDBM_GET_PUNIT_ID(bdi,phyaddr) \
 	phyaddr->channel_no * \
-	bdi->ptr_bdbm_params->device.nr_chips_per_channel + \
+	bdi->parm_dev.nr_chips_per_channel + \
 	phyaddr->chip_no
 
 /* request types */
@@ -280,7 +279,8 @@ typedef struct {
 /* the main data-structure for bdbm_drv */
 struct _bdbm_drv_info_t {
 	void* private_data;
-	bdbm_params_t* ptr_bdbm_params;
+	bdbm_ftl_params parm_ftl;
+	bdbm_device_params_t parm_dev;
 	bdbm_host_inf_t* ptr_host_inf; 
 	bdbm_dm_inf_t* ptr_dm_inf;
 	bdbm_hlm_inf_t* ptr_hlm_inf;

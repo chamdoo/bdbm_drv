@@ -38,8 +38,8 @@ THE SOFTWARE.
 #include "utime.h"
 #include "uthread.h"
 
-#include "host_blockio_stub.h"
-#include "host_blockio_proxy_ioctl.h"
+#include "host_blkio_stub.h"
+#include "host_blkio_proxy_ioctl.h"
 
 
 bdbm_host_inf_t _host_blockio_stub_inf = {
@@ -204,7 +204,7 @@ static bdbm_hlm_req_t* __blockio_stub_create_hlm_trim_req (
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_driver_params_t* dp = (bdbm_driver_params_t*)BDBM_GET_DRIVER_PARAMS (bdi);
+	bdbm_ftl_params* dp = (bdbm_ftl_params*)BDBM_GET_DRIVER_PARAMS (bdi);
 	uint64_t nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;
 
 	/* create bdbm_hm_req_t */

@@ -39,7 +39,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "params.h"
-#include "uparams.h"
+#include "ftl_params.h"
 #include "debug.h"
 #include "host_user.h"
 #include "ufile.h"
@@ -64,8 +64,6 @@ bdbm_drv_info_t* _bdi = NULL;
 
 static int init_func_pointers (bdbm_drv_info_t* bdi)
 {
-	bdbm_params_t* p = bdi->ptr_bdbm_params;
-
 	/* set functions for device manager (dm) */
 	if (bdbm_dm_init (bdi) != 0)  {
 		bdbm_error ("bdbm_dm_init failed");
@@ -77,7 +75,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	bdi->ptr_host_inf = &_host_user_inf;
 
 	/* set functions for hlm */
-	switch (p->driver.hlm_type) {
+	switch (bdi->parm_ftl.hlm_type) {
 	case HLM_NO_BUFFER:
 		bdi->ptr_hlm_inf = &_hlm_nobuf_inf;
 		break;
@@ -97,7 +95,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	}
 
 	/* set functions for llm */
-	switch (p->driver.llm_type) {
+	switch (bdi->parm_ftl.llm_type) {
 	case LLM_NO_QUEUE:
 		bdi->ptr_llm_inf = &_llm_noq_inf;
 		break;
@@ -111,7 +109,7 @@ static int init_func_pointers (bdbm_drv_info_t* bdi)
 	}
 
 	/* set functions for ftl */
-	switch (p->driver.mapping_type) {
+	switch (bdi->parm_ftl.mapping_type) {
 	case MAPPING_POLICY_NO_FTL:
 		bdi->ptr_ftl_inf = &_ftl_no_ftl;
 		break;
@@ -151,10 +149,7 @@ int bdbm_drv_init (void)
 	_bdi = bdi;
 
 	/* get default driver paramters */
-	if ((bdi->ptr_bdbm_params = read_driver_params ()) == NULL) {
-		bdbm_error ("failed to read the default parameters");
-		goto fail;
-	}
+	bdi->parm_ftl = get_default_driver_params ();
 
 	/* set function pointers */
 	if (init_func_pointers (bdi) != 0) {
@@ -164,7 +159,7 @@ int bdbm_drv_init (void)
 
 	/* probe a device to get its geometry information */
 	dm = bdi->ptr_dm_inf;
-	if (dm->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
+	if (dm->probe (bdi, &bdi->parm_dev) != 0) {
 		bdbm_error ("failed to probe a flash device");
 		goto fail;
 	}
@@ -173,7 +168,7 @@ int bdbm_drv_init (void)
 		bdbm_error ("failed to open a flash device");
 		goto fail;
 	}
-	if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+	if (bdi->parm_ftl.snapshot == SNAPSHOT_ENABLE &&
 		dm->load != NULL) {
 		if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
 			bdbm_msg ("loading 'dm.dat' failed");
@@ -195,7 +190,7 @@ int bdbm_drv_init (void)
 		bdbm_error ("failed to create ftl");
 		goto fail;
 	}
-	if (bdi->ptr_bdbm_params->driver.snapshot == SNAPSHOT_ENABLE &&
+	if (bdi->parm_ftl.snapshot == SNAPSHOT_ENABLE &&
 		load == 1 && ftl->load != NULL) {
 		if (ftl->load (bdi, "/usr/share/bdbm_drv/ftl.dat") != 0) {
 			bdbm_msg ("loading 'ftl.dat' failed");
@@ -218,7 +213,7 @@ int bdbm_drv_init (void)
 	}
 
 	/* display default parameters */
-	display_default_params (bdi);
+	display_driver_params (&bdi->parm_ftl);
 
 	/* init performance monitor */
 	pmu_create (bdi);
@@ -246,7 +241,7 @@ fail:
 
 void bdbm_drv_exit(void)
 {
-	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (_bdi);
 
 	if (_bdi == NULL)
 		return;

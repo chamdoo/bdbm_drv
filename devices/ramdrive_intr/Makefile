@@ -3,13 +3,13 @@
 
 INCLUDE = ../../include
 COMMON = ../../common
-DM_COMMON = ../common
+DEV_COMMON = ../common
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
-	-I$(PWD)/$(DM_COMMON) \
+	-I$(PWD)/$(DEV_COMMON) \
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
@@ -20,9 +20,9 @@ EXTRA_CFLAGS += \
 risa_dev_ramdrive_intr-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/utime.o \
-	$(DM_COMMON)/dm_main.o \
-	$(DM_COMMON)/dm_params.o \
-	$(DM_COMMON)/dm_stub.o \
+	$(DEV_COMMON)/dev_main.o \
+	$(DEV_COMMON)/dev_params.o \
+	$(DEV_COMMON)/dev_stub.o \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
 

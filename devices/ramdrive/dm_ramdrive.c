@@ -35,7 +35,7 @@ THE SOFTWARE.
 
 #include "debug.h"
 #include "dm_ramdrive.h"
-#include "dm_params.h"
+#include "dev_params.h"
 #include "dev_ramssd.h"
 
 #include "utime.h"
@@ -72,43 +72,8 @@ static void __dm_ramdrive_ih (void* arg)
 
 static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
-	/* user-specified parameters */
-	params->nr_channels = _param_nr_channels;
-	params->nr_chips_per_channel = _param_nr_chips_per_channel;
-	params->nr_blocks_per_chip = _param_nr_blocks_per_chip;
-	params->nr_pages_per_block = _param_nr_pages_per_block;
-	params->page_main_size = _param_page_main_size;
-	params->page_oob_size = _param_page_oob_size;
-	params->device_type = _param_device_type;
-	params->page_prog_time_us = _param_page_prog_time_us;
-	params->page_read_time_us = _param_page_read_time_us;
-	params->block_erase_time_us = _param_block_erase_time_us;
-	/*params->timing_mode = _param_ramdrv_timing_mode;*/
-
-	/* other parameters derived from user parameters */
-	params->nr_blocks_per_channel = 
-		params->nr_chips_per_channel * 
-		params->nr_blocks_per_chip;
-
-	params->nr_blocks_per_ssd = 
-		params->nr_channels * 
-		params->nr_chips_per_channel * 
-		params->nr_blocks_per_chip;
-
-	params->nr_chips_per_ssd =
-		params->nr_channels * 
-		params->nr_chips_per_channel;
-
-	params->nr_pages_per_ssd =
-		params->nr_pages_per_block * 
-		params->nr_blocks_per_ssd;
-
-	params->device_capacity_in_byte = 0;
-	params->device_capacity_in_byte += params->nr_channels;
-	params->device_capacity_in_byte *= params->nr_chips_per_channel;
-	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
-	params->device_capacity_in_byte *= params->nr_pages_per_block;
-	params->device_capacity_in_byte *= params->page_main_size;
+	*params = get_default_device_params ();
+	display_device_params (params);
 }
 
 uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
@@ -116,7 +81,6 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 	struct dm_ramssd_private* p = NULL;
 
 	/* setup NAND parameters according to users' inputs */
-	bdbm_msg ("[dm_ramdrive_probe] get nand params");
 	__dm_setup_device_params (params);
 
 	/* create a private structure for ramdrive */
@@ -126,7 +90,6 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		goto fail;
 	}
 
-	bdbm_msg ("[dm_ramdrive_probe] create ramssd");
 	/* create RAMSSD based on user-specified NAND parameters */
 	if ((p->ramssd = dev_ramssd_create (
 			params,	__dm_ramdrive_ih)) == NULL) {
@@ -134,15 +97,11 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		bdbm_free_atomic (p);
 		goto fail;
 	} 
-	bdbm_msg ("[dm_ramdrive_probe] ramssd is detected!");
-
-	/* display RAMSSD */
-	/*dev_ramssd_summary (p->ramssd);*/
 
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;
 
-	bdbm_msg ("[dm_ramdrive_probe] done!");
+	bdbm_msg ("[dm_ramdrive_probe] probe done!");
 
 	return 0;
 
@@ -156,7 +115,7 @@ uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi)
 
 	p = (struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_ramdrive_open is initialized");
+	bdbm_msg ("[dm_ramdrive_open] open done!");
 
 	return dev_ramssd_is_init (p->ramssd);
 }
@@ -167,7 +126,7 @@ void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 
 	p = (struct dm_ramssd_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_ramdrive_close is destroyed");
+	bdbm_msg ("[dm_ramdrive_close] closed!");
 
 	dev_ramssd_destroy (p->ramssd);
 

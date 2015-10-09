@@ -67,7 +67,7 @@ bdbm_params_t* read_driver_params (void)
 	/* NOTE: FTL-specific parameters must be decided by custom FTL
 	 * implementation. For this reason, all the parameters for the FTL are set
 	 * to zero by default */
-	bdbm_memset (&p->driver, 0x00, sizeof (bdbm_driver_params_t));
+	bdbm_memset (&p->driver, 0x00, sizeof (bdbm_ftl_params));
 
 	return p;
 }

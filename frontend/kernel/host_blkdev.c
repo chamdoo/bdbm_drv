@@ -189,25 +189,19 @@ int bdbm_blk_ioctl (
 
 uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 {
-	bdbm_params_t* p = bdi->ptr_bdbm_params;
-
-	/* create a completion lock */
-	/*bdbm_mutex_init (&bdbm_device.make_request_lock);*/
-
 	/* create a blk queue */
 	if (!(bdbm_device.queue = blk_alloc_queue (GFP_KERNEL))) {
 		bdbm_error ("blk_alloc_queue failed");
 		return -ENOMEM;
 	}
 	blk_queue_make_request (bdbm_device.queue, fn);
-	blk_queue_logical_block_size (bdbm_device.queue, p->driver.kernel_sector_size);
-	blk_queue_io_min (bdbm_device.queue, p->device.page_main_size);
-	blk_queue_io_opt (bdbm_device.queue, p->device.page_main_size);
-
+	blk_queue_logical_block_size (bdbm_device.queue, bdi->parm_ftl.kernel_sector_size);
+	blk_queue_io_min (bdbm_device.queue, bdi->parm_dev.page_main_size);
+	blk_queue_io_opt (bdbm_device.queue, bdi->parm_dev.page_main_size);
 	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
 
 	/* see if a TRIM command is used or not */
-	if (p->driver.trim == TRIM_ENABLE) {
+	if (bdi->parm_ftl.trim == TRIM_ENABLE) {
 		bdbm_device.queue->limits.discard_granularity = KERNEL_PAGE_SIZE;
 		bdbm_device.queue->limits.max_discard_sectors = UINT_MAX;
 		/*bdbm_device.queue->limits.discard_zeroes_data = 1;*/
@@ -236,8 +230,8 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 
 	{
 		uint64_t capacity;
-		capacity = p->device.device_capacity_in_byte * 0.9;
-		/*capacity = p->nand.device_capacity_in_byte;*/
+		capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
+		/*capacity = bdi->parm_dev.device_capacity_in_byte;*/
 		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 	}

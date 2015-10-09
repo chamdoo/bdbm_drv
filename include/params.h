@@ -134,7 +134,7 @@ typedef struct {
 	uint32_t hlm_type;
 	uint32_t mapping_type;
 	uint32_t snapshot;	/* 0: disable (default), 1: enable */
-} bdbm_driver_params_t;
+} bdbm_ftl_params;
 
 typedef struct {
 	uint64_t nr_channels;
@@ -154,10 +154,5 @@ typedef struct {
 	uint64_t nr_chips_per_ssd;
 	uint64_t nr_pages_per_ssd;
 } bdbm_device_params_t;
-
-typedef struct {
-	bdbm_driver_params_t driver;
-	bdbm_device_params_t device;
-} bdbm_params_t;
 
 #endif /* _BLUEDBM_PARAMS_H */

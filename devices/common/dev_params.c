@@ -39,6 +39,7 @@ THE SOFTWARE.
 
 #include "params.h"
 #include "platform.h"
+#include "debug.h"
 
 int _param_nr_channels 				= NR_CHANNELS;
 int _param_nr_chips_per_channel		= NR_CHIPS_PER_CHANNEL;
@@ -98,4 +99,65 @@ MODULE_PARM_DESC (_param_page_read_time_us, "page read time");
 MODULE_PARM_DESC (_param_block_erase_time_us, "block erasure time");
 MODULE_PARM_DESC (_param_device_type, "device type"); /* it must be reset when implementing actual device modules */
 #endif
+
+bdbm_device_params_t get_default_device_params (void)
+{
+	bdbm_device_params_t p;
+
+	/* user-specified parameters */
+	p.nr_channels = _param_nr_channels;
+ 	p.nr_chips_per_channel = _param_nr_chips_per_channel;
+ 	p.nr_blocks_per_chip = _param_nr_blocks_per_chip;
+ 	p.nr_pages_per_block = _param_nr_pages_per_block;
+ 	p.page_main_size = _param_page_main_size;
+ 	p.page_oob_size = _param_page_oob_size;
+ 	p.device_type = _param_device_type;
+ 	p.page_prog_time_us = _param_page_prog_time_us;
+ 	p.page_read_time_us = _param_page_read_time_us;
+ 	p.block_erase_time_us = _param_block_erase_time_us;
+ 	/*p.timing_mode = _param_ramdrv_timing_mode;*/
+ 
+ 	/* other parameters derived from user parameters */
+ 	p.nr_blocks_per_channel = 
+ 		p.nr_chips_per_channel * 
+ 		p.nr_blocks_per_chip;
+ 
+	p.nr_blocks_per_ssd = 
+ 		p.nr_channels * 
+ 		p.nr_chips_per_channel * 
+ 		p.nr_blocks_per_chip;
+ 
+	p.nr_chips_per_ssd =
+ 		p.nr_channels * 
+		p.nr_chips_per_channel;
+
+	p.nr_pages_per_ssd =
+		p.nr_pages_per_block * 
+		p.nr_blocks_per_ssd;
+
+	p.device_capacity_in_byte = 0;
+	p.device_capacity_in_byte += p.nr_channels;
+	p.device_capacity_in_byte *= p.nr_chips_per_channel;
+	p.device_capacity_in_byte *= p.nr_blocks_per_chip;
+	p.device_capacity_in_byte *= p.nr_pages_per_block;
+	p.device_capacity_in_byte *= p.page_main_size;
+
+	return p;
+}
+
+void display_device_params (bdbm_device_params_t* p)
+{
+    bdbm_msg ("=====================================================================");
+    bdbm_msg ("DEVICE PARAMETERS");
+    bdbm_msg ("=====================================================================");
+    bdbm_msg ("# of channels = %llu", p->nr_channels);
+    bdbm_msg ("# of chips per channel = %llu", p->nr_chips_per_channel);
+    bdbm_msg ("# of blocks per chip = %llu", p->nr_blocks_per_chip);
+    bdbm_msg ("# of pages per block = %llu", p->nr_pages_per_block);
+    bdbm_msg ("page main size  = %llu bytes", p->page_main_size);
+    bdbm_msg ("page oob size = %llu bytes", p->page_oob_size);
+    bdbm_msg ("device type = %u (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)", 
+		p->device_type);
+    bdbm_msg ("");
+}
 

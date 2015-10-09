@@ -31,7 +31,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "utime.h"
 
-#include "host_blockio.h"
+#include "host_blkio.h"
 #include "host_blkdev.h"
 #include "host_blkdev_ioctl.h"
 
@@ -68,7 +68,7 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_trim_req (
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS (bdi);
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	uint64_t nr_secs_per_fp = 0;
 
 	nr_secs_per_fp = np->page_main_size / KERNEL_SECTOR_SIZE;

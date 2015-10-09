@@ -22,22 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_DM_PARAMS_H
-#define _BLUEDBM_DM_PARAMS_H
+#ifndef __BLUEDBM_DRIVER_PARAM_H__
+#define __BLUEDBM_DRIVER_PARAM_H__
 
-extern int _param_nr_channels;
-extern int _param_nr_chips_per_channel;
-extern int _param_nr_blocks_per_chip;
-extern int _param_nr_pages_per_block;
-extern int _param_page_main_size; 
-extern int _param_page_oob_size;
-extern int _param_device_type; 
-extern int _param_host_bus_trans_time_us;
-extern int _param_chip_bus_trans_time_us;
-extern int _param_page_prog_time_us;
-extern int _param_page_read_time_us;
-extern int _param_block_erase_time_us;
-extern int _param_ramdrv_timing_mode;
+bdbm_ftl_params get_default_driver_params (void);
+void display_driver_params (bdbm_ftl_params* p);
 
 #endif
-

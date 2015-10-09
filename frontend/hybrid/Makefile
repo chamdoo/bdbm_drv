@@ -22,14 +22,14 @@ EXTRA_CFLAGS += -D USE_BLOCKIO_PROXY
 #EXTRA_CFLAGS += -D USE_KTIMER
 
 bdbm_drv-y := \
-	host_blockio_proxy.o \
+	host_blkio_proxy.o \
 	proxy_reqs_pool.o \
 	$(KERN)/kmain.o \
-	$(KERN)/kparams.o \
 	$(KERN)/host_blkdev.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
+	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
 
 obj-m := bdbm_drv.o

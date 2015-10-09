@@ -26,8 +26,8 @@ DMCOMMON := ../../devices/libramdrive/libramdrive.a
 
 SRCS := \
 	main.c \
-	uparams.c \
 	host_user.c \
+	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/hlm_buf.c \

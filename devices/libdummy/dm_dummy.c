@@ -35,7 +35,7 @@ THE SOFTWARE.
 #include "utime.h"
 
 #include "dm_dummy.h"
-#include "dm_params.h"
+#include "dev_params.h"
 
 
 bdbm_dm_inf_t _bdbm_dm_inf = {

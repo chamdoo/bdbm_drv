@@ -80,7 +80,7 @@ struct bdbm_hlm_rsd_private {
 uint32_t hlm_rsd_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_hlm_rsd_private* p = NULL;
-	bdbm_driver_params_t* parms = BDBM_GET_DRIVER_PARAMS(bdi);
+	bdbm_ftl_params* parms = BDBM_GET_DRIVER_PARAMS(bdi);
 
 	/* create private */
 	if ((p = (struct bdbm_hlm_rsd_private*)bdbm_malloc_atomic

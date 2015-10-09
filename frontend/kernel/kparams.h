@@ -26,6 +26,6 @@ THE SOFTWARE.
 #define __BLUEDBM_FTL_PARAM_H__
 
 bdbm_params_t* read_driver_params (void);
-void display_default_params (bdbm_drv_info_t* bdi);
+void display_driver_params (bdbm_drv_info_t* bdi);
 
 #endif

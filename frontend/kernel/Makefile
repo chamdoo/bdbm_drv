@@ -26,9 +26,9 @@ EXTRA_CFLAGS += -D KERNEL_MODE
 
 bdbm_drv-y := \
 	kmain.o \
-	kparams.o \
 	host_blkdev.o \
-	host_blockio.o \
+	host_blkio.o \
+	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/hlm_buf.o \

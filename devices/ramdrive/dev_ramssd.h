@@ -68,7 +68,6 @@ typedef struct {
 dev_ramssd_info_t* dev_ramssd_create (bdbm_device_params_t* ptr_nand_params, void (*intr_handler)(void*));
 void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info);
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* ptr_llm_req );
-void dev_ramssd_summary (dev_ramssd_info_t* ptr_ramssd_info);
 
 /* for snapshot */
 uint32_t dev_ramssd_load (dev_ramssd_info_t* ptr_ramssd_info, const char* fn);

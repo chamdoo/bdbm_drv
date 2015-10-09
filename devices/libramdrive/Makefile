@@ -26,8 +26,8 @@ CFLAGS += \
 	-D USER_MODE
 
 LIBSRC := \
-	$(DM_COMMON)/dm_main.c \
-	$(DM_COMMON)/dm_params.c \
+	$(DM_COMMON)/dev_main.c \
+	$(DM_COMMON)/dev_params.c \
 	../ramdrive/dev_ramssd.c \
 	../ramdrive/dm_ramdrive.c \
 

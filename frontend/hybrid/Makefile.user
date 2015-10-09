@@ -28,9 +28,9 @@ DMLIB := ../../devices/libramdrive/libramdrive.a
 
 SRCS := \
 	main.c \
-	host_blockio_stub.c \
-	$(USER)/uparams.c \
+	host_blkio_stub.c \
 	$(USER)/host_user.c \
+	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/hlm_buf.c \
@@ -62,5 +62,5 @@ clean:
 	@cd ../user; rm -rf *.o
 	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../include/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../common/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 

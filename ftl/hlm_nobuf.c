@@ -108,7 +108,7 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 
 uint32_t __hlm_nobuf_get_req_type (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req, uint32_t index)
 {
-	bdbm_driver_params_t* dp = BDBM_GET_DRIVER_PARAMS(bdi);
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS(bdi);
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	uint32_t nr_kp_per_fp, req_type, j;
 
@@ -257,9 +257,8 @@ fail:
 
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
 {
-	bdbm_driver_params_t* dp = &bdi->ptr_bdbm_params->driver;
-	uint32_t ret;
-	int loop = 0;
+	uint32_t ret, loop = 0;
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
 

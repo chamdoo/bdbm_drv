@@ -22,23 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BDBM_PROXY_REQS_POOK_H
-#define _BDBM_PROXY_REQS_POOK_H
+#ifndef _BLUEDBM_DM_PARAMS_H
+#define _BLUEDBM_DM_PARAMS_H
 
-#include "host_blkio_proxy_ioctl.h"
+extern int _param_nr_channels;
+extern int _param_nr_chips_per_channel;
+extern int _param_nr_blocks_per_chip;
+extern int _param_nr_pages_per_block;
+extern int _param_page_main_size; 
+extern int _param_page_oob_size;
+extern int _param_device_type; 
+extern int _param_host_bus_trans_time_us;
+extern int _param_chip_bus_trans_time_us;
+extern int _param_page_prog_time_us;
+extern int _param_page_read_time_us;
+extern int _param_block_erase_time_us;
+extern int _param_ramdrv_timing_mode;
 
-typedef struct {
-	bdbm_spinlock_t lock;
-	bdbm_blockio_proxy_req_t* mmap_reqs;
-	struct list_head used_list;
-	struct list_head free_list;
-	int64_t nr_reqs;
-} bdbm_proxy_reqs_pool_t;
-
-bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (int64_t nr_reqs, bdbm_blockio_proxy_req_t* reqs);
-void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool);
-bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (bdbm_proxy_reqs_pool_t* pool);
-void bdbm_proxy_reqs_pool_free_item (bdbm_proxy_reqs_pool_t* pool, bdbm_blockio_proxy_req_t* req);
+bdbm_device_params_t get_default_device_params (void);
+void display_device_params (bdbm_device_params_t* p);
 
 #endif
 

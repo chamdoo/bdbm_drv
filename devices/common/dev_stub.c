@@ -40,8 +40,8 @@ THE SOFTWARE.
 #include "params.h"
 #include "uthread.h"
 
-#include "dm_params.h"
-#include "dm_stub.h"
+#include "dev_params.h"
+#include "dev_stub.h"
 #include "platform.h"
 
 
@@ -53,7 +53,8 @@ void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
 typedef struct {
 	wait_queue_head_t pollwq;
-	bdbm_params_t params;
+	/*bdbm_params_t params;*/
+	bdbm_device_params_t parm_dev;
 	bdbm_drv_info_t* bdi;
 	bdbm_spinlock_t lock;
 	uint32_t ref_cnt;
@@ -193,7 +194,7 @@ static int dm_stub_probe (bdbm_dm_stub_t* s)
 	}
 
 	/* call probe; just get NAND parameters from the device */
-	if (bdi->ptr_dm_inf->probe (bdi, &bdi->ptr_bdbm_params->device) != 0) {
+	if (bdi->ptr_dm_inf->probe (bdi, &bdi->parm_dev) != 0) {
 		bdbm_warning ("dm->probe () failed");
 		return -EIO;
 	} 
@@ -225,9 +226,9 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	} 
 
 	/* initialize internal variables */
-	s->punit = s->params.device.nr_chips_per_channel * s->params.device.nr_channels;
+	s->punit = s->parm_dev.nr_chips_per_channel * s->parm_dev.nr_channels;
 	s->mmap_shared_size = KERNEL_PAGE_SIZE + PAGE_ALIGN (
-		s->punit * (s->params.device.page_main_size + s->params.device.page_oob_size));
+		s->punit * (s->parm_dev.page_main_size + s->parm_dev.page_oob_size));
 
 	s->kr = (bdbm_llm_req_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_t*));
 	s->ur = (bdbm_llm_req_ioctl_t**)bdbm_zmalloc (s->punit * sizeof (bdbm_llm_req_ioctl_t*));
@@ -242,9 +243,9 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	mmap_ofs += KERNEL_PAGE_SIZE;
 	for (loop = 0; loop < s->punit; loop++) {
 		s->punit_main_pages[loop] = s->mmap_shared + mmap_ofs;
-		mmap_ofs += s->params.device.page_main_size;
+		mmap_ofs += s->parm_dev.page_main_size;
 		s->punit_oob_pages[loop] = s->mmap_shared + mmap_ofs;
-		mmap_ofs += s->params.device.page_oob_size;
+		mmap_ofs += s->parm_dev.page_oob_size;
 	}
 
 	bdbm_msg ("mmap_shared_size = %llu, mmap_ofs = %llu", 
@@ -539,7 +540,7 @@ static int dm_fops_create (struct inode *inode, struct file *filp)
 		return -EIO;
 	} 
 	s->bdi->private_data = (void*)s;
-	s->bdi->ptr_bdbm_params = &s->params;
+	s->bdi->parm_dev = s->parm_dev;
 	s->bdi->ptr_llm_inf = &_bdbm_llm_inf;	/* register interrupt handler */
 	s->bdi->ptr_dm_inf = &_bdbm_dm_inf;	/* register dm handler */
 
@@ -626,7 +627,7 @@ static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long ar
 	switch (cmd) {
 	case BDBM_DM_IOCTL_PROBE:
 		if ((ret = dm_stub_probe (s)) == 0)
-			copy_to_user ((bdbm_device_params_t*)arg, &s->params.device, sizeof (bdbm_device_params_t));
+			copy_to_user ((bdbm_device_params_t*)arg, &s->parm_dev, sizeof (bdbm_device_params_t));
 		break;
 	case BDBM_DM_IOCTL_OPEN:
 		ret = dm_stub_open (s);

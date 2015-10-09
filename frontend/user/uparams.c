@@ -112,7 +112,7 @@ bdbm_params_t* read_driver_params (void)
 	return p;
 }
 
-void display_default_params (bdbm_drv_info_t* bdi)
+void display_driver_params (bdbm_drv_info_t* bdi)
 {
 	bdbm_params_t* p = bdi->ptr_bdbm_params;
 

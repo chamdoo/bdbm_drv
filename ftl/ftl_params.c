@@ -22,9 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
+
+#elif defined(USER_MODE)
+#include <stdint.h>
+#include <stdio.h>
+
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+
+#endif
 
 #include "params.h"
 #include "platform.h"
@@ -34,7 +44,6 @@ THE SOFTWARE.
 /* 
  * setup parameters according to user configurations 
  */
-#if !defined (USE_BLOCKIO_PROXY)
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
@@ -43,32 +52,8 @@ int _param_trim						= TRIM_ENABLE;
 int _param_host_type				= HOST_BLOCK;
 int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_snapshot					= SNAPSHOT_DISABLE;
-#if defined (USE_RISA)
-int _param_mapping_policy 			= MAPPING_POLICY_SEGMENT;
-int _param_hlm_type					= HLM_RSD;
-#elif defined (USE_DFTL)
-int _param_mapping_policy 			= MAPPING_POLICY_DFTL;
-int _param_hlm_type					= HLM_DFTL;
-#else
 int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
 int _param_hlm_type					= HLM_NO_BUFFER;
-#endif
-
-#else /* USE_BLOCKIO_PROXY */
-int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
-int _param_host_type				= HOST_PROXY;
-int _param_trim						= TRIM_ENABLE;
-
-int _param_gc_policy 				= GC_POLICY_NOT_SPECIFIED;
-int _param_wl_policy 				= WL_POLICY_NOT_SPECIFIED;
-int _param_queuing_policy			= QUEUE_POLICY_NOT_SPECIFIED;
-int _param_llm_type					= LLM_NOT_SPECIFIED;
-int _param_mapping_policy 			= MAPPING_POLICY_NOT_SPECIFIED;
-int _param_hlm_type					= HLM_NOT_SPECIFIED;
-int _param_snapshot					= SNAPSHOT_DISABLE;
-
-#endif
-
 
 /* for kernel modules (nothing for user-level applications */
 module_param (_param_mapping_policy, int, 0000);
@@ -93,61 +78,41 @@ MODULE_PARM_DESC (_param_llm_type, "low-level memory management type");
 MODULE_PARM_DESC (_param_hlm_type, "high-level memory management type");
 MODULE_PARM_DESC (_param_snapshot, "snapshot (0: disable (default), 1: enable)");
 
-bdbm_params_t* read_driver_params (void)
+bdbm_ftl_params get_default_driver_params (void)
 {
-	bdbm_params_t* p = NULL;
-
-	/* allocate the memory for parameters */
-	if ((p = (bdbm_params_t*)bdbm_malloc (sizeof (bdbm_params_t))) == NULL) {
-		bdbm_error ("failed to allocate the memory for params");
-		return NULL;
-	}
+	bdbm_ftl_params p;
 
 	/* setup driver parameters */
-	p->driver.mapping_policy = _param_mapping_policy;
-	p->driver.gc_policy = _param_gc_policy;
-	p->driver.wl_policy = _param_wl_policy;
-	p->driver.kernel_sector_size = _param_kernel_sector_size;
-	p->driver.trim = _param_trim;
-	p->driver.host_type = _param_host_type; 
-	p->driver.llm_type = _param_llm_type;
-	p->driver.hlm_type = _param_hlm_type;
-	p->driver.mapping_type = _param_mapping_policy;
-	p->driver.snapshot = _param_snapshot;
+	p.mapping_policy = _param_mapping_policy;
+	p.gc_policy = _param_gc_policy;
+	p.wl_policy = _param_wl_policy;
+	p.kernel_sector_size = _param_kernel_sector_size;
+	p.trim = _param_trim;
+	p.host_type = _param_host_type; 
+	p.llm_type = _param_llm_type;
+	p.hlm_type = _param_hlm_type;
+	p.mapping_type = _param_mapping_policy;
+	p.snapshot = _param_snapshot;
 
 	return p;
 }
 
-void display_driver_params (bdbm_drv_info_t* bdi)
+void display_driver_params (bdbm_ftl_params* p)
 {
-	bdbm_params_t* p = bdi->ptr_bdbm_params;
-
 	if (p == NULL) {
 		bdbm_msg ("oops! the parameters are not loaded properly");
 		return;
 	} 
 
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("DRIVER CONFIGURATION");
+	bdbm_msg ("FTL CONFIGURATION");
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("mapping policy = %d (0: no ftl, 1: block-mapping, 2: page-mapping)", p->driver.mapping_policy);
-	bdbm_msg ("gc policy = %d (1: merge 2: random, 3: greedy, 4: cost-benefit)", p->driver.gc_policy);
-	bdbm_msg ("wl policy = %d (1: none, 2: swap)", p->driver.wl_policy);
-	bdbm_msg ("trim mode = %d (1: enable, 2: disable)", p->driver.trim);
-	bdbm_msg ("host type = %d (1: block I/O, 2: direct)", p->driver.host_type);
-	bdbm_msg ("kernel sector = %d bytes", p->driver.kernel_sector_size);
-	bdbm_msg ("");
-
-	bdbm_msg ("=====================================================================");
-	bdbm_msg ("DEVICE PARAMETERS");
-	bdbm_msg ("=====================================================================");
-	bdbm_msg ("# of channels = %llu", p->device.nr_channels);
-	bdbm_msg ("# of chips per channel = %llu", p->device.nr_chips_per_channel);
-	bdbm_msg ("# of blocks per chip = %llu", p->device.nr_blocks_per_chip);
-	bdbm_msg ("# of pages per block = %llu", p->device.nr_pages_per_block);
-	bdbm_msg ("page main size  = %llu bytes", p->device.page_main_size);
-	bdbm_msg ("page oob size = %llu bytes", p->device.page_oob_size);
-	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", p->device.device_type);
+	bdbm_msg ("mapping policy = %d (1: no ftl, 2: block-mapping, 3: page-mapping, 4: dftl)", p->mapping_policy);
+	bdbm_msg ("gc policy = %d (1: merge 2: random, 3: greedy, 4: cost-benefit)", p->gc_policy);
+	bdbm_msg ("wl policy = %d (1: none, 2: swap)", p->wl_policy);
+	bdbm_msg ("trim mode = %d (1: enable, 2: disable)", p->trim);
+	bdbm_msg ("host type = %d (1: block I/O, 2: direct)", p->host_type);
+	bdbm_msg ("kernel sector = %d bytes", p->kernel_sector_size);
 	bdbm_msg ("");
 }
 

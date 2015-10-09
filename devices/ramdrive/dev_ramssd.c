@@ -107,19 +107,10 @@ static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_nand_params)
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("RAM DISK INFO");
 	bdbm_msg ("=====================================================================");
-
-	bdbm_msg ("page size (bytes) = %llu (%llu + %llu)", 
-		page_size_in_bytes, 
-		ptr_nand_params->page_main_size, 
-		ptr_nand_params->page_oob_size);
-
-	bdbm_msg ("# of pages in the SSD = %llu", nr_pages_in_ssd);
-
 	bdbm_msg ("the SSD capacity: %llu (B), %llu (KB), %llu (MB)",
 		ptr_nand_params->device_capacity_in_byte,
 		BDBM_SIZE_KB(ptr_nand_params->device_capacity_in_byte),
 		BDBM_SIZE_MB(ptr_nand_params->device_capacity_in_byte));
-
 
 	/* allocate the memory for the SSD */
 	if ((ptr_ramssd = (void*)bdbm_malloc
@@ -252,11 +243,6 @@ static uint8_t __ramssd_prog_page (
 			ptr_oob_data,
 			ri->nand_params->page_oob_size
 		);
-		/*
-		bdbm_msg ("lpa: %llu %llu", 
-			((uint64_t*)(ptr_ramssd_addr + ri->nand_params->page_main_size))[0],
-			((uint64_t*)ptr_oob_data)[0]);
-		*/
 	}
 
 fail:
@@ -381,10 +367,6 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
 
 				/* call the interrupt handler */
-				/*{*/
-					/*bdbm_llm_req_t* r = (bdbm_llm_req_t*)ptr_req;*/
-					/*bdbm_msg ("[dev] req done - %llu (%llu)", r->lpa, r->phyaddr->punit_id);*/
-				/*}*/
 				ri->intr_handler (ptr_req);
 			} else {
 				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
@@ -430,10 +412,10 @@ uint32_t __ramssd_timing_register_schedule (dev_ramssd_info_t* ri)
 		__ramssd_cmd_done (ri);
 		break;
 #if defined (KERNEL_MODE)
-	case DEVICE_TYPE_RAMDRIVE_INTR:
+	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		/*__ramssd_cmd_done (ri);*/
 		break;
-	case DEVICE_TYPE_RAMDRIVE_TIMING:
+	case DEVICE_TYPE_RAMDRIVE_INTR:
 		tasklet_schedule (ri->tasklet); 
 		break;
 #endif
@@ -452,24 +434,21 @@ uint32_t __ramssd_timing_create (dev_ramssd_info_t* ri)
 	switch (ri->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
 	case DEVICE_TYPE_USER_RAMDRIVE:
-		bdbm_msg ("use TIMING_DISABLE mode!");
 		break;
 #if defined (KERNEL_MODE)
-	case DEVICE_TYPE_RAMDRIVE_INTR: 
+	case DEVICE_TYPE_RAMDRIVE_TIMING: 
 		{
 			ktime_t ktime;
-			bdbm_msg ("HRTIMER is created!");
 			hrtimer_init (&ri->hrtimer, CLOCK_REALTIME, HRTIMER_MODE_REL);
 			ri->hrtimer.function = __ramssd_timing_hrtimer_cmd_done;
 			ktime = ktime_set (0, 500 * 1000);
 			hrtimer_start (&ri->hrtimer, ktime, HRTIMER_MODE_REL);
 		}
 		/* no break! we initialize a tasklet together */
-	case DEVICE_TYPE_RAMDRIVE_TIMING: 
-		bdbm_msg ("TASKLET is created!");
+	case DEVICE_TYPE_RAMDRIVE_INTR: 
 		if ((ri->tasklet = (struct tasklet_struct*)
 				bdbm_malloc_atomic (sizeof (struct tasklet_struct))) == NULL) {
-			bdbm_msg ("bdbm_malloc_atomic failed");
+			bdbm_error ("bdbm_malloc_atomic failed");
 			ret = 1;
 		} else {
 			tasklet_init (ri->tasklet, 
@@ -491,15 +470,12 @@ void __ramssd_timing_destory (dev_ramssd_info_t* ri)
 	switch (ri->emul_mode) {
 	case DEVICE_TYPE_RAMDRIVE:
 	case DEVICE_TYPE_USER_RAMDRIVE:
-		bdbm_msg ("TIMING_DISABLE is destroyed!");
 		break;
 #if defined (KERNEL_MODE)
-	case DEVICE_TYPE_RAMDRIVE_INTR:
-		bdbm_msg ("HRTIMER is canceled");
+	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		hrtimer_cancel (&ri->hrtimer);
 		/* no break! we destroy a tasklet */
-	case DEVICE_TYPE_RAMDRIVE_TIMING:
-		bdbm_msg ("TASKLET is killed");
+	case DEVICE_TYPE_RAMDRIVE_INTR:
 		tasklet_kill (ri->tasklet);
 		break;
 #endif
@@ -549,7 +525,7 @@ dev_ramssd_info_t* dev_ramssd_create (
 
 	/* create and register a tasklet */
 	if (__ramssd_timing_create (ri) != 0) {
-		bdbm_msg ("dev_ramssd_timing_create failed");
+		bdbm_error ("__ramssd_timing_create () failed");
 		goto fail_timing;
 	}
 
@@ -597,7 +573,7 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		uint64_t punit_id = r->phyaddr->punit_id;
 
 		/* get the target elapsed time depending on the type of req */
-		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_INTR) {
+		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_TIMING) {
 			switch (r->req_type) {
 			case REQTYPE_WRITE:
 			case REQTYPE_GC_WRITE:
@@ -630,8 +606,6 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		}
 
 		/* register reqs */
-		/*bdbm_msg ("elapsed = %llu", target_elapsed_time_us);*/
-		/*bdbm_msg ("[dev] send req - %llu (%llu)", r->lpa, r->phyaddr->punit_id);*/
 		bdbm_spin_lock_irqsave (&ri->ramssd_lock, flags);
 		if (ri->ptr_punits[punit_id].ptr_req == NULL) {
 			ri->ptr_punits[punit_id].ptr_req = (void*)r;
@@ -655,28 +629,6 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 
 fail:
 	return ret;
-}
-
-void dev_ramssd_summary (dev_ramssd_info_t* ri)
-{
-	if (ri->is_init == 0) {
-		bdbm_msg ("RAMSSD is not initialized yet");
-		return;
-	}
-
-	bdbm_msg ("* A summary of the RAMSSD organization *");
-	bdbm_msg (" - Total SSD size: %llu B (%llu MB)", dev_ramssd_get_ssd_size (ri), BDBM_SIZE_MB (dev_ramssd_get_ssd_size (ri)));
-	bdbm_msg (" - Flash chip size: %llu", dev_ramssd_get_chip_size (ri));
-	bdbm_msg (" - Flash block size: %llu", dev_ramssd_get_block_size (ri));
-	bdbm_msg (" - Flash page size: %llu (main: %llu + oob: %llu)", dev_ramssd_get_page_size (ri), dev_ramssd_get_page_size_main (ri), dev_ramssd_get_page_size_oob (ri));
-	bdbm_msg ("");
-	bdbm_msg (" - # of pages per block: %llu", dev_ramssd_get_pages_per_block (ri));
-	bdbm_msg (" - # of blocks per chip: %llu", dev_ramssd_get_blocks_per_chips (ri));
-	bdbm_msg (" - # of chips per channel: %llu", dev_ramssd_get_chips_per_channel (ri));
-	bdbm_msg (" - # of channels: %llu", dev_ramssd_get_channles_per_ssd (ri));
-	bdbm_msg ("");
-	bdbm_msg (" - kernel page size: %lu", KERNEL_PAGE_SIZE);
-	bdbm_msg ("");
 }
 
 /* for snapshot */

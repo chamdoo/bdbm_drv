@@ -39,8 +39,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "dm_bluedbm.h"
 #include "platform.h"
-
-#include "dm_params.h"
+#include "dev_params.h"
 
 
 /*#define BDBM_DBG*/
@@ -302,42 +301,8 @@ int connectal_handler_fn (void* arg)
  **/
 static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
-	/* user-specified parameters */
-	params->nr_channels = _param_nr_channels;
-	params->nr_chips_per_channel = _param_nr_chips_per_channel;
-	params->nr_blocks_per_chip = _param_nr_blocks_per_chip;
-	params->nr_pages_per_block = _param_nr_pages_per_block;
-	params->page_main_size = _param_page_main_size;
-	params->page_oob_size = _param_page_oob_size;
-	params->device_type = _param_device_type;
-	params->page_prog_time_us = _param_page_prog_time_us;
-	params->page_read_time_us = _param_page_read_time_us;
-	params->block_erase_time_us = _param_block_erase_time_us;
-
-	/* other parameters derived from user parameters */
-	params->nr_blocks_per_channel =
-		params->nr_chips_per_channel *
-		params->nr_blocks_per_chip;
-
-	params->nr_blocks_per_ssd =
-		params->nr_channels *
-		params->nr_chips_per_channel *
-		params->nr_blocks_per_chip;
-
-	params->nr_chips_per_ssd =
-		params->nr_channels *
-		params->nr_chips_per_channel;
-
-	params->nr_pages_per_ssd =
-		params->nr_pages_per_block *
-		params->nr_blocks_per_ssd;
-
-	params->device_capacity_in_byte = 0;
-	params->device_capacity_in_byte += params->nr_channels;
-	params->device_capacity_in_byte *= params->nr_chips_per_channel;
-	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
-	params->device_capacity_in_byte *= params->nr_pages_per_block;
-	params->device_capacity_in_byte *= params->page_main_size;
+	*params = get_default_device_params ();
+	display_device_params (params);
 }
 
 uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
