@@ -3,8 +3,9 @@
 
 FTL := ../../ftl
 INCLUDE := ../../include
-COMMON := ../../common
 KERN := ../kernel
+COMMON := ../../common
+DM_COMMON := ../../devices/common
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
@@ -12,6 +13,7 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(FTL) \
 	-I$(PWD)/$(KERN) \
+	-I$(PWD)/$(DM_COMMON) \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
@@ -22,15 +24,17 @@ EXTRA_CFLAGS += -D USE_BLOCKIO_PROXY
 #EXTRA_CFLAGS += -D USE_KTIMER
 
 bdbm_drv-y := \
+	kmain.o \
 	host_blkio_proxy.o \
 	proxy_reqs_pool.o \
-	$(KERN)/kmain.o \
-	$(KERN)/host_blkdev.o \
+	$(FTL)/ftl_params.o \
+	$(FTL)/pmu.o \
+	$(DM_COMMON)/dev_params.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
-	$(FTL)/ftl_params.o \
-	$(FTL)/pmu.o \
+	$(COMMON)/bdbm_main.o \
+	$(KERN)/host_blkdev.o \
 
 obj-m := bdbm_drv.o
 

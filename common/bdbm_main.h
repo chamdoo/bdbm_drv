@@ -22,10 +22,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef __BLUEDBM_FTL_PARAM_H__
-#define __BLUEDBM_FTL_PARAM_H__
 
-bdbm_ftl_params get_default_ftl_params (void);
-void display_ftl_params (bdbm_ftl_params* p);
-
-#endif

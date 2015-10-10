@@ -22,47 +22,71 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <linux/init.h>
-#include <linux/module.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <signal.h> /* signal */
 
 #include "bdbm_drv.h"
 #include "debug.h"
-#include "host_blkio.h"
 #include "devices.h"
 
-bdbm_drv_info_t* _bdi = NULL;
+#include "host_blkio_stub.h"
 
-static int __init bdbm_drv_init (void)
+
+bdbm_drv_info_t* _bdi = NULL;
+bdbm_mutex_t exit_signal;
+
+void signal_callback (int signum)
 {
+	bdbm_mutex_unlock (&exit_signal);
+}
+
+void wait ()
+{
+	/* wait for interrupts */
+	bdbm_mutex_lock (&exit_signal);
+}
+
+int main (int argc, char** argv)
+{
+	int loop_thread;
+
+	bdbm_mutex_init (&exit_signal);
+	bdbm_mutex_lock (&exit_signal);
+	signal (SIGINT, signal_callback);
+
 	/* create bdi with default parameters */
+	bdbm_msg ("[user-main] initialize bdbm_drv");
 	if ((_bdi = bdbm_drv_create ()) == NULL) {
 		bdbm_error ("[kmain] bdbm_drv_create () failed");
-		return -ENXIO;
+		return -1;
 	}
 
 	/* open the device */
 	if (bdbm_dm_init (_bdi) != 0) {
 		bdbm_error ("[kmain] bdbm_dm_init () failed");
-		return -ENXIO;
+		return -1;
 	}
 
 	/* attach the host & the device interface to the bdbm */
-	if (bdbm_drv_setup (_bdi, &_host_blockio_inf, bdbm_dm_get_inf (_bdi)) != 0) {
+	if (bdbm_drv_setup (_bdi, &_host_blockio_stub_inf, bdbm_dm_get_inf (_bdi)) != 0) {
 		bdbm_error ("[kmain] bdbm_drv_setup () failed");
-		return -ENXIO;
+		return -1;
 	}
 
 	/* run it */
 	if (bdbm_drv_run (_bdi) != 0) {
 		bdbm_error ("[kmain] bdbm_drv_run () failed");
-		return -ENXIO;
+		return -1;
 	}
 
-	return 0;
-}
+	bdbm_msg ("[user-main] the user-level FTL is running...");
+	wait ();
 
-static void __exit bdbm_drv_exit(void)
-{
+	bdbm_msg ("[user-main] destroy bdbm_drv");
+
 	/* stop running layers */
 	bdbm_drv_close (_bdi);
 
@@ -71,11 +95,9 @@ static void __exit bdbm_drv_exit(void)
 
 	/* remove bdbm_drv */
 	bdbm_drv_destroy (_bdi);
+
+	bdbm_msg ("[user-main] done");
+
+	return 0;
 }
 
-MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
-MODULE_DESCRIPTION ("BlueDBM Device Driver");
-MODULE_LICENSE ("GPL");
-
-module_init (bdbm_drv_init);
-module_exit (bdbm_drv_exit);

@@ -27,8 +27,9 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
-#include "host_blkio.h"
 #include "devices.h"
+
+#include "host_blkio_proxy.h"
 
 bdbm_drv_info_t* _bdi = NULL;
 
@@ -40,17 +41,14 @@ static int __init bdbm_drv_init (void)
 		return -ENXIO;
 	}
 
-	/* open the device */
-	if (bdbm_dm_init (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_dm_init () failed");
-		return -ENXIO;
-	}
+	/* invalidate not-used-layers */
+	_bdi->parm_ftl.llm_type = LLM_NOT_SPECIFIED;
+	_bdi->parm_ftl.hlm_type = HLM_NOT_SPECIFIED;
+	_bdi->parm_ftl.mapping_type = MAPPING_POLICY_NOT_SPECIFIED;
 
-	/* attach the host & the device interface to the bdbm */
-	if (bdbm_drv_setup (_bdi, &_host_blockio_inf, bdbm_dm_get_inf (_bdi)) != 0) {
-		bdbm_error ("[kmain] bdbm_drv_setup () failed");
-		return -ENXIO;
-	}
+	/* attach the host interface to the bdbm
+	 * note that there is no device */
+	bdbm_drv_setup (_bdi, &_host_blockio_proxy_inf, NULL);
 
 	/* run it */
 	if (bdbm_drv_run (_bdi) != 0) {
@@ -65,9 +63,6 @@ static void __exit bdbm_drv_exit(void)
 {
 	/* stop running layers */
 	bdbm_drv_close (_bdi);
-
-	/* close the device */
-	bdbm_dm_exit (_bdi);
 
 	/* remove bdbm_drv */
 	bdbm_drv_destroy (_bdi);

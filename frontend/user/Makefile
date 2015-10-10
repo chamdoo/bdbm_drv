@@ -5,6 +5,7 @@ CC = gcc
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
+DM_COMMON := ../../devices/common
 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
@@ -12,7 +13,8 @@ LIBS += -lm -lpthread -lrt
 INCLUDES = -I$(PWD)/$(INCLUDE) \
 		   -I$(PWD)/$(COMMON)/utils \
 		   -I$(PWD)/$(COMMON)/3rd \
-		   -I$(PWD)/$(FTL)
+		   -I$(PWD)/$(FTL) \
+		   -I$(PWD)/$(DM_COMMON) \
 
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
@@ -49,6 +51,7 @@ SRCS := \
 	$(COMMON)/utils/uthread.c \
 	$(COMMON)/utils/upage.c \
 	$(COMMON)/3rd/uilog.c \
+	$(COMMON)/bdbm_main.c \
 	$(DMCOMMON) \
 
 

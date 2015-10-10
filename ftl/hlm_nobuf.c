@@ -115,7 +115,7 @@ uint32_t __hlm_nobuf_get_req_type (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm
 	nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* temp */
-	if (dp->mapping_policy == MAPPING_POLICY_SEGMENT)
+	if (dp->mapping_type == MAPPING_POLICY_SEGMENT)
 		return ptr_hlm_req->req_type;
 	/* end */
 

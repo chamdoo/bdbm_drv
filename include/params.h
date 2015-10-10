@@ -29,24 +29,8 @@ THE SOFTWARE.
 #define KERNEL_SECTOR_SIZE				512		/* kernel sector size is usually set to 512 bytes */
 
 
-/* default NAND parameters (just for convenience purpose) */
-enum BDBM_DEFAULT_NAND_PARAMS {
-	NAND_PAGE_SIZE = 4096,
-	NAND_PAGE_OOB_SIZE = 64,
-	NR_PAGES_PER_BLOCK = 128,
-	NR_BLOCKS_PER_CHIP = 32*4,
-	NR_CHIPS_PER_CHANNEL = 4,
-	NR_CHANNELS = 8,
-	NAND_HOST_BUS_TRANS_TIME_US = 0,	/* assume to be 0 */
-	NAND_CHIP_BUS_TRANS_TIME_US = 100,	/* 100us */
-	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
-	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
-	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
-	BLKOFS = 256,
-};
-
 /* device-type parameters */
-enum BDBM_DEVICE_TYPE {
+typedef enum {
 	DEVICE_TYPE_NOT_SPECIFIED = 0,
 	DEVICE_TYPE_RAMDRIVE = 1,
 	DEVICE_TYPE_RAMDRIVE_INTR,
@@ -54,8 +38,8 @@ enum BDBM_DEVICE_TYPE {
 	DEVICE_TYPE_BLUEDBM,
 	DEVICE_TYPE_USER_DUMMY,
 	DEVICE_TYPE_USER_RAMDRIVE,
-	DEVICE_TYPE_NOTSET = 0xFF,
-};
+	DEVICE_TYPE_END,
+} bdbm_device_type_t;
 
 /* default parameters for a device driver */
 enum BDBM_MAPPING_POLICY {
@@ -93,14 +77,6 @@ enum BDBM_TRIM {
 	TRIM_DISABLE = 2,
 };
 
-enum BDBM_HOST_TYPE {
-	HOST_NOT_SPECIFIED = 0,
-	HOST_BLOCK,
-	HOST_DIRECT,
-	HOST_PROXY,
-	HOST_STUB,
-};
-
 enum BDBM_LLM_TYPE {
 	LLM_NOT_SPECIFIED = 0,
 	LLM_NO_QUEUE,
@@ -123,13 +99,11 @@ enum BDBM_SNAPSHOT {
 
 /* parameter structures */
 typedef struct {
-	uint32_t mapping_policy;
 	uint32_t gc_policy;
 	uint32_t wl_policy;
 	uint32_t kernel_sector_size;
 	uint32_t queueing_policy;
 	uint32_t trim;
-	uint32_t host_type;
 	uint32_t llm_type;
 	uint32_t hlm_type;
 	uint32_t mapping_type;

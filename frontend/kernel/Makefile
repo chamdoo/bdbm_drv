@@ -4,6 +4,7 @@
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
+DM_COMMON := ../../devices/common
 
 KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
@@ -13,6 +14,7 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(FTL) \
+	-I$(PWD)/$(DM_COMMON) \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
@@ -45,9 +47,11 @@ bdbm_drv-y := \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
 	$(FTL)/queue/rd_prior_queue.o \
+	$(DM_COMMON)/dev_params.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
+	$(COMMON)/bdbm_main.o \
 
 obj-m := bdbm_drv.o
 

@@ -47,57 +47,32 @@ THE SOFTWARE.
 int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
-int _param_queuing_policy			= QUEUE_POLICY_NO;
+int _param_queuing_policy			= QUEUE_POLICY_MULTI_FIFO;
 int _param_trim						= TRIM_ENABLE;
-int _param_host_type				= HOST_BLOCK;
-int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_snapshot					= SNAPSHOT_DISABLE;
-int _param_mapping_policy 			= MAPPING_POLICY_PAGE;
+int _param_mapping_type				= MAPPING_POLICY_PAGE;
+int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 
-/* for kernel modules (nothing for user-level applications */
-module_param (_param_mapping_policy, int, 0000);
-module_param (_param_gc_policy, int, 0000);
-module_param (_param_wl_policy, int, 0000);
-module_param (_param_queuing_policy, int, 0000);
-module_param (_param_kernel_sector_size, int, 0000);
-module_param (_param_trim, int, 0000);
-module_param (_param_host_type, int, 0000);
-module_param (_param_llm_type, int, 0000);
-module_param (_param_hlm_type, int, 0000);
-module_param (_param_snapshot, int, 0000);
-
-MODULE_PARM_DESC (_param_mapping_policy, "mapping policy");
-MODULE_PARM_DESC (_param_gc_policy, "garbage collection policy");
-MODULE_PARM_DESC (_param_wl_policy, "wear-leveling policy");
-MODULE_PARM_DESC (_param_queuing_policy, "queueing policy");
-MODULE_PARM_DESC (_param_kernel_sector_size, "kernel sector size");
-MODULE_PARM_DESC (_param_trim, "trim option");
-MODULE_PARM_DESC (_param_host_type, "host interface type");
-MODULE_PARM_DESC (_param_llm_type, "low-level memory management type");
-MODULE_PARM_DESC (_param_hlm_type, "high-level memory management type");
-MODULE_PARM_DESC (_param_snapshot, "snapshot (0: disable (default), 1: enable)");
-
-bdbm_ftl_params get_default_driver_params (void)
+bdbm_ftl_params get_default_ftl_params (void)
 {
 	bdbm_ftl_params p;
 
 	/* setup driver parameters */
-	p.mapping_policy = _param_mapping_policy;
 	p.gc_policy = _param_gc_policy;
 	p.wl_policy = _param_wl_policy;
+	p.queueing_policy = _param_queuing_policy;
 	p.kernel_sector_size = _param_kernel_sector_size;
 	p.trim = _param_trim;
-	p.host_type = _param_host_type; 
+	p.snapshot = _param_snapshot;
+	p.mapping_type = _param_mapping_type;
 	p.llm_type = _param_llm_type;
 	p.hlm_type = _param_hlm_type;
-	p.mapping_type = _param_mapping_policy;
-	p.snapshot = _param_snapshot;
 
 	return p;
 }
 
-void display_driver_params (bdbm_ftl_params* p)
+void display_ftl_params (bdbm_ftl_params* p)
 {
 	if (p == NULL) {
 		bdbm_msg ("oops! the parameters are not loaded properly");
@@ -107,11 +82,10 @@ void display_driver_params (bdbm_ftl_params* p)
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("FTL CONFIGURATION");
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("mapping policy = %d (1: no ftl, 2: block-mapping, 3: page-mapping, 4: dftl)", p->mapping_policy);
+	bdbm_msg ("mapping type = %d (1: no ftl, 2: block-mapping, 3: page-mapping, 4: dftl)", p->mapping_type);
 	bdbm_msg ("gc policy = %d (1: merge 2: random, 3: greedy, 4: cost-benefit)", p->gc_policy);
 	bdbm_msg ("wl policy = %d (1: none, 2: swap)", p->wl_policy);
 	bdbm_msg ("trim mode = %d (1: enable, 2: disable)", p->trim);
-	bdbm_msg ("host type = %d (1: block I/O, 2: direct)", p->host_type);
 	bdbm_msg ("kernel sector = %d bytes", p->kernel_sector_size);
 	bdbm_msg ("");
 }

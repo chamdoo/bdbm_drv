@@ -36,6 +36,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "params.h"
+#include "dev_params.h"
 #include "debug.h"
 #include "dm_bluedbm.h"
 #include "platform.h"
@@ -44,6 +45,7 @@ THE SOFTWARE.
 
 /*#define BDBM_DBG*/
 #define MAX_INDARRAY 4
+#define	BLKOFS 256
 
 /*bdbm_dm_inf_t _dm_bluedbm_inf = {*/
 bdbm_dm_inf_t _bdbm_dm_inf = {

@@ -207,17 +207,6 @@ typedef struct {
 	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
 } bdbm_dm_inf_t;
 
-/* a generic queue interface */
-typedef struct {
-	void* ptr_private;
-	uint32_t (*create) (bdbm_drv_info_t* bdi, uint64_t nr_punits, uint64_t nr_items_per_pu);
-	void (*destroy) (bdbm_drv_info_t* bdi);
-	uint32_t (*enqueue) (bdbm_drv_info_t* bdi, uint64_t punit, void* req);
-	void* (*dequeue) (bdbm_drv_info_t* bdi, uint64_t punit);
-	uint8_t (*is_full) (bdbm_drv_info_t* bdi, uint64_t punit);
-	uint8_t (*is_empty) (bdbm_drv_info_t* bdi, uint64_t punit);
-} bdbm_queue_inf_t;
-
 /* a generic FTL interface */
 typedef struct {
 	void* ptr_private;
@@ -288,5 +277,12 @@ struct _bdbm_drv_info_t {
 	bdbm_ftl_inf_t* ptr_ftl_inf;
 	bdbm_perf_monitor_t pm;
 };
+
+/* functions for bdi creation, setup, run, and remove */
+bdbm_drv_info_t* bdbm_drv_create (void);
+int bdbm_drv_setup (bdbm_drv_info_t* bdi, bdbm_host_inf_t* host_inf, bdbm_dm_inf_t* dm_inf);
+int bdbm_drv_run (bdbm_drv_info_t* bdi);
+void bdbm_drv_close (bdbm_drv_info_t* bdi);
+void bdbm_drv_destroy (bdbm_drv_info_t* bdi);
 
 #endif /* _BLUEDBM_DRV_H */

@@ -6,6 +6,7 @@ FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
 USER := ../user
+DM_COMMON := ../../devices/common
 
 CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
 LIBS += -lm -lpthread -lrt
@@ -14,7 +15,8 @@ INCLUDES = -I$(PWD)/$(INCLUDE) \
 		   -I$(PWD)/$(COMMON)/utils \
 		   -I$(PWD)/$(COMMON)/3rd \
 		   -I$(PWD)/$(FTL) \
-		   -I$(PWD)/$(USER)
+		   -I$(PWD)/$(USER) \
+		   -I$(PWD)/$(DM_COMMON) \
 
 CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_MSG \
@@ -27,9 +29,8 @@ DMLIB := ../../devices/libramdrive/libramdrive.a
 #DMLIB := dm_proxy.c
 
 SRCS := \
-	main.c \
+	umain.c \
 	host_blkio_stub.c \
-	$(USER)/host_user.c \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
@@ -52,6 +53,7 @@ SRCS := \
 	$(COMMON)/utils/uthread.c \
 	$(COMMON)/utils/upage.c \
 	$(COMMON)/3rd/uilog.c \
+	$(COMMON)/bdbm_main.c \
 	$(DMLIB) \
 
 libftl: $(SRCS) $(DMLIB)
@@ -59,8 +61,9 @@ libftl: $(SRCS) $(DMLIB)
 
 clean:
 	@$(RM) *.o core *~ libftl 
-	@cd ../user; rm -rf *.o
-	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../common/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(USER); rm -rf *.o
+	@cd $(FTL); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON)/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON)/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 

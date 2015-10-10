@@ -61,7 +61,7 @@ THE SOFTWARE.
 /* main data structure */
 bdbm_drv_info_t* _bdi = NULL;
 
-
+#if 0
 static int init_func_pointers (bdbm_drv_info_t* bdi)
 {
 	/* set functions for device manager (dm) */
@@ -275,6 +275,7 @@ void bdbm_drv_exit(void)
 
 	bdbm_msg ("[blueDBM is removed]");
 }
+#endif
 
 
 #define NUM_THREADS	100
@@ -353,8 +354,7 @@ void host_thread_fn2 (void *data)
 	pthread_exit (0);
 }
 
-
-
+#if 0
 int main (int argc, char** argv)
 {
 	int loop_thread;
@@ -405,6 +405,69 @@ int main (int argc, char** argv)
 
 	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_exit ();
+
+	bdbm_msg ("[main] done");
+
+	return 0;
+}
+#endif
+
+int main (int argc, char** argv)
+{
+	int loop_thread;
+
+	pthread_t thread[NUM_THREADS];
+	int thread_args[NUM_THREADS];
+
+	bdbm_msg ("[main] run ftlib... (%d)", sizeof (bdbm_llm_req_t));
+
+	bdbm_msg ("[user-main] initialize bdbm_drv");
+	if ((_bdi = bdbm_drv_create ()) == NULL) {
+		bdbm_error ("[kmain] bdbm_drv_create () failed");
+		return -1;
+	}
+
+	bdbm_dm_init (_bdi);
+	bdbm_drv_setup (_bdi, &_host_user_inf, bdbm_dm_get_inf (_bdi));
+	bdbm_drv_run (_bdi);
+
+	do {
+		bdbm_msg ("[main] run some simulation");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			thread_args[loop_thread] = loop_thread;
+			pthread_create (&thread[loop_thread], NULL, 
+				(void*)&host_thread_fn2, 
+				(void*)&thread_args[loop_thread]);
+		}
+
+		bdbm_msg ("[main] wait for threads to end...");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			pthread_join (
+				thread[loop_thread], NULL
+			);
+		}
+
+		bdbm_msg ("START READ");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			thread_args[loop_thread] = loop_thread;
+			pthread_create (&thread[loop_thread], NULL, 
+				(void*)&host_thread_fn, 
+				(void*)&thread_args[loop_thread]);
+		}
+
+		bdbm_msg ("[main] wait for threads to end...");
+		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+			pthread_join (
+				thread[loop_thread], NULL
+			);
+		}
+
+	} while (1);
+
+	bdbm_msg ("[main] destroy bdbm_drv");
+	bdbm_drv_close (_bdi);
+	bdbm_dm_exit (_bdi);
+	bdbm_drv_destroy (_bdi);
 
 	bdbm_msg ("[main] done");
 
