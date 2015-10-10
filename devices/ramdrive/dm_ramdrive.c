@@ -73,7 +73,6 @@ static void __dm_ramdrive_ih (void* arg)
 static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
 	*params = get_default_device_params ();
-	display_device_params (params);
 }
 
 uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
@@ -82,6 +81,8 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 
 	/* setup NAND parameters according to users' inputs */
 	__dm_setup_device_params (params);
+
+	display_device_params (params);
 
 	/* create a private structure for ramdrive */
 	if ((p = (struct dm_ramssd_private*)bdbm_malloc_atomic

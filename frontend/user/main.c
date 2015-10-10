@@ -427,7 +427,11 @@ int main (int argc, char** argv)
 		return -1;
 	}
 
-	bdbm_dm_init (_bdi);
+	if (bdbm_dm_init (_bdi) != 0) {
+		bdbm_error ("[kmain] bdbm_dm_init () failed");
+		return -1;
+	}
+
 	bdbm_drv_setup (_bdi, &_host_user_inf, bdbm_dm_get_inf (_bdi));
 	bdbm_drv_run (_bdi);
 

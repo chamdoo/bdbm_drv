@@ -23,8 +23,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_PMU \
 
 #DMCOMMON := ../../devices/libdummy/libdummy.a
-DMCOMMON := ../../devices/libramdrive/libramdrive.a
-#DMCOMMON := dm_proxy.c
+#DMCOMMON := ../../devices/libramdrive/libramdrive.a
+DMCOMMON := dm_proxy.c
 
 SRCS := \
 	main.c \
@@ -52,6 +52,7 @@ SRCS := \
 	$(COMMON)/utils/upage.c \
 	$(COMMON)/3rd/uilog.c \
 	$(COMMON)/bdbm_main.c \
+	$(DM_COMMON)/dev_params.c \
 	$(DMCOMMON) \
 
 
@@ -62,5 +63,6 @@ clean:
 	@$(RM) *.o core *~ libftl 
 	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../include/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../common/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../common/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 

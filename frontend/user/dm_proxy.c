@@ -37,10 +37,10 @@ THE SOFTWARE.
 #include "params.h"
 
 #include "dm_proxy.h"
-#include "dm_stub.h"
+#include "dev_stub.h"
 
-#include "utils/utime.h"
-#include "utils/uthread.h"
+#include "utime.h"
+#include "uthread.h"
 
 
 /* interface for dm */
@@ -128,8 +128,8 @@ uint32_t dm_proxy_open (bdbm_drv_info_t* bdi)
 	}
 
 	size = 4096 + p->punit * 
-		(bdi->ptr_bdbm_params->nand.page_main_size + 
-		 bdi->ptr_bdbm_params->nand.page_oob_size);
+		(bdi->parm_dev.page_main_size + 
+		 bdi->parm_dev.page_oob_size);
 
 	/* get mmap to check the status of a device */
 	if ((p->mmap_shared = mmap (NULL, 
@@ -150,9 +150,9 @@ uint32_t dm_proxy_open (bdbm_drv_info_t* bdi)
 	p->punit_oob_pages = (uint8_t**)bdbm_zmalloc (p->punit * sizeof (uint8_t*));
 	for (loop = 0; loop < p->punit; loop++) {
 		p->punit_main_pages[loop] = p->mmap_shared + mmap_ofs;
-		mmap_ofs += bdi->ptr_bdbm_params->nand.page_main_size;
+		mmap_ofs += bdi->parm_dev.page_main_size;
 		p->punit_oob_pages[loop] = p->mmap_shared + mmap_ofs;
-		mmap_ofs += bdi->ptr_bdbm_params->nand.page_oob_size;
+		mmap_ofs += bdi->parm_dev.page_oob_size;
 	}
 
 	/* run a thread to monitor the status */
@@ -224,7 +224,7 @@ uint32_t dm_proxy_make_req (
 				r->pptr_kpgs[loop], KERNEL_PAGE_SIZE);
 		}
 		memcpy (p->punit_oob_pages[punit_id], 
-			r->ptr_oob, bdi->ptr_bdbm_params->nand.page_oob_size);
+			r->ptr_oob, bdi->parm_dev.page_oob_size);
 	}
 
 	/* send llm_ioctl_req to the device */
@@ -291,7 +291,7 @@ int __dm_proxy_thread (void* arg)
 						for (k = 0; k < nr_kp_per_fp; k++) {
 							memcpy (r->pptr_kpgs[k], p->punit_main_pages[loop] + (k * KERNEL_PAGE_SIZE), KERNEL_PAGE_SIZE);
 						}
-						memcpy (r->ptr_oob, p->punit_oob_pages[loop], bdi->ptr_bdbm_params->nand.page_oob_size);
+						memcpy (r->ptr_oob, p->punit_oob_pages[loop], bdi->parm_dev.page_oob_size);
 					}
 
 					/* call end_req () to end the request */
