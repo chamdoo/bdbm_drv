@@ -103,6 +103,16 @@ typedef struct {
 	uint64_t page_no;
 } bdbm_phyaddr_t;
 
+/* a bluedbm blockio request */
+typedef struct {
+	uint64_t bi_rw;
+	uint64_t bi_sector;
+	uint64_t bi_size;
+	uint64_t bi_bvec_cnt;
+	uint8_t* bi_bvec_data[KERNEL_PAGE_SIZE];
+	void* bio;
+} bdbm_bio_t;
+
 /* a high-level memory manager request */
 enum BDBM_HLM_MEMFLAG {
 	MEMFLAG_NOT_SET = 0,

@@ -91,7 +91,7 @@ int __host_proxy_stub_thread (void* arg)
 			bdbm_blockio_proxy_req_t* r = NULL;
 			int* test = NULL;
 			static int bug = 0;
-			for (i = 0; i < 31; i++) {
+			for (i = 0; i < BDBM_PROXY_MAX_REQS; i++) {
 				/* fetch the outstanding request from mmap */
 				r = &p->mmap_reqs[i];
 				bdbm_bug_on (r->id != i);
@@ -145,7 +145,7 @@ uint32_t blockio_stub_open (bdbm_drv_info_t* bdi)
 	}
 
 	/* create mmap_reqs */
-	size = sizeof (bdbm_blockio_proxy_req_t) * 31;
+	size = sizeof (bdbm_blockio_proxy_req_t) * BDBM_PROXY_MAX_REQS;
 	if ((p->mmap_reqs = mmap (NULL,
 			size,
 			PROT_READ | PROT_WRITE, 

@@ -101,203 +101,12 @@ static void __blockio_proxy_fops_wq_handler (
 	bdbm_host_inf_t* h = (bdbm_host_inf_t*)BDBM_GET_HOST_INF (bdi);
 	bdbm_blockio_proxy_req_t* r = NULL;
 
-	/*bdbm_msg ("wq_handler is called: %d", work->id);*/
-
 	/* get req */
 	r = &p->mmap_reqs_buf[work->id];
 	bdbm_bug_on (r->stt != REQ_STT_USER_DONE);
 
 	/* call end_req */
 	h->end_req (bdi, (bdbm_hlm_req_t*)r);
-}
-
-/* The implement of blockio_proxy */
-uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
-{
-	bdbm_blockio_proxy_t* p = NULL;
-	int32_t size, i;
-
-	/* see if hlm_user_proxy is already created */
-	if (_bdi) {
-		bdbm_error ("blockio_proxy is already created");
-		return -EIO;
-	}
-
-	/* create bdbm_blockio_proxy_t with zeros */
-	if ((p = (bdbm_blockio_proxy_t*)bdbm_zmalloc (sizeof (bdbm_blockio_proxy_t))) == NULL) {
-		bdbm_error ("bdbm_malloc failed");
-		return -EIO;
-	}
-
-	/* initialize some variables */
-	init_waitqueue_head (&p->pollwq);
-	bdbm_spin_lock_init (&p->lock);
-	bdbm_mutex_init (&p->mutex);
-	atomic_set (&p->nr_out_reqs, 0);
-	atomic_set (&p->ref_cnt, 0);
-	p->mmap_nr_reqs = 31;	/* just large enough number */
-	sema_init (&p->sem, p->mmap_nr_reqs);
-
-	/* create workqueues */
-	p->wq = create_singlethread_workqueue ("blockio_proxy_wq");
-	p->works = bdbm_malloc (sizeof (bdbm_blockio_proxy_wq_t) *  p->mmap_nr_reqs);
-	for (i = 0; i < p->mmap_nr_reqs; i++) {
-		INIT_WORK (&p->works[i].work, __blockio_proxy_fops_wq_handler); 
-		p->works[i].id = i;
-	}
-
-	/* create requests */
-	size = PAGE_ALIGN (sizeof (bdbm_blockio_proxy_req_t) * p->mmap_nr_reqs);
-	if ((p->mmap_reqs_buf = (bdbm_blockio_proxy_req_t*)kmalloc (size, GFP_KERNEL)) == NULL) {
-		/* oops! cannot allocate memory for mmap */
-		bdbm_error ("kmalloc () failed (%d)", size);
-		goto fail;
-	}
-	memset (p->mmap_reqs_buf, 0x00, size);
-
-	/* create a request pool */
-	if ((p->reqs_pool = bdbm_proxy_reqs_pool_create
-			(p->mmap_nr_reqs, p->mmap_reqs_buf)) == NULL) {
-		bdbm_error ("bdbm_proxy_reqs_pool_create () failed");
-		goto fail;
-	}
-
-	/* assign p to bdi */
-	bdi->ptr_host_inf->ptr_private = (void*)p;
-	_bdi = bdi;
-
-	/* register a character device (for user-level FTL) */
-	if (blockio_proxy_ioctl_init () != 0) {
-		bdbm_error ("failed to register a character device");
-		goto fail;
-	}
-
-	/* register a block device (for applications) */
-	if (host_blkdev_register_device	(bdi, __host_blkio_make_request_fn) != 0) {
-		bdbm_error ("failed to register blueDBM");
-		blockio_proxy_ioctl_exit ();
-		goto fail;
-	}
-
-	return 0;
-
-fail:
-	if (p->reqs_pool)
-		bdbm_proxy_reqs_pool_destroy (p->reqs_pool);
-	if (p->mmap_reqs_buf)
-		kfree (p->mmap_reqs_buf);
-	if (p->works)
-		bdbm_free (p->works);
-	if (p->wq) 
-		destroy_workqueue (p->wq);
-	bdbm_mutex_free (&p->mutex);
-	bdbm_spin_lock_destory (&p->lock);
-	init_waitqueue_head (&p->pollwq);
-	bdbm_free (p);
-	_bdi = NULL;
-
-	return 1;
-}
-
-static int __kill_pending_proxy_reqs (bdbm_drv_info_t *bdi)
-{
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
-	bdbm_blockio_proxy_req_t* r = NULL;
-	int i = 0, nr_cancel = 0, nr_to_be_killed;
-
-	nr_to_be_killed = atomic_read (&p->nr_out_reqs);
-
-	if (nr_to_be_killed > 0) {
-		bdbm_warning ("# of requests to be killed: %d", nr_to_be_killed);
-	}
-
-	for (i = 0; i < p->mmap_nr_reqs; i++) {
-		r = &p->mmap_reqs_buf[i];
-		if (r->stt != REQ_STT_FREE) {
-			if (p->reqs_pool) {
-				bdbm_spin_lock (&p->lock);
-				bdbm_proxy_reqs_pool_free_item (p->reqs_pool, r);
-				bdbm_spin_unlock (&p->lock);
-			} else {
-				bdbm_warning ("hmm.. p->reqs_pool is NULL");
-				r->stt = REQ_STT_FREE;
-			}
-			bio_endio (r->bio, -EIO);
-			atomic_dec (&p->nr_out_reqs);
-			up (&p->sem);
-			nr_cancel++;
-		}
-	}
-
-	if (nr_cancel > 0) {
-		bdbm_warning ("# of cancelled requests: %d", nr_cancel);
-	}
-
-	return nr_cancel;
-}
-
-void blockio_proxy_close (bdbm_drv_info_t* bdi)
-{
-	bdbm_blockio_proxy_t* p = NULL;
-	
-	/*bdbm_track ();*/
-	if (!bdi || !_bdi) 
-		return;
-
-	/*bdbm_track ();*/
-	if (!(p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi)))
-		return;
-
-	/*bdbm_track ();*/
-
-	bdbm_mutex_lock (&p->mutex);
-
-	/*bdbm_track ();*/
-
-	/* is there the user-level FTL which is attached to the kernel? */
-	if (atomic_read (&p->ref_cnt) > 0) {
-		bdbm_mutex_unlock (&p->mutex);
-		return;
-	}
-	_bdi = NULL;
-
-	/* before closing it, we must wait until all the on-gonging requests are
-	 * finished */
-	/*bdbm_track ();*/
-	while (atomic_read (&p->nr_out_reqs) > 0) {
-		static int retry = 0;
-		bdbm_msg ("blockio_proxy is busy... (cnt: %d)", retry);
-		msleep (1000);
-		retry++;
-		if (retry > 3) {
-			__kill_pending_proxy_reqs (bdi);
-			bdbm_warning ("blockio_proxy is not nicely closed (too many retries)");
-			break;
-		}
-	}
-
-	/* destroy the block device */
-	/*bdbm_track ();*/
-	host_blkdev_unregister_block_device (bdi);
-
-	/* destroy the character device */
-	/*bdbm_track ();*/
-	blockio_proxy_ioctl_exit ();
-
-	/*bdbm_track ();*/
-	/* free all variables related to blockio_proxy */
-	if (p->mmap_reqs_buf)
-		kfree (p->mmap_reqs_buf);
-	if (p->reqs_pool)
-		bdbm_proxy_reqs_pool_destroy (p->reqs_pool);
-	bdbm_spin_lock_destory (&p->lock);
-	init_waitqueue_head (&p->pollwq);
-
-	bdbm_mutex_unlock (&p->mutex);
-	bdbm_mutex_free (&p->mutex);
-	bdbm_free (p);
-
-	/*bdbm_track ();*/
 }
 
 static inline int __is_client_ready (bdbm_blockio_proxy_t* p)
@@ -307,7 +116,7 @@ static inline int __is_client_ready (bdbm_blockio_proxy_t* p)
 	return 0;
 }
 
-static inline bdbm_blockio_proxy_req_t* __get_blockio_proxy_reqs (bdbm_blockio_proxy_t* p)
+static bdbm_blockio_proxy_req_t* __get_blockio_proxy_req (bdbm_blockio_proxy_t* p)
 {
 	bdbm_blockio_proxy_req_t* proxy_req = NULL;
 	int i, retry_cnt = 10;
@@ -376,6 +185,209 @@ static int __encode_bio_to_proxy_req (struct bio* bio, bdbm_blockio_proxy_req_t*
 	return 0;
 }
 
+static inline void __free_block_io_proxy_req (
+	bdbm_blockio_proxy_t* p, 
+	bdbm_blockio_proxy_req_t* r)
+{
+	bdbm_spin_lock (&p->lock);
+	bdbm_proxy_reqs_pool_free_item (p->reqs_pool, r);
+	bdbm_spin_unlock (&p->lock);
+}
+
+static int __kill_pending_proxy_reqs (bdbm_drv_info_t *bdi)
+{
+	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blockio_proxy_req_t* r = NULL;
+	int i = 0, nr_cancel = 0, nr_to_be_killed;
+
+	nr_to_be_killed = atomic_read (&p->nr_out_reqs);
+
+	if (nr_to_be_killed > 0) {
+		bdbm_warning ("# of requests to be killed: %d", nr_to_be_killed);
+	}
+
+	for (i = 0; i < p->mmap_nr_reqs; i++) {
+		r = &p->mmap_reqs_buf[i];
+		if (r->stt != REQ_STT_FREE) {
+			if (p->reqs_pool) {
+				__free_block_io_proxy_req (p, r);
+			} else {
+				bdbm_warning ("hmm.. p->reqs_pool is NULL");
+				r->stt = REQ_STT_FREE;
+			}
+			bio_endio (r->bio, -EIO);
+			atomic_dec (&p->nr_out_reqs);
+			up (&p->sem);
+			nr_cancel++;
+		}
+	}
+
+	if (nr_cancel > 0) {
+		bdbm_warning ("# of cancelled requests: %d", nr_cancel);
+	}
+
+	return nr_cancel;
+}
+
+/* The implement of blockio_proxy */
+uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
+{
+	bdbm_blockio_proxy_t* p = NULL;
+	int32_t size, i;
+
+	/* see if hlm_user_proxy is already created */
+	if (_bdi) {
+		bdbm_error ("blockio_proxy is already created");
+		return -EIO;
+	}
+
+	/* create bdbm_blockio_proxy_t with zeros */
+	if ((p = (bdbm_blockio_proxy_t*)bdbm_zmalloc (sizeof (bdbm_blockio_proxy_t))) == NULL) {
+		bdbm_error ("bdbm_malloc failed");
+		return -EIO;
+	}
+
+	/* initialize some variables */
+	init_waitqueue_head (&p->pollwq);
+	bdbm_spin_lock_init (&p->lock);
+	bdbm_mutex_init (&p->mutex);
+	atomic_set (&p->nr_out_reqs, 0);
+	atomic_set (&p->ref_cnt, 0);
+	p->mmap_nr_reqs = BDBM_PROXY_MAX_REQS;	/* just large enough number */
+	sema_init (&p->sem, p->mmap_nr_reqs);
+
+	/* create workqueues */
+	p->wq = create_singlethread_workqueue ("blockio_proxy_wq");
+	p->works = bdbm_malloc (sizeof (bdbm_blockio_proxy_wq_t) *  p->mmap_nr_reqs);
+	for (i = 0; i < p->mmap_nr_reqs; i++) {
+		INIT_WORK (&p->works[i].work, __blockio_proxy_fops_wq_handler); 
+		p->works[i].id = i;
+	}
+
+	/* create requests */
+	size = PAGE_ALIGN (sizeof (bdbm_blockio_proxy_req_t) * p->mmap_nr_reqs);
+	if ((p->mmap_reqs_buf = (bdbm_blockio_proxy_req_t*)bdbm_malloc (size)) == NULL) {
+		bdbm_error ("kmalloc () failed (%d)", size);
+		goto fail;
+	}
+	for (i = 0; i < size; i+=PAGE_SIZE) {
+		SetPageReserved (vmalloc_to_page (
+			(void*)(((unsigned long)p->mmap_reqs_buf) + i))
+		);
+	}
+	memset (p->mmap_reqs_buf, 0x00, size);
+
+	/* create a request pool */
+	if ((p->reqs_pool = bdbm_proxy_reqs_pool_create
+			(p->mmap_nr_reqs, p->mmap_reqs_buf)) == NULL) {
+		bdbm_error ("bdbm_proxy_reqs_pool_create () failed");
+		goto fail;
+	}
+
+	/* assign p to bdi */
+	bdi->ptr_host_inf->ptr_private = (void*)p;
+	_bdi = bdi;
+
+	/* register a character device (for user-level FTL) */
+	if (blockio_proxy_ioctl_init () != 0) {
+		bdbm_error ("failed to register a character device");
+		goto fail;
+	}
+
+	/* register a block device (for applications) */
+	if (host_blkdev_register_device	(bdi, __host_blkio_make_request_fn) != 0) {
+		bdbm_error ("failed to register blueDBM");
+		blockio_proxy_ioctl_exit ();
+		goto fail;
+	}
+
+	return 0;
+
+fail:
+	if (p->reqs_pool)
+		bdbm_proxy_reqs_pool_destroy (p->reqs_pool);
+	if (p->mmap_reqs_buf) {
+		for (i = 0; i < size; i+=PAGE_SIZE) {
+			ClearPageReserved (vmalloc_to_page (
+				(void*)(((unsigned long)p->mmap_reqs_buf) + i))
+			);
+		}
+		bdbm_free (p->mmap_reqs_buf);
+	}
+	if (p->works)
+		bdbm_free (p->works);
+	if (p->wq) 
+		destroy_workqueue (p->wq);
+	bdbm_mutex_free (&p->mutex);
+	bdbm_spin_lock_destory (&p->lock);
+	init_waitqueue_head (&p->pollwq);
+	bdbm_free (p);
+	_bdi = NULL;
+
+	return 1;
+}
+
+void blockio_proxy_close (bdbm_drv_info_t* bdi)
+{
+	bdbm_blockio_proxy_t* p = NULL;
+	
+	if (!bdi || !_bdi) 
+		return;
+
+	if (!(p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi)))
+		return;
+
+	bdbm_mutex_lock (&p->mutex);
+
+	/* is there the user-level FTL which is attached to the kernel? */
+	if (atomic_read (&p->ref_cnt) > 0) {
+		bdbm_mutex_unlock (&p->mutex);
+		return;
+	}
+	_bdi = NULL;
+
+	/* before closing it, we must wait until all the on-gonging requests are
+	 * finished */
+	/*bdbm_track ();*/
+	while (atomic_read (&p->nr_out_reqs) > 0) {
+		static int retry = 0;
+		bdbm_msg ("blockio_proxy is busy... (cnt: %d)", retry);
+		msleep (1000);
+		retry++;
+		if (retry > 3) {
+			__kill_pending_proxy_reqs (bdi);
+			bdbm_warning ("blockio_proxy is not nicely closed (too many retries)");
+			break;
+		}
+	}
+
+	/* destroy the block device */
+	host_blkdev_unregister_block_device (bdi);
+
+	/* destroy the character device */
+	blockio_proxy_ioctl_exit ();
+
+	/* free all variables related to blockio_proxy */
+	if (p->mmap_reqs_buf) {
+		int32_t i = 0;
+		int32_t size = PAGE_ALIGN (sizeof (bdbm_blockio_proxy_req_t) * p->mmap_nr_reqs);
+		for (i = 0; i < size; i+=PAGE_SIZE) {
+			ClearPageReserved (vmalloc_to_page (
+				(void*)(((unsigned long)p->mmap_reqs_buf) + i))
+			);
+		}
+		bdbm_free (p->mmap_reqs_buf);
+	}
+	if (p->reqs_pool)
+		bdbm_proxy_reqs_pool_destroy (p->reqs_pool);
+	bdbm_spin_lock_destory (&p->lock);
+	init_waitqueue_head (&p->pollwq);
+
+	bdbm_mutex_unlock (&p->mutex);
+	bdbm_mutex_free (&p->mutex);
+	bdbm_free (p);
+}
+
 void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 {
 	struct bio* bio = (struct bio*)req;
@@ -411,7 +423,7 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 
 	/* send an incoming request to the user-level FTL */
 	/* (1) get an empty mmap_req slot */
-	if ((proxy_req = __get_blockio_proxy_reqs (p)) == NULL) {
+	if ((proxy_req = __get_blockio_proxy_req (p)) == NULL) {
 		bdbm_warning ("oops! mmap_reqs is full");
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
@@ -421,10 +433,7 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 
 	/* (2) encode it to mapped-memory */
 	if (__encode_bio_to_proxy_req (bio, proxy_req) != 0) {
-		bdbm_spin_lock (&p->lock);
-		bdbm_proxy_reqs_pool_free_item (p->reqs_pool, proxy_req);
-		bdbm_warning ("oops! mmap_reqs_buf is full");
-		bdbm_spin_unlock (&p->lock);
+		__free_block_io_proxy_req (p, proxy_req);
 		bdbm_mutex_unlock (&p->mutex);
 		up (&p->sem);
 		return;
@@ -436,8 +445,10 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	proxy_req->bio = (void*)bio;
 
 	atomic_inc (&p->nr_out_reqs);
-	if (atomic_read (&p->nr_out_reqs) > 31) {
-		bdbm_warning ("oops! # of out-reqs > 31 (%d)", atomic_read (&p->nr_out_reqs));
+	if (atomic_read (&p->nr_out_reqs) > BDBM_PROXY_MAX_REQS) {
+		bdbm_warning ("oops! # of out-reqs > %d (%d)", 
+			atomic_read (&p->nr_out_reqs),
+			BDBM_PROXY_MAX_REQS);
 	}
 
 	/* trigger a poller */
@@ -483,10 +494,8 @@ void blockio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	}
 
 	/* free pool */
-	bdbm_spin_lock (&p->lock);
-	bdbm_proxy_reqs_pool_free_item (p->reqs_pool, r);
+	__free_block_io_proxy_req (p, r);
 	r->stt = REQ_STT_FREE;
-	bdbm_spin_unlock (&p->lock);
 
 	atomic_dec (&p->nr_out_reqs);
 	if (atomic_read (&p->nr_out_reqs) < 0)
@@ -543,28 +552,35 @@ static int blockio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vm
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
 	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	uint64_t size = vma->vm_end - vma->vm_start;
+ 	unsigned long pfn, start = vma->vm_start;
+	char *vmalloc_addr = (char *)p->mmap_reqs_buf;
 
 	if (p == NULL) {
 		bdbm_warning ("blockio_proxy is not created yet");
 		return -EINVAL;
 	}
 
-	if (size > PAGE_ALIGN (p->mmap_nr_reqs * sizeof (bdbm_blockio_proxy_req_t))) {
+	if (size != PAGE_ALIGN (p->mmap_nr_reqs * sizeof (bdbm_blockio_proxy_req_t))) {
 		bdbm_warning ("size > p->mmap_nr_reqs: %llu > %llu (%llu / %ld)", 
 			size, 
 			p->mmap_nr_reqs * sizeof (bdbm_blockio_proxy_req_t), 
 			p->mmap_nr_reqs,
 			sizeof (bdbm_blockio_proxy_req_t));
 		return -EINVAL;
+	} else {
+		bdbm_msg ("blockio_proxy_fops_mmap: %lld MB (max_reqs: %d, max_vecs: %d)",
+			size/(1024*1024), BDBM_PROXY_MAX_REQS, BDBM_PROXY_MAX_VECS);
 	}
 
 	vma->vm_page_prot = pgprot_noncached (vma->vm_page_prot);
-	vma->vm_pgoff = __pa(p->mmap_reqs_buf) >> PAGE_SHIFT;
-
-	if (remap_pfn_range (vma, vma->vm_start, 
-			__pa(p->mmap_reqs_buf) >> PAGE_SHIFT,
-			size, vma->vm_page_prot)) {
-		return -EAGAIN;
+	while (size > 0) {
+		pfn = vmalloc_to_pfn (vmalloc_addr);
+		if (remap_pfn_range (vma, start, pfn, PAGE_SIZE, PAGE_SHARED) < 0) {
+			return -EAGAIN;
+		}
+		start += PAGE_SIZE;
+		vmalloc_addr += PAGE_SIZE;
+		size -= PAGE_SIZE;
 	}
 
 	vma->vm_ops = &mmap_vm_ops;
@@ -700,22 +716,12 @@ static long blockio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsig
 		if (h != NULL && h->end_req != NULL) {
 			int req_id = -1;
 			int __user* req_id_ur = (int __user*)arg;
-#if 0
-			bdbm_blockio_proxy_req_t* r = NULL;
-#endif
+
 			/* copy ur_id from user-level FTL */
 			copy_from_user (&req_id, req_id_ur, sizeof (int));
 			bdbm_bug_on (req_id < 0);
 			bdbm_bug_on (req_id >= p->mmap_nr_reqs);
 
-#if 0
-			/* get req */
-			r = &p->mmap_reqs_buf[req_id];
-			bdbm_bug_on (r->stt != REQ_STT_USER_DONE);
-
-			/* call end_req */
-			h->end_req (bdi, (bdbm_hlm_req_t*)r);
-#endif
 			/* run workqueue */
 			p->works[req_id].bdi = bdi;
 			p->works[req_id].id = req_id;
