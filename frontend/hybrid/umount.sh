@@ -3,11 +3,14 @@
 # umount the file-system
 sudo umount /media/blueDBM
 
-# sto the libftl
-echo 'kill sudo ./libftl'
-libftl_pid=`ps -ef | grep "sudo [.]/libftl" | awk '{print $2}'`
-sudo kill -2 $libftl_pid
-sleep 1
+# kill libftl
+pid=`ps -ef | grep "sudo [.]/libftl" | awk '{print $2}'`
+if [ $pid > 0 ]
+then
+	 echo 'sudo kill -2 libftl ('$pid')'
+	sudo kill -2 $pid
+	sleep 1
+fi
 
 # rm the device
 sudo rmmod bdbm_drv

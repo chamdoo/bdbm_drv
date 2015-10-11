@@ -348,7 +348,6 @@ void blockio_proxy_close (bdbm_drv_info_t* bdi)
 
 	/* before closing it, we must wait until all the on-gonging requests are
 	 * finished */
-	/*bdbm_track ();*/
 	while (atomic_read (&p->nr_out_reqs) > 0) {
 		static int retry = 0;
 		bdbm_msg ("blockio_proxy is busy... (cnt: %d)", retry);
@@ -542,9 +541,6 @@ void blockio_proxy_mmap_open (struct vm_area_struct *vma)
 
 void blockio_proxy_mmap_close (struct vm_area_struct *vma)
 {
-#if 0
-	bdbm_track ();
-#endif
 }
 
 static int blockio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vma)
@@ -635,8 +631,6 @@ static int blockio_proxy_fops_release (struct inode *inode, struct file *filp)
 
 	bdbm_mutex_lock (&p->mutex);
 
-	/*bdbm_track ();*/
-
 	/* bdbm_blockio_proxy_ioctl is not open before */
 	if (p == NULL) {
 		bdbm_warning ("oops! attempt to close blockio_proxy which was closed or not opened before");
@@ -650,18 +644,12 @@ static int blockio_proxy_fops_release (struct inode *inode, struct file *filp)
 		return 0;
 	}
 		
-	/*bdbm_track ();*/
-
 	__kill_pending_proxy_reqs (bdi);
 
 	/* reset private_data */
 	filp->private_data = (void *)NULL;
 
-	/*bdbm_track ();*/
-
 	atomic_dec (&p->ref_cnt);
-
-	/*bdbm_track ();*/
 
 	bdbm_mutex_unlock (&p->mutex);
 
