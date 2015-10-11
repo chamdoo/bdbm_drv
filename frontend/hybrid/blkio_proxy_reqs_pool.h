@@ -25,7 +25,7 @@ THE SOFTWARE.
 #ifndef _BDBM_PROXY_REQS_POOK_H
 #define _BDBM_PROXY_REQS_POOK_H
 
-#include "host_blkio_proxy_ioctl.h"
+#include "blkio_proxy_ioctl.h"
 
 typedef struct {
 	bdbm_spinlock_t lock;

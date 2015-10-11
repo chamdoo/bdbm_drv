@@ -29,7 +29,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "devices.h"
 
-#include "host_blkio_proxy.h"
+#include "blkio_proxy.h"
 
 bdbm_drv_info_t* _bdi = NULL;
 

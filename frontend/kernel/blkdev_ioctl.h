@@ -25,19 +25,9 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_IOCTL_H
 #define _BLUEDBM_IOCTL_H
 
-struct phyaddr {
-	uint64_t logical_addr;
-	uint64_t channel_no;
-	uint64_t chip_no;
-	uint64_t block_no;
-	uint64_t page_no;
-	uint32_t offset;
-	uint32_t length;
-};
-
 #define BDBM_BADBLOCK_SCAN _IOR(0, 0, int)
 #define BDBM_BADBLOCK_SCAN_CHECK _IOR(0, 1, int)
-#define BDBM_GET_PHYADDR _IOR(0, 2, struct phyaddr)
+/*#define BDBM_GET_PHYADDR _IOR(0, 2, struct phyaddr)*/
 
 #ifdef MODULE
 /* kernel module */

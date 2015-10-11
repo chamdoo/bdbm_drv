@@ -25,8 +25,8 @@ EXTRA_CFLAGS += -D USE_BLOCKIO_PROXY
 
 bdbm_drv-y := \
 	kmain.o \
-	host_blkio_proxy.o \
-	proxy_reqs_pool.o \
+	blkio_proxy.o \
+	blkio_proxy_reqs_pool.o \
 	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
 	$(DM_COMMON)/dev_params.o \
@@ -34,7 +34,7 @@ bdbm_drv-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/bdbm_main.o \
-	$(KERN)/host_blkdev.o \
+	$(KERN)/blkdev.o \
 
 obj-m := bdbm_drv.o
 

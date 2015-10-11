@@ -24,11 +24,11 @@ CFLAGS += -D HASH_BLOOM=20 \
 
 #DMCOMMON := ../../devices/libdummy/libdummy.a
 #DMCOMMON := ../../devices/libramdrive/libramdrive.a
-DMCOMMON := dm_proxy.c
+DMCOMMON := dev_proxy.c
 
 SRCS := \
 	main.c \
-	host_user.c \
+	userio.c \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \

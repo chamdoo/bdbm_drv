@@ -27,7 +27,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
-#include "host_blkio.h"
+#include "blkio.h"
 #include "devices.h"
 
 bdbm_drv_info_t* _bdi = NULL;

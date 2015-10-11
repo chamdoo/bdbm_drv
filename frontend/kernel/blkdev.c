@@ -30,8 +30,8 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
-#include "host_blkdev.h"
-#include "host_blkdev_ioctl.h"
+#include "blkdev.h"
+#include "blkdev_ioctl.h"
 
 
 int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsigned long arg);
@@ -170,14 +170,10 @@ int bdbm_blk_ioctl (
 		bdbm_reinit_completion (task_completion);
 		break;
 
+#if 0
 	case BDBM_GET_PHYADDR:
-		/* get a physical address */
-		{
-			/*struct phyaddr paddr;*/
-			/* copy_from_user */
-			/* copy_to_user */
-		}
 		break;
+#endif
 
 	default:
 		/*bdbm_msg ("unknown bdm_blk_ioctl: %u (%X)", cmd, cmd);*/

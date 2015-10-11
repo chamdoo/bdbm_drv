@@ -33,10 +33,10 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "platform.h"
-#include "host_user.h"
+#include "userio.h"
 #include "params.h"
 
-#include "dm_proxy.h"
+#include "dev_proxy.h"
 #include "dev_stub.h"
 
 #include "utime.h"

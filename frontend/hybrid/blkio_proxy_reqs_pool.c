@@ -29,9 +29,9 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#include "host_blkio_proxy.h"
-#include "host_blkio_proxy_ioctl.h"
-#include "proxy_reqs_pool.h"
+#include "blkio_proxy.h"
+#include "blkio_proxy_ioctl.h"
+#include "blkio_proxy_reqs_pool.h"
 
 
 typedef struct {

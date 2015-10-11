@@ -39,10 +39,10 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#include "host_blkio_proxy.h"
-#include "host_blkio_proxy_ioctl.h"
-#include "host_blkdev.h"
-#include "proxy_reqs_pool.h"
+#include "blkio_proxy.h"
+#include "blkio_proxy_ioctl.h"
+#include "blkdev.h"
+#include "blkio_proxy_reqs_pool.h"
 
 
 static bdbm_drv_info_t* _bdi = NULL;

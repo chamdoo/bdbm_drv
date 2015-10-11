@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "ftl_params.h"
 #include "debug.h"
-#include "host_user.h"
+#include "userio.h"
 #include "ufile.h"
 
 #include "llm_noq.h"

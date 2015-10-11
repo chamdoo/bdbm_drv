@@ -38,8 +38,8 @@ THE SOFTWARE.
 #include "utime.h"
 #include "uthread.h"
 
-#include "host_blkio_stub.h"
-#include "host_blkio_proxy_ioctl.h"
+#include "blkio_stub.h"
+#include "blkio_proxy_ioctl.h"
 
 
 bdbm_host_inf_t _host_blockio_stub_inf = {

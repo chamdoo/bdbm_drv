@@ -30,7 +30,7 @@ DMLIB := ../../devices/libramdrive/libramdrive.a
 
 SRCS := \
 	umain.c \
-	host_blkio_stub.c \
+	blkio_stub.c \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \

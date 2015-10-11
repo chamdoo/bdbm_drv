@@ -31,9 +31,9 @@ THE SOFTWARE.
 #include "params.h"
 #include "utime.h"
 
-#include "host_blkio.h"
-#include "host_blkdev.h"
-#include "host_blkdev_ioctl.h"
+#include "blkio.h"
+#include "blkdev.h"
+#include "blkdev_ioctl.h"
 
 /*#define ENABLE_DISPLAY*/
 
@@ -304,11 +304,11 @@ static void __host_blockio_delete_hlm_req (
 	bdbm_free_atomic (hlm_req);
 }
 
+#ifdef ENABLE_DISPLAY
 static void __host_blockio_display_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
-#ifdef ENABLE_DISPLAY
 	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint64_t seg_no = 0;
 
@@ -330,8 +330,8 @@ static void __host_blockio_display_req (
 		bdbm_error ("invalid REQTYPE (%u)", hlm_req->req_type);
 		break;
 	}
-#endif
 }
+#endif
 
 uint32_t host_blockio_open (bdbm_drv_info_t* bdi)
 {
@@ -408,8 +408,10 @@ void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
 		return;
 	}
 
+#ifdef ENABLE_DISPLAY
 	/* display req info */
 	__host_blockio_display_req (bdi, hlm_req);
+#endif
 
 	/* if success, increase # of host reqs before sending the request to hlm */
 	atomic64_inc (&p->nr_reqs);
@@ -463,4 +465,3 @@ void host_blockio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 		bdbm_error ("p->nr_reqs is negative (%ld)", atomic64_read (&p->nr_reqs));
 	}
 }
-
