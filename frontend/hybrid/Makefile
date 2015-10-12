@@ -46,10 +46,12 @@ export KROOT=/lib/modules/$(shell uname -r)/build
 default: kernel user	
 
 kernel: 
+	@cd ../../devices; $(MAKE) clean; # clear devices first
 	@$(MAKE) -f Makefile.kernel
 
 user:
-	@$(MAKE) -f Makefile.user
+	@cd ../../devices/libramdrive; $(MAKE) clean; $(MAKE) 
+	@$(MAKE) -f Makefile.user # build user
 
 .PHONY: clean 
 clean: clean-kernel clean-user 

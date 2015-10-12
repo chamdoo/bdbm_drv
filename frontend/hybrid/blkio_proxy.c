@@ -47,12 +47,12 @@ THE SOFTWARE.
 
 static bdbm_drv_info_t* _bdi = NULL;
 
-bdbm_host_inf_t _host_blockio_proxy_inf = {
+bdbm_host_inf_t _blkio_proxy_inf = {
 	.ptr_private = NULL,
-	.open = blockio_proxy_open,
-	.close = blockio_proxy_close,
-	.make_req = blockio_proxy_make_req,
-	.end_req = blockio_proxy_end_req,
+	.open = blkio_proxy_open,
+	.close = blkio_proxy_close,
+	.make_req = blkio_proxy_make_req,
+	.end_req = blkio_proxy_end_req,
 };
 
 /* http://www.tune2wizard.com/kernel-programming-workqueue/ */
@@ -60,7 +60,7 @@ typedef struct {
 	struct work_struct work; /* it must be at the end of structre */
 	int id;
 	bdbm_drv_info_t* bdi;
-} bdbm_blockio_proxy_wq_t;
+} bdbm_blkio_proxy_wq_t;
 
 typedef struct {
 	atomic_t ref_cnt; /* # of the user-level FTLs that are linked to the kernel */
@@ -73,35 +73,36 @@ typedef struct {
 
 	/* for mmap management */
 	int64_t mmap_nr_reqs;
-	bdbm_blockio_proxy_req_t* mmap_reqs_buf;
+	bdbm_blkio_proxy_req_t* mmap_reqs_buf;
 	bdbm_proxy_reqs_pool_t* reqs_pool;
 
 	/* workqueue */
 	struct workqueue_struct *wq;
-	bdbm_blockio_proxy_wq_t* works;
-} bdbm_blockio_proxy_t;
+	bdbm_blkio_proxy_wq_t* works;
+} bdbm_blkio_proxy_t;
 
-static int blockio_proxy_ioctl_init (void);
-static int blockio_proxy_ioctl_exit (void);
+static int blkio_proxy_ioctl_init (void);
+static int blkio_proxy_ioctl_exit (void);
+
 
 /* This is a call-back function invoked by a block-device layer */
 static void __host_blkio_make_request_fn (
 	struct request_queue *q, 
 	struct bio *bio)
 {
-	blockio_proxy_make_req (_bdi, (void*)bio);
+	blkio_proxy_make_req (_bdi, (void*)bio);
 }
 
-static void __blockio_proxy_fops_wq_handler (
+static void __blkio_proxy_fops_wq_handler (
 	struct work_struct *w)
 {
-	bdbm_blockio_proxy_wq_t* work = (bdbm_blockio_proxy_wq_t*)w;
+	bdbm_blkio_proxy_wq_t* work = (bdbm_blkio_proxy_wq_t*)w;
 	bdbm_drv_info_t* bdi = work->bdi;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	bdbm_host_inf_t* h = (bdbm_host_inf_t*)BDBM_GET_HOST_INF (bdi);
-	bdbm_blockio_proxy_req_t* r = NULL;
+	bdbm_blkio_proxy_req_t* r = NULL;
 
-	/* get req */
+	/* get req from the pool with ID */
 	r = &p->mmap_reqs_buf[work->id];
 	bdbm_bug_on (r->stt != REQ_STT_USER_DONE);
 
@@ -109,16 +110,17 @@ static void __blockio_proxy_fops_wq_handler (
 	h->end_req (bdi, (bdbm_hlm_req_t*)r);
 }
 
-static inline int __is_client_ready (bdbm_blockio_proxy_t* p)
+static inline int __is_client_ready (bdbm_blkio_proxy_t* p)
 {
 	if (atomic_read (&p->ref_cnt) == 0)
 		return 1;
 	return 0;
 }
 
-static bdbm_blockio_proxy_req_t* __get_blockio_proxy_req (bdbm_blockio_proxy_t* p)
+static bdbm_blkio_proxy_req_t* __get_blkio_proxy_req (
+	bdbm_blkio_proxy_t* p)
 {
-	bdbm_blockio_proxy_req_t* proxy_req = NULL;
+	bdbm_blkio_proxy_req_t* proxy_req = NULL;
 	int i, retry_cnt = 10;
 
 	for (i = 0; i < retry_cnt; i++) {
@@ -138,10 +140,13 @@ static bdbm_blockio_proxy_req_t* __get_blockio_proxy_req (bdbm_blockio_proxy_t* 
 	return proxy_req;
 }
 
-static int __encode_bio_to_proxy_req (struct bio* bio, bdbm_blockio_proxy_req_t* r)
+static int __encode_bio_to_proxy_req (
+	struct bio* bio, 
+	bdbm_blkio_proxy_req_t* proxy_req)
 {
 	uint32_t loop = 0;
 	struct bio_vec *bvec = NULL;
+	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)&proxy_req->blkio_req;
 
 	/* get the type of the bio request */
 	if (bio->bi_rw & REQ_DISCARD)
@@ -164,19 +169,17 @@ static int __encode_bio_to_proxy_req (struct bio* bio, bdbm_blockio_proxy_req_t*
 	/* get the data from the bio */
 	if (r->bi_rw != REQTYPE_TRIM) {
 		bio_for_each_segment (bvec, bio, loop) {
-			uint8_t* mmap_vec = (uint8_t*)r->bi_bvec_data[r->bi_bvec_cnt];
+			uint8_t* mmap_vec = (uint8_t*)proxy_req->bi_bvec_ptr[r->bi_bvec_cnt];
 			uint8_t* page_vec = (uint8_t*)page_address (bvec->bv_page);
 			bdbm_bug_on (mmap_vec == NULL);
 			bdbm_bug_on (page_vec == NULL);
-			if (r->bi_rw == REQTYPE_WRITE) {
+			if (r->bi_rw == REQTYPE_WRITE)
 				bdbm_memcpy (mmap_vec, page_vec, KERNEL_PAGE_SIZE);
-			}
 			r->bi_bvec_cnt++;
-
-			if (r->bi_bvec_cnt >= BDBM_PROXY_MAX_VECS) {
+			if (r->bi_bvec_cnt >= BDBM_BLKIO_MAX_VECS) {
 				/* NOTE: this is an impossible case unless kernel parameters are changed */
 				bdbm_error ("oops! # of vectors in bio is larger than %u", 
-					BDBM_PROXY_MAX_VECS);
+					BDBM_BLKIO_MAX_VECS);
 				break;
 			}
 		}
@@ -186,8 +189,8 @@ static int __encode_bio_to_proxy_req (struct bio* bio, bdbm_blockio_proxy_req_t*
 }
 
 static inline void __free_block_io_proxy_req (
-	bdbm_blockio_proxy_t* p, 
-	bdbm_blockio_proxy_req_t* r)
+	bdbm_blkio_proxy_t* p, 
+	bdbm_blkio_proxy_req_t* r)
 {
 	bdbm_spin_lock (&p->lock);
 	bdbm_proxy_reqs_pool_free_item (p->reqs_pool, r);
@@ -196,8 +199,8 @@ static inline void __free_block_io_proxy_req (
 
 static int __kill_pending_proxy_reqs (bdbm_drv_info_t *bdi)
 {
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
-	bdbm_blockio_proxy_req_t* r = NULL;
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_req_t* r = NULL;
 	int i = 0, nr_cancel = 0, nr_to_be_killed;
 
 	nr_to_be_killed = atomic_read (&p->nr_out_reqs);
@@ -215,7 +218,7 @@ static int __kill_pending_proxy_reqs (bdbm_drv_info_t *bdi)
 				bdbm_warning ("hmm.. p->reqs_pool is NULL");
 				r->stt = REQ_STT_FREE;
 			}
-			bio_endio (r->bio, -EIO);
+			bio_endio (r->blkio_req.bio, -EIO);
 			atomic_dec (&p->nr_out_reqs);
 			up (&p->sem);
 			nr_cancel++;
@@ -229,20 +232,20 @@ static int __kill_pending_proxy_reqs (bdbm_drv_info_t *bdi)
 	return nr_cancel;
 }
 
-/* The implement of blockio_proxy */
-uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
+/* The implement of blkio_proxy */
+uint32_t blkio_proxy_open (bdbm_drv_info_t* bdi)
 {
-	bdbm_blockio_proxy_t* p = NULL;
+	bdbm_blkio_proxy_t* p = NULL;
 	int32_t size, i;
 
 	/* see if hlm_user_proxy is already created */
 	if (_bdi) {
-		bdbm_error ("blockio_proxy is already created");
+		bdbm_error ("blkio_proxy is already created");
 		return -EIO;
 	}
 
-	/* create bdbm_blockio_proxy_t with zeros */
-	if ((p = (bdbm_blockio_proxy_t*)bdbm_zmalloc (sizeof (bdbm_blockio_proxy_t))) == NULL) {
+	/* create bdbm_blkio_proxy_t with zeros */
+	if ((p = (bdbm_blkio_proxy_t*)bdbm_zmalloc (sizeof (bdbm_blkio_proxy_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		return -EIO;
 	}
@@ -257,16 +260,16 @@ uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
 	sema_init (&p->sem, p->mmap_nr_reqs);
 
 	/* create workqueues */
-	p->wq = create_singlethread_workqueue ("blockio_proxy_wq");
-	p->works = bdbm_malloc (sizeof (bdbm_blockio_proxy_wq_t) *  p->mmap_nr_reqs);
+	p->wq = create_singlethread_workqueue ("blkio_proxy_wq");
+	p->works = bdbm_malloc (sizeof (bdbm_blkio_proxy_wq_t) *  p->mmap_nr_reqs);
 	for (i = 0; i < p->mmap_nr_reqs; i++) {
-		INIT_WORK (&p->works[i].work, __blockio_proxy_fops_wq_handler); 
+		INIT_WORK (&p->works[i].work, __blkio_proxy_fops_wq_handler); 
 		p->works[i].id = i;
 	}
 
 	/* create requests */
-	size = PAGE_ALIGN (sizeof (bdbm_blockio_proxy_req_t) * p->mmap_nr_reqs);
-	if ((p->mmap_reqs_buf = (bdbm_blockio_proxy_req_t*)bdbm_malloc (size)) == NULL) {
+	size = PAGE_ALIGN (sizeof (bdbm_blkio_proxy_req_t) * p->mmap_nr_reqs);
+	if ((p->mmap_reqs_buf = (bdbm_blkio_proxy_req_t*)bdbm_malloc (size)) == NULL) {
 		bdbm_error ("kmalloc () failed (%d)", size);
 		goto fail;
 	}
@@ -289,7 +292,7 @@ uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
 	_bdi = bdi;
 
 	/* register a character device (for user-level FTL) */
-	if (blockio_proxy_ioctl_init () != 0) {
+	if (blkio_proxy_ioctl_init () != 0) {
 		bdbm_error ("failed to register a character device");
 		goto fail;
 	}
@@ -297,7 +300,7 @@ uint32_t blockio_proxy_open (bdbm_drv_info_t* bdi)
 	/* register a block device (for applications) */
 	if (host_blkdev_register_device	(bdi, __host_blkio_make_request_fn) != 0) {
 		bdbm_error ("failed to register blueDBM");
-		blockio_proxy_ioctl_exit ();
+		blkio_proxy_ioctl_exit ();
 		goto fail;
 	}
 
@@ -327,14 +330,14 @@ fail:
 	return 1;
 }
 
-void blockio_proxy_close (bdbm_drv_info_t* bdi)
+void blkio_proxy_close (bdbm_drv_info_t* bdi)
 {
-	bdbm_blockio_proxy_t* p = NULL;
+	bdbm_blkio_proxy_t* p = NULL;
 	
 	if (!bdi || !_bdi) 
 		return;
 
-	if (!(p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi)))
+	if (!(p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi)))
 		return;
 
 	bdbm_mutex_lock (&p->mutex);
@@ -350,12 +353,12 @@ void blockio_proxy_close (bdbm_drv_info_t* bdi)
 	 * finished */
 	while (atomic_read (&p->nr_out_reqs) > 0) {
 		static int retry = 0;
-		bdbm_msg ("blockio_proxy is busy... (cnt: %d)", retry);
+		bdbm_msg ("blkio_proxy is busy... (cnt: %d)", retry);
 		msleep (1000);
 		retry++;
 		if (retry > 3) {
 			__kill_pending_proxy_reqs (bdi);
-			bdbm_warning ("blockio_proxy is not nicely closed (too many retries)");
+			bdbm_warning ("blkio_proxy is not nicely closed (too many retries)");
 			break;
 		}
 	}
@@ -364,12 +367,12 @@ void blockio_proxy_close (bdbm_drv_info_t* bdi)
 	host_blkdev_unregister_block_device (bdi);
 
 	/* destroy the character device */
-	blockio_proxy_ioctl_exit ();
+	blkio_proxy_ioctl_exit ();
 
-	/* free all variables related to blockio_proxy */
+	/* free all variables related to blkio_proxy */
 	if (p->mmap_reqs_buf) {
 		int32_t i = 0;
-		int32_t size = PAGE_ALIGN (sizeof (bdbm_blockio_proxy_req_t) * p->mmap_nr_reqs);
+		int32_t size = PAGE_ALIGN (sizeof (bdbm_blkio_proxy_req_t) * p->mmap_nr_reqs);
 		for (i = 0; i < size; i+=PAGE_SIZE) {
 			ClearPageReserved (vmalloc_to_page (
 				(void*)(((unsigned long)p->mmap_reqs_buf) + i))
@@ -387,15 +390,15 @@ void blockio_proxy_close (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 }
 
-void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
+void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 {
 	struct bio* bio = (struct bio*)req;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
-	bdbm_blockio_proxy_req_t* proxy_req = NULL;
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_req_t* proxy_req = NULL;
 
 	bdbm_mutex_lock (&p->mutex);
 
-	/* blockio_proxy was closed */
+	/* blkio_proxy was closed */
 	if (!_bdi) {
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
@@ -410,10 +413,8 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 		return;
 	}
 
-	/*bdbm_msg ("[kernel-1] %llu %llu", bio->bi_sector, bio->bi_sector);*/
-
 	/* down the semaphore; it takes long time in the case where the user-level FTL died */
-	if (down_timeout (&p->sem, msecs_to_jiffies (100)) != 0) {
+	if (down_timeout (&p->sem, msecs_to_jiffies (500)) != 0) {
 		bdbm_warning ("oops! the user-level FTL is not responding...");
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
@@ -422,7 +423,7 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 
 	/* send an incoming request to the user-level FTL */
 	/* (1) get an empty mmap_req slot */
-	if ((proxy_req = __get_blockio_proxy_req (p)) == NULL) {
+	if ((proxy_req = __get_blkio_proxy_req (p)) == NULL) {
 		bdbm_warning ("oops! mmap_reqs is full");
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
@@ -438,10 +439,8 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 		return;
 	}
 
-	/*bdbm_msg ("[kernel-2] %llu %llu", proxy_req->bi_sector, proxy_req->bi_size);*/
-
 	proxy_req->stt = REQ_STT_KERN_INIT;
-	proxy_req->bio = (void*)bio;
+	proxy_req->blkio_req.bio = (void*)bio;
 
 	atomic_inc (&p->nr_out_reqs);
 	if (atomic_read (&p->nr_out_reqs) > BDBM_PROXY_MAX_REQS) {
@@ -456,28 +455,26 @@ void blockio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	bdbm_mutex_unlock (&p->mutex);
 }
 
-void blockio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
+void blkio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
-	bdbm_blockio_proxy_req_t* r = (bdbm_blockio_proxy_req_t*)req;
-	struct bio* bio = (struct bio*)r->bio;
-
-	/*bdbm_msg ("[kernel-3] %llu %llu", r->bi_sector, r->bi_size);*/
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_req_t* proxy_req = (bdbm_blkio_proxy_req_t*)req;
+	struct bio* bio = (struct bio*)proxy_req->blkio_req.bio;
 
 	/* copy mmap to the bio if it is REQTYPE_READ */
-	if (r->bi_rw == REQTYPE_READ) {
+	if (proxy_req->blkio_req.bi_rw == REQTYPE_READ) {
 		struct bio_vec *bvec = NULL;
 		uint32_t loop = 0, i = 0;
 		bio_for_each_segment (bvec, bio, loop) {
-			uint8_t* mmap_vec = (uint8_t*)r->bi_bvec_data[i];
+			uint8_t* mmap_vec = (uint8_t*)proxy_req->bi_bvec_ptr[i];
 			uint8_t* page_vec = (uint8_t*)page_address (bvec->bv_page);
 			bdbm_bug_on (mmap_vec == NULL);
 			bdbm_bug_on (page_vec == NULL);
 			bdbm_memcpy (page_vec, mmap_vec, KERNEL_PAGE_SIZE);
-			if (loop >= BDBM_PROXY_MAX_VECS) {
+			if (loop >= BDBM_BLKIO_MAX_VECS) {
 				/* NOTE: this is an impossible case unless kernel parameters are changed */
 				bdbm_error ("oops! # of vectors in bio is larger than %u", 
-					BDBM_PROXY_MAX_VECS);
+					BDBM_BLKIO_MAX_VECS);
 				break;
 			}
 			i++;
@@ -485,16 +482,16 @@ void blockio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	}
 
 	/* end bio */
-	if (r->ret == 0)
+	if (proxy_req->blkio_req.ret == 0)
 		bio_endio (bio, 0);
 	else {
-		bdbm_warning ("oops! make_req () failed with %d", r->ret);
+		bdbm_warning ("oops! make_req () failed with %d", proxy_req->blkio_req.ret);
 		bio_endio (bio, -EIO);
 	}
 
 	/* free pool */
-	__free_block_io_proxy_req (p, r);
-	r->stt = REQ_STT_FREE;
+	__free_block_io_proxy_req (p, proxy_req);
+	proxy_req->stt = REQ_STT_FREE;
 
 	atomic_dec (&p->nr_out_reqs);
 	if (atomic_read (&p->nr_out_reqs) < 0)
@@ -507,65 +504,63 @@ void blockio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 /*
  * For the interaction with user-level application
  */
-static long blockio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
-static unsigned int blockio_proxy_fops_poll (struct file *filp, poll_table *poll_table);
-static void blockio_proxy_mmap_open (struct vm_area_struct *vma);
-static void blockio_proxy_mmap_close (struct vm_area_struct *vma);
-static int blockio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vma);
-static int blockio_proxy_fops_create (struct inode *inode, struct file *filp);
-static int blockio_proxy_fops_release (struct inode *inode, struct file *filp);
+static long blkio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
+static unsigned int blkio_proxy_fops_poll (struct file *filp, poll_table *poll_table);
+static void blkio_proxy_mmap_open (struct vm_area_struct *vma);
+static void blkio_proxy_mmap_close (struct vm_area_struct *vma);
+static int blkio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vma);
+static int blkio_proxy_fops_create (struct inode *inode, struct file *filp);
+static int blkio_proxy_fops_release (struct inode *inode, struct file *filp);
 
 static struct vm_operations_struct mmap_vm_ops = {
-	.open = blockio_proxy_mmap_open,
-	.close = blockio_proxy_mmap_close,
+	.open = blkio_proxy_mmap_open,
+	.close = blkio_proxy_mmap_close,
 };
 
 static struct file_operations fops = {
 	.owner = THIS_MODULE,
-	.mmap = blockio_proxy_fops_mmap, 
-	.open = blockio_proxy_fops_create,
-	.release = blockio_proxy_fops_release,
-	.poll = blockio_proxy_fops_poll,
-	.unlocked_ioctl = blockio_proxy_fops_ioctl,
-	.compat_ioctl = blockio_proxy_fops_ioctl,
+	.mmap = blkio_proxy_fops_mmap, 
+	.open = blkio_proxy_fops_create,
+	.release = blkio_proxy_fops_release,
+	.poll = blkio_proxy_fops_poll,
+	.unlocked_ioctl = blkio_proxy_fops_ioctl,
+	.compat_ioctl = blkio_proxy_fops_ioctl,
 };
 
-void blockio_proxy_mmap_open (struct vm_area_struct *vma)
+void blkio_proxy_mmap_open (struct vm_area_struct *vma)
 {
 #if 0
-	bdbm_msg ("blockio_proxy_mmap_open: virt %lx, phys %lx",
-		vma->vm_start, 
-		vma->vm_pgoff << PAGE_SHIFT);
+	bdbm_msg ("blkio_proxy_mmap_open: virt %lx, phys %lx", vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
 #endif
 }
 
-void blockio_proxy_mmap_close (struct vm_area_struct *vma)
+void blkio_proxy_mmap_close (struct vm_area_struct *vma)
 {
 }
 
-static int blockio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vma)
+static int blkio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	uint64_t size = vma->vm_end - vma->vm_start;
  	unsigned long pfn, start = vma->vm_start;
 	char *vmalloc_addr = (char *)p->mmap_reqs_buf;
 
 	if (p == NULL) {
-		bdbm_warning ("blockio_proxy is not created yet");
+		bdbm_warning ("blkio_proxy is not created yet");
 		return -EINVAL;
 	}
 
-	if (size != PAGE_ALIGN (p->mmap_nr_reqs * sizeof (bdbm_blockio_proxy_req_t))) {
+	if (size != PAGE_ALIGN (p->mmap_nr_reqs * sizeof (bdbm_blkio_proxy_req_t))) {
 		bdbm_warning ("size > p->mmap_nr_reqs: %llu > %llu (%llu / %ld)", 
 			size, 
-			p->mmap_nr_reqs * sizeof (bdbm_blockio_proxy_req_t), 
+			p->mmap_nr_reqs * sizeof (bdbm_blkio_proxy_req_t), 
 			p->mmap_nr_reqs,
-			sizeof (bdbm_blockio_proxy_req_t));
+			sizeof (bdbm_blkio_proxy_req_t));
 		return -EINVAL;
 	} else {
-		bdbm_msg ("blockio_proxy_fops_mmap: %lld MB (max_reqs: %d, max_vecs: %d)",
-			size/(1024*1024), BDBM_PROXY_MAX_REQS, BDBM_PROXY_MAX_VECS);
+		bdbm_msg ("blkio_proxy_fops_mmap: %lld MB (max_reqs: %d, max_vecs: %d)",
+			size/(1024*1024), BDBM_PROXY_MAX_REQS, BDBM_BLKIO_MAX_VECS);
 	}
 
 	vma->vm_page_prot = pgprot_noncached (vma->vm_page_prot);
@@ -580,18 +575,18 @@ static int blockio_proxy_fops_mmap (struct file *filp, struct vm_area_struct *vm
 	}
 
 	vma->vm_ops = &mmap_vm_ops;
-	vma->vm_private_data = p;	/* bdbm_blockio_proxy_t */
-	blockio_proxy_mmap_open (vma);
+	vma->vm_private_data = p;	/* bdbm_blkio_proxy_t */
+	blkio_proxy_mmap_open (vma);
 
-	bdbm_msg ("blockio_proxy_fops_mmap is called (%lu)", vma->vm_end - vma->vm_start);
+	bdbm_msg ("blkio_proxy_fops_mmap is called (%lu)", vma->vm_end - vma->vm_start);
 
 	return 0;
 }
 
-static int blockio_proxy_fops_create (struct inode *inode, struct file *filp)
+static int blkio_proxy_fops_create (struct inode *inode, struct file *filp)
 {
 	bdbm_drv_info_t* bdi = _bdi;
-	bdbm_blockio_proxy_t* p = NULL;
+	bdbm_blkio_proxy_t* p = NULL;
 
 	/* see if other FTL are already connected to the kernel */
 	if (filp->private_data != NULL) {
@@ -599,14 +594,15 @@ static int blockio_proxy_fops_create (struct inode *inode, struct file *filp)
 		return -EBUSY;
 	}
 
-	/* is bdbm_blockio_proxy_t created? */
+	/* is bdbm_blkio_proxy_t created? */
 	if (bdi == NULL) {
 		bdbm_error ("the kernel is not initialized yet");
 		return -EBUSY;
 	}
 
+	p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
+
 	/* check # of ref_cnt */
-	p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	if (atomic_read (&p->ref_cnt) > 0) {
 		bdbm_error ("The user-level FTL is already attached to the kernel (ref_cnt: %u)", 
 			atomic_read (&p->ref_cnt));
@@ -614,7 +610,7 @@ static int blockio_proxy_fops_create (struct inode *inode, struct file *filp)
 	}
 	atomic_inc (&p->ref_cnt);
 
-	/* ok! assign bdbm_blockio_proxy_ioctl to private_data */
+	/* ok! assign bdbm_blkio_proxy_ioctl to private_data */
 	filp->private_data = (void *)_bdi;
 	filp->f_mode |= FMODE_WRITE;
 
@@ -624,16 +620,16 @@ static int blockio_proxy_fops_create (struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static int blockio_proxy_fops_release (struct inode *inode, struct file *filp)
+static int blkio_proxy_fops_release (struct inode *inode, struct file *filp)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 
 	bdbm_mutex_lock (&p->mutex);
 
-	/* bdbm_blockio_proxy_ioctl is not open before */
+	/* bdbm_blkio_proxy_ioctl is not open before */
 	if (p == NULL) {
-		bdbm_warning ("oops! attempt to close blockio_proxy which was closed or not opened before");
+		bdbm_warning ("oops! attempt to close blkio_proxy which was closed or not opened before");
 		bdbm_mutex_unlock (&p->mutex);
 		return 0;
 	}
@@ -656,14 +652,14 @@ static int blockio_proxy_fops_release (struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static unsigned int blockio_proxy_fops_poll (struct file *filp, poll_table *poll_table)
+static unsigned int blkio_proxy_fops_poll (struct file *filp, poll_table *poll_table)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	unsigned int mask = 0;
 
 	if (p == NULL) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl is not created");
+		bdbm_error ("bdbm_blkio_proxy_ioctl is not created");
 		return 0;
 	}
 
@@ -672,7 +668,7 @@ static unsigned int blockio_proxy_fops_poll (struct file *filp, poll_table *poll
 	/* are there any new requests? */
 	if (atomic_read (&p->nr_out_reqs) > 0) {
 		int i = 0;
-		bdbm_blockio_proxy_req_t* r = NULL;
+		bdbm_blkio_proxy_req_t* r = NULL;
 		for (i = 0; i < p->mmap_nr_reqs; i++) {
 			r = &p->mmap_reqs_buf[i];
 			if (r->stt == REQ_STT_KERN_INIT) {
@@ -685,16 +681,16 @@ static unsigned int blockio_proxy_fops_poll (struct file *filp, poll_table *poll
 	return mask;
 }
 
-static long blockio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
+static long blkio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
-	bdbm_blockio_proxy_t* p = (bdbm_blockio_proxy_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	bdbm_host_inf_t* h = (bdbm_host_inf_t*)BDBM_GET_HOST_INF (bdi);
 	int ret = 0;
 
-	/* see if blockio_proxy is valid or not */
+	/* see if blkio_proxy is valid or not */
 	if (p == NULL) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl is not created");
+		bdbm_error ("bdbm_blkio_proxy_ioctl is not created");
 		return -ENOTTY;
 	}
 
@@ -726,7 +722,7 @@ static long blockio_proxy_fops_ioctl (struct file *filp, unsigned int cmd, unsig
 }
 
 /*
- * For the registration of blockio_proxy as a character device
+ * For the registration of blkio_proxy as a character device
  */
 static dev_t devnum = 0; 
 static struct cdev c_dev;
@@ -734,39 +730,39 @@ static struct class *cl = NULL;
 static int FIRST_MINOR = 0;
 static int MINOR_CNT = 1;
 
-/* register a bdbm_blockio_proxy_ioctl driver */
-static int blockio_proxy_ioctl_init (void)
+/* register a bdbm_blkio_proxy_ioctl driver */
+static int blkio_proxy_ioctl_init (void)
 {
 	int ret = -1;
 	struct device *dev_ret = NULL;
 
 	if ((ret = alloc_chrdev_region (&devnum, FIRST_MINOR, MINOR_CNT, BDBM_BLOCKIO_PROXY_IOCTL_NAME)) != 0) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl registration failed: %d\n", ret);
+		bdbm_error ("bdbm_blkio_proxy_ioctl registration failed: %d\n", ret);
 		return ret;
 	}
 	cdev_init (&c_dev, &fops);
 
 	if ((ret = cdev_add (&c_dev, devnum, MINOR_CNT)) < 0) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl registration failed: %d\n", ret);
+		bdbm_error ("bdbm_blkio_proxy_ioctl registration failed: %d\n", ret);
 		return ret;
 	}
 
 	if (IS_ERR (cl = class_create (THIS_MODULE, "char"))) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl registration failed: %d\n", MAJOR(devnum));
+		bdbm_error ("bdbm_blkio_proxy_ioctl registration failed: %d\n", MAJOR(devnum));
 		cdev_del (&c_dev);
 		unregister_chrdev_region (devnum, MINOR_CNT);
 		return PTR_ERR (cl);
 	}
 
 	if (IS_ERR (dev_ret = device_create (cl, NULL, devnum, NULL, BDBM_BLOCKIO_PROXY_IOCTL_NAME))) {
-		bdbm_error ("bdbm_blockio_proxy_ioctl registration failed: %d\n", MAJOR(devnum));
+		bdbm_error ("bdbm_blkio_proxy_ioctl registration failed: %d\n", MAJOR(devnum));
 		class_destroy (cl);
 		cdev_del (&c_dev);
 		unregister_chrdev_region (devnum, MINOR_CNT);
 		return PTR_ERR (dev_ret);
 	}
 
-	bdbm_msg ("bdbm_blockio_proxy_ioctl is installed: %s (major:%d minor:%d)", 
+	bdbm_msg ("bdbm_blkio_proxy_ioctl is installed: %s (major:%d minor:%d)", 
 		BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME, 
 		MAJOR(devnum), MINOR(devnum));
 
@@ -774,29 +770,29 @@ static int blockio_proxy_ioctl_init (void)
 }
 
 /* remove a bdbm_db_stub driver */
-static int blockio_proxy_ioctl_exit (void)
+static int blkio_proxy_ioctl_exit (void)
 {
 	if (cl == NULL || devnum == 0) {
-		bdbm_warning ("bdbm_blockio_proxy_ioctl is not installed yet");
+		bdbm_warning ("bdbm_blkio_proxy_ioctl is not installed yet");
 		return 1;
 	}
 
-	/* get rid of bdbm_blockio_proxy_ioctl */
+	/* get rid of bdbm_blkio_proxy_ioctl */
 	device_destroy (cl, devnum);
     class_destroy (cl);
     cdev_del (&c_dev);
     unregister_chrdev_region (devnum, MINOR_CNT);
 
-	bdbm_msg ("bdbm_blockio_proxy_ioctl is removed: %s (%d %d)", 
+	bdbm_msg ("bdbm_blkio_proxy_ioctl is removed: %s (%d %d)", 
 		BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME, 
 		MAJOR(devnum), MINOR(devnum));
 
 	return 0;
 }
 
-/* NOTE: We create fake interface to avoid compile errors. Do not use them for
+/* NOTE: We create fake interfaces to avoid compile errors. Do not use them for
  * any other purposes! */
 bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;
 bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
 bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
-bdbm_host_inf_t _host_blockio_inf;
+bdbm_host_inf_t _blkio_inf;

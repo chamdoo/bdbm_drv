@@ -36,12 +36,12 @@ THE SOFTWARE.
 
 typedef struct {
 	struct list_head list;
-	bdbm_blockio_proxy_req_t* mmap_req;
+	bdbm_blkio_proxy_req_t* mmap_req;
 } pool_item_t;
 
 bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (
 	int64_t nr_reqs, 
-	bdbm_blockio_proxy_req_t* reqs)
+	bdbm_blkio_proxy_req_t* reqs)
 {
 	bdbm_proxy_reqs_pool_t* pool = NULL;
 	int64_t i;
@@ -145,13 +145,11 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 	/*bdbm_track ();*/
 }
 
-bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
+bdbm_blkio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
 	bdbm_proxy_reqs_pool_t* pool)
 {
 	struct list_head* pos = NULL;
 	pool_item_t* item = NULL;
-
-	/*bdbm_track ();*/
 
 	/* see if there are free items in the free_list */
 	list_for_each (pos, &pool->free_list) {
@@ -160,27 +158,21 @@ bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (
 	}
 
 	if (item) {
-		/*bdbm_track ();*/
-
 		/* move it to the used_list */
 		bdbm_bug_on (item->mmap_req->stt != REQ_STT_FREE);
 		list_del (&item->list);
 		list_add_tail (&item->list, &pool->used_list);
-		
-		/*bdbm_track ();*/
 	} else {
-		/*bdbm_track ();*/
 		/* oops! there is no free item */
 		return NULL;
 	}
 
-	/*bdbm_track ();*/
 	return item->mmap_req;
 }
 
 void bdbm_proxy_reqs_pool_free_item (
 	bdbm_proxy_reqs_pool_t* pool,
-	bdbm_blockio_proxy_req_t* req)
+	bdbm_blkio_proxy_req_t* req)
 {
 	struct list_head* pos = NULL;
 	pool_item_t* item = NULL;

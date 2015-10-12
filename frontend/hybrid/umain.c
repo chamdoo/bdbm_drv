@@ -71,7 +71,7 @@ int main (int argc, char** argv)
 	}
 
 	/* attach the host & the device interface to the bdbm */
-	if (bdbm_drv_setup (_bdi, &_host_blockio_stub_inf, bdbm_dm_get_inf (_bdi)) != 0) {
+	if (bdbm_drv_setup (_bdi, &_blkio_stub_inf, bdbm_dm_get_inf (_bdi)) != 0) {
 		bdbm_error ("[kmain] bdbm_drv_setup () failed");
 		return -1;
 	}

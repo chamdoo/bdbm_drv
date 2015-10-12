@@ -29,16 +29,16 @@ THE SOFTWARE.
 
 typedef struct {
 	bdbm_spinlock_t lock;
-	bdbm_blockio_proxy_req_t* mmap_reqs;
+	bdbm_blkio_proxy_req_t* mmap_reqs;
 	struct list_head used_list;
 	struct list_head free_list;
 	int64_t nr_reqs;
 } bdbm_proxy_reqs_pool_t;
 
-bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (int64_t nr_reqs, bdbm_blockio_proxy_req_t* reqs);
+bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create (int64_t nr_reqs, bdbm_blkio_proxy_req_t* reqs);
 void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool);
-bdbm_blockio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (bdbm_proxy_reqs_pool_t* pool);
-void bdbm_proxy_reqs_pool_free_item (bdbm_proxy_reqs_pool_t* pool, bdbm_blockio_proxy_req_t* req);
+bdbm_blkio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (bdbm_proxy_reqs_pool_t* pool);
+void bdbm_proxy_reqs_pool_free_item (bdbm_proxy_reqs_pool_t* pool, bdbm_blkio_proxy_req_t* req);
 
 #endif
 

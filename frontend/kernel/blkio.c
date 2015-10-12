@@ -39,18 +39,18 @@ THE SOFTWARE.
 
 extern bdbm_drv_info_t* _bdi;
 
-bdbm_host_inf_t _host_blockio_inf = {
+bdbm_host_inf_t _blkio_inf = {
 	.ptr_private = NULL,
-	.open = host_blockio_open,
-	.close = host_blockio_close,
-	.make_req = host_blockio_make_req,
-	.end_req = host_blockio_end_req,
+	.open = blkio_open,
+	.close = blkio_close,
+	.make_req = blkio_make_req,
+	.end_req = blkio_end_req,
 };
 
 typedef struct {
 	bdbm_mutex_t host_lock;
 	atomic64_t nr_reqs;
-} bdbm_host_blockio_private_t;
+} bdbm_blkio_private_t;
 
 
 
@@ -59,10 +59,10 @@ static void __host_blkio_make_request_fn (
 	struct request_queue *q, 
 	struct bio *bio)
 {
-	host_blockio_make_req (_bdi, (void*)bio);
+	blkio_make_req (_bdi, (void*)bio);
 }
 
-static bdbm_hlm_req_t* __host_blockio_create_hlm_trim_req (
+static bdbm_hlm_req_t* __blkio_create_hlm_trim_req (
 	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
@@ -110,7 +110,7 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_trim_req (
 	return hlm_req;
 }
 
-static bdbm_hlm_req_t* __host_blockio_create_hlm_rq_req (
+static bdbm_hlm_req_t* __blkio_create_hlm_rq_req (
 	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
@@ -224,7 +224,7 @@ fail_req:
 	return NULL;
 }
 
-static bdbm_hlm_req_t* __host_blockio_create_hlm_req (
+static bdbm_hlm_req_t* __blkio_create_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
@@ -250,10 +250,10 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_req (
 	/* create 'hlm_req' */
 	if (bio->bi_rw & REQ_DISCARD) {
 		/* make a high-level request for TRIM */
-		hlm_req = __host_blockio_create_hlm_trim_req (bdi, bio);
+		hlm_req = __blkio_create_hlm_trim_req (bdi, bio);
 	} else {
 		/* make a high-level request for READ or WRITE */
-		hlm_req = __host_blockio_create_hlm_rq_req (bdi, bio);
+		hlm_req = __blkio_create_hlm_rq_req (bdi, bio);
 	}
 
 	/* start a stopwatch */
@@ -264,7 +264,7 @@ static bdbm_hlm_req_t* __host_blockio_create_hlm_req (
 	return hlm_req;
 }
 
-static void __host_blockio_delete_hlm_req (
+static void __blkio_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
@@ -305,7 +305,7 @@ static void __host_blockio_delete_hlm_req (
 }
 
 #ifdef ENABLE_DISPLAY
-static void __host_blockio_display_req (
+static void __blkio_display_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
@@ -333,14 +333,14 @@ static void __host_blockio_display_req (
 }
 #endif
 
-uint32_t host_blockio_open (bdbm_drv_info_t* bdi)
+uint32_t blkio_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
-	bdbm_host_blockio_private_t* p;
+	bdbm_blkio_private_t* p;
 
 	/* create a private data structure */
-	if ((p = (bdbm_host_blockio_private_t*)bdbm_malloc_atomic
-			(sizeof (bdbm_host_blockio_private_t))) == NULL) {
+	if ((p = (bdbm_blkio_private_t*)bdbm_malloc_atomic
+			(sizeof (bdbm_blkio_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
@@ -359,11 +359,11 @@ uint32_t host_blockio_open (bdbm_drv_info_t* bdi)
 	return 0;
 }
 
-void host_blockio_close (bdbm_drv_info_t* bdi)
+void blkio_close (bdbm_drv_info_t* bdi)
 {
-	bdbm_host_blockio_private_t* p = NULL;
+	bdbm_blkio_private_t* p = NULL;
 
-	p = (bdbm_host_blockio_private_t*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* wait for host reqs to finish */
 	bdbm_msg ("wait for host reqs to finish");
@@ -380,10 +380,10 @@ void host_blockio_close (bdbm_drv_info_t* bdi)
 	bdbm_free_atomic (p);
 }
 
-void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
+void blkio_make_req (bdbm_drv_info_t* bdi, void* req)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_host_blockio_private_t* p = (bdbm_host_blockio_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_hlm_req_t* hlm_req = NULL;
 	struct bio* bio = (struct bio*)req;
 
@@ -401,7 +401,7 @@ void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
 	}
 
 	/* create a hlm_req using a bio */
-	if ((hlm_req = __host_blockio_create_hlm_req (bdi, bio)) == NULL) {
+	if ((hlm_req = __blkio_create_hlm_req (bdi, bio)) == NULL) {
 		bdbm_mutex_unlock (&p->host_lock);
 		bdbm_error ("the creation of hlm_req failed");
 		bio_io_error (bio);
@@ -410,7 +410,7 @@ void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
 
 #ifdef ENABLE_DISPLAY
 	/* display req info */
-	__host_blockio_display_req (bdi, hlm_req);
+	__blkio_display_req (bdi, hlm_req);
 #endif
 
 	/* if success, increase # of host reqs before sending the request to hlm */
@@ -428,18 +428,18 @@ void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req)
 		}
 
 		/* finish a bio */
-		__host_blockio_delete_hlm_req (bdi, hlm_req);
+		__blkio_delete_hlm_req (bdi, hlm_req);
 		bio_io_error (bio);
 	}
 
 	bdbm_mutex_unlock (&p->host_lock);
 }
 
-void host_blockio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
+void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 {
 	uint32_t ret;
 	struct bio* bio = NULL;
-	bdbm_host_blockio_private_t* p = NULL;
+	bdbm_blkio_private_t* p = NULL;
 
 	/* unlock hlm_req's lock if it is available */
 	if (hlm_req->done)
@@ -447,11 +447,11 @@ void host_blockio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 
 	/* get a bio from hlm_req */
 	bio = (struct bio*)hlm_req->ptr_host_req;
-	p = (bdbm_host_blockio_private_t*)BDBM_HOST_PRIV(bdi);
+	p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	ret = hlm_req->ret;
 
 	/* destroy hlm_req */
-	__host_blockio_delete_hlm_req (bdi, hlm_req);
+	__blkio_delete_hlm_req (bdi, hlm_req);
 
 	/* get the result and end a bio */
 	if (bio != NULL) {

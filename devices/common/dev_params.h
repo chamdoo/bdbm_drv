@@ -43,4 +43,3 @@ bdbm_device_params_t get_default_device_params (void);
 void display_device_params (bdbm_device_params_t* p);
 
 #endif
-

@@ -48,7 +48,7 @@ static int __init bdbm_drv_init (void)
 
 	/* attach the host interface to the bdbm
 	 * note that there is no device */
-	bdbm_drv_setup (_bdi, &_host_blockio_proxy_inf, NULL);
+	bdbm_drv_setup (_bdi, &_blkio_proxy_inf, NULL);
 
 	/* run it */
 	if (bdbm_drv_run (_bdi) != 0) {

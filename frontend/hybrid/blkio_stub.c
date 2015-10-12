@@ -42,31 +42,32 @@ THE SOFTWARE.
 #include "blkio_proxy_ioctl.h"
 
 
-bdbm_host_inf_t _host_blockio_stub_inf = {
+bdbm_host_inf_t _blkio_stub_inf = {
 	.ptr_private = NULL,
-	.open = blockio_stub_open,
-	.close = blockio_stub_close,
-	.make_req = blockio_stub_make_req,
-	.end_req = blockio_stub_end_req,
+	.open = blkio_stub_open,
+	.close = blkio_stub_close,
+	.make_req = blkio_stub_make_req,
+	.end_req = blkio_stub_end_req,
 };
 
 typedef struct {
 	int fd;
 	int stop;
-	bdbm_blockio_proxy_req_t* mmap_reqs;
+	bdbm_blkio_proxy_req_t* mmap_reqs;
 	bdbm_thread_t* host_stub_thread; /* polling the blockio proxy */
 	atomic_t nr_host_reqs;
 	bdbm_mutex_t host_lock;
-} bdbm_blockio_stub_private_t;
+} bdbm_blkio_stub_private_t;
+
 
 int __host_proxy_stub_thread (void* arg) 
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_host_inf_t* host_inf = (bdbm_host_inf_t*)BDBM_GET_HOST_INF (bdi);
-	bdbm_blockio_stub_private_t* p = (bdbm_blockio_stub_private_t*)BDBM_HOST_PRIV (bdi);
+	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV (bdi);
 	struct pollfd fds[1];
-	int ret, i, sent;
+	int ret, i, j, sent;
 
 	while (p->stop != 1) {
 		bdbm_thread_yield ();
@@ -88,18 +89,19 @@ int __host_proxy_stub_thread (void* arg)
 
 		/* success */
 		if (ret > 0) {
-			bdbm_blockio_proxy_req_t* r = NULL;
-			int* test = NULL;
-			static int bug = 0;
+			bdbm_blkio_proxy_req_t* proxy_req = NULL;
 			for (i = 0; i < BDBM_PROXY_MAX_REQS; i++) {
 				/* fetch the outstanding request from mmap */
-				r = &p->mmap_reqs[i];
-				bdbm_bug_on (r->id != i);
-				/* send the requests to host stub */
-				if (r->stt == REQ_STT_KERN_SENT) {
-					r->stt = REQ_STT_USER_PROG;
-					/*bdbm_msg ("[user-1] send proxy requests to the host stub: %llu %llu", r->bi_sector, r->bi_size);*/
-					host_inf->make_req (bdi, (void*)r);
+				proxy_req = &p->mmap_reqs[i];
+				bdbm_bug_on (proxy_req->id != i);
+				/* are there any requests to send to the device? */
+				if (proxy_req->stt == REQ_STT_KERN_SENT) {
+					proxy_req->stt = REQ_STT_USER_PROG;
+					/* setup blkio_req */
+					for (j = 0; j < proxy_req->blkio_req.bi_bvec_cnt; j++)
+						proxy_req->blkio_req.bi_bvec_ptr[j] = proxy_req->bi_bvec_ptr[j];
+					/* send the request */
+					host_inf->make_req (bdi, &proxy_req->blkio_req);
 					sent++;
 				}
 			}
@@ -108,11 +110,6 @@ int __host_proxy_stub_thread (void* arg)
 			if (sent == 0) {
 				bdbm_warning ("hmm... this is an impossible case");
 			}
-
-			if (bug > 10000) {
-				/**test = 0x00;*/
-			}
-			bug++;
 		}
 	}
 
@@ -121,13 +118,13 @@ int __host_proxy_stub_thread (void* arg)
 	return 0;
 }
 
-uint32_t blockio_stub_open (bdbm_drv_info_t* bdi)
+uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 {
-	bdbm_blockio_stub_private_t* p = NULL;
+	bdbm_blkio_stub_private_t* p = NULL;
 	int size;
 
 	/* create a private data for host_proxy */
-	if ((p = bdbm_malloc (sizeof (bdbm_blockio_stub_private_t))) == NULL) {
+	if ((p = bdbm_malloc (sizeof (bdbm_blkio_stub_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc () failed");
 		return 1;
 	}
@@ -138,14 +135,14 @@ uint32_t blockio_stub_open (bdbm_drv_info_t* bdi)
 	bdbm_mutex_init (&p->host_lock);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
-	/* connect to blockio_proxy */
+	/* connect to blkio_proxy */
 	if ((p->fd = open (BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME, O_RDWR)) < 0) {
 		bdbm_error ("open () failed (ret = %d)\n", p->fd);
 		return 1;
 	}
 
 	/* create mmap_reqs */
-	size = sizeof (bdbm_blockio_proxy_req_t) * BDBM_PROXY_MAX_REQS;
+	size = sizeof (bdbm_blkio_proxy_req_t) * BDBM_PROXY_MAX_REQS;
 	if ((p->mmap_reqs = mmap (NULL,
 			size,
 			PROT_READ | PROT_WRITE, 
@@ -166,11 +163,11 @@ uint32_t blockio_stub_open (bdbm_drv_info_t* bdi)
 	return 0;
 }
 
-void blockio_stub_close (bdbm_drv_info_t* bdi)
+void blkio_stub_close (bdbm_drv_info_t* bdi)
 {
-	bdbm_blockio_stub_private_t* p = BDBM_HOST_PRIV (bdi); 
+	bdbm_blkio_stub_private_t* p = BDBM_HOST_PRIV (bdi); 
 
-	/* stop the blockio_stub thread */
+	/* stop the blkio_stub thread */
 	p->stop = 1;
 	bdbm_thread_stop (p->host_stub_thread);
 
@@ -178,18 +175,19 @@ void blockio_stub_close (bdbm_drv_info_t* bdi)
 		bdbm_thread_yield ();
 	}
 
-	/* close the blockio_proxy */
+	/* close the blkio_proxy */
 	close (p->fd);
 
 	/* free stub */
 	bdbm_free (p);
 }
 
-static void __blockio_stub_finish (
+static void __blkio_stub_finish (
 	bdbm_drv_info_t* bdi, 
-	bdbm_blockio_proxy_req_t* proxy_req)
+	bdbm_blkio_req_t* r)
 {
-	bdbm_blockio_stub_private_t* p = (bdbm_blockio_stub_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_stub_private_t* p = BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_proxy_req_t* proxy_req = (bdbm_blkio_proxy_req_t*)r;
 
 	/* change the status of the request */
 	proxy_req->stt = REQ_STT_USER_DONE;
@@ -198,9 +196,9 @@ static void __blockio_stub_finish (
 	ioctl (p->fd, BDBM_BLOCKIO_PROXY_IOCTL_DONE, &proxy_req->id);
 }
 
-static bdbm_hlm_req_t* __blockio_stub_create_hlm_trim_req (
+static bdbm_hlm_req_t* __blkio_stub_create_hlm_trim_req (
 	bdbm_drv_info_t* bdi, 
-	bdbm_blockio_proxy_req_t* proxy_req)
+	bdbm_blkio_req_t* r)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
@@ -218,30 +216,30 @@ static bdbm_hlm_req_t* __blockio_stub_create_hlm_trim_req (
 	bdbm_stopwatch_start (&hlm_req->sw);
 	
 	if (dp->mapping_type == MAPPING_POLICY_SEGMENT) {
-		hlm_req->lpa = proxy_req->bi_sector / nr_secs_per_fp;
-		hlm_req->len = proxy_req->bi_size / nr_secs_per_fp;
+		hlm_req->lpa = r->bi_sector / nr_secs_per_fp;
+		hlm_req->len = r->bi_size / nr_secs_per_fp;
 		if (hlm_req->len == 0) 
 			hlm_req->len = 1;
 	} else {
-		hlm_req->lpa = (proxy_req->bi_sector + nr_secs_per_fp - 1) / nr_secs_per_fp;
-		if ((hlm_req->lpa * nr_secs_per_fp - proxy_req->bi_sector) > proxy_req->bi_size) {
+		hlm_req->lpa = (r->bi_sector + nr_secs_per_fp - 1) / nr_secs_per_fp;
+		if ((hlm_req->lpa * nr_secs_per_fp - r->bi_sector) > r->bi_size) {
 			hlm_req->len = 0;
 		} else {
-			hlm_req->len = (proxy_req->bi_size - (hlm_req->lpa * nr_secs_per_fp - proxy_req->bi_sector)) / nr_secs_per_fp;
+			hlm_req->len = (r->bi_size - (hlm_req->lpa * nr_secs_per_fp - r->bi_sector)) / nr_secs_per_fp;
 		}
 	}
 	hlm_req->nr_done_reqs = 0;
 	hlm_req->kpg_flags = NULL;
 	hlm_req->pptr_kpgs = NULL;	/* no data */
-	hlm_req->ptr_host_req = (void*)proxy_req;
+	hlm_req->ptr_host_req = (void*)r;
 	hlm_req->ret = 0;
 
 	return hlm_req;
 }
 
-bdbm_hlm_req_t* __blockio_stub_create_hlm_req (
+bdbm_hlm_req_t* __blkio_stub_create_hlm_req (
 	bdbm_drv_info_t* bdi, 
-	bdbm_blockio_proxy_req_t* proxy_req)
+	bdbm_blkio_req_t* r)
 {
 	bdbm_hlm_req_t* hlm_req = NULL;
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
@@ -259,11 +257,11 @@ bdbm_hlm_req_t* __blockio_stub_create_hlm_req (
 	}
 
 	/* build the hlm_req */
-	hlm_req->req_type = proxy_req->bi_rw;
-	hlm_req->lpa = (proxy_req->bi_sector / nr_secs_per_fp);
-	hlm_req->len = (proxy_req->bi_sector + proxy_req->bi_size + nr_secs_per_fp - 1) / nr_secs_per_fp - hlm_req->lpa;
+	hlm_req->req_type = r->bi_rw;
+	hlm_req->lpa = (r->bi_sector / nr_secs_per_fp);
+	hlm_req->len = (r->bi_sector + r->bi_size + nr_secs_per_fp - 1) / nr_secs_per_fp - hlm_req->lpa;
 	hlm_req->nr_done_reqs = 0;
-	hlm_req->ptr_host_req = (void*)proxy_req;
+	hlm_req->ptr_host_req = (void*)r;
 	hlm_req->ret = 0;
 	bdbm_stopwatch_start (&hlm_req->sw);
 	bdbm_spin_lock_init (&hlm_req->lock);
@@ -283,10 +281,10 @@ bdbm_hlm_req_t* __blockio_stub_create_hlm_req (
 	}
 
 	/* get the data from bio */
-	for (i = 0; i < proxy_req->bi_bvec_cnt; i++) {
+	for (i = 0; i < r->bi_bvec_cnt; i++) {
 next_kpg:
  		/* assign a new page */
-		if ((hlm_req->lpa * nr_kp_per_fp + kpg_loop) != (proxy_req->bi_sector + bvec_offset) / nr_secs_per_kp) {
+		if ((hlm_req->lpa * nr_kp_per_fp + kpg_loop) != (r->bi_sector + bvec_offset) / nr_secs_per_kp) {
 			hlm_req->pptr_kpgs[kpg_loop] = (uint8_t*)bdbm_malloc (KERNEL_PAGE_SIZE);
 			hlm_req->kpg_flags[kpg_loop] = MEMFLAG_FRAG_PAGE;
 			kpg_loop++;
@@ -294,7 +292,7 @@ next_kpg:
 			goto next_kpg;
 		}
 
-		hlm_req->pptr_kpgs[kpg_loop] = (uint8_t*)proxy_req->bi_bvec_data[i];
+		hlm_req->pptr_kpgs[kpg_loop] = (uint8_t*)r->bi_bvec_ptr[i];
 		hlm_req->kpg_flags[kpg_loop] = MEMFLAG_KMAP_PAGE;
 		bvec_offset += nr_secs_per_kp;
 		kpg_loop++;
@@ -310,7 +308,7 @@ next_kpg:
 	return hlm_req;
 }
 
-void __blockio_stub_delete_hlm_req (
+void __blkio_stub_delete_hlm_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* hlm_req)
 {
@@ -347,23 +345,21 @@ void __blockio_stub_delete_hlm_req (
 	bdbm_free (hlm_req);
 }
 
-void blockio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
+void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 {
-	bdbm_blockio_stub_private_t* p = (bdbm_blockio_stub_private_t*)BDBM_HOST_PRIV(bdi);
-	bdbm_blockio_proxy_req_t* proxy_req = (bdbm_blockio_proxy_req_t*)bio;
+	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)bio;
 	bdbm_hlm_req_t* hlm_req = NULL;
 
 	/* create a hlm_req using a bio */
-	if (proxy_req->bi_rw == REQTYPE_TRIM) {
-		/*bdbm_msg ("[user-2] make hlm_trim_req");*/
-		if ((hlm_req = __blockio_stub_create_hlm_trim_req (bdi, proxy_req)) == NULL) {
+	if (r->bi_rw == REQTYPE_TRIM) {
+		if ((hlm_req = __blkio_stub_create_hlm_trim_req (bdi, r)) == NULL) {
 			bdbm_mutex_unlock (&p->host_lock);
 			bdbm_error ("the creation of hlm_req failed");
 			return;
 		}
 	} else {
-		/*bdbm_msg ("[user-2] make hlm_trim_req");*/
-		if ((hlm_req = __blockio_stub_create_hlm_req (bdi, proxy_req)) == NULL) {
+		if ((hlm_req = __blkio_stub_create_hlm_req (bdi, r)) == NULL) {
 			bdbm_mutex_unlock (&p->host_lock);
 			bdbm_error ("the creation of hlm_req failed");
 			return;
@@ -375,32 +371,29 @@ void blockio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 
 	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
 	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
-	/*bdbm_msg ("[user-1] %llu %llu", proxy_req->bi_sector, proxy_req->bi_size);*/
 	if (bdi->ptr_hlm_inf->make_req (bdi, hlm_req) != 0) {
 		/* oops! something wrong */
 		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 
 		/* cancel the request */
-		__blockio_stub_delete_hlm_req (bdi, hlm_req);
-		__blockio_stub_finish (bdi, proxy_req);
+		__blkio_stub_delete_hlm_req (bdi, hlm_req);
+		__blkio_stub_finish (bdi, r);
 		atomic_dec (&p->nr_host_reqs);
 	}
 }
 
-void blockio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
+void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
-	bdbm_blockio_stub_private_t* p = (bdbm_blockio_stub_private_t*)BDBM_HOST_PRIV(bdi);
-	bdbm_blockio_proxy_req_t* proxy_req = (bdbm_blockio_proxy_req_t*)req->ptr_host_req;
-
-	/*bdbm_msg ("[user-2] %llu %llu", proxy_req->bi_sector, proxy_req->bi_size); */
+	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->ptr_host_req;
 
 	/* finish the proxy request */
-	__blockio_stub_finish (bdi, proxy_req);
+	__blkio_stub_finish (bdi, r);
 
 	/* decreate # of reqs */
 	atomic_dec (&p->nr_host_reqs);
 
 	/* destroy hlm_req */
-	__blockio_stub_delete_hlm_req (bdi, req);
+	__blkio_stub_delete_hlm_req (bdi, req);
 }
 

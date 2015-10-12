@@ -25,11 +25,11 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_BLOCKIO_PROXY_STUB_H
 #define _BLUEDBM_BLOCKIO_PROXY_STUB_H
 
-extern bdbm_host_inf_t _host_blockio_stub_inf;
+extern bdbm_host_inf_t _blkio_stub_inf;
 
-uint32_t blockio_stub_open (bdbm_drv_info_t* bdi);
-void blockio_stub_close (bdbm_drv_info_t* bdi);
-void blockio_stub_make_req (bdbm_drv_info_t* bdi, void* bio);
-void blockio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+uint32_t blkio_stub_open (bdbm_drv_info_t* bdi);
+void blkio_stub_close (bdbm_drv_info_t* bdi);
+void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio);
+void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 
 #endif

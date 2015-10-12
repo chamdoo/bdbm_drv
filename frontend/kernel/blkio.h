@@ -25,12 +25,12 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_HOST_BLOCKIO_H
 #define _BLUEDBM_HOST_BLOCKIO_H
 
-extern bdbm_host_inf_t _host_blockio_inf;
+extern bdbm_host_inf_t _blkio_inf;
 
-uint32_t host_blockio_open (bdbm_drv_info_t* bdi);
-void host_blockio_close (bdbm_drv_info_t* bdi);
-void host_blockio_make_req (bdbm_drv_info_t* bdi, void* req);
-void host_blockio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+uint32_t blkio_open (bdbm_drv_info_t* bdi);
+void blkio_close (bdbm_drv_info_t* bdi);
+void blkio_make_req (bdbm_drv_info_t* bdi, void* req);
+void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 
 #endif
 

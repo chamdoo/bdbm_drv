@@ -25,6 +25,16 @@ THE SOFTWARE.
 #ifndef __BLUEDBM_FTL_PARAM_H__
 #define __BLUEDBM_FTL_PARAM_H__
 
+extern int _param_kernel_sector_size;
+extern int _param_gc_policy;
+extern int _param_wl_policy;
+extern int _param_queuing_policy;
+extern int _param_trim;
+extern int _param_snapshot;
+extern int _param_mapping_type;
+extern int _param_llm_type;
+extern int _param_hlm_type;
+
 bdbm_ftl_params get_default_ftl_params (void);
 void display_ftl_params (bdbm_ftl_params* p);
 

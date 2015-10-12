@@ -25,8 +25,7 @@ THE SOFTWARE.
 #ifndef _BDBM_HOST_BLOCKIO_PROXY_IOCTL_H
 #define _BDBM_HOST_BLOCKIO_PROXY_IOCTL_H
 
-#define BDBM_PROXY_MAX_REQS 128
-#define BDBM_PROXY_MAX_VECS	128
+#define BDBM_PROXY_MAX_REQS 128 
 
 typedef enum {
 	REQ_STT_ALLOC = 0x0100,
@@ -39,19 +38,16 @@ typedef enum {
 } bdbm_proxy_req_status_t;
 
 typedef struct {
-	uint32_t id;
-	bdbm_proxy_req_status_t stt;
-	uint64_t bi_rw;
-	uint64_t bi_sector;	
-	uint64_t bi_size;
-	uint64_t bi_bvec_cnt;
-	uint8_t bi_bvec_data[BDBM_PROXY_MAX_VECS][KERNEL_PAGE_SIZE];	/* # of bvec is fixed to 32 by default */
-	uint8_t ret;
-	void* bio; /* only used by the kernel proxy */
-} bdbm_blockio_proxy_req_t;
+	bdbm_blkio_req_t blkio_req;	/* must be at the top of the structure */
 
-#define BDBM_BLOCKIO_PROXY_IOCTL_NAME		"bdbm_blockio_proxy"
-#define BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME	"/dev/bdbm_blockio_proxy"
+	/* stuff for mmap management */
+	uint8_t bi_bvec_ptr[KERNEL_PAGE_SIZE][BDBM_BLKIO_MAX_VECS]; /* keep data shared by both kernel and user */
+	bdbm_proxy_req_status_t stt;
+	uint32_t id;
+} bdbm_blkio_proxy_req_t;
+
+#define BDBM_BLOCKIO_PROXY_IOCTL_NAME		"bdbm_blkio_proxy"
+#define BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME	"/dev/bdbm_blkio_proxy"
 #define BDBM_BLOCKIO_PROXY_IOCTL_MAGIC		'Y'
 
 #define BDBM_BLOCKIO_PROXY_IOCTL_DONE		_IOWR (BDBM_BLOCKIO_PROXY_IOCTL_MAGIC, 0, int)

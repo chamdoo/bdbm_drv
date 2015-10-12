@@ -104,14 +104,17 @@ typedef struct {
 } bdbm_phyaddr_t;
 
 /* a bluedbm blockio request */
+#define BDBM_BLKIO_MAX_VECS 128
+
 typedef struct {
 	uint64_t bi_rw;
 	uint64_t bi_sector;
 	uint64_t bi_size;
 	uint64_t bi_bvec_cnt;
-	uint8_t* bi_bvec_data[KERNEL_PAGE_SIZE];
+	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS];
+	uint8_t ret;
 	void* bio;
-} bdbm_bio_t;
+} bdbm_blkio_req_t;
 
 /* a high-level memory manager request */
 enum BDBM_HLM_MEMFLAG {

@@ -54,4 +54,5 @@ kernel_clean:
 .PHONY: clean
 clean: kernel_clean
 	@$(RM) -rf Module.markers modules.order
+	@cd ../common; $(RM) *.o
 
