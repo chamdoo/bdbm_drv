@@ -22,11 +22,11 @@ sudo fio --randrepeat=1 \
 	--filename=/media/blueDBM/fio \
 	--bs=4k \
 	--iodepth=128 \
-	--size=10000M \
+	--size=2000M \
 	--readwrite=randrw \
 	--rwmixread=0 \
 	--overwrite=0 \
 	--numjobs=8 \
 	--direct=0 \
-	--buffered=1
+	--buffered=0
 

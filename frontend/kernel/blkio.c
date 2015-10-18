@@ -84,21 +84,21 @@ static bdbm_hlm_req_t* __blkio_create_hlm_trim_req (
 	hlm_req->req_type = REQTYPE_TRIM;
 	
 	if (dp->mapping_type == MAPPING_POLICY_SEGMENT) {
-		hlm_req->lpa = bio->bi_sector / nr_secs_per_fp;
+		hlm_req->lpa = bio->bi_offset / nr_secs_per_fp;
 		hlm_req->len = bio_sectors (bio) / nr_secs_per_fp;
 		if (hlm_req->len == 0) 
 			hlm_req->len = 1;
 	} else {
-		hlm_req->lpa = (bio->bi_sector + nr_secs_per_fp - 1) / nr_secs_per_fp;
-		if ((hlm_req->lpa * nr_secs_per_fp - bio->bi_sector) > bio_sectors (bio)) {
-			bdbm_error ("'hlm_req->lpa (%llu) * nr_secs_per_fp (%llu) - bio->bi_sector (%lu)' (%llu) > bio_sectors (bio) (%u)",
-					hlm_req->lpa, nr_secs_per_fp, bio->bi_sector,
-					hlm_req->lpa * nr_secs_per_fp - bio->bi_sector,
+		hlm_req->lpa = (bio->bi_offset + nr_secs_per_fp - 1) / nr_secs_per_fp;
+		if ((hlm_req->lpa * nr_secs_per_fp - bio->bi_offset) > bio_sectors (bio)) {
+			bdbm_error ("'hlm_req->lpa (%llu) * nr_secs_per_fp (%llu) - bio->bi_offset (%lu)' (%llu) > bio_sectors (bio) (%u)",
+					hlm_req->lpa, nr_secs_per_fp, bio->bi_offset,
+					hlm_req->lpa * nr_secs_per_fp - bio->bi_offset,
 					bio_sectors (bio));
 			hlm_req->len = 0;
 		} else {
 			hlm_req->len = 
-				(bio_sectors (bio) - (hlm_req->lpa * nr_secs_per_fp - bio->bi_sector)) / nr_secs_per_fp;
+				(bio_sectors (bio) - (hlm_req->lpa * nr_secs_per_fp - bio->bi_offset)) / nr_secs_per_fp;
 		}
 	}
 	hlm_req->nr_done_reqs = 0;
@@ -110,7 +110,7 @@ static bdbm_hlm_req_t* __blkio_create_hlm_trim_req (
 	return hlm_req;
 }
 
-static bdbm_hlm_req_t* __blkio_create_hlm_rq_req (
+static bdbm_hlm_req_t* __blkio_create_hlm_rw_req (
 	bdbm_drv_info_t* bdi, 
 	struct bio* bio)
 {
@@ -148,12 +148,12 @@ static bdbm_hlm_req_t* __blkio_create_hlm_rq_req (
 	}
 
 	/* make a high-level request for READ or WRITE */
-	hlm_req->lpa = (bio->bi_sector / nr_secs_per_fp);
-	hlm_req->len = (bio->bi_sector + bio_sectors (bio) + nr_secs_per_fp - 1) / nr_secs_per_fp - hlm_req->lpa;
+	hlm_req->lpa = (bio->bi_offset / nr_secs_per_fp);
+	hlm_req->len = (bio->bi_offset + bio_sectors (bio) + nr_secs_per_fp - 1) / nr_secs_per_fp - hlm_req->lpa;
 	hlm_req->nr_done_reqs = 0;
 	hlm_req->ptr_host_req = (void*)bio;
 	hlm_req->ret = 0;
-	bdbm_spin_lock_init (&hlm_req->lock);
+	/*bdbm_spin_lock_init (&hlm_req->lock);*/
 	if ((hlm_req->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic
 			(sizeof(uint8_t*) * hlm_req->len * nr_kp_per_fp)) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed"); 
@@ -176,7 +176,7 @@ static bdbm_hlm_req_t* __blkio_create_hlm_rq_req (
 
 next_kpg:
  		/* assign a new page */
-		if ((hlm_req->lpa * nr_kp_per_fp + kpg_loop) != (bio->bi_sector + bvec_offset) / nr_secs_per_kp) {
+		if ((hlm_req->lpa * nr_kp_per_fp + kpg_loop) != (bio->bi_offset + bvec_offset) / nr_secs_per_kp) {
 			hlm_req->pptr_kpgs[kpg_loop] = (uint8_t*)bdbm_malloc_atomic (KERNEL_PAGE_SIZE);
 			hlm_req->kpg_flags[kpg_loop] = MEMFLAG_FRAG_PAGE;
 			kpg_loop++;
@@ -236,9 +236,9 @@ static bdbm_hlm_req_t* __blkio_create_hlm_req (
 	nr_secs_per_kp = KERNEL_PAGE_SIZE / KERNEL_SECTOR_SIZE;
 
 	/* see if some error cases */
-	if (bio->bi_sector % nr_secs_per_kp != 0) {
+	if (bio->bi_offset % nr_secs_per_kp != 0) {
 		bdbm_warning ("kernel pages are not aligned with disk sectors (%lu mod %llu != 0)",
-			bio->bi_sector, nr_secs_per_kp);
+			bio->bi_offset, nr_secs_per_kp);
 		/* go ahead */
 	}
 	if (KERNEL_PAGE_SIZE > np->page_main_size) {
@@ -253,7 +253,7 @@ static bdbm_hlm_req_t* __blkio_create_hlm_req (
 		hlm_req = __blkio_create_hlm_trim_req (bdi, bio);
 	} else {
 		/* make a high-level request for READ or WRITE */
-		hlm_req = __blkio_create_hlm_rq_req (bdi, bio);
+		hlm_req = __blkio_create_hlm_rw_req (bdi, bio);
 	}
 
 	/* start a stopwatch */
@@ -391,10 +391,10 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* req)
 	bdbm_mutex_lock (&p->host_lock);
 
 	/* see if the address range of bio is beyond storage space */
-	if (bio->bi_sector + bio_sectors (bio) > np->device_capacity_in_byte / KERNEL_SECTOR_SIZE) {
+	if (bio->bi_offset + bio_sectors (bio) > np->device_capacity_in_byte / KERNEL_SECTOR_SIZE) {
 		bdbm_mutex_unlock (&p->host_lock);
 		bdbm_error ("bio is beyond storage space (%lu > %llu)",
-			bio->bi_sector + bio_sectors (bio),
+			bio->bi_offset + bio_sectors (bio),
 			np->device_capacity_in_byte / KERNEL_SECTOR_SIZE);
 		bio_io_error (bio);
 		return;

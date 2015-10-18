@@ -235,6 +235,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	}
 
 	/* display default parameters */
+	display_device_params (&bdi->parm_dev);
 	display_ftl_params (&bdi->parm_ftl);
 
 	/* init performance monitor */

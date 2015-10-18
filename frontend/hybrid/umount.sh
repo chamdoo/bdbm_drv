@@ -16,3 +16,4 @@ fi
 sudo rmmod bdbm_drv
 sudo rmmod risa_dev_*
 sudo rmmod f2fs
+sudo rm 0 1

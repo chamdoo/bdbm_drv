@@ -22,15 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_LLM_MQ_H
-#define _BLUEDBM_LLM_MQ_H
+#ifndef _BLUEDBM_LLM_RMQ_H
+#define _BLUEDBM_LLM_RMQ_H
 
-extern bdbm_llm_inf_t _llm_mq_inf;
+extern bdbm_llm_inf_t _llm_rmq_inf;
 
-uint32_t llm_mq_create (bdbm_drv_info_t* bdi);
-void llm_mq_destroy (bdbm_drv_info_t* bdi);
-uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void llm_mq_flush (bdbm_drv_info_t* bdi);
-void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+uint32_t llm_rmq_create (bdbm_drv_info_t* bdi);
+void llm_rmq_destroy (bdbm_drv_info_t* bdi);
+uint32_t llm_rmq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+void llm_rmq_flush (bdbm_drv_info_t* bdi);
+void llm_rmq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 
 #endif

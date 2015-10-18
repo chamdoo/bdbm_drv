@@ -26,8 +26,8 @@ THE SOFTWARE.
 #define _BLUEDBM_PARAMS_H
 
 
-#define KERNEL_SECTOR_SIZE				512		/* kernel sector size is usually set to 512 bytes */
-
+#define KERNEL_SECTOR_SIZE	512					/* kernel sector size is usually set to 512 bytes */
+#define KSECTOR_SIZE		KERNEL_SECTOR_SIZE
 
 /* device-type parameters */
 typedef enum {

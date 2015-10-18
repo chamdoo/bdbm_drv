@@ -105,11 +105,7 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 	pool_item_t* item = NULL;
 	uint64_t count = 0;
 
-	/*bdbm_track ();*/
-
 	if (!pool) return;
-
-	/*bdbm_track ();*/
 
 	/* free & remove items from the used_list */
 	list_for_each_safe (next, temp, &pool->used_list) {
@@ -119,8 +115,6 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 		count++;
 	}
 
-	/*bdbm_track ();*/
-
 	/* free & remove items from the free_list */
 	list_for_each_safe (next, temp, &pool->free_list) {
 		item = list_entry (next, pool_item_t, list);
@@ -129,20 +123,14 @@ void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)
 		count++;
 	}
 
-	/*bdbm_track ();*/
-
 	if (count != pool->nr_reqs) {
 		bdbm_warning ("oops! count != pool->nr_reqs (%lld != %lld)",
 			count, pool->nr_reqs);
 	}
 
-	/*bdbm_track ();*/
-
 	/* free other stuff */
 	bdbm_spin_lock_destory (&pool->lock);
 	bdbm_free (pool);
-
-	/*bdbm_track ();*/
 }
 
 bdbm_blkio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item (

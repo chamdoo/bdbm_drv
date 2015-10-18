@@ -54,6 +54,8 @@ THE SOFTWARE.
 #define BDBM_SIZE_MB(size) (size/BDBM_MB)
 #define BDBM_SIZE_GB(size) (size/BDBM_GB)
 
+#define KPAGE_SIZE KERNEL_PAGE_SIZE
+
 typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 
 #define BDBM_GET_HOST_INF(bdi) bdi->ptr_host_inf
@@ -108,7 +110,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t bi_rw;
-	uint64_t bi_sector;
+	uint64_t bi_offset;
 	uint64_t bi_size;
 	uint64_t bi_bvec_cnt;
 	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS];
@@ -129,6 +131,62 @@ enum BDBM_HLM_MEMFLAG {
 };
 
 /* a high-level request */
+#define BDBM_ALIGN_UP(addr,size)		(((addr)+((size)-1))&(~((size)-1)))
+#define BDBM_ALIGN_DOWN(addr,size)		((addr)&(~((size)-1)))
+#define NR_KSECTORS_IN(size)			(size/KSECTOR_SIZE)
+#define NR_KPAGES_IN(size)				(size/KPAGE_SIZE)
+
+/* NEW */
+typedef enum {
+	KP_STT_DONE = 0x0F,
+
+	KP_STT_HOLE = 0x10,
+	KP_STT_DATA = 0x20,
+	KP_STT_TRIM = 0x30,
+
+	KP_STT_HOLE_DONE = KP_STT_HOLE | KP_STT_DONE,
+	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,
+	KP_STT_TRIM_DONE = KP_STT_TRIM | KP_STT_DONE,
+} kp_stt_t;
+
+typedef struct {
+	/*uint32_t req_type; *//* read, write, or trim */
+	int64_t lpa;
+	kp_stt_t kp_stt[32];
+	uint8_t* kp_ptr[32];
+	uint8_t  kp_pad[KERNEL_PAGE_SIZE][2];
+} bdbm_mu_t;
+
+typedef struct {
+	uint64_t sz;
+	int64_t lpa[32];
+} bdbm_logaddr_t;
+
+typedef struct {
+	uint64_t sz;
+	kp_stt_t kp_stt[32];
+	uint8_t* kp_ptr[32];
+	uint8_t  kp_pad[KERNEL_PAGE_SIZE][2];
+} bdbm_flash_page_main_t;
+
+typedef struct {
+	uint64_t sz;
+	uint8_t data[64];
+} bdbm_flash_page_oob_t;
+
+typedef struct {
+	uint32_t req_type; /* read, write, or trim */
+
+	/* logical / physical info */
+	bdbm_logaddr_t logaddr;
+	bdbm_phyaddr_t phyaddr;
+
+	/* physical layout */
+	bdbm_flash_page_main_t fmain;
+	bdbm_flash_page_oob_t foob;
+} bdbm_llm_req2_t;
+/* END */
+
 typedef struct {
 	uint32_t req_type; /* read, write, or trim */
 	uint64_t lpa; /* logical page address */
@@ -138,7 +196,7 @@ typedef struct {
 	uint8_t** pptr_kpgs; /* data for individual kernel pages */
 	void* ptr_host_req; /* struct bio or I/O trace */
 	uint8_t ret;
-	bdbm_spinlock_t lock; /* spinlock */
+	/*bdbm_spinlock_t lock; *//* spinlock */
 
 	/* for performance monitoring */
 	bdbm_stopwatch_t sw;
@@ -150,7 +208,42 @@ typedef struct {
 	/* end */
 
 	bdbm_mutex_t* done;
+
+	/*#ifdef NEW_HLM*/
+	/* NEW_HLM TEMP */
+	struct list_head list;	/* for hlm_reqs_pool */
+	/*uint32_t req_type; *//* read, write, or trim */
+	/*bdbm_stopwatch_t sw;*/
+	union {
+		/* for rw ops */
+		struct {
+			uint64_t nr_llm_reqs;
+			bdbm_llm_req2_t llm_reqs[BDBM_BLKIO_MAX_VECS];
+		};
+		/* for trim ops */
+		struct {
+			uint64_t trim_lpa;
+			uint64_t trim_len;
+		};
+		/* for gc??? */
+	};
+	void* blkio_req;
+	/*uint8_t ret;*/
+	void* temp_hlm;
+	/* TEMP */
+	/*#endif*/
 } bdbm_hlm_req_t;
+
+#define bdbm_hlm_for_each_llm_req(r, h, i) \
+	for (i = 0, r = &h->llm_reqs[i]; i < h->nr_llm_reqs; r = &h->llm_reqs[++i]) 
+#define bdbm_llm_set_logaddr(lr, l) \
+	lr->logaddr = l
+#define bdbm_llm_get_logaddr(lr) \
+	&lr->logaddr
+#define bdbm_llm_set_phyaddr(lr, p) \
+	lr->phyaddr = p
+#define bdbm_llm_get_phyaddr(lr) \
+	&lr->phyaddr
 
 /* a low-level request */
 typedef struct {
@@ -169,6 +262,10 @@ typedef struct {
 	/* for dftl */
 	bdbm_mutex_t* done;
 	void* ds;
+
+	/* TEMP */
+	bdbm_llm_req2_t* llm_req2;
+	/* TEMP */
 } bdbm_llm_req_t;
 
 /* a high-level request for gc */

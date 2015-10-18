@@ -39,6 +39,7 @@ SRCS := \
 	$(FTL)/hlm_rsd.c \
 	$(FTL)/llm_noq.c \
 	$(FTL)/llm_mq.c \
+	$(FTL)/llm_rmq.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/no_ftl.c \
 	$(FTL)/algo/block_ftl.c \
@@ -55,6 +56,7 @@ SRCS := \
 	$(COMMON)/3rd/uilog.c \
 	$(COMMON)/bdbm_main.c \
 	$(DMLIB) \
+	$(FTL)/hlm_reqs_pool.c \
 
 libftl: $(SRCS) $(DMLIB)
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 

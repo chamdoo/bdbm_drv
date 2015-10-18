@@ -161,7 +161,7 @@ static int __encode_bio_to_proxy_req (
 	}
 
 	/* get the offset and the length of the bio */
-	r->bi_sector = bio->bi_sector;
+	r->bi_offset = bio->bi_sector;
 	r->bi_size = bio_sectors (bio);
 	r->bi_bvec_cnt = 0;
 	r->bio = (void*)bio;

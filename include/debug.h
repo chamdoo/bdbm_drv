@@ -74,7 +74,7 @@ THE SOFTWARE.
 		printf("bdbm-error: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
 	} while (0);
 
-#define BUG_ON(a)
+#define BUG_ON(a) 
 #define WARN_ON(a)
 
 #pragma GCC diagnostic ignored "-Wformat"

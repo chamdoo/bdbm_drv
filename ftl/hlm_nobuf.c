@@ -225,6 +225,33 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 		/* set elapsed time */
 	}
 
+	/* TEMP */
+	{
+		int32_t i;
+		bdbm_hlm_req_t* temp_hlm = ptr_hlm_req->temp_hlm;
+		bdbm_llm_req2_t* lr;
+
+		bdbm_hlm_for_each_llm_req (lr, temp_hlm, i) {
+			bdbm_logaddr_t* logaddr = NULL;
+			bdbm_logaddr_t* phyaddr = NULL;
+
+			logaddr = bdbm_llm_get_logaddr (lr);
+
+			if ((ptr_hlm_req->lpa + i) != logaddr->lpa[0]) {
+				bdbm_msg ("oops! %llu != %llu", 
+					(ptr_hlm_req->lpa + index), logaddr->lpa[0]);
+			} else {
+				bdbm_llm_req_t* r = pptr_llm_req[i];
+				bdbm_llm_set_phyaddr (lr, *r->phyaddr);
+			}
+
+			pptr_llm_req[i]->llm_req2 = lr;
+		};
+
+		bdbm_bug_on (hlm_len != i);
+	}
+	/* TEMP */
+
 	/* TODO: we assume that 'ptr_llm_inf->make_req' always returns success.
 	 * It must be improved to handle the following two cases later
 	 * (1) when some of llm_reqs fail

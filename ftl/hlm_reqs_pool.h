@@ -22,15 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_LLM_MQ_H
-#define _BLUEDBM_LLM_MQ_H
+#ifndef _BDBM_HLM_REQ_POOL_H
+#define _BDBM_HLM_REQ_POOL_H
 
-extern bdbm_llm_inf_t _llm_mq_inf;
+typedef struct {
+	bdbm_spinlock_t lock;
+	struct list_head used_list;
+	struct list_head free_list;
+	int32_t pool_size; 	/* # of items */
+	int32_t map_unit;	/* bytes */
+	int32_t io_unit;	/* bytes */
+} bdbm_hlm_reqs_pool_t;
 
-uint32_t llm_mq_create (bdbm_drv_info_t* bdi);
-void llm_mq_destroy (bdbm_drv_info_t* bdi);
-uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
-void llm_mq_flush (bdbm_drv_info_t* bdi);
-void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (int32_t mapping_unit_size, int32_t io_unit_size);
+void bdbm_hlm_reqs_pool_destroy (bdbm_hlm_reqs_pool_t* pool);
+bdbm_hlm_req_t* bdbm_hlm_reqs_pool_alloc_item (bdbm_hlm_reqs_pool_t* pool);
+void bdbm_hlm_reqs_pool_free_item (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* req);
+int bdbm_hlm_reqs_pool_build_req (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* item, bdbm_blkio_req_t* r);
 
 #endif

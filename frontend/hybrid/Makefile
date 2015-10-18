@@ -43,7 +43,8 @@ ccflags-y := -I$(src)
 export KROOT=/lib/modules/$(shell uname -r)/build
 
 .PHONY: default
-default: kernel user	
+#default: kernel user	
+default: user	
 
 kernel: 
 	@cd ../../devices; $(MAKE) clean; # clear devices first
