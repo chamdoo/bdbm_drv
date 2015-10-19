@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#define SZ_PAGE	2 
+#define SZ_PAGE	1
 
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*SZ_PAGE,

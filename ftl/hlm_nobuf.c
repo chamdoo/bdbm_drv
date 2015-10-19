@@ -239,7 +239,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 
 			if ((ptr_hlm_req->lpa + i) != logaddr->lpa[0]) {
 				bdbm_msg ("oops! %llu != %llu", 
-					(ptr_hlm_req->lpa + index), logaddr->lpa[0]);
+					(ptr_hlm_req->lpa + i), logaddr->lpa[0]);
 			} else {
 				bdbm_llm_req_t* r = pptr_llm_req[i];
 				bdbm_llm_set_phyaddr (lr, *r->phyaddr);

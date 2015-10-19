@@ -236,14 +236,10 @@ typedef struct {
 
 #define bdbm_hlm_for_each_llm_req(r, h, i) \
 	for (i = 0, r = &h->llm_reqs[i]; i < h->nr_llm_reqs; r = &h->llm_reqs[++i]) 
-#define bdbm_llm_set_logaddr(lr, l) \
-	lr->logaddr = l
-#define bdbm_llm_get_logaddr(lr) \
-	&lr->logaddr
-#define bdbm_llm_set_phyaddr(lr, p) \
-	lr->phyaddr = p
-#define bdbm_llm_get_phyaddr(lr) \
-	&lr->phyaddr
+#define bdbm_llm_set_logaddr(lr, l) lr->logaddr = l
+#define bdbm_llm_get_logaddr(lr) &lr->logaddr
+#define bdbm_llm_set_phyaddr(lr, p) lr->phyaddr = p
+#define bdbm_llm_get_phyaddr(lr) &lr->phyaddr
 
 /* a low-level request */
 typedef struct {
