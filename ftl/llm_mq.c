@@ -130,6 +130,7 @@ int __llm_mq_thread (void* arg)
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 			}
 
+#if 0
 			/* TEMP */
 			{
 				bdbm_llm_req2_t* r2 = r->llm_req2;
@@ -148,6 +149,7 @@ int __llm_mq_thread (void* arg)
 				}
 			}
 			/* TEMP */
+#endif
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
@@ -268,36 +270,41 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	pmu_update_sw (bdi, r);
 
 	/* get a parallel unit ID */
-	punit_id = r->phyaddr->punit_id;
+	punit_id = r->phyaddr.punit_id;
 
 	while (bdbm_prior_queue_get_nr_items (p->q) >= 96) {
 		bdbm_thread_yield ();
 	}
 
 	/* put a request into Q */
+#if 0
 #if defined(QUICK_FIX_FOR_RWM)
 	if (r->req_type == REQTYPE_RMW_READ) {
 		/* FIXME: this is a quick fix to support RMW; it must be improved later */
 		/* step 1: put READ first */
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 
 		/* step 2: put WRITE second with the same LPA */
 		punit_id = r->phyaddr_w.punit_id;
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	} else {
-		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 	}
 #else
-	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->lpa, (void*)r))) {
+	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->logaddr.lpa[0], (void*)r))) {
 		bdbm_msg ("bdbm_prior_queue_enqueue failed");
 	}
 #endif
+#endif
+	if ((ret = bdbm_prior_queue_enqueue (p->q, punit_id, r->logaddr.lpa[0], (void*)r))) {
+		bdbm_msg ("bdbm_prior_queue_enqueue failed");
+	}
 
 	/* wake up thread if it sleeps */
 	bdbm_thread_wakeup (p->llm_thread);
@@ -321,9 +328,10 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)r->ptr_qitem;
 
 	switch (r->req_type) {
+#if 0
 	case REQTYPE_RMW_READ:
 		/* get a parallel unit ID */
-		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);
+		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
 		/* change its type to WRITE if req_type is RMW */
 		r->phyaddr = &r->phyaddr_w;
@@ -338,18 +346,24 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 			bdbm_bug_on (1);
 		}
 #endif
+		if (bdbm_prior_queue_move (p->q, r->phyaddr->punit_id, qitem)) {
+			bdbm_msg ("bdbm_prior_queue_enqueue failed");
+			bdbm_bug_on (1);
+		}
 
 		pmu_inc (bdi, r);
 
 		/* wake up thread if it sleeps */
 		bdbm_thread_wakeup (p->llm_thread);
 		break;
+#endif
 
 	case REQTYPE_META_WRITE:
 	case REQTYPE_META_READ:
 	case REQTYPE_READ:
 	case REQTYPE_READ_DUMMY:
 	case REQTYPE_WRITE:
+	case REQTYPE_RMW_READ:
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_GC_READ:
 	case REQTYPE_GC_WRITE:
@@ -359,7 +373,7 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		bdbm_prior_queue_remove (p->q, qitem);
 
 		/* complete a lock */
-		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr->punit_id]);
+		bdbm_mutex_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
 		/* update the elapsed time taken by NAND devices */
 		pmu_update_tot (bdi, r);

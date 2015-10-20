@@ -111,7 +111,11 @@ void pmu_destory (bdbm_drv_info_t* bdi)
  */
 void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
+#ifdef OLD_HLM
 	uint64_t pid = llm_req->phyaddr->punit_id;
+#else
+	uint64_t pid = llm_req->phyaddr.punit_id;
+#endif
 
 	switch (llm_req->req_type) {
 	case REQTYPE_READ:

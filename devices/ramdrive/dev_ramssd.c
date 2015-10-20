@@ -132,6 +132,7 @@ static void __ramssd_free_ssdram (void* ptr_ramssd)
 	bdbm_free (ptr_ramssd);
 }
 
+#ifdef OLD_HLM
 static uint8_t __ramssd_read_page (
 	dev_ramssd_info_t* ri, 
 	uint64_t channel_no,
@@ -269,7 +270,148 @@ static uint8_t __ramssd_erase_block (
 
 	return 0;
 }
+#else 
+static uint8_t __ramssd_read_page (
+	dev_ramssd_info_t* ri, 
+	uint64_t channel_no,
+	uint64_t chip_no,
+	uint64_t block_no,
+	uint64_t page_no,
+	kp_stt_t* kpg_flags,
+	uint8_t** ptr_page_data,
+	uint8_t* ptr_oob_data,
+	uint8_t oob,
+	uint8_t partial)
+{
+	uint8_t ret = 0;
+	uint8_t* ptr_ramssd_addr = NULL;
+	uint32_t nr_pages, loop;
 
+	/* get the memory address for the destined page */
+	if ((ptr_ramssd_addr = __ramssd_page_addr (
+			ri, channel_no, chip_no, block_no, page_no)) == NULL) {
+		bdbm_error ("invalid ram_addr (%p)", ptr_ramssd_addr);
+		ret = 1;
+		goto fail;
+	}
+
+	/* for better performance, RAMSSD directly copies the SSD data to kernel pages */
+	nr_pages = ri->nand_params->page_main_size / KERNEL_PAGE_SIZE;
+	if (ri->nand_params->page_main_size % KERNEL_PAGE_SIZE != 0) {
+		bdbm_error ("The page-cache granularity (%lu) is not matched to the flash page size (%llu)", 
+			KERNEL_PAGE_SIZE, ri->nand_params->page_main_size);
+		ret = 1;
+		goto fail;
+	}
+
+	/* copy the main page data to a buffer */
+	for (loop = 0; loop < nr_pages; loop++) {
+		if (partial == 1 && kpg_flags[loop] == KP_STT_DATA) {
+			continue;
+		}
+		if (kpg_flags != NULL && (kpg_flags[loop] & KP_STT_DONE) == KP_STT_DONE) {
+			/* it would be possible that part of the page was already read at the level of the cache */
+			continue;
+		}
+
+		bdbm_memcpy (
+			ptr_page_data[loop], 
+			ptr_ramssd_addr + KERNEL_PAGE_SIZE * loop, 
+			KERNEL_PAGE_SIZE
+		);
+	}
+
+	/* copy the OOB data to a buffer */
+	if (partial == 0 && oob && ptr_oob_data != NULL) {
+		bdbm_memcpy (
+			ptr_oob_data, 
+			ptr_ramssd_addr + ri->nand_params->page_main_size,
+			ri->nand_params->page_oob_size
+		);
+	}
+
+fail:
+	return ret;
+}
+
+static uint8_t __ramssd_prog_page (
+	dev_ramssd_info_t* ri, 
+	uint64_t channel_no,
+	uint64_t chip_no,
+	uint64_t block_no,
+	uint64_t page_no,
+	kp_stt_t* kpg_flags,
+	uint8_t** ptr_page_data,
+	uint8_t* ptr_oob_data,
+	uint8_t oob)
+{
+	uint8_t ret = 0;
+	uint8_t* ptr_ramssd_addr = NULL;
+	uint32_t nr_pages, loop;
+
+	/* get the memory address for the destined page */
+	if ((ptr_ramssd_addr = __ramssd_page_addr (
+			ri, channel_no, chip_no, block_no, page_no)) == NULL) {
+		bdbm_error ("invalid ram addr (%p)", ptr_ramssd_addr);
+		ret = 1;
+		goto fail;
+	}
+
+	/* for better performance, RAMSSD directly copies the SSD data to pages */
+	nr_pages = ri->nand_params->page_main_size / KERNEL_PAGE_SIZE;
+	if (ri->nand_params->page_main_size % KERNEL_PAGE_SIZE != 0) {
+		bdbm_error ("The page-cache granularity (%lu) is not matched to the flash page size (%llu)", 
+			KERNEL_PAGE_SIZE, ri->nand_params->page_main_size);
+		ret = 1;
+		goto fail;
+	}
+
+	/* copy the main page data to a buffer */
+	for (loop = 0; loop < nr_pages; loop++) {
+		bdbm_memcpy (
+			ptr_ramssd_addr + KERNEL_PAGE_SIZE * loop, 
+			ptr_page_data[loop], 
+			KERNEL_PAGE_SIZE
+		);
+	}
+
+	/* copy the OOB data to a buffer */
+	if (oob && ptr_oob_data != NULL) {
+		bdbm_memcpy (
+			ptr_ramssd_addr + ri->nand_params->page_main_size,
+			ptr_oob_data,
+			ri->nand_params->page_oob_size
+		);
+	}
+
+fail:
+	return ret;
+}
+
+static uint8_t __ramssd_erase_block (
+	dev_ramssd_info_t* ri, 
+	uint64_t channel_no,
+	uint64_t chip_no,
+	uint64_t block_no)
+{
+	uint8_t* ptr_ram_addr = NULL;
+
+	/* get the memory address for the destined block */
+	if ((ptr_ram_addr = __ramssd_block_addr 
+			(ri, channel_no, chip_no, block_no)) == NULL) {
+		bdbm_error ("invalid ssdram addr (%p)", ptr_ram_addr);
+		return 1;
+	}
+
+	/* erase the block (set all the values to '1') */
+	memset (ptr_ram_addr, 0xFF, dev_ramssd_get_block_size (ri));
+
+	return 0;
+}
+
+#endif
+
+#ifdef OLD_HLM
 static uint32_t __ramssd_send_cmd (
 	dev_ramssd_info_t* ri, bdbm_llm_req_t* ptr_req)
 {
@@ -343,6 +485,81 @@ static uint32_t __ramssd_send_cmd (
 
 	return ret;
 }
+#else
+static uint32_t __ramssd_send_cmd (
+	dev_ramssd_info_t* ri, bdbm_llm_req_t* ptr_req)
+{
+	uint8_t ret = 0;
+	uint8_t use_oob = 1;	/* read or program OOB by default; why not??? */
+	uint8_t use_partial = 0;
+
+	if (ri->nand_params->page_oob_size == 0)
+		use_oob = 0;
+
+	switch (ptr_req->req_type) {
+	case REQTYPE_RMW_READ:
+		use_partial = 1;
+	case REQTYPE_READ:
+	case REQTYPE_META_READ:
+	case REQTYPE_GC_READ:
+		ret = __ramssd_read_page (
+			ri, 
+			ptr_req->phyaddr.channel_no, 
+			ptr_req->phyaddr.chip_no, 
+			ptr_req->phyaddr.block_no, 
+			ptr_req->phyaddr.page_no, 
+			ptr_req->fmain.kp_stt,
+			ptr_req->fmain.kp_ptr,
+			ptr_req->foob.data,
+			use_oob,
+			use_partial);
+		break;
+
+	case REQTYPE_WRITE:
+	case REQTYPE_META_WRITE:
+	case REQTYPE_GC_WRITE:
+	case REQTYPE_RMW_WRITE:
+		ret = __ramssd_prog_page (
+			ri, 
+			ptr_req->phyaddr.channel_no,
+			ptr_req->phyaddr.chip_no,
+			ptr_req->phyaddr.block_no,
+			ptr_req->phyaddr.page_no,
+			ptr_req->fmain.kp_stt,
+			ptr_req->fmain.kp_ptr,
+			ptr_req->foob.data,
+			use_oob);
+		break;
+
+	case REQTYPE_GC_ERASE:
+		ret = __ramssd_erase_block (
+			ri, 
+			ptr_req->phyaddr.channel_no, 
+			ptr_req->phyaddr.chip_no, 
+			ptr_req->phyaddr.block_no);
+		break;
+
+	case REQTYPE_READ_DUMMY:
+		/* do nothing for READ_DUMMY */
+		ret = 0;
+		break;
+
+	case REQTYPE_TRIM:
+		/* do nothing for TRIM */
+		ret = 0;
+		break;
+
+	default:
+		bdbm_error ("invalid command");
+		ret = 1;
+		break;
+	}
+
+	ptr_req->ret = ret;
+
+	return ret;
+}
+#endif
 
 void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 {
@@ -563,6 +780,7 @@ void dev_ramssd_destroy (dev_ramssd_info_t* ri)
 	bdbm_free_atomic (ri);
 }
 
+#ifdef OLD_HLM
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
@@ -613,10 +831,8 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 			bdbm_stopwatch_start (&ri->ptr_punits[punit_id].sw);
 			ri->ptr_punits[punit_id].target_elapsed_time_us = target_elapsed_time_us;
 		} else {
-			bdbm_error ("More than two requests are assigned to the same parallel unit (ptr=%p, punit=%llu, lpa=%llu)",
-				ri->ptr_punits[punit_id].ptr_req,
-				punit_id,
-				r->lpa);
+			bdbm_error ("More than two requests are assigned to the same parallel unit (ptr=%p, punit=%llu)",
+				ri->ptr_punits[punit_id].ptr_req, punit_id).
 			bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
 			ret = 1;
 			goto fail;
@@ -630,6 +846,73 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 fail:
 	return ret;
 }
+#else
+uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
+{
+	uint32_t ret;
+
+	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
+		unsigned long flags;
+		int64_t target_elapsed_time_us = 0;
+		uint64_t punit_id = r->phyaddr.punit_id;
+
+		/* get the target elapsed time depending on the type of req */
+		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_TIMING) {
+			switch (r->req_type) {
+			case REQTYPE_WRITE:
+			case REQTYPE_GC_WRITE:
+			case REQTYPE_RMW_WRITE:
+			case REQTYPE_META_WRITE:
+				target_elapsed_time_us = ri->nand_params->page_prog_time_us;
+				break;
+			case REQTYPE_READ:
+			case REQTYPE_GC_READ:
+			case REQTYPE_RMW_READ:
+			case REQTYPE_META_READ:
+				target_elapsed_time_us = ri->nand_params->page_read_time_us;
+				break;
+			case REQTYPE_GC_ERASE:
+				target_elapsed_time_us = ri->nand_params->block_erase_time_us;
+				break;
+			case REQTYPE_READ_DUMMY:
+				target_elapsed_time_us = 0;	/* dummy read */
+				break;
+			default:
+				bdbm_error ("invalid REQTYPE (%u)", r->req_type);
+				bdbm_bug_on (1);
+				break;
+			}
+			if (target_elapsed_time_us > 0) {
+				target_elapsed_time_us -= (target_elapsed_time_us / 10);
+			}
+		} else {
+			target_elapsed_time_us = 0;
+		}
+
+		/* register reqs */
+		bdbm_spin_lock_irqsave (&ri->ramssd_lock, flags);
+		if (ri->ptr_punits[punit_id].ptr_req == NULL) {
+			ri->ptr_punits[punit_id].ptr_req = (void*)r;
+			/*ri->ptr_punits[punit_id].sw = bdbm_stopwatch_start ();*/
+			bdbm_stopwatch_start (&ri->ptr_punits[punit_id].sw);
+			ri->ptr_punits[punit_id].target_elapsed_time_us = target_elapsed_time_us;
+		} else {
+			bdbm_error ("More than two requests are assigned to the same parallel unit (ptr=%p, punit=%llu)",
+				ri->ptr_punits[punit_id].ptr_req, punit_id);
+			bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+			ret = 1;
+			goto fail;
+		}
+		bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+
+		/* register reqs for callback */
+		__ramssd_timing_register_schedule (ri);
+	}
+
+fail:
+	return ret;
+}
+#endif
 
 /* for snapshot */
 uint32_t dev_ramssd_load (dev_ramssd_info_t* ri, const char* fn)

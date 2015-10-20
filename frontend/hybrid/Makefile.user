@@ -28,7 +28,7 @@ CFLAGS += -D HASH_BLOOM=20 \
 DMLIB := ../../devices/libramdrive/libramdrive.a
 #DMLIB := dm_proxy.c
 
-SRCS := \
+#SRCS := \
 	umain.c \
 	blkio_stub.c \
 	$(FTL)/ftl_params.c \
@@ -57,6 +57,28 @@ SRCS := \
 	$(COMMON)/bdbm_main.c \
 	$(DMLIB) \
 	$(FTL)/hlm_reqs_pool.c \
+
+SRCS := \
+	umain.c \
+	blkio_stub.c \
+	$(FTL)/ftl_params.c \
+	$(FTL)/pmu.c \
+	$(FTL)/hlm_nobuf.c \
+	$(FTL)/llm_mq.c \
+	$(FTL)/algo/abm.c \
+	$(FTL)/algo/page_ftl.c \
+	$(FTL)/queue/queue.c \
+	$(FTL)/queue/prior_queue.c \
+	$(FTL)/queue/rd_prior_queue.c \
+	$(COMMON)/utils/utime.c \
+	$(COMMON)/utils/ufile.c \
+	$(COMMON)/utils/uthread.c \
+	$(COMMON)/utils/upage.c \
+	$(COMMON)/3rd/uilog.c \
+	$(COMMON)/bdbm_main.c \
+	$(DMLIB) \
+	$(FTL)/hlm_reqs_pool.c \
+
 
 libftl: $(SRCS) $(DMLIB)
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 

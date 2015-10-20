@@ -230,6 +230,7 @@ static void __blkio_stub_finish (
 	ioctl (p->fd, BDBM_BLOCKIO_PROXY_IOCTL_DONE, &proxy_req->id);
 }
 
+#if OLD_HLM
 static bdbm_hlm_req_t* __blkio_stub_create_hlm_trim_req (
 	bdbm_drv_info_t* bdi, 
 	bdbm_blkio_req_t* r)
@@ -388,9 +389,11 @@ void __blkio_stub_delete_hlm_req (
 		bdbm_free (hlm_req->pptr_kpgs);
 	bdbm_free (hlm_req);
 }
+#endif
 
 void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 {
+#ifdef OLD_HLM
 	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)bio;
 	bdbm_hlm_req_t* hlm_req = NULL;
@@ -412,7 +415,6 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 		}
 	}
 
-	/* TEMP */
 #ifdef NEW_HLM
 	{
 		bdbm_hlm_req_t* temp_r = NULL;
@@ -468,8 +470,8 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 			}
 		}
 	}
-#endif
 	/* TEMP */
+#endif
 
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);
@@ -487,8 +489,49 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 	}
 
 	/*bdbm_msg ("");*/
+#endif
+
+	/* NEW_HLM */
+	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
+	bdbm_hlm_req_t* hr = NULL;
+
+	/*bdbm_msg ("type: %llx offset: %llu size: %llu", br->bi_rw, br->bi_offset, br->bi_size);*/
+
+	/* get a free hlm_req from the hlm_reqs_pool */
+	if ((hr = bdbm_hlm_reqs_pool_alloc_item (p->hlm_reqs_pool)) == NULL) {
+		bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
+		bdbm_bug_on (1);
+		return;
+	}
+
+	/* build hlm_req with bio */
+	if (bdbm_hlm_reqs_pool_build_req (p->hlm_reqs_pool, hr, br) != 0) {
+		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+		bdbm_bug_on (1);
+		return;
+	}
+
+	/* if success, increase # of host reqs */
+	atomic_inc (&p->nr_host_reqs);
+
+	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
+	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
+	if (bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
+		/* oops! something wrong */
+		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+
+		/* cancel the request */
+		/*__blkio_stub_delete_hlm_req (bdi, hlm_req);*/
+		bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
+		__blkio_stub_finish (bdi, br);
+		atomic_dec (&p->nr_host_reqs);
+	}
+
+	/*bdbm_msg ("");*/
 }
 
+#ifdef OLD_HLM
 void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
 	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
@@ -512,4 +555,20 @@ void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	/* destroy hlm_req */
 	__blkio_stub_delete_hlm_req (bdi, req);
 }
+#else
+void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
+{
+	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
 
+	/* finish the proxy request */
+	__blkio_stub_finish (bdi, r);
+
+	/* decreate # of reqs */
+	atomic_dec (&p->nr_host_reqs);
+
+	/* destroy hlm_req */
+	/*__blkio_stub_delete_hlm_req (bdi, req);*/
+	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, req);
+}
+#endif

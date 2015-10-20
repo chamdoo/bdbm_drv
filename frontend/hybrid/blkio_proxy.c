@@ -414,7 +414,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	}
 
 	/* down the semaphore; it takes long time in the case where the user-level FTL died */
-	if (down_timeout (&p->sem, msecs_to_jiffies (500)) != 0) {
+	if (down_timeout (&p->sem, msecs_to_jiffies (5000)) != 0) {
 		bdbm_warning ("oops! the user-level FTL is not responding...");
 		bio_endio (bio, -EIO);
 		bdbm_mutex_unlock (&p->mutex);
@@ -796,3 +796,4 @@ bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;
 bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
 bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
 bdbm_host_inf_t _blkio_inf;
+

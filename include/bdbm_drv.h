@@ -73,15 +73,36 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 #define BDBM_FTL_PRIV(bdi) bdi->ptr_ftl_inf->ptr_private
 
 #define BDBM_GET_NR_PUNITS(np) \
-	np.nr_channels * np.nr_chips_per_channel
-#define BDBM_GET_PUNIT_ID(bdi,phyaddr) \
-	phyaddr->channel_no * \
-	bdi->parm_dev.nr_chips_per_channel + \
-	phyaddr->chip_no
+	(np.nr_channels * np.nr_chips_per_channel)
+#define BDBM_GET_PUNIT_ID(bdi,p) \
+	(p->channel_no * bdi->parm_dev.nr_chips_per_channel + p->chip_no)
 
 /* request types */
 enum BDBM_REQTYPE {
+	REQTYPE_IO_READ 		= 0x0001,
+	REQTYPE_IO_READ_DUMMY 	= 0x0002,
+	REQTYPE_IO_WRITE 		= 0x0004,
+	REQTYPE_IO_ERASE 		= 0x0008,
+	REQTYPE_IO_TRIM 		= 0x0010,
+	REQTYPE_NORNAL 			= 0x0100,
+	REQTYPE_RMW 			= 0x0200,
+	REQTYPE_GC 				= 0x0400,
+	REQTYPE_META 			= 0x0800,
+
+	REQTYPE_READ 			= REQTYPE_NORNAL | REQTYPE_IO_READ,
+	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL | REQTYPE_IO_READ_DUMMY,
+	REQTYPE_WRITE 			= REQTYPE_NORNAL | REQTYPE_IO_WRITE,
+	REQTYPE_TRIM 			= REQTYPE_NORNAL | REQTYPE_IO_TRIM,
+	REQTYPE_RMW_READ 		= REQTYPE_RMW | REQTYPE_IO_READ,
+	REQTYPE_RMW_WRITE 		= REQTYPE_RMW | REQTYPE_IO_WRITE,
+	REQTYPE_GC_READ 		= REQTYPE_GC | REQTYPE_IO_READ,
+	REQTYPE_GC_WRITE 		= REQTYPE_GC | REQTYPE_IO_WRITE,
+	REQTYPE_GC_ERASE 		= REQTYPE_GC | REQTYPE_IO_ERASE,
+	REQTYPE_META_READ 		= REQTYPE_META | REQTYPE_IO_READ,
+	REQTYPE_META_WRITE 		= REQTYPE_META | REQTYPE_IO_WRITE,
+
 	/* reqtype from host */
+#if 0
 	REQTYPE_READ = 0,
 	REQTYPE_READ_DUMMY = 1,
 	REQTYPE_WRITE = 2,
@@ -94,7 +115,18 @@ enum BDBM_REQTYPE {
 
 	REQTYPE_META_READ = 9,
 	REQTYPE_META_WRITE = 10,
+#endif
 };
+
+#define bdbm_is_normal(type) (((type & REQTYPE_NORNAL) == REQTYPE_NORNAL) ? 1 : 0)
+#define bdbm_is_rmw(type) (((type & REQTYPE_RMW) == REQTYPE_RMW) ? 1 : 0)
+#define bdbm_is_gc(type) (((type & REQTYPE_GC) == REQTYPE_GC) ? 1 : 0)
+#define bdbm_is_meta(type) (((type & REQTYPE_META) == REQTYPE_META) ? 1 : 0)
+#define bdbm_is_read(type) (((type & REQTYPE_IO_READ) == REQTYPE_IO_READ) ? 1 : 0)
+#define bdbm_is_write(type) (((type & REQTYPE_IO_WRITE) == REQTYPE_IO_WRITE) ? 1 : 0)
+#define bdbm_is_erase(type) (((type & REQTYPE_IO_ERASE) == REQTYPE_IO_ERASE) ? 1 : 0)
+#define bdbm_is_trim(type) (((type & REQTYPE_IO_TRIM) == REQTYPE_IO_TRIM) ? 1 : 0)
+
 
 /* a physical address */
 typedef struct {
@@ -119,6 +151,7 @@ typedef struct {
 } bdbm_blkio_req_t;
 
 /* a high-level memory manager request */
+#if 0
 enum BDBM_HLM_MEMFLAG {
 	MEMFLAG_NOT_SET = 0,
 	MEMFLAG_FRAG_PAGE = 1,
@@ -129,6 +162,7 @@ enum BDBM_HLM_MEMFLAG {
 	MEMFLAG_KMAP_PAGE_DONE = MEMFLAG_KMAP_PAGE | MEMFLAG_DONE,
 	MEMFLAG_MAPBLK_PAGE_DONE = MEMFLAG_MAPBLK_PAGE | MEMFLAG_DONE,
 };
+#endif
 
 /* a high-level request */
 #define BDBM_ALIGN_UP(addr,size)		(((addr)+((size)-1))&(~((size)-1)))
@@ -143,19 +177,10 @@ typedef enum {
 	KP_STT_HOLE = 0x10,
 	KP_STT_DATA = 0x20,
 	KP_STT_TRIM = 0x30,
-
 	KP_STT_HOLE_DONE = KP_STT_HOLE | KP_STT_DONE,
 	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,
 	KP_STT_TRIM_DONE = KP_STT_TRIM | KP_STT_DONE,
 } kp_stt_t;
-
-typedef struct {
-	/*uint32_t req_type; *//* read, write, or trim */
-	int64_t lpa;
-	kp_stt_t kp_stt[32];
-	uint8_t* kp_ptr[32];
-	uint8_t  kp_pad[KERNEL_PAGE_SIZE][2];
-} bdbm_mu_t;
 
 typedef struct {
 	uint64_t sz;
@@ -166,7 +191,7 @@ typedef struct {
 	uint64_t sz;
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
-	uint8_t  kp_pad[KERNEL_PAGE_SIZE][2];
+	uint8_t  kp_pad[KERNEL_PAGE_SIZE][32];
 } bdbm_flash_page_main_t;
 
 typedef struct {
@@ -176,6 +201,9 @@ typedef struct {
 
 typedef struct {
 	uint32_t req_type; /* read, write, or trim */
+	uint8_t ret;	/* old for GC */
+	void* ptr_hlm_req;
+	void* ptr_qitem;
 
 	/* logical / physical info */
 	bdbm_logaddr_t logaddr;
@@ -184,10 +212,11 @@ typedef struct {
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
-} bdbm_llm_req2_t;
+} bdbm_llm_req_t;
 /* END */
 
 typedef struct {
+#ifdef OLD_HLM
 	uint32_t req_type; /* read, write, or trim */
 	uint64_t lpa; /* logical page address */
 	uint64_t len; /* legnth */
@@ -208,28 +237,33 @@ typedef struct {
 	/* end */
 
 	bdbm_mutex_t* done;
+#endif
 
 	/*#ifdef NEW_HLM*/
 	/* NEW_HLM TEMP */
 	struct list_head list;	/* for hlm_reqs_pool */
-	/*uint32_t req_type; *//* read, write, or trim */
-	/*bdbm_stopwatch_t sw;*/
+	uint32_t req_type; /* read, write, or trim */
+	bdbm_stopwatch_t sw;
 	union {
 		/* for rw ops */
 		struct {
 			uint64_t nr_llm_reqs;
-			bdbm_llm_req2_t llm_reqs[BDBM_BLKIO_MAX_VECS];
+			/*uint64_t nr_llm_reqs_done;*/
+			atomic64_t nr_llm_reqs_done;
+			bdbm_llm_req_t llm_reqs[BDBM_BLKIO_MAX_VECS];
+			bdbm_mutex_t done;
 		};
 		/* for trim ops */
 		struct {
-			uint64_t trim_lpa;
-			uint64_t trim_len;
+			uint64_t lpa;
+			uint64_t len;
 		};
 		/* for gc??? */
+		struct {
+		};
 	};
 	void* blkio_req;
-	/*uint8_t ret;*/
-	void* temp_hlm;
+	uint8_t ret;
 	/* TEMP */
 	/*#endif*/
 } bdbm_hlm_req_t;
@@ -241,6 +275,7 @@ typedef struct {
 #define bdbm_llm_set_phyaddr(lr, p) lr->phyaddr = p
 #define bdbm_llm_get_phyaddr(lr) &lr->phyaddr
 
+#ifdef OLD_HLM
 /* a low-level request */
 typedef struct {
 	uint32_t req_type; /* read, write, or erase */
@@ -263,14 +298,16 @@ typedef struct {
 	bdbm_llm_req2_t* llm_req2;
 	/* TEMP */
 } bdbm_llm_req_t;
+#endif
 
 /* a high-level request for gc */
 typedef struct {
 	uint32_t req_type;
-	uint64_t nr_done_reqs;
-	uint64_t nr_reqs;
+	uint64_t nr_llm_reqs;
+	/*uint64_t nr_llm_reqs_done;*/
+	atomic64_t nr_llm_reqs_done;
 	bdbm_llm_req_t* llm_reqs;
-	bdbm_mutex_t gc_done;
+	bdbm_mutex_t done;
 } bdbm_hlm_req_gc_t;
 
 /* a generic host interface */

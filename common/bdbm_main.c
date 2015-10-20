@@ -57,6 +57,16 @@ THE SOFTWARE.
 #include "algo/dftl.h"
 #include "ufile.h"
 
+#ifdef USER_MODE /* TEMP */
+/*bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;*/
+/*bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;*/
+/*bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;*/
+/*bdbm_host_inf_t _blkio_inf;*/
+
+bdbm_ftl_inf_t _ftl_block_ftl, _ftl_dftl, _ftl_no_ftl;
+bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_rsd_inf;
+bdbm_llm_inf_t _llm_noq_inf;
+#endif
 
 /* It creates bdi and setups bdi with default parameters.  Users changes the
  * parameters before calling bdbm_drv_initialize () */
