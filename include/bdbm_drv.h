@@ -79,27 +79,28 @@ typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 
 /* request types */
 enum BDBM_REQTYPE {
-	REQTYPE_IO_READ 		= 0x0001,
-	REQTYPE_IO_READ_DUMMY 	= 0x0002,
-	REQTYPE_IO_WRITE 		= 0x0004,
-	REQTYPE_IO_ERASE 		= 0x0008,
-	REQTYPE_IO_TRIM 		= 0x0010,
-	REQTYPE_NORNAL 			= 0x0100,
-	REQTYPE_RMW 			= 0x0200,
-	REQTYPE_GC 				= 0x0400,
-	REQTYPE_META 			= 0x0800,
+	REQTYPE_DONE			= 0xFF0000,
+	REQTYPE_IO_READ 		= 0x000001,
+	REQTYPE_IO_READ_DUMMY 	= 0x000002,
+	REQTYPE_IO_WRITE 		= 0x000004,
+	REQTYPE_IO_ERASE 		= 0x000008,
+	REQTYPE_IO_TRIM 		= 0x000010,
+	REQTYPE_NORNAL 			= 0x000100,
+	REQTYPE_RMW 			= 0x000200,
+	REQTYPE_GC 				= 0x000400,
+	REQTYPE_META 			= 0x000800,
 
-	REQTYPE_READ 			= REQTYPE_NORNAL | REQTYPE_IO_READ,
-	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL | REQTYPE_IO_READ_DUMMY,
-	REQTYPE_WRITE 			= REQTYPE_NORNAL | REQTYPE_IO_WRITE,
-	REQTYPE_TRIM 			= REQTYPE_NORNAL | REQTYPE_IO_TRIM,
-	REQTYPE_RMW_READ 		= REQTYPE_RMW | REQTYPE_IO_READ,
-	REQTYPE_RMW_WRITE 		= REQTYPE_RMW | REQTYPE_IO_WRITE,
-	REQTYPE_GC_READ 		= REQTYPE_GC | REQTYPE_IO_READ,
-	REQTYPE_GC_WRITE 		= REQTYPE_GC | REQTYPE_IO_WRITE,
-	REQTYPE_GC_ERASE 		= REQTYPE_GC | REQTYPE_IO_ERASE,
-	REQTYPE_META_READ 		= REQTYPE_META | REQTYPE_IO_READ,
-	REQTYPE_META_WRITE 		= REQTYPE_META | REQTYPE_IO_WRITE,
+	REQTYPE_READ 			= REQTYPE_NORNAL 	| REQTYPE_IO_READ,
+	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL 	| REQTYPE_IO_READ_DUMMY,
+	REQTYPE_WRITE 			= REQTYPE_NORNAL 	| REQTYPE_IO_WRITE,
+	REQTYPE_TRIM 			= REQTYPE_NORNAL 	| REQTYPE_IO_TRIM,
+	REQTYPE_RMW_READ 		= REQTYPE_RMW 		| REQTYPE_IO_READ,
+	REQTYPE_RMW_WRITE 		= REQTYPE_RMW 		| REQTYPE_IO_WRITE,
+	REQTYPE_GC_READ 		= REQTYPE_GC 		| REQTYPE_IO_READ,
+	REQTYPE_GC_WRITE 		= REQTYPE_GC 		| REQTYPE_IO_WRITE,
+	REQTYPE_GC_ERASE 		= REQTYPE_GC 		| REQTYPE_IO_ERASE,
+	REQTYPE_META_READ 		= REQTYPE_META 		| REQTYPE_IO_READ,
+	REQTYPE_META_WRITE 		= REQTYPE_META 		| REQTYPE_IO_WRITE,
 
 	/* reqtype from host */
 #if 0
@@ -177,6 +178,7 @@ typedef enum {
 	KP_STT_HOLE = 0x10,
 	KP_STT_DATA = 0x20,
 	KP_STT_TRIM = 0x30,
+
 	KP_STT_HOLE_DONE = KP_STT_HOLE | KP_STT_DONE,
 	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,
 	KP_STT_TRIM_DONE = KP_STT_TRIM | KP_STT_DONE,
@@ -191,7 +193,7 @@ typedef struct {
 	uint64_t sz;
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
-	uint8_t  kp_pad[KERNEL_PAGE_SIZE][32];
+	uint8_t  kp_pad[32][KERNEL_PAGE_SIZE];
 } bdbm_flash_page_main_t;
 
 typedef struct {
@@ -208,6 +210,8 @@ typedef struct {
 	/* logical / physical info */
 	bdbm_logaddr_t logaddr;
 	bdbm_phyaddr_t phyaddr;
+	bdbm_phyaddr_t phyaddr_src;
+	bdbm_phyaddr_t phyaddr_dst;
 
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
@@ -216,31 +220,6 @@ typedef struct {
 /* END */
 
 typedef struct {
-#ifdef OLD_HLM
-	uint32_t req_type; /* read, write, or trim */
-	uint64_t lpa; /* logical page address */
-	uint64_t len; /* legnth */
-	uint64_t nr_done_reqs;	/* # of llm_reqs served */
-	uint8_t* kpg_flags;
-	uint8_t** pptr_kpgs; /* data for individual kernel pages */
-	void* ptr_host_req; /* struct bio or I/O trace */
-	uint8_t ret;
-	/*bdbm_spinlock_t lock; *//* spinlock */
-
-	/* for performance monitoring */
-	bdbm_stopwatch_t sw;
-
-	/* temp */
-	uint8_t queued;
-	uint8_t* org_kpg_flags;
-	uint8_t** org_pptr_kpgs; /* data for individual kernel pages */
-	/* end */
-
-	bdbm_mutex_t* done;
-#endif
-
-	/*#ifdef NEW_HLM*/
-	/* NEW_HLM TEMP */
 	struct list_head list;	/* for hlm_reqs_pool */
 	uint32_t req_type; /* read, write, or trim */
 	bdbm_stopwatch_t sw;
@@ -264,8 +243,6 @@ typedef struct {
 	};
 	void* blkio_req;
 	uint8_t ret;
-	/* TEMP */
-	/*#endif*/
 } bdbm_hlm_req_t;
 
 #define bdbm_hlm_for_each_llm_req(r, h, i) \

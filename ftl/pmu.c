@@ -374,7 +374,7 @@ void pmu_update_tot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req)
 		bdbm_bug_on (h == NULL);
 		pmu_update_w_tot (bdi, &h->sw);
 		break;
-	case REQTYPE_RMW_WRITE:
+	case REQTYPE_RMW_READ:
 		bdbm_bug_on (h == NULL);
 		pmu_update_rmw_tot (bdi, &h->sw);
 		break;
