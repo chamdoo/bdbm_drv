@@ -44,6 +44,10 @@ THE SOFTWARE.
 #include "utime.h"
 #include "platform.h"
 
+#define KPAGE_SIZE KERNEL_PAGE_SIZE
+
+typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
+
 /* useful macros */
 #define BDBM_KB (1024)
 #define BDBM_MB (1024 * 1024)
@@ -53,10 +57,6 @@ THE SOFTWARE.
 #define BDBM_SIZE_KB(size) (size/BDBM_KB)
 #define BDBM_SIZE_MB(size) (size/BDBM_MB)
 #define BDBM_SIZE_GB(size) (size/BDBM_GB)
-
-#define KPAGE_SIZE KERNEL_PAGE_SIZE
-
-typedef struct _bdbm_drv_info_t bdbm_drv_info_t;
 
 #define BDBM_GET_HOST_INF(bdi) bdi->ptr_host_inf
 #define BDBM_GET_DM_INF(bdi) bdi->ptr_dm_inf
@@ -101,22 +101,6 @@ enum BDBM_REQTYPE {
 	REQTYPE_GC_ERASE 		= REQTYPE_GC 		| REQTYPE_IO_ERASE,
 	REQTYPE_META_READ 		= REQTYPE_META 		| REQTYPE_IO_READ,
 	REQTYPE_META_WRITE 		= REQTYPE_META 		| REQTYPE_IO_WRITE,
-
-	/* reqtype from host */
-#if 0
-	REQTYPE_READ = 0,
-	REQTYPE_READ_DUMMY = 1,
-	REQTYPE_WRITE = 2,
-	REQTYPE_RMW_READ = 3, 		/* Read-Modify-Write */
-	REQTYPE_RMW_WRITE = 4, 		/* Read-Modify-Write */
-	REQTYPE_GC_READ = 5,
-	REQTYPE_GC_WRITE = 6,
-	REQTYPE_GC_ERASE = 7,
-	REQTYPE_TRIM = 8,
-
-	REQTYPE_META_READ = 9,
-	REQTYPE_META_WRITE = 10,
-#endif
 };
 
 #define bdbm_is_normal(type) (((type & REQTYPE_NORNAL) == REQTYPE_NORNAL) ? 1 : 0)
@@ -151,34 +135,16 @@ typedef struct {
 	void* bio;
 } bdbm_blkio_req_t;
 
-/* a high-level memory manager request */
-#if 0
-enum BDBM_HLM_MEMFLAG {
-	MEMFLAG_NOT_SET = 0,
-	MEMFLAG_FRAG_PAGE = 1,
-	MEMFLAG_KMAP_PAGE = 2,
-	MEMFLAG_MAPBLK_PAGE = 3,
-	MEMFLAG_DONE = 0x80,
-	MEMFLAG_FRAG_PAGE_DONE = MEMFLAG_FRAG_PAGE | MEMFLAG_DONE,
-	MEMFLAG_KMAP_PAGE_DONE = MEMFLAG_KMAP_PAGE | MEMFLAG_DONE,
-	MEMFLAG_MAPBLK_PAGE_DONE = MEMFLAG_MAPBLK_PAGE | MEMFLAG_DONE,
-};
-#endif
-
-/* a high-level request */
 #define BDBM_ALIGN_UP(addr,size)		(((addr)+((size)-1))&(~((size)-1)))
 #define BDBM_ALIGN_DOWN(addr,size)		((addr)&(~((size)-1)))
 #define NR_KSECTORS_IN(size)			(size/KSECTOR_SIZE)
 #define NR_KPAGES_IN(size)				(size/KPAGE_SIZE)
 
-/* NEW */
 typedef enum {
 	KP_STT_DONE = 0x0F,
-
 	KP_STT_HOLE = 0x10,
 	KP_STT_DATA = 0x20,
 	KP_STT_TRIM = 0x30,
-
 	KP_STT_HOLE_DONE = KP_STT_HOLE | KP_STT_DONE,
 	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,
 	KP_STT_TRIM_DONE = KP_STT_TRIM | KP_STT_DONE,
@@ -217,7 +183,6 @@ typedef struct {
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
 } bdbm_llm_req_t;
-/* END */
 
 typedef struct {
 	struct list_head list;	/* for hlm_reqs_pool */
@@ -252,36 +217,10 @@ typedef struct {
 #define bdbm_llm_set_phyaddr(lr, p) lr->phyaddr = p
 #define bdbm_llm_get_phyaddr(lr) &lr->phyaddr
 
-#ifdef OLD_HLM
-/* a low-level request */
-typedef struct {
-	uint32_t req_type; /* read, write, or erase */
-	uint64_t lpa; /* logical page address */
-	bdbm_phyaddr_t* phyaddr;	/* current */
-	bdbm_phyaddr_t phyaddr_r; /* for reads */
-	bdbm_phyaddr_t phyaddr_w; /* for writes */
-	uint8_t* kpg_flags;
-	uint8_t** pptr_kpgs; /* from bdbm_hlm_req_t */
-	uint8_t* ptr_oob;
-	void* ptr_hlm_req;
-	void* ptr_qitem;
-	uint8_t ret;	/* old for GC */
-
-	/* for dftl */
-	bdbm_mutex_t* done;
-	void* ds;
-
-	/* TEMP */
-	bdbm_llm_req2_t* llm_req2;
-	/* TEMP */
-} bdbm_llm_req_t;
-#endif
-
 /* a high-level request for gc */
 typedef struct {
 	uint32_t req_type;
 	uint64_t nr_llm_reqs;
-	/*uint64_t nr_llm_reqs_done;*/
 	atomic64_t nr_llm_reqs_done;
 	bdbm_llm_req_t* llm_reqs;
 	bdbm_mutex_t done;
@@ -328,6 +267,7 @@ typedef struct {
 } bdbm_dm_inf_t;
 
 /* a generic FTL interface */
+#if 0
 typedef struct {
 	void* ptr_private;
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
@@ -354,6 +294,35 @@ typedef struct {
 	bdbm_llm_req_t* (*prepare_mapblk_load) (bdbm_drv_info_t* bdi, uint64_t lpa);
 	void (*finish_mapblk_load) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 } bdbm_ftl_inf_t;
+#endif
+
+typedef struct {
+	void* ptr_private;
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
+	uint32_t (*do_gc) (bdbm_drv_info_t* bdi);
+	uint8_t (*is_gc_needed) (bdbm_drv_info_t* bdi);
+
+	/* interfaces for intialization */
+	uint32_t (*scan_badblocks) (bdbm_drv_info_t* bdi);
+	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
+	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
+	
+	/* interfaces for RSD */
+	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);
+
+	/* interfaces for DFTL */
+	uint8_t (*check_mapblk) (bdbm_drv_info_t* bdi, uint64_t lpa);
+	bdbm_llm_req_t* (*prepare_mapblk_eviction) (bdbm_drv_info_t* bdi);
+	void (*finish_mapblk_eviction) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+	bdbm_llm_req_t* (*prepare_mapblk_load) (bdbm_drv_info_t* bdi, uint64_t lpa);
+	void (*finish_mapblk_load) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+} bdbm_ftl_inf_t;
+
 
 /* for performance monitoring */
 typedef struct {

@@ -227,7 +227,8 @@ static int __hlm_reqs_pool_create_rw_req (
 	bdbm_blkio_req_t* br)
 {
 	int64_t sec_start, sec_end, pg_start, pg_end;
-	int64_t i = 0, bvec_cnt = 0, nr_llm_reqs;
+	int64_t i = 0, j = 0, k = 0;
+	int64_t hole = 0, bvec_cnt = 0, nr_llm_reqs;
 	bdbm_flash_page_main_t* ptr_fm = NULL;
 	bdbm_llm_req_t* ptr_lr = NULL;
 
@@ -249,18 +250,14 @@ static int __hlm_reqs_pool_create_rw_req (
 	ptr_lr = &hr->llm_reqs[0];
 
 	for (i = 0; i < nr_llm_reqs; i++) {
-		int hole = 0, j = 0, kp_off = 0;
-
 		/* build mapping-units */
 		ptr_fm = &ptr_lr->fmain;
-		for (j = 0; j < pool->io_unit / pool->map_unit; j++) {
-			int k = 0;
-
+		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
 			/* build kernel-pages */
 			ptr_lr->logaddr.lpa[j] = sec_start / NR_KSECTORS_IN(pool->map_unit);
 			for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
 				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
-				/*uint64_t kp_off = j * (pool->io_unit / pool->map_unit) + k;*/
+				uint64_t kp_off = j * (pool->io_unit / pool->map_unit) + k;
 
 				if (pg_off < pg_start) {
 					ptr_fm->kp_stt[kp_off] = KP_STT_HOLE;
@@ -351,4 +348,3 @@ int bdbm_hlm_reqs_pool_build_req (
 
 	return 0;
 }
-

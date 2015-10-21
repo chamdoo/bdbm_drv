@@ -27,6 +27,7 @@ THE SOFTWARE.
 
 extern bdbm_ftl_inf_t _ftl_page_ftl;
 
+#if 0
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi);
 void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi);
 uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa);
@@ -38,6 +39,20 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi);
 uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi);
 uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
+#endif
+
+uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi);
+void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
+uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi);
+uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
+
 
 #endif /* _BLUEDBM_FTL_BLOCKFTL_H */
 

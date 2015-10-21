@@ -118,16 +118,16 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
 			if (bdbm_is_read (lr->req_type)) {
-				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
-					/* There could be dummy reads (e.g., when the file-systems are initialized) */
-					/*lr->req_type = REQTYPE_READ_DUMMY;*/
+				if (ftl->get_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
+					/* Note that there could be dummy reads (e.g., when the
+					 * file-systems are initialized) */
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
-				if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
+				if (ftl->get_free_ppa (bdi, &lr->phyaddr) != 0) {
 					bdbm_error ("`ftl->get_free_ppa' failed");
 					goto fail;
 				}
-				if (ftl->map_lpa_to_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
+				if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
 					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 					goto fail;
 				}
@@ -136,39 +136,26 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 				bdbm_bug_on (1);
 			}
 		} else if (bdbm_is_rmw (lr->req_type)) {
-			/*
-			bdbm_msg ("%llx", lr->req_type);
-			bdbm_msg ("[DST] %llu %llu %llu %llu",
-				lr->phyaddr_dst.channel_no, lr->phyaddr_dst.chip_no, lr->phyaddr_dst.block_no, lr->phyaddr_dst.page_no);
-			*/
 			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
 			/* finding the location of the previous data */ 
-			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
+			if (ftl->get_ppa (bdi, &lr->logaddr, phyaddr) != 0) {
 				/* if it was not written before, change it to a write request */
 				lr->req_type = REQTYPE_WRITE;
 				phyaddr = &lr->phyaddr;
-				/*lr->req_type = REQTYPE_READ_DUMMY;*/
-				/*phyaddr = &lr->phyaddr_dst;*/
 			} else {
 				phyaddr = &lr->phyaddr_dst;
 			}
 
 			/* getting the location to which data will be written */
-			if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
+			if (ftl->get_free_ppa (bdi, phyaddr) != 0) {
 				bdbm_error ("`ftl->get_free_ppa' failed");
 				goto fail;
 			}
-
-			if (ftl->map_lpa_to_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
+			if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, phyaddr) != 0) {
 				bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 				goto fail;
 			}
-
-			/*
-			bdbm_msg ("[SRC] %llu %llu %llu %llu",
-				lr->phyaddr_src.channel_no, lr->phyaddr_src.chip_no, lr->phyaddr_src.block_no, lr->phyaddr_src.page_no);
-			*/
 		} else {
 			bdbm_error ("oops! invalid type (%llx)", lr->req_type);
 			bdbm_bug_on (1);
@@ -238,6 +225,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
+
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
 		bdbm_mutex_unlock (&hr->done);
@@ -251,6 +239,7 @@ void __hlm_nobuf_end_gcio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	atomic64_inc (&hr_gc->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
+
 	if (atomic64_read (&hr_gc->nr_llm_reqs_done) == hr_gc->nr_llm_reqs) {
 		bdbm_mutex_unlock (&hr_gc->done);
 	}

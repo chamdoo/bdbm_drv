@@ -164,8 +164,6 @@ bdbm_abm_block_t** __bdbm_page_ftl_create_active_blocks (
 
 	nr_punits = np->nr_chips_per_channel * np->nr_channels;
 
-	/*bdbm_msg ("nr_punits: %llu", nr_punits);*/
-
 	/* create a set of active blocks */
 	if ((bab = (bdbm_abm_block_t**)bdbm_zmalloc 
 			(sizeof (bdbm_abm_block_t*) * nr_punits)) == NULL) {
@@ -311,7 +309,9 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 }
 
-uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
+uint32_t bdbm_page_ftl_get_free_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_phyaddr_t* ppa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
@@ -324,7 +324,6 @@ uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_ph
 	curr_chip = p->curr_puid / np->nr_channels;
 
 	/* get the physical offset of the active blocks */
-	/*b = &p->ac_bab[curr_channel][curr_chip];*/
 	b = p->ac_bab[curr_channel * np->nr_chips_per_channel + curr_chip];
 	ppa->channel_no =  b->channel_no;
 	ppa->chip_no = b->chip_no;
@@ -361,20 +360,23 @@ uint32_t bdbm_page_ftl_get_free_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_ph
 	return 0;
 }
 
-uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)
+uint32_t bdbm_page_ftl_map_lpa_to_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_logaddr_t* logaddr,
+	bdbm_phyaddr_t* ptr_phyaddr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
 
 	/* is it a valid logical address */
-	if (lpa >= np->nr_pages_per_ssd) {
-		bdbm_error ("LPA is beyond logical space (%llX)", lpa);
+	if (logaddr->lpa[0] >= np->nr_pages_per_ssd) {
+		bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[0]);
 		return 1;
 	}
 
 	/* get the mapping entry for lpa */
-	me = &p->ptr_mapping_table[lpa];
+	me = &p->ptr_mapping_table[logaddr->lpa[0]];
 	bdbm_bug_on (me == NULL);
 
 	/* update the mapping table */
@@ -396,7 +398,10 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_
 	return 0;
 }
 
-uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)
+uint32_t bdbm_page_ftl_get_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_logaddr_t* logaddr,
+	bdbm_phyaddr_t* ppa)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -404,13 +409,13 @@ uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr
 	uint32_t ret;
 
 	/* is it a valid logical address */
-	if (lpa >= np->nr_pages_per_ssd) {
-		bdbm_error ("A given lpa is beyond logical space (%llu)", lpa);
+	if (logaddr->lpa[0] >= np->nr_pages_per_ssd) {
+		bdbm_error ("A given lpa is beyond logical space (%llu)", logaddr->lpa[0]);
 		return 1;
 	}
 
 	/* get the mapping entry for lpa */
-	me = &p->ptr_mapping_table[lpa];
+	me = &p->ptr_mapping_table[logaddr->lpa[0]];
 
 	/* NOTE: sometimes a file system attempts to read 
 	 * a logical address that was not written before.
@@ -434,7 +439,10 @@ uint32_t bdbm_page_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr
 	return ret;
 }
 
-uint32_t bdbm_page_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)
+uint32_t bdbm_page_ftl_invalidate_lpa (
+	bdbm_drv_info_t* bdi, 
+	int64_t lpa, 
+	uint64_t len)
 {	
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -805,11 +813,11 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		/*r->lpa = ((uint64_t*)r->ptr_oob)[0]; *//* update LPA */
 		r->logaddr.lpa[0] = ((uint64_t*)r->foob.data)[0];
-		if (bdbm_page_ftl_get_free_ppa (bdi, r->logaddr.lpa[0], &r->phyaddr) != 0) {
+		if (bdbm_page_ftl_get_free_ppa (bdi, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
 		}
-		if (bdbm_page_ftl_map_lpa_to_ppa (bdi, r->logaddr.lpa[0], &r->phyaddr) != 0) {
+		if (bdbm_page_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
 			bdbm_bug_on (1);
 		}
