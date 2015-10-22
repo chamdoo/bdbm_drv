@@ -42,12 +42,15 @@ THE SOFTWARE.
 #include "params.h"
 
 
-enum BDBM_ABM_PAGE_STATUS {
-	BABM_ABM_PAGE_NOT_INVALID = 0,
-	BDBM_ABM_PAGE_INVALID,
+enum BDBM_ABM_SUBPAGE_STATUS {
+	BABM_ABM_SUBPAGE_NOT_INVALID = 0,
+	BDBM_ABM_SUBPAGE_INVALID,
 };
 
-typedef uint8_t babm_abm_page_t; /* BDBM_ABM_PAGE_STATUS */
+/* NEW */
+typedef uint8_t babm_abm_subpage_t; /* BDBM_ABM_PAGE_STATUS */
+/* NEW */
+/*typedef uint8_t babm_abm_page_t; *//* BDBM_ABM_PAGE_STATUS */
 
 enum BDBM_ABM_BLK_STATUS {
 	BDBM_ABM_BLK_FREE = 0,
@@ -64,8 +67,8 @@ typedef struct {
 	uint64_t chip_no;
 	uint64_t block_no;
 	uint32_t erase_count;
-	uint8_t nr_invalid_pages;
-	babm_abm_page_t* pst;	/* a page status table; used when the FTL requires */
+	uint8_t nr_invalid_subpages;
+	babm_abm_subpage_t* pst;	/* a page status table; used when the FTL requires */
 
 	struct list_head list;	/* for list */
 } bdbm_abm_block_t;
@@ -94,7 +97,7 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (bdbm_abm_info_t* bai, uint64_
 void bdbm_abm_get_free_block_rollback (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
 void bdbm_abm_get_free_block_commit (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
 void bdbm_abm_erase_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint8_t is_bad);
-void bdbm_abm_invalidate_page (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no);
+void bdbm_abm_invalidate_page (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no, uint64_t subpage_no);
 void bdbm_abm_set_to_dirty_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
 
 static inline uint64_t bdbm_abm_get_nr_free_blocks (bdbm_abm_info_t* bai) { return bai->nr_free_blks; }

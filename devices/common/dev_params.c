@@ -37,6 +37,7 @@ THE SOFTWARE.
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
+#include "bdbm_drv.h"
 #include "params.h"
 #include "platform.h"
 #include "debug.h"
@@ -136,6 +137,9 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_chips_per_ssd = p.nr_channels * p.nr_chips_per_channel;
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
+	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
+	p.nr_subpages_per_block = (p.nr_subpages_per_page * p.nr_pages_per_block);
+	p.nr_subpages_per_ssd = (p.nr_subpages_per_page * p.nr_pages_per_ssd);	/* the size of the subpage must be the same as the kernel-page size (4KB) */
 
 	p.device_capacity_in_byte = 0;
 	p.device_capacity_in_byte += p.nr_channels;

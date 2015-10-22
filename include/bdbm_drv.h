@@ -159,11 +159,10 @@ typedef struct {
 	uint64_t sz;
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
-	uint8_t  kp_pad[32][KERNEL_PAGE_SIZE];
+	uint8_t  kp_pad[32][KPAGE_SIZE];
 } bdbm_flash_page_main_t;
 
 typedef struct {
-	uint64_t sz;
 	uint8_t data[64];
 } bdbm_flash_page_oob_t;
 
@@ -301,7 +300,7 @@ typedef struct {
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, bdbm_phyaddr_t* ppa);
-	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi);

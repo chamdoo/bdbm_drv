@@ -89,17 +89,20 @@ void __bdbm_abm_display_status (bdbm_abm_info_t* bai)
 	__bdbm_abm_check_status (bai);
 }
 
-babm_abm_page_t* __bdbm_abm_create_pst (bdbm_device_params_t* np)
+babm_abm_subpage_t* __bdbm_abm_create_pst (bdbm_device_params_t* np)
 {
-	babm_abm_page_t* pst = NULL;
+	babm_abm_subpage_t* pst = NULL;
 
-	pst = bdbm_malloc (sizeof (babm_abm_page_t) * np->nr_pages_per_block);
-	bdbm_memset (pst, BABM_ABM_PAGE_NOT_INVALID, sizeof (babm_abm_page_t) * np->nr_pages_per_block);
+	/* NOTE: pst is managed in the unit of subpage to support fine-grain
+	 * mapping FTLs that are often used to avoid expensive read-modify-writes
+	 * */
+	pst = bdbm_malloc (sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
+	bdbm_memset (pst, BABM_ABM_SUBPAGE_NOT_INVALID, sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
 
 	return pst;
 };
 
-void __bdbm_abm_destory_pst (babm_abm_page_t* pst) 
+void __bdbm_abm_destory_pst (babm_abm_subpage_t* pst) 
 {
 	if (pst)
 		bdbm_free (pst);
@@ -133,7 +136,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 		bai->blocks[loop].block_no = __get_block_ofs (np, loop);
 		bai->blocks[loop].erase_count = 0;
 		bai->blocks[loop].pst = NULL;
-		bai->blocks[loop].nr_invalid_pages = 0;
+		bai->blocks[loop].nr_invalid_subpages = 0;
 		/* create a 'page status table' (pst) if necessary */
 		if (use_pst) {
 			if ((bai->blocks[loop].pst = __bdbm_abm_create_pst (np)) == NULL) {
@@ -430,11 +433,12 @@ void bdbm_abm_erase_block (
 
 	/* reset the block */
 	blk->erase_count++;
-	blk->nr_invalid_pages = 0;
+	blk->nr_invalid_subpages = 0;
 	if (blk->pst) {
 		bdbm_memset (blk->pst, 
-			BABM_ABM_PAGE_NOT_INVALID, 
-			sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block);
+			BABM_ABM_SUBPAGE_NOT_INVALID, 
+			sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block
+		);
 	}
 }
 
@@ -504,11 +508,12 @@ void bdbm_abm_set_to_dirty_block (
 	__bdbm_abm_check_status (bai);
 
 	/* reset the block */
-	blk->nr_invalid_pages = bai->np->nr_pages_per_block;
+	blk->nr_invalid_subpages = bai->np->nr_subpages_per_block;
 	if (blk->pst) {
 		bdbm_memset (blk->pst, 
-			BDBM_ABM_PAGE_INVALID, 
-			sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block);
+			BDBM_ABM_SUBPAGE_INVALID, 
+			sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block
+		);
 	}
 
 }
@@ -518,9 +523,11 @@ void bdbm_abm_invalidate_page (
 	uint64_t channel_no, 
 	uint64_t chip_no, 
 	uint64_t block_no, 
-	uint64_t page_no)
+	uint64_t page_no,
+	uint64_t subpage_no)
 {
 	bdbm_abm_block_t* b = NULL;
+	uint64_t pst_off = 0;
 
 	b = bdbm_abm_get_block (bai, channel_no, chip_no, block_no);
 
@@ -529,21 +536,22 @@ void bdbm_abm_invalidate_page (
 	bdbm_bug_on (b->channel_no != channel_no);
 	bdbm_bug_on (b->chip_no != chip_no);
 	bdbm_bug_on (b->block_no != block_no);
+	bdbm_bug_on (subpage_no >= bai->np->nr_subpages_per_page);
+
+	/* get a subpage offst in pst */
+ 	pst_off = (page_no * bai->np->nr_subpages_per_page) + subpage_no;
 
 	/* if pst is NULL, ignore it */
 	if (b->pst == NULL)
 		return;
 
-	if (b->pst[page_no] == BABM_ABM_PAGE_NOT_INVALID) {
-		b->pst[page_no] = BDBM_ABM_PAGE_INVALID;
+	if (b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID) {
+		b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
 		/* is the block clean? */
-		if (b->nr_invalid_pages == 0) {
-			/*bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);*/
+		if (b->nr_invalid_subpages == 0) {
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
-				/*
-				bdbm_msg ("b->status: %u (%llu %llu %llu %llu)", b->status, channel_no, chip_no, block_no, page_no);
+				bdbm_msg ("b->status: %u (%llu %llu %llu %llu %llu)", b->status, channel_no, chip_no, block_no, page_no, subpage_no);
 				bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);
-				*/
 			}
 
 			/* if so, its status is changed and then moved to a dirty list */
@@ -560,12 +568,8 @@ void bdbm_abm_invalidate_page (
 			}
 		}
 		/* increase # of invalid pages in the block */
-		b->nr_invalid_pages++;
-		if (b->nr_invalid_pages > bai->np->nr_pages_per_block) {
-			b->nr_invalid_pages = bai->np->nr_pages_per_block;
-		} else {
-			bdbm_bug_on (b->nr_invalid_pages > bai->np->nr_pages_per_block);
-		}
+		b->nr_invalid_subpages++;
+		bdbm_bug_on (b->nr_invalid_subpages > bai->np->nr_subpages_per_block);
 	} else {
 		/* ignore if it was invalidated before */
 	}
@@ -591,11 +595,11 @@ uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn)
 		pos += bdbm_fread (fp, pos, (uint8_t*)&bai->blocks[i].chip_no, sizeof(bai->blocks[i].chip_no));
 		pos += bdbm_fread (fp, pos, (uint8_t*)&bai->blocks[i].block_no, sizeof(bai->blocks[i].block_no));
 		pos += bdbm_fread (fp, pos, (uint8_t*)&bai->blocks[i].erase_count, sizeof(bai->blocks[i].erase_count));
-		pos += bdbm_fread (fp, pos, (uint8_t*)&bai->blocks[i].nr_invalid_pages, sizeof(bai->blocks[i].nr_invalid_pages));
+		pos += bdbm_fread (fp, pos, (uint8_t*)&bai->blocks[i].nr_invalid_subpages, sizeof(bai->blocks[i].nr_invalid_subpages));
 		if (bai->blocks[i].pst) {
-			pos += bdbm_fread (fp, pos, (uint8_t*)bai->blocks[i].pst, sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block);
+			pos += bdbm_fread (fp, pos, (uint8_t*)bai->blocks[i].pst, sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block);
 		} else {
-			pos += sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block;
+			pos += sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block;
 		}
 	}
 
@@ -667,11 +671,11 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn)
 		pos += bdbm_fwrite (fp, pos, (uint8_t*)&bai->blocks[i].chip_no, sizeof(bai->blocks[i].chip_no));
 		pos += bdbm_fwrite (fp, pos, (uint8_t*)&bai->blocks[i].block_no, sizeof(bai->blocks[i].block_no));
 		pos += bdbm_fwrite (fp, pos, (uint8_t*)&bai->blocks[i].erase_count, sizeof(bai->blocks[i].erase_count));
-		pos += bdbm_fwrite (fp, pos, (uint8_t*)&bai->blocks[i].nr_invalid_pages, sizeof(bai->blocks[i].nr_invalid_pages));
+		pos += bdbm_fwrite (fp, pos, (uint8_t*)&bai->blocks[i].nr_invalid_subpages, sizeof(bai->blocks[i].nr_invalid_subpages));
 		if (bai->blocks[i].pst) {
-			pos += bdbm_fwrite (fp, pos, (uint8_t*)bai->blocks[i].pst, sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block);
+			pos += bdbm_fwrite (fp, pos, (uint8_t*)bai->blocks[i].pst, sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block);
 		} else {
-			pos += sizeof (babm_abm_page_t) * bai->np->nr_pages_per_block;
+			pos += sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block;
 		}
 	}
 

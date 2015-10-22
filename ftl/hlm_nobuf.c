@@ -118,7 +118,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
 			if (bdbm_is_read (lr->req_type)) {
-				if (ftl->get_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
+				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
 					/* Note that there could be dummy reads (e.g., when the
 					 * file-systems are initialized) */
 				}
@@ -139,7 +139,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
 			/* finding the location of the previous data */ 
-			if (ftl->get_ppa (bdi, &lr->logaddr, phyaddr) != 0) {
+			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
 				/* if it was not written before, change it to a write request */
 				lr->req_type = REQTYPE_WRITE;
 				phyaddr = &lr->phyaddr;

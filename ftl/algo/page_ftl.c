@@ -59,9 +59,9 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	.do_gc = bdbm_page_ftl_do_gc,
 	.is_gc_needed = bdbm_page_ftl_is_gc_needed,
 	.scan_badblocks = bdbm_page_badblock_scan,
-	.load = bdbm_page_ftl_load,
-	.store = bdbm_page_ftl_store,
-	.get_segno = NULL,
+	/*.load = bdbm_page_ftl_load,*/
+	/*.store = bdbm_page_ftl_store,*/
+	/*.get_segno = NULL,*/
 };
 
 
@@ -76,13 +76,14 @@ enum BDBM_PFTL_PAGE_STATUS {
 typedef struct {
 	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
 	bdbm_phyaddr_t phyaddr; /* physical location */
+	uint8_t sp_off;
 } bdbm_page_mapping_entry_t;
 
 typedef struct {
 	bdbm_abm_info_t* bai;
 	bdbm_page_mapping_entry_t* ptr_mapping_table;
 	bdbm_spinlock_t ftl_lock;
-	uint64_t nr_punits;	
+	uint64_t nr_punits;
 
 	/* for the management of active blocks */
 	uint64_t curr_puid;
@@ -98,6 +99,7 @@ typedef struct {
 } bdbm_page_ftl_private_t;
 
 
+#if 0
 bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (bdbm_device_params_t* np)
 {
 	bdbm_page_mapping_entry_t* me;
@@ -121,6 +123,34 @@ bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (bdbm_device_par
 	/* return a set of mapping entries */
 	return me;
 }
+#endif
+
+bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (
+	bdbm_device_params_t* np)
+{
+	bdbm_page_mapping_entry_t* me;
+	uint64_t loop;
+
+	/* create a page-level mapping table */
+	if ((me = (bdbm_page_mapping_entry_t*)bdbm_zmalloc 
+			(sizeof (bdbm_page_mapping_entry_t) * np->nr_subpages_per_ssd)) == NULL) {
+		return NULL;
+	}
+
+	/* initialize a page-level mapping table */
+	for (loop = 0; loop < np->nr_subpages_per_ssd; loop++) {
+		me[loop].status = PFTL_PAGE_NOT_ALLOCATED;
+		me[loop].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
+		me[loop].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
+		me[loop].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
+		me[loop].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+		me[loop].sp_off = -1;
+	}
+
+	/* return a set of mapping entries */
+	return me;
+}
+
 
 void __bdbm_page_ftl_destroy_mapping_table (
 	bdbm_page_mapping_entry_t* me)
@@ -212,6 +242,12 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	p->curr_puid = 0;
 	p->curr_page_ofs = 0;
 	p->nr_punits = np->nr_chips_per_channel * np->nr_channels;
+	/* NEW */
+	np->nr_subpages_per_page = 1;
+	np->nr_subpages_per_ssd = np->nr_pages_per_ssd;
+	bdbm_msg ("nr_subpages_per_page: %llu", np->nr_subpages_per_page);
+	bdbm_msg ("nr_subpages_per_ssd: %llu", np->nr_subpages_per_ssd);
+	/* NEW */
 	bdbm_spin_lock_init (&p->ftl_lock);
 	_ftl_page_ftl.ptr_private = (void*)p;
 
@@ -363,45 +399,53 @@ uint32_t bdbm_page_ftl_get_free_ppa (
 uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_drv_info_t* bdi, 
 	bdbm_logaddr_t* logaddr,
-	bdbm_phyaddr_t* ptr_phyaddr)
+	bdbm_phyaddr_t* phyaddr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
+	int k;
 
 	/* is it a valid logical address */
-	if (logaddr->lpa[0] >= np->nr_pages_per_ssd) {
-		bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[0]);
-		return 1;
-	}
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+		if (logaddr->lpa[k] == -1)
+			continue;
 
-	/* get the mapping entry for lpa */
-	me = &p->ptr_mapping_table[logaddr->lpa[0]];
-	bdbm_bug_on (me == NULL);
+		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
+			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
+			return 1;
+		}
 
-	/* update the mapping table */
-	if (me->status == PFTL_PAGE_VALID) {
-		bdbm_abm_invalidate_page (
-			p->bai, 
-			me->phyaddr.channel_no, 
-			me->phyaddr.chip_no,
-			me->phyaddr.block_no,
-			me->phyaddr.page_no
-		);
+		/* get the mapping entry for lpa */
+		me = &p->ptr_mapping_table[logaddr->lpa[k]];
+		bdbm_bug_on (me == NULL);
+
+		/* update the mapping table */
+		if (me->status == PFTL_PAGE_VALID) {
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				me->phyaddr.channel_no, 
+				me->phyaddr.chip_no,
+				me->phyaddr.block_no,
+				me->phyaddr.page_no,
+				me->sp_off
+			);
+		}
+		me->status = PFTL_PAGE_VALID;
+		me->phyaddr.channel_no = phyaddr->channel_no;
+		me->phyaddr.chip_no = phyaddr->chip_no;
+		me->phyaddr.block_no = phyaddr->block_no;
+		me->phyaddr.page_no = phyaddr->page_no;
+		me->sp_off = k;
 	}
-	me->status = PFTL_PAGE_VALID;
-	me->phyaddr.channel_no = ptr_phyaddr->channel_no;
-	me->phyaddr.chip_no = ptr_phyaddr->chip_no;
-	me->phyaddr.block_no = ptr_phyaddr->block_no;
-	me->phyaddr.page_no = ptr_phyaddr->page_no;
 
 	return 0;
 }
 
 uint32_t bdbm_page_ftl_get_ppa (
 	bdbm_drv_info_t* bdi, 
-	bdbm_logaddr_t* logaddr,
-	bdbm_phyaddr_t* ppa)
+	int64_t lpa,
+	bdbm_phyaddr_t* phyaddr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -409,30 +453,30 @@ uint32_t bdbm_page_ftl_get_ppa (
 	uint32_t ret;
 
 	/* is it a valid logical address */
-	if (logaddr->lpa[0] >= np->nr_pages_per_ssd) {
-		bdbm_error ("A given lpa is beyond logical space (%llu)", logaddr->lpa[0]);
+	if (lpa >= np->nr_subpages_per_ssd) {
+		bdbm_error ("A given lpa is beyond logical space (%llu)", lpa);
 		return 1;
 	}
 
 	/* get the mapping entry for lpa */
-	me = &p->ptr_mapping_table[logaddr->lpa[0]];
+	me = &p->ptr_mapping_table[lpa];
 
 	/* NOTE: sometimes a file system attempts to read 
 	 * a logical address that was not written before.
 	 * in that case, we return 'address 0' */
 	if (me->status != PFTL_PAGE_VALID) {
-		ppa->channel_no = 0;
-		ppa->chip_no = 0;
-		ppa->block_no = 0;
-		ppa->page_no = 0;
-		ppa->punit_id = 0;
+		phyaddr->channel_no = 0;
+		phyaddr->chip_no = 0;
+		phyaddr->block_no = 0;
+		phyaddr->page_no = 0;
+		phyaddr->punit_id = 0;
 		ret = 1;
 	} else {
-		ppa->channel_no = me->phyaddr.channel_no;
-		ppa->chip_no = me->phyaddr.chip_no;
-		ppa->block_no = me->phyaddr.block_no;
-		ppa->page_no = me->phyaddr.page_no;
-		ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
+		phyaddr->channel_no = me->phyaddr.channel_no;
+		phyaddr->chip_no = me->phyaddr.chip_no;
+		phyaddr->block_no = me->phyaddr.block_no;
+		phyaddr->page_no = me->phyaddr.page_no;
+		phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, phyaddr);
 		ret = 0;
 	}
 
@@ -450,9 +494,12 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 	uint64_t loop;
 
 	/* check the range of input addresses */
+#if 0
 	if ((lpa + len) > np->nr_pages_per_ssd) {
+#endif
+	if ((lpa + len) > np->nr_subpages_per_ssd) {
 		bdbm_warning ("LPA is beyond logical space (%llu = %llu+%llu) %llu", 
-			lpa+len, lpa, len, np->nr_pages_per_ssd);
+			lpa+len, lpa, len, np->nr_subpages_per_ssd);
 		return 1;
 	}
 
@@ -465,7 +512,8 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 				me->phyaddr.channel_no, 
 				me->phyaddr.chip_no,
 				me->phyaddr.block_no,
-				me->phyaddr.page_no
+				me->phyaddr.page_no,
+				me->sp_off
 			);
 			me->status = PFTL_PAGE_INVALID;
 		}
@@ -540,7 +588,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 		b = bdbm_abm_fetch_dirty_block (pos);
 		if (a == b)
 			continue;
-		if (b->nr_invalid_pages == np->nr_pages_per_block) {
+		if (b->nr_invalid_subpages == np->nr_subpages_per_block) {
 			v = b;
 			break;
 		}
@@ -548,7 +596,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 			v = b;
 			continue;
 		}
-		if (a->nr_invalid_pages > v->nr_invalid_pages)
+		if (a->nr_invalid_subpages > v->nr_invalid_subpages)
 			v = b;
 	}
 
@@ -734,7 +782,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	uint64_t nr_gc_blks = 0;
 	uint64_t nr_llm_reqs = 0;
 	uint64_t nr_punits = 0;
-	uint64_t i, j;
+	uint64_t i, j, k;
 
 	bdbm_stopwatch_t sw;
 
@@ -764,10 +812,20 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 		if (b == NULL)
 			break;
 		for (j = 0; j < np->nr_pages_per_block; j++) {
-			if (b->pst[j] != BDBM_ABM_PAGE_INVALID) {
-				bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
+			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
+			int has_valid = 0;
+			/* are there any valid subpages in a block */
+			for (k = 0; k < np->nr_subpages_per_page; k++) {
+				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
+					r->logaddr.lpa[k] = -2; /* the subpage contains new data */
+					has_valid = 1;
+				} else {
+					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
+				}
+			}
+			/* if it is, selects it as the gc candidates */
+			if (has_valid) {
 				r->req_type = REQTYPE_GC_READ;
-				r->logaddr.lpa[0] = -1LL;
 				r->phyaddr.channel_no = b->channel_no;
 				r->phyaddr.chip_no = b->chip_no;
 				r->phyaddr.block_no = b->block_no;
@@ -811,8 +869,16 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
-		/*r->lpa = ((uint64_t*)r->ptr_oob)[0]; *//* update LPA */
-		r->logaddr.lpa[0] = ((uint64_t*)r->foob.data)[0];
+		for (k = 0; k < np->nr_subpages_per_page; k++) {
+			/* move subpages that contain new data */
+			if (r->logaddr.lpa[k] == -2) {
+				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+			} else if (r->logaddr.lpa[k] == -1) {
+				r->logaddr.lpa[k] = -1;
+			} else {
+				bdbm_bug_on (1);
+			}
+		}
 		if (bdbm_page_ftl_get_free_ppa (bdi, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
@@ -903,7 +969,10 @@ uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 	}
 
 	me = p->ptr_mapping_table;
+#if 0
 	for (i = 0; i < np->nr_pages_per_ssd; i++) {
+#endif
+	for (i = 0; i < np->nr_subpages_per_ssd; i++) {
 		pos += bdbm_fread (fp, pos, (uint8_t*)&me[i], sizeof (bdbm_page_mapping_entry_t));
 		if (me[i].status != PFTL_PAGE_NOT_ALLOCATED &&
 			me[i].status != PFTL_PAGE_VALID &&
@@ -936,7 +1005,7 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
 	uint64_t pos = 0;
-	uint64_t i, j;
+	uint64_t i, j, k;
 	uint32_t ret;
 
 	/* step1: make active blocks invalid (it's ugly!!!) */
@@ -954,8 +1023,15 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 		b = p->ac_bab[i*np->nr_chips_per_channel + j];
 
 		/* invalidate remaining pages */
-		bdbm_abm_invalidate_page (p->bai, 
-			b->channel_no, b->chip_no, b->block_no, p->curr_page_ofs);
+		for (k = 0; k < np->nr_subpages_per_page; k++) {
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				b->channel_no, 
+				b->chip_no, 
+				b->block_no, 
+				p->curr_page_ofs, 
+				k);
+		}
 		bdbm_bug_on (b->channel_no != i);
 		bdbm_bug_on (b->chip_no != j);
 
@@ -976,7 +1052,10 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 
 	/* step2: store mapping table */
 	me = p->ptr_mapping_table;
+#if 0
 	for (i = 0; i < np->nr_pages_per_ssd; i++) {
+#endif
+	for (i = 0; i < np->nr_subpages_per_ssd; i++) {
 		pos += bdbm_fwrite (fp, pos, (uint8_t*)&me[i], sizeof (bdbm_page_mapping_entry_t));
 	}
 	bdbm_fsync (fp);
@@ -1087,12 +1166,16 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	/* step1: reset the page-level mapping table */
 	bdbm_msg ("step1: reset the page-level mapping table");
 	me = p->ptr_mapping_table;
+#if 0
 	for (i = 0; i < np->nr_pages_per_ssd; i++) {
+#endif
+	for (i = 0; i < np->nr_subpages_per_ssd; i++) {
 		me[i].status = PFTL_PAGE_NOT_ALLOCATED;
 		me[i].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
 		me[i].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
 		me[i].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
 		me[i].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+		me[i].sp_off = -1;
 	}
 
 	/* step2: erase all the blocks */
@@ -1179,4 +1262,3 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	return 0;
 
 }
-
