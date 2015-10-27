@@ -49,8 +49,19 @@ static uint8_t* __get_ramssd_data_addr (
 	dev_ramssd_info_t* ri, 
 	uint64_t lpa)
 {
-	uint64_t ramssd_addr = ri->nand_params->page_main_size * lpa;
+	uint64_t ramssd_addr = -1;
+	if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
+		ramssd_addr = ri->nand_params->page_main_size * lpa;
+	} else {
+		ramssd_addr = KPAGE_SIZE * lpa;
+	}
 	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
+}
+static void __display_hex_values (uint8_t* dram, uint8_t* flash, int pos)
+{
+	bdbm_msg (" * HOST: %x %x %x %x %x != FLASH: %x %x %x %x %x", 
+		dram[pos-2], dram[pos-1], dram[pos+0], dram[pos+1], dram[pos+2], 
+		flash[pos-2], flash[pos-1], flash[pos+0], flash[pos+1], flash[pos+2]);
 }
 #endif
 
@@ -101,21 +112,21 @@ static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_nand_params)
 {
 	void* ptr_ramssd = NULL;
 	uint64_t page_size_in_bytes;
-	uint64_t nr_subpages_in_ssd;
+	uint64_t nr_pages_in_ssd;
 	uint64_t ssd_size_in_bytes;
 
 	page_size_in_bytes = 
 		ptr_nand_params->page_main_size + 
 		ptr_nand_params->page_oob_size;
 
-	nr_subpages_in_ssd =
+	nr_pages_in_ssd =
 		ptr_nand_params->nr_channels *
 		ptr_nand_params->nr_chips_per_channel *
 		ptr_nand_params->nr_blocks_per_chip *
-		ptr_nand_params->nr_subpages_per_block;
+		ptr_nand_params->nr_pages_per_block;
 
 	ssd_size_in_bytes = 
-		nr_subpages_in_ssd * 
+		nr_pages_in_ssd * 
 		page_size_in_bytes;
 
 	bdbm_msg ("=====================================================================");
@@ -238,7 +249,10 @@ static uint8_t __ramssd_read_page (
 		uint64_t lpa = -1;
 		uint8_t* ptr_data_org = NULL;
 		int pos;
- 		lpa = ((uint64_t*)ptr_oob_data)[0];
+		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block)
+ 			lpa = ((uint64_t*)ptr_oob_data)[0];
+		else
+ 			lpa = ((uint64_t*)ptr_oob_data)[loop];
 		if (lpa < 0 || lpa == 0xffffffffffffffff)
 			continue;
 		if (partial == 1 && kpg_flags[loop] == KP_STT_DATA)
@@ -246,23 +260,16 @@ static uint8_t __ramssd_read_page (
 		if (kpg_flags != NULL && (kpg_flags[loop] & KP_STT_DONE) == KP_STT_DONE)
 			continue;
 		ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
-		if ((pos = memcmp (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE)) != 0) {
-			if (pos < 0) pos *= -1;
-			bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu (%p) pos=%d (HOST: %x %x %x %x %x != FLASH: %x %x %x %x %x)", 
-				lpa, lpa,
-				loop, 
-				ptr_page_data[loop],
-				pos,
-				ptr_page_data[loop][pos-2], 
-				ptr_page_data[loop][pos-1],
-				ptr_page_data[loop][pos+0], 
-				ptr_page_data[loop][pos+1],
-				ptr_page_data[loop][pos+2],
-				ptr_data_org[pos-2],
-				ptr_data_org[pos-1], 
-				ptr_data_org[pos+0], 
-				ptr_data_org[pos+1],
-				ptr_data_org[pos+2]);
+		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
+			if ((pos = memcmp (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE)) != 0) {
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu pos=%d", lpa, lpa, loop, pos);
+				__display_hex_values (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), pos);
+			}
+		} else {
+			if ((pos = memcmp (ptr_page_data[loop], ptr_data_org, KPAGE_SIZE)) != 0) {
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu pos=%d", lpa, lpa, loop, pos);
+				__display_hex_values (ptr_page_data[loop], ptr_data_org, pos);
+			}
 		}
 	}
 #endif
@@ -325,9 +332,17 @@ static uint8_t __ramssd_prog_page (
 	/* TEMP */
 	//bdbm_msg ("WRITE: %lld (=> %lld %lld %lld %lld)", ((uint64_t*)ptr_oob_data)[0], channel_no, chip_no, block_no, page_no);
 	for (loop = 0; loop < nr_kpages; loop++) {
-		uint64_t lpa = ((uint64_t*)ptr_oob_data)[0];
-		uint8_t* ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
-		memcpy (ptr_data_org+(loop*KPAGE_SIZE), ptr_page_data[loop], KPAGE_SIZE);
+		uint64_t lpa = -1;
+		uint8_t* ptr_data_org = NULL;
+		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
+			lpa = ((uint64_t*)ptr_oob_data)[0];
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+			memcpy (ptr_data_org+(loop*KPAGE_SIZE), ptr_page_data[loop], KPAGE_SIZE);
+		} else {
+			lpa = ((uint64_t*)ptr_oob_data)[loop];
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+			memcpy (ptr_data_org, ptr_page_data[loop], KPAGE_SIZE);
+		}
 	}
 	/* TEMP */
 #endif
