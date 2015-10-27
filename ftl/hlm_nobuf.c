@@ -160,8 +160,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		} else if (bdbm_is_rmw (lr->req_type)) {
 			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
-			bdbm_bug_on (1);
-
 			/* finding the location of the previous data */ 
 			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_off) != 0) {
 				/* if it was not written before, change it to a write request */

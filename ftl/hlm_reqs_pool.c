@@ -395,7 +395,7 @@ static int __hlm_reqs_pool_create_write_req (
 		/* decide the reqtype for llm_req */
 		if (hole == 1 && br->bi_rw == REQTYPE_WRITE) {
 			ptr_lr->req_type = REQTYPE_RMW_READ;
-			bdbm_bug_on (1);
+			/*bdbm_bug_on (1);*/
 			/* TEMP */
 			/*exit (-1);*/
 			/* TEMP */
