@@ -41,7 +41,7 @@ typedef struct {
 	bdbm_blkio_req_t blkio_req;	/* must be at the top of the structure */
 
 	/* stuff for mmap management */
-	uint8_t bi_bvec_ptr[KERNEL_PAGE_SIZE][BDBM_BLKIO_MAX_VECS]; /* keep data shared by both kernel and user */
+	uint8_t bi_bvec_ptr[BDBM_BLKIO_MAX_VECS][KERNEL_PAGE_SIZE]; /* keep data shared by both kernel and user */
 	bdbm_proxy_req_status_t stt;
 	uint32_t id;
 } bdbm_blkio_proxy_req_t;

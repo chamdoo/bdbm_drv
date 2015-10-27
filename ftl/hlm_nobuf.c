@@ -38,11 +38,12 @@ THE SOFTWARE.
 #include "params.h"
 #include "bdbm_drv.h"
 #include "hlm_nobuf.h"
+#include "hlm_reqs_pool.h"
+#include "utime.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
-#include "utime.h"
 
 
 /* interface for hlm_nobuf */
@@ -57,26 +58,20 @@ bdbm_hlm_inf_t _hlm_nobuf_inf = {
 };
 
 /* data structures for hlm_nobuf */
-struct bdbm_hlm_nobuf_private {
-	bdbm_ftl_inf_t* ptr_ftl_inf;
-};
+typedef struct {
+	bdbm_hlm_req_t tmp_hr;
+} bdbm_hlm_nobuf_private_t;
 
 
 /* functions for hlm_nobuf */
 uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_nobuf_private* p;
+	bdbm_hlm_nobuf_private_t* p;
 
 	/* create private */
-	if ((p = (struct bdbm_hlm_nobuf_private*)bdbm_malloc_atomic
-			(sizeof(struct bdbm_hlm_nobuf_private))) == NULL) {
+	if ((p = (bdbm_hlm_nobuf_private_t*)bdbm_malloc_atomic
+			(sizeof(bdbm_hlm_nobuf_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
-		return 1;
-	}
-
-	/* setup FTL function pointers */
-	if ((p->ptr_ftl_inf = BDBM_GET_FTL_INF (bdi)) == NULL) {
-		bdbm_error ("ftl is not valid");
 		return 1;
 	}
 
@@ -88,7 +83,7 @@ uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 
 void hlm_nobuf_destroy (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_nobuf_private* p = (struct bdbm_hlm_nobuf_private*)BDBM_HLM_PRIV(bdi);
+	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 
 	/* free priv */
 	bdbm_free_atomic (p);
@@ -106,21 +101,41 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 	return 0;
 }
 
-uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
+uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
+	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
-	bdbm_llm_req_t* lr;
-	int32_t i;
+	bdbm_llm_req_t* lr = NULL;
+	uint64_t i = 0, sp_off;
 
-	bdbm_hlm_for_each_llm_req (lr, ptr_hlm_req, i) {
+	/* perform mapping with the FTL */
+	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
 			if (bdbm_is_read (lr->req_type)) {
-				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
+				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr, &sp_off) != 0) {
 					/* Note that there could be dummy reads (e.g., when the
 					 * file-systems are initialized) */
+					lr->req_type = REQTYPE_READ_DUMMY;
+				} else {
+#if 0
+					/* TEMP - NEW */
+					if (sp_off != lr->logaddr.ofs) {
+						bdbm_msg ("sp_off: %llu", sp_off);
+						lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
+						lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
+						lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
+						lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
+						lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
+					}
+					/* TEMP - NEW */
+
+					bdbm_msg (" <== %llu %llu %llu %llu (%llu)",
+							lr->phyaddr.channel_no, lr->phyaddr.chip_no, lr->phyaddr.block_no, lr->phyaddr.page_no,
+							sp_off);
+#endif
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
 				if (ftl->get_free_ppa (bdi, &lr->phyaddr) != 0) {
@@ -131,6 +146,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 					goto fail;
 				}
+#if 0
+				bdbm_msg (" ==> %llu %llu %llu %llu", 
+					lr->phyaddr.channel_no,
+					lr->phyaddr.chip_no,
+					lr->phyaddr.block_no,
+					lr->phyaddr.page_no);
+#endif
 			} else {
 				bdbm_error ("oops! invalid type (%llx)", lr->req_type);
 				bdbm_bug_on (1);
@@ -138,12 +160,26 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 		} else if (bdbm_is_rmw (lr->req_type)) {
 			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
+			bdbm_bug_on (1);
+
 			/* finding the location of the previous data */ 
-			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
+			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_off) != 0) {
 				/* if it was not written before, change it to a write request */
 				lr->req_type = REQTYPE_WRITE;
 				phyaddr = &lr->phyaddr;
 			} else {
+#if 0
+				/* TEMP - NEW */
+				if (sp_off != lr->logaddr.ofs) {
+					bdbm_msg ("sp_off: %llu", sp_off);
+					lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
+					lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
+					lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
+					lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
+					lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
+				}
+				/* TEMP - NEW */
+#endif
 				phyaddr = &lr->phyaddr_dst;
 			}
 
@@ -163,15 +199,40 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_
 
 		/* (2) setup oob */
 		((uint64_t*)lr->foob.data)[0] = lr->logaddr.lpa[0];
+	}
 
+	/* rebuild hlm_req */
+#if 0
+	bdbm_hlm_reqs_pool_rebuild_req (hr, &p->tmp_hr);
+#endif
+
+	/* send hlm_req to LLM */
+	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (3) send llm_req to llm */
+#if 0
+		if (bdbm_is_read (lr->req_type)) {
+			bdbm_msg ("HLM_READ: lpa = %llu (%x %x %x %x)",
+				lr->logaddr.lpa[0],
+				lr->fmain.kp_ptr[0][0],
+				lr->fmain.kp_ptr[0][1],
+				lr->fmain.kp_ptr[0][2],
+				lr->fmain.kp_ptr[0][3]);
+		} else if (bdbm_is_write (lr->req_type)) {
+			bdbm_msg ("HLM_WRITE: lpa = %llu (%x %x %x %x)",
+				lr->logaddr.lpa[0],
+				lr->fmain.kp_ptr[0][0],
+				lr->fmain.kp_ptr[0][1],
+				lr->fmain.kp_ptr[0][2],
+				lr->fmain.kp_ptr[0][3]);
+		}
+#endif
 		if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
 			bdbm_error ("oops! make_req () failed");
 			bdbm_bug_on (1);
 		}
 	}
 
-	bdbm_bug_on (ptr_hlm_req->nr_llm_reqs != i);
+	bdbm_bug_on (hr->nr_llm_reqs != i);
 
 	return 0;
 

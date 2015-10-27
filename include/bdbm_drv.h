@@ -144,15 +144,14 @@ typedef enum {
 	KP_STT_DONE = 0x0F,
 	KP_STT_HOLE = 0x10,
 	KP_STT_DATA = 0x20,
-	KP_STT_TRIM = 0x30,
 	KP_STT_HOLE_DONE = KP_STT_HOLE | KP_STT_DONE,
 	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,
-	KP_STT_TRIM_DONE = KP_STT_TRIM | KP_STT_DONE,
 } kp_stt_t;
 
 typedef struct {
 	uint64_t sz;
 	int64_t lpa[32];
+	int32_t ofs;	/* only used for reads */
 } bdbm_logaddr_t;
 
 typedef struct {
@@ -300,7 +299,7 @@ typedef struct {
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, bdbm_phyaddr_t* ppa);
-	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi);

@@ -550,7 +550,8 @@ void bdbm_abm_invalidate_page (
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
-				bdbm_msg ("b->status: %u (%llu %llu %llu %llu %llu)", b->status, channel_no, chip_no, block_no, page_no, subpage_no);
+				bdbm_msg ("b->status: %u (%llu %llu %llu %llu %llu)", 
+					b->status, channel_no, chip_no, block_no, page_no, subpage_no);
 				bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);
 			}
 

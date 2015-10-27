@@ -159,8 +159,10 @@ uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 
 	/* create hlm_reqs pool */
 	if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
-			bdi->parm_dev.page_main_size, 
-			bdi->parm_dev.page_main_size)) == NULL) {
+			bdi->parm_dev.page_main_size,	/* mapping unit */
+			//KERNEL_PAGE_SIZE,	/* mapping unit */
+			bdi->parm_dev.page_main_size	/* io unit */	
+			)) == NULL) {
 		bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");
 		return 1;
 	}
@@ -222,7 +224,7 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
 	bdbm_hlm_req_t* hr = NULL;
 
-	/*bdbm_msg ("type: %llx offset: %llu size: %llu", br->bi_rw, br->bi_offset, br->bi_size);*/
+	/*bdbm_msg ("bio: %llu %llu", br->bi_offset, br->bi_size);*/
 
 	/* get a free hlm_req from the hlm_reqs_pool */
 	if ((hr = bdbm_hlm_reqs_pool_alloc_item (p->hlm_reqs_pool)) == NULL) {
@@ -259,6 +261,35 @@ void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
 	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
+
+	/* TEMP */
+#if 0
+	{
+		bdbm_llm_req_t* lr = NULL;
+		int i = 0;
+		if (!bdbm_is_trim (req->req_type)) {
+			/*bdbm_msg ("STUB: %x %llu", req->req_type, req->nr_llm_reqs);*/
+			bdbm_hlm_for_each_llm_req (lr, req, i) {
+				if (bdbm_is_read (lr->req_type)) {
+					bdbm_msg ("STUB_READ: lpa = %llu (%x %x %x %x)",
+						lr->logaddr.lpa[0],
+						lr->fmain.kp_ptr[0][0],
+						lr->fmain.kp_ptr[0][1],
+						lr->fmain.kp_ptr[0][2],
+						lr->fmain.kp_ptr[0][3]);
+				} else if (bdbm_is_write (lr->req_type)) {
+					bdbm_msg ("STUB_WRITE: lpa = %llu (%x %x %x %x)",
+						lr->logaddr.lpa[0],
+						lr->fmain.kp_ptr[0][0],
+						lr->fmain.kp_ptr[0][1],
+						lr->fmain.kp_ptr[0][2],
+						lr->fmain.kp_ptr[0][3]);
+				}
+			}
+		}
+	}
+	/* TEMP */
+#endif
 
 	/* finish the proxy request */
 	__blkio_stub_finish (bdi, r);

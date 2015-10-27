@@ -47,7 +47,6 @@ export KROOT=/lib/modules/$(shell uname -r)/build
 default: user	
 
 kernel: 
-	@cd ../../devices; $(MAKE) clean; # clear devices first
 	@$(MAKE) -f Makefile.kernel
 
 user:

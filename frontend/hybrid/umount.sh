@@ -9,6 +9,7 @@ if [ $pid > 0 ]
 then
 	 echo 'sudo kill -2 libftl ('$pid')'
 	sudo kill -2 $pid
+	sudo pkill -9 libftl
 	sleep 1
 fi
 

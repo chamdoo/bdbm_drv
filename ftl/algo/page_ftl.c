@@ -408,6 +408,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
 	/* is it a valid logical address */
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
+	//for (k = 0; k < logaddr->sz; k++) {
 		if (logaddr->lpa[k] == -1)
 			continue;
 
@@ -415,6 +416,16 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
 			return 1;
 		}
+
+#if 0
+		bdbm_msg ("MAP: LPA = %llu ==> %llu %llu %llu %llu (%d)",
+				logaddr->lpa[k], 
+				phyaddr->channel_no, 
+				phyaddr->chip_no, 
+				phyaddr->block_no, 
+				phyaddr->page_no, 
+				k);
+#endif
 
 		/* get the mapping entry for lpa */
 		me = &p->ptr_mapping_table[logaddr->lpa[k]];
@@ -445,7 +456,8 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 uint32_t bdbm_page_ftl_get_ppa (
 	bdbm_drv_info_t* bdi, 
 	int64_t lpa,
-	bdbm_phyaddr_t* phyaddr)
+	bdbm_phyaddr_t* phyaddr,
+	uint64_t* sp_off)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -470,6 +482,7 @@ uint32_t bdbm_page_ftl_get_ppa (
 		phyaddr->block_no = 0;
 		phyaddr->page_no = 0;
 		phyaddr->punit_id = 0;
+		*sp_off = 0;
 		ret = 1;
 	} else {
 		phyaddr->channel_no = me->phyaddr.channel_no;
@@ -477,6 +490,7 @@ uint32_t bdbm_page_ftl_get_ppa (
 		phyaddr->block_no = me->phyaddr.block_no;
 		phyaddr->page_no = me->phyaddr.page_no;
 		phyaddr->punit_id = BDBM_GET_PUNIT_ID (bdi, phyaddr);
+		*sp_off = me->sp_off;
 		ret = 0;
 	}
 
@@ -944,7 +958,6 @@ erase_blks:
 
 	return 0;
 }
-
 
 /* for snapshot */
 uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
