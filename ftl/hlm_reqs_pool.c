@@ -223,89 +223,6 @@ static int __hlm_reqs_pool_create_trim_req  (
 	return 0;
 }
 
-#if 0
-static int __hlm_reqs_pool_create_rw_req (
-	bdbm_hlm_reqs_pool_t* pool, 
-	bdbm_hlm_req_t* hr,
-	bdbm_blkio_req_t* br)
-{
-	int64_t sec_start, sec_end, pg_start, pg_end;
-	int64_t i = 0, j = 0, k = 0;
-	int64_t hole = 0, bvec_cnt = 0, nr_llm_reqs;
-	bdbm_flash_page_main_t* ptr_fm = NULL;
-	bdbm_llm_req_t* ptr_lr = NULL;
-
-	/* expand boundary sectors */
-	sec_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(pool->map_unit));
-	sec_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(pool->map_unit));
-	bdbm_bug_on (sec_start >= sec_end);
-
-	pg_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
-	pg_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
-	bdbm_bug_on (pg_start >= pg_end);
-
-	/* build llm_reqs */
-	nr_llm_reqs = BDBM_ALIGN_UP ((sec_end - sec_start), NR_KSECTORS_IN(pool->io_unit));
-	nr_llm_reqs = nr_llm_reqs / NR_KSECTORS_IN(pool->io_unit);
-	bdbm_bug_on (nr_llm_reqs > BDBM_BLKIO_MAX_VECS);
-
-	ptr_lr = &hr->llm_reqs[0];
-	for (i = 0; i < nr_llm_reqs; i++) {
-		/* build mapping-units */
-		ptr_fm = &ptr_lr->fmain;
-		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
-			/* build kernel-pages */
-			ptr_lr->logaddr.lpa[j] = sec_start / NR_KSECTORS_IN(pool->map_unit);
-			for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
-				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
-				uint64_t kp_off = j * (pool->io_unit / pool->map_unit) + k;
-
-				if (pg_off < pg_start) {
-					ptr_fm->kp_stt[kp_off] = KP_STT_HOLE;
-					ptr_fm->kp_ptr[kp_off] = ptr_fm->kp_pad[kp_off];
-					hole = 1;
-				} else if (pg_off >= pg_end) { 
-					ptr_fm->kp_stt[kp_off] = KP_STT_HOLE;
-					ptr_fm->kp_ptr[kp_off] = ptr_fm->kp_pad[kp_off];
-					hole = 1;
-				} else {
-					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
-					ptr_fm->kp_stt[kp_off] = KP_STT_DATA;
-					ptr_fm->kp_ptr[kp_off] = br->bi_bvec_ptr[bvec_cnt++]; /* assign actual data */
-				}
-
-				/* go to the next */
-				sec_start += NR_KSECTORS_IN(KPAGE_SIZE);
-				kp_off++;
-			}
-		}
-
-		/* decide the reqtype for llm_req */
-		if (hole == 1 && br->bi_rw == REQTYPE_WRITE) {
-			ptr_lr->req_type = REQTYPE_RMW_READ;
-		} else
-			ptr_lr->req_type = br->bi_rw;
-
-		/* go to the next */
-		ptr_lr->ptr_hlm_req = (void*)hr;
-		ptr_lr++;
-	}
-
-	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
-
-	/* intialize hlm_req */
-	hr->req_type = br->bi_rw;
-	bdbm_stopwatch_start (&hr->sw);
-	hr->nr_llm_reqs = nr_llm_reqs;
-	atomic64_set (&hr->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&hr->done);
-	hr->blkio_req = (void*)br;
-	hr->ret = 0;
-
-	return 0;
-}
-#endif
-
 static void __hlm_reqs_pool_reset_fmain (
 	bdbm_flash_page_main_t* fmain)
 {
@@ -386,10 +303,8 @@ static int __hlm_reqs_pool_create_write_req (
 				/* TEMP */
 			}
 
-			/* TEMP - NEW */
-			/*if (sec_start >= sec_end)*/
-			/*break;*/
-			/* TMEP - NEW */
+			if (sec_start >= sec_end)
+				break;
 		}
 
 		/* decide the reqtype for llm_req */
@@ -404,6 +319,7 @@ static int __hlm_reqs_pool_create_write_req (
 
 		/*bdbm_bug_on (ptr_fm->sz != 32);*/
 		/*bdbm_bug_on (ptr_lr->logaddr.sz != 32);*/
+		/*bdbm_bug_on (ptr_lr->logaddr.sz != 1);*/
 
 		/* go to the next */
 		ptr_lr->ptr_hlm_req = (void*)hr;

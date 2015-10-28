@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#define SZ_PAGE	1
+#define SZ_PAGE	32
 
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*SZ_PAGE,
@@ -138,8 +138,11 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_chips_per_ssd = p.nr_channels * p.nr_chips_per_channel;
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
-	//p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
+#ifdef USE_NEW_RMW
+	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
+#else
 	p.nr_subpages_per_page = 1;
+#endif
 	p.nr_subpages_per_block = (p.nr_subpages_per_page * p.nr_pages_per_block);
 	p.nr_subpages_per_ssd = (p.nr_subpages_per_page * p.nr_pages_per_ssd);	/* the size of the subpage must be the same as the kernel-page size (4KB) */
 
