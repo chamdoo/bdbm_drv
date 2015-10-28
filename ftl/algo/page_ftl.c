@@ -350,8 +350,21 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	/* is it a valid logical address */
 	// for (k = 0; k < logaddr->sz; k++) {
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
-		if (logaddr->lpa[k] == -1)
+		if (logaddr->lpa[k] == -1) {
+			/* NEW */
+			//bdbm_bug_on (1);
+			/* the correpsonding subpage must be set to invalid for gc */
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				phyaddr->channel_no, 
+				phyaddr->chip_no,
+				phyaddr->block_no,
+				phyaddr->page_no,
+				k
+			);
+			/* NEW */
 			continue;
+		}
 
 		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
@@ -773,8 +786,14 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
 					r->logaddr.lpa[k] = -2; /* the subpage contains new data */
 					has_valid = 1;
+#if defined (USE_NEW_RMW)
+					r->fmain.kp_stt[k] = KP_STT_DATA;
+#endif
 				} else {
 					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
+#if defined (USE_NEW_RMW)
+					r->fmain.kp_stt[k] = KP_STT_HOLE;
+#endif
 				}
 			}
 			/* if it is, selects it as the gc candidates */
@@ -832,9 +851,15 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 			//r->logaddr.sz++;
 			if (r->logaddr.lpa[k] == -2) {
 				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+#if defined (USE_NEW_RMW)
+				bdbm_bug_on (r->fmain.kp_stt[k] != KP_STT_DATA);
+#endif
 			} else if (r->logaddr.lpa[k] == -1) {
 				((uint64_t*)r->foob.data)[k] = -1;
 				r->logaddr.lpa[k] = -1;
+#if defined (USE_NEW_RMW)
+				bdbm_bug_on (r->fmain.kp_stt[k] != KP_STT_HOLE);
+#endif
 			} else {
 				bdbm_bug_on (1);
 			}

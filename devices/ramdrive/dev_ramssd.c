@@ -225,6 +225,12 @@ static uint8_t __ramssd_read_page (
 			continue;
 		}
 
+#if defined (DATA_CHECK)
+		if (partial == 0 && kpg_flags[loop] != KP_STT_DATA) {
+			continue;
+		}
+#endif
+
 #ifdef DBG_RMW
 		if (partial == 1) {
 			bdbm_msg ("DEV-RMW_READ: lpa=%llu offset=%llu (%llu %llu %llu %llu)", 
@@ -268,6 +274,11 @@ static uint8_t __ramssd_read_page (
 			continue;
 		if (kpg_flags != NULL && (kpg_flags[loop] & KP_STT_DONE) == KP_STT_DONE)
 			continue;
+#if defined (DATA_CHECK)
+		if (partial == 0 && kpg_flags[loop] != KP_STT_DATA) {
+			continue;
+		}
+#endif
 		ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
 			if ((pos = memcmp (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE)) != 0) {
@@ -329,6 +340,16 @@ static uint8_t __ramssd_prog_page (
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_kpages; loop++) {
+		if (ri->nand_params->nr_subpages_per_block != ri->nand_params->nr_pages_per_block) {
+			int64_t lpa = ((int64_t*)ptr_oob_data)[loop];
+			if (lpa < 0 || lpa == 0xffffffffffffffff)
+				continue;
+		}
+#if defined (DATA_CHECK)
+		if (kpg_flags[loop] != KP_STT_DATA) {
+			continue;
+		}
+#endif
 		bdbm_memcpy (
 			ptr_ramssd_addr + KERNEL_PAGE_SIZE * loop, 
 			ptr_page_data[loop], 
@@ -362,6 +383,11 @@ static uint8_t __ramssd_prog_page (
 			lpa = ((uint64_t*)ptr_oob_data)[loop];
 			if (lpa < 0 || lpa == 0xffffffffffffffff)
 				continue;
+#if defined (DATA_CHECK)
+		if (kpg_flags[loop] != KP_STT_DATA) {
+			continue;
+		}
+#endif
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			memcpy (ptr_data_org, ptr_page_data[loop], KPAGE_SIZE);
 			//bdbm_msg ("DEV-WRITE: %lld (%u) (=> %lld %lld %lld %lld)", lpa, loop, channel_no, chip_no, block_no, page_no);
