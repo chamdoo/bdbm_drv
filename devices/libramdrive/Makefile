@@ -24,7 +24,7 @@ CFLAGS += \
 	-D USE_PMU \
 	-D USE_KTIMER \
 	-D USER_MODE \
-	-D USE_NEW_RMW \
+	#-D USE_NEW_RMW \
 
 LIBSRC := \
 	$(DM_COMMON)/dev_main.c \

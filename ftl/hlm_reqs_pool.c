@@ -235,6 +235,17 @@ static void __hlm_reqs_pool_reset_fmain (
 	}
 }
 
+static void __hlm_reqs_pool_reset_logaddr (
+	bdbm_logaddr_t* logaddr)
+{
+	int i = 0;
+	while (i < 32) {
+		logaddr->lpa[i] = -1;
+		i++;
+	}
+	logaddr->ofs = -1;
+}
+
 static int __hlm_reqs_pool_create_write_req (
 	bdbm_hlm_reqs_pool_t* pool, 
 	bdbm_hlm_req_t* hr,
@@ -272,7 +283,8 @@ static int __hlm_reqs_pool_create_write_req (
 		__hlm_reqs_pool_reset_fmain (ptr_fm);
 
 #ifdef USE_NEW_RMW
-		memset (ptr_lr->logaddr.lpa, 0xFF, sizeof (uint64_t)*32);
+	//	memset (ptr_lr->logaddr.lpa, 0xFF, sizeof (uint64_t)*32);
+		__hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 #endif
 		/* build mapping-units */
 		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
@@ -369,18 +381,18 @@ static int __hlm_reqs_pool_create_read_req (
 
 	ptr_lr = &hr->llm_reqs[0];
 	for (i = 0; i < nr_llm_reqs; i++) {
-		__hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
-
 #ifdef USE_NEW_RMW
 		offset = 0;
 #else
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 #endif
 
+		__hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
 		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
 		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];
 		//ptr_lr->fmain.sz = 1;
 
+		__hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 		ptr_lr->req_type = br->bi_rw;
 		ptr_lr->logaddr.lpa[0] = pg_start / NR_KPAGES_IN(pool->map_unit);
 		ptr_lr->logaddr.ofs = offset;
