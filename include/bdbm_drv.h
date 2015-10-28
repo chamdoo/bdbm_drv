@@ -149,13 +149,13 @@ typedef enum {
 } kp_stt_t;
 
 typedef struct {
-	uint64_t sz;
+	//uint64_t sz;
 	int64_t lpa[32];
 	int32_t ofs;	/* only used for reads */
 } bdbm_logaddr_t;
 
 typedef struct {
-	uint64_t sz;
+	//uint64_t sz;
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
 	uint8_t  kp_pad[32][KPAGE_SIZE];

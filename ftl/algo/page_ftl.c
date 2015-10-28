@@ -348,7 +348,8 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	int k;
 
 	/* is it a valid logical address */
-	for (k = 0; k < logaddr->sz; k++) {
+	// for (k = 0; k < logaddr->sz; k++) {
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
 		if (logaddr->lpa[k] == -1)
 			continue;
 
@@ -765,10 +766,10 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 		for (j = 0; j < np->nr_pages_per_block; j++) {
 			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
 			int has_valid = 0;
-			r->logaddr.sz = 0;
+			//r->logaddr.sz = 0;
 			/* are there any valid subpages in a block */
 			for (k = 0; k < np->nr_subpages_per_page; k++) {
-				r->logaddr.sz++;
+				//r->logaddr.sz++;
 				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
 					r->logaddr.lpa[k] = -2; /* the subpage contains new data */
 					has_valid = 1;
@@ -825,10 +826,10 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
-		r->logaddr.sz = 0;
+		//r->logaddr.sz = 0;
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
-			r->logaddr.sz++;
+			//r->logaddr.sz++;
 			if (r->logaddr.lpa[k] == -2) {
 				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
 			} else if (r->logaddr.lpa[k] == -1) {
@@ -869,7 +870,7 @@ erase_blks:
 		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		r->req_type = REQTYPE_GC_ERASE;
 		r->logaddr.lpa[0] = -1ULL; /* lpa is not available now */
-		r->logaddr.sz = 0;
+		//r->logaddr.sz = 0;
 		r->phyaddr.channel_no = b->channel_no;
 		r->phyaddr.chip_no = b->chip_no;
 		r->phyaddr.block_no = b->block_no;
@@ -1046,7 +1047,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 			r = &hlm_gc->llm_reqs[punit_id];
 			r->req_type = REQTYPE_GC_ERASE;
 			r->logaddr.lpa[0] = -1ULL; /* lpa is not available now */
-			r->logaddr.sz = 0;
+			//r->logaddr.sz = 0;
 			r->phyaddr.channel_no = b->channel_no;
 			r->phyaddr.chip_no = b->chip_no;
 			r->phyaddr.block_no = b->block_no;

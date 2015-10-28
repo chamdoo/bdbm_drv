@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "dev_ramssd.h"
 
 /*#define DBG_RMW*/
-/*#define DATA_CHECK*/
+#define DATA_CHECK
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
