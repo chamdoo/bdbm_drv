@@ -288,10 +288,10 @@ static int __hlm_reqs_pool_create_write_req (
 					/* TEMP */
 				} else {
 					hole = 1;
-					/* TEMP */
+#ifdef USE_NEW_RMW
 					/*bdbm_msg (" - LPA: %llu (%llu) - HOLE", ptr_lr->logaddr.lpa[j], ptr_fm->sz);*/
-					/*hole = 0;*/
-					/* TEMP */
+					hole = 0;
+#endif
 				}
 
 				/* go to the next */
@@ -310,10 +310,10 @@ static int __hlm_reqs_pool_create_write_req (
 		/* decide the reqtype for llm_req */
 		if (hole == 1 && br->bi_rw == REQTYPE_WRITE) {
 			ptr_lr->req_type = REQTYPE_RMW_READ;
-			/*bdbm_bug_on (1);*/
-			/* TEMP */
-			/*exit (-1);*/
-			/* TEMP */
+#ifdef USE_NEW_RMW
+			bdbm_bug_on (1);
+			exit (-1);
+#endif
 		} else
 			ptr_lr->req_type = br->bi_rw;
 
@@ -367,8 +367,11 @@ static int __hlm_reqs_pool_create_read_req (
 	for (i = 0; i < nr_llm_reqs; i++) {
 		__hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
 
+#ifdef USE_NEW_RMW
+		offset = 0;
+#else
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
-		/*offset = 0;*/
+#endif
 
 		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
 		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];

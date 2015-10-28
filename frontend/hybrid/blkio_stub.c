@@ -159,8 +159,11 @@ uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 
 	/* create hlm_reqs pool */
 	if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
+#ifdef USE_NEW_RMW
+			KERNEL_PAGE_SIZE,	/* mapping unit */
+#else
 			bdi->parm_dev.page_main_size,	/* mapping unit */
-			//KERNEL_PAGE_SIZE,	/* mapping unit */
+#endif
 			bdi->parm_dev.page_main_size	/* io unit */	
 			)) == NULL) {
 		bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");

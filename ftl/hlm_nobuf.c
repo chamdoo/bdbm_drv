@@ -120,7 +120,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					 * file-systems are initialized) */
 					lr->req_type = REQTYPE_READ_DUMMY;
 				} else {
-#if 0
+#ifdef USE_NEW_RMW
 					/* TEMP - NEW */
 					if (sp_off != lr->logaddr.ofs) {
 						bdbm_msg ("sp_off: %llu", sp_off);
@@ -166,7 +166,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				lr->req_type = REQTYPE_WRITE;
 				phyaddr = &lr->phyaddr;
 			} else {
-#if 0
+#ifdef USE_NEW_RMW
 				/* TEMP - NEW */
 				if (sp_off != lr->logaddr.ofs) {
 					bdbm_msg ("sp_off: %llu", sp_off);
