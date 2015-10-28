@@ -225,7 +225,7 @@ static uint8_t __ramssd_read_page (
 			continue;
 		}
 
-#if defined (DATA_CHECK)
+#if defined (USE_NEW_RMW)
 		if (partial == 0 && kpg_flags[loop] != KP_STT_DATA) {
 			continue;
 		}
@@ -274,7 +274,7 @@ static uint8_t __ramssd_read_page (
 			continue;
 		if (kpg_flags != NULL && (kpg_flags[loop] & KP_STT_DONE) == KP_STT_DONE)
 			continue;
-#if defined (DATA_CHECK)
+#if defined (USE_NEW_RMW)
 		if (partial == 0 && kpg_flags[loop] != KP_STT_DATA) {
 			continue;
 		}
@@ -345,7 +345,7 @@ static uint8_t __ramssd_prog_page (
 			if (lpa < 0 || lpa == 0xffffffffffffffff)
 				continue;
 		}
-#if defined (DATA_CHECK)
+#if defined (USE_NEW_RMW)
 		if (kpg_flags[loop] != KP_STT_DATA) {
 			continue;
 		}
@@ -383,10 +383,10 @@ static uint8_t __ramssd_prog_page (
 			lpa = ((uint64_t*)ptr_oob_data)[loop];
 			if (lpa < 0 || lpa == 0xffffffffffffffff)
 				continue;
-#if defined (DATA_CHECK)
-		if (kpg_flags[loop] != KP_STT_DATA) {
-			continue;
-		}
+#if defined (USE_NEW_RMW)
+			if (kpg_flags[loop] != KP_STT_DATA) {
+				continue;
+			}
 #endif
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			memcpy (ptr_data_org, ptr_page_data[loop], KPAGE_SIZE);
