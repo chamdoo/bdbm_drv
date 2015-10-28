@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "dev_ramssd.h"
 
 /*#define DBG_RMW*/
-#define DATA_CHECK
+/*#define DATA_CHECK*/
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
@@ -57,11 +57,20 @@ static uint8_t* __get_ramssd_data_addr (
 	}
 	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
 }
-static void __display_hex_values (uint8_t* dram, uint8_t* flash, int pos)
+static void __display_hex_values (uint8_t* dram, uint8_t* flash)
 {
 	bdbm_msg (" * HOST: %x %x %x %x %x != FLASH: %x %x %x %x %x", 
-		dram[pos-2], dram[pos-1], dram[pos+0], dram[pos+1], dram[pos+2], 
-		flash[pos-2], flash[pos-1], flash[pos+0], flash[pos+1], flash[pos+2]);
+		dram[0], dram[1], dram[2], dram[3], dram[4], 
+		flash[0], flash[1], flash[2], flash[3], flash[4]);
+}
+static void __display_hex_values_all (uint8_t* dram, uint8_t* flash)
+{
+	int i = 0;
+	for (i = 0; i < KPAGE_SIZE; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x != FLASH: %x %x %x %x", 
+			dram[i+0], dram[i+1], dram[i+2], dram[i+3],
+			flash[i+0], flash[i+1], flash[i+2], flash[i+3]);
+	}
 }
 #endif
 
@@ -263,13 +272,21 @@ static uint8_t __ramssd_read_page (
 		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
 			if ((pos = memcmp (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE)) != 0) {
 				bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu pos=%d", lpa, lpa, loop, pos);
-				__display_hex_values (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE), pos);
+				__display_hex_values (ptr_page_data[loop], ptr_data_org+(loop*KPAGE_SIZE));
 			}
 		} else {
 			if ((pos = memcmp (ptr_page_data[loop], ptr_data_org, KPAGE_SIZE)) != 0) {
 				bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu pos=%d", lpa, lpa, loop, pos);
-				__display_hex_values (ptr_page_data[loop], ptr_data_org, pos);
+				__display_hex_values (ptr_page_data[loop], ptr_data_org);
 			}
+#if 0
+			if (lpa == 0) {
+				bdbm_msg ("-------------------------------------");
+				bdbm_msg ("READ: %lld (=> %lld %lld %lld %lld)", lpa, channel_no, chip_no, block_no, page_no);
+				bdbm_msg ("-------------------------------------");
+				__display_hex_values_all (ptr_page_data[loop], ptr_data_org);
+			}
+#endif
 		}
 	}
 #endif
@@ -331,19 +348,30 @@ static uint8_t __ramssd_prog_page (
 #if defined (DATA_CHECK)
 	/* TEMP */
 	//bdbm_msg ("WRITE: %lld (=> %lld %lld %lld %lld)", ((uint64_t*)ptr_oob_data)[0], channel_no, chip_no, block_no, page_no);
+	//bdbm_msg ("-------------------------------------");
 	for (loop = 0; loop < nr_kpages; loop++) {
-		uint64_t lpa = -1;
+		int64_t lpa = -1;
 		uint8_t* ptr_data_org = NULL;
 		if (ri->nand_params->nr_subpages_per_block == ri->nand_params->nr_pages_per_block) {
 			lpa = ((uint64_t*)ptr_oob_data)[0];
+			if (lpa < 0 || lpa == 0xffffffffffffffff)
+				continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			memcpy (ptr_data_org+(loop*KPAGE_SIZE), ptr_page_data[loop], KPAGE_SIZE);
 		} else {
 			lpa = ((uint64_t*)ptr_oob_data)[loop];
+			if (lpa < 0 || lpa == 0xffffffffffffffff)
+				continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			memcpy (ptr_data_org, ptr_page_data[loop], KPAGE_SIZE);
+			//bdbm_msg ("DEV-WRITE: %lld (%u) (=> %lld %lld %lld %lld)", lpa, loop, channel_no, chip_no, block_no, page_no);
+			if (lpa == 0) {
+				/*bdbm_msg ("-------------------------------------");*/
+				/*__display_hex_values_all (ptr_page_data[loop], ptr_data_org);*/
+			}
 		}
 	}
+	/*bdbm_msg ("-------------------------------------");*/
 	/* TEMP */
 #endif
 

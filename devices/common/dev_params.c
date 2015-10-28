@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include "platform.h"
 #include "debug.h"
 
-#define SZ_PAGE	32
+#define SZ_PAGE	2
 
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*SZ_PAGE,
@@ -138,7 +138,7 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_chips_per_ssd = p.nr_channels * p.nr_chips_per_channel;
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
-#ifdef USE_NEW_RMW
+#if defined (USE_NEW_RMW)
 	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
 #else
 	p.nr_subpages_per_page = 1;
@@ -165,6 +165,7 @@ void display_device_params (bdbm_device_params_t* p)
     bdbm_msg ("# of chips per channel = %llu", p->nr_chips_per_channel);
     bdbm_msg ("# of blocks per chip = %llu", p->nr_blocks_per_chip);
     bdbm_msg ("# of pages per block = %llu", p->nr_pages_per_block);
+	bdbm_msg ("# of subpages per page = %llu", p->nr_subpages_per_page);
     bdbm_msg ("page main size  = %llu bytes", p->page_main_size);
     bdbm_msg ("page oob size = %llu bytes", p->page_oob_size);
 	bdbm_msg ("device type = %u (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)", 

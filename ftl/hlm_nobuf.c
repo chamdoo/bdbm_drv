@@ -107,7 +107,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
-	uint64_t i = 0, sp_off;
+	uint64_t i = 0, j = 0, sp_off;
 
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
@@ -123,7 +123,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 #ifdef USE_NEW_RMW
 					/* TEMP - NEW */
 					if (sp_off != lr->logaddr.ofs) {
-						bdbm_msg ("sp_off: %llu", sp_off);
+						/*bdbm_msg ("sp_off: %llu", sp_off);*/
 						lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
 						lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
 						lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
@@ -132,9 +132,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					}
 					/* TEMP - NEW */
 
-					bdbm_msg (" <== %llu %llu %llu %llu (%llu)",
+#if 0
+					bdbm_msg ("READ: lpa = %llu(%llu) <== %llu %llu %llu %llu (%llu)",
+							lr->logaddr.lpa[0], lr->logaddr.ofs,
 							lr->phyaddr.channel_no, lr->phyaddr.chip_no, lr->phyaddr.block_no, lr->phyaddr.page_no,
 							sp_off);
+#endif
 #endif
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
@@ -147,7 +150,8 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					goto fail;
 				}
 #if 0
-				bdbm_msg (" ==> %llu %llu %llu %llu", 
+				bdbm_msg ("WRITE: lpa = %llu, %llu ==> %llu %llu %llu %llu", 
+					lr->logaddr.lpa[0], lr->logaddr.sz,
 					lr->phyaddr.channel_no,
 					lr->phyaddr.chip_no,
 					lr->phyaddr.block_no,
@@ -169,7 +173,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 #ifdef USE_NEW_RMW
 				/* TEMP - NEW */
 				if (sp_off != lr->logaddr.ofs) {
-					bdbm_msg ("sp_off: %llu", sp_off);
+					//bdbm_msg ("sp_off: %llu", sp_off);
 					lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
 					lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
 					lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
@@ -196,7 +200,17 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 
 		/* (2) setup oob */
+#ifdef USE_NEW_RMW
+		//for (j = 0; j < lr->logaddr.sz; j++) {
+		for (j = 0; j < 2; j++) {
+			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
+			//if (bdbm_is_write (lr->req_type)) {
+			//	bdbm_msg ("   [%d] lr->foob.data[%d] = %lld", j, j, ((int64_t*)lr->foob.data)[j]);
+			//}
+		}
+#else
 		((uint64_t*)lr->foob.data)[0] = lr->logaddr.lpa[0];
+#endif
 	}
 
 	/* rebuild hlm_req */

@@ -270,6 +270,9 @@ static int __hlm_reqs_pool_create_write_req (
 		ptr_fm = &ptr_lr->fmain;
 		__hlm_reqs_pool_reset_fmain (ptr_fm);
 
+#ifdef USE_NEW_RMW
+		memset (ptr_lr->logaddr.lpa, 0xFF, sizeof (uint64_t)*32);
+#endif
 		/* build mapping-units */
 		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
 			/* build kernel-pages */

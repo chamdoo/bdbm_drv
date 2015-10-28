@@ -357,7 +357,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 			return 1;
 		}
 
-#if 0
+#if 0 
 		bdbm_msg ("MAP: LPA = %llu ==> %llu %llu %llu %llu (%d)",
 				logaddr->lpa[k], 
 				phyaddr->channel_no, 
@@ -451,6 +451,7 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 	if ((lpa + len) > np->nr_subpages_per_ssd) {
 		bdbm_warning ("LPA is beyond logical space (%llu = %llu+%llu) %llu", 
 			lpa+len, lpa, len, np->nr_subpages_per_ssd);
+		exit (-1);
 		return 1;
 	}
 
@@ -734,7 +735,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	uint64_t nr_llm_reqs = 0;
 	uint64_t nr_punits = 0;
 	uint64_t i, j, k;
-
 	bdbm_stopwatch_t sw;
 
 	nr_punits = np->nr_channels * np->nr_chips_per_channel;
@@ -804,6 +804,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	if (nr_llm_reqs == 0) 
 		goto erase_blks;
 
+	//bdbm_msg ("gc: valid pages = %llu (%llu %llu)", nr_llm_reqs);
+					
+
 	/* send read reqs to llm */
 	hlm_gc->req_type = REQTYPE_GC_READ;
 	hlm_gc->nr_llm_reqs = nr_llm_reqs;
@@ -829,6 +832,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 			if (r->logaddr.lpa[k] == -2) {
 				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
 			} else if (r->logaddr.lpa[k] == -1) {
+				((uint64_t*)r->foob.data)[k] = -1;
 				r->logaddr.lpa[k] = -1;
 			} else {
 				bdbm_bug_on (1);
