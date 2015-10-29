@@ -67,7 +67,7 @@ typedef struct {
 	uint64_t chip_no;
 	uint64_t block_no;
 	uint32_t erase_count;
-	uint8_t nr_invalid_subpages;
+	uint32_t nr_invalid_subpages;
 	babm_abm_subpage_t* pst;	/* a page status table; used when the FTL requires */
 
 	struct list_head list;	/* for list */

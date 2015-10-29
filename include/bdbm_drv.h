@@ -162,7 +162,7 @@ typedef struct {
 } bdbm_flash_page_main_t;
 
 typedef struct {
-	uint8_t data[64];
+	uint8_t data[8*32];
 } bdbm_flash_page_oob_t;
 
 typedef struct {

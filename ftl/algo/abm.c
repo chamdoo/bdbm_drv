@@ -540,6 +540,7 @@ void bdbm_abm_invalidate_page (
 
 	/* get a subpage offst in pst */
  	pst_off = (page_no * bai->np->nr_subpages_per_page) + subpage_no;
+	bdbm_bug_on (pst_off >= bai->np->nr_subpages_per_block);
 
 	/* if pst is NULL, ignore it */
 	if (b->pst == NULL)
@@ -550,7 +551,7 @@ void bdbm_abm_invalidate_page (
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
-				bdbm_msg ("b->status: %u (%llu %llu %llu %llu %llu)", 
+				bdbm_msg ("b->status: %u (%llu %llu %llu) (%llu %llu)", 
 					b->status, channel_no, chip_no, block_no, page_no, subpage_no);
 				bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);
 			}

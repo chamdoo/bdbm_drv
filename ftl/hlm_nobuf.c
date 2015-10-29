@@ -202,7 +202,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		/* (2) setup oob */
 #ifdef USE_NEW_RMW
 		//for (j = 0; j < lr->logaddr.sz; j++) {
-		for (j = 0; j < 2; j++) {
+		for (j = 0; j < np->nr_subpages_per_page; j++) {
 			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
 			//if (bdbm_is_write (lr->req_type)) {
 			//	bdbm_msg ("   [%d] lr->foob.data[%d] = %lld", j, j, ((int64_t*)lr->foob.data)[j]);
