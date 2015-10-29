@@ -598,16 +598,12 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 			/* are there any valid subpages in a block */
 			for (k = 0; k < np->nr_subpages_per_page; k++) {
 				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
-					r->logaddr.lpa[k] = -2; /* the subpage contains new data */
 					has_valid = 1;
-#if defined (USE_NEW_RMW)
+					r->logaddr.lpa[k] = -1; /* the subpage contains new data */
 					r->fmain.kp_stt[k] = KP_STT_DATA;
-#endif
 				} else {
 					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
-#if defined (USE_NEW_RMW)
 					r->fmain.kp_stt[k] = KP_STT_HOLE;
-#endif
 				}
 			}
 			/* if it is, selects it as the gc candidates */
@@ -658,17 +654,11 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
-			if (r->logaddr.lpa[k] == -2) {
+			if (r->fmain.kp_stt[k] == KP_STT_DATA) {
 				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
-#if defined (USE_NEW_RMW)
-				bdbm_bug_on (r->fmain.kp_stt[k] != KP_STT_DATA);
-#endif
-			} else if (r->logaddr.lpa[k] == -1) {
+			} else if (r->fmain.kp_stt[k] == KP_STT_HOLE) {
 				((uint64_t*)r->foob.data)[k] = -1;
 				r->logaddr.lpa[k] = -1;
-#if defined (USE_NEW_RMW)
-				bdbm_bug_on (r->fmain.kp_stt[k] != KP_STT_HOLE);
-#endif
 			} else {
 				bdbm_bug_on (1);
 			}

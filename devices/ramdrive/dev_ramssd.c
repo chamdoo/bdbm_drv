@@ -40,7 +40,6 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-/*#define DBG_RMW*/
 #define DATA_CHECK
 
 #if defined (DATA_CHECK)
@@ -231,18 +230,6 @@ static uint8_t __ramssd_read_page (
 		}
 #endif
 
-#ifdef DBG_RMW
-		if (partial == 1) {
-			bdbm_msg ("DEV-RMW_READ: lpa=%llu offset=%llu (%llu %llu %llu %llu)", 
-				((uint64_t*)ptr_oob_data)[loop],
-				loop, 
-				channel_no, 
-				chip_no, 
-				block_no, 
-				page_no);
-		}
-#endif
-
 		bdbm_memcpy (
 			ptr_page_data[loop], 
 			ptr_ramssd_addr + KERNEL_PAGE_SIZE * loop, 
@@ -259,7 +246,6 @@ static uint8_t __ramssd_read_page (
 	}
 
 #if defined (DATA_CHECK)
-	//bdbm_msg ("READ: %lld (=> %lld %lld %lld %lld)", ((uint64_t*)ptr_oob_data)[0], channel_no, chip_no, block_no, page_no);
 	for (loop = 0; loop < nr_kpages; loop++) {
 		uint64_t lpa = -1;
 		uint8_t* ptr_data_org = NULL;
@@ -290,14 +276,6 @@ static uint8_t __ramssd_read_page (
 				bdbm_msg ("[DATA CORRUPTION] lpa=%llu(%llx) offset=%llu pos=%d", lpa, lpa, loop, pos);
 				__display_hex_values (ptr_page_data[loop], ptr_data_org);
 			}
-#if 0
-			if (lpa == 0) {
-				bdbm_msg ("-------------------------------------");
-				bdbm_msg ("READ: %lld (=> %lld %lld %lld %lld)", lpa, channel_no, chip_no, block_no, page_no);
-				bdbm_msg ("-------------------------------------");
-				__display_hex_values_all (ptr_page_data[loop], ptr_data_org);
-			}
-#endif
 		}
 	}
 #endif
@@ -456,15 +434,6 @@ static uint32_t __ramssd_send_cmd (
 		break;
 
 	case REQTYPE_RMW_WRITE:
-#ifdef DBG_RMW
-		bdbm_msg ("DEV-RMW_WRITE:  lpa=%llu (%llu %llu %llu %llu)", 
-				ptr_req->logaddr.lpa[0],
-			ptr_req->phyaddr.channel_no, 
-			ptr_req->phyaddr.chip_no, 
-			ptr_req->phyaddr.block_no, 
-			ptr_req->phyaddr.page_no
-				);
-#endif
 	case REQTYPE_WRITE:
 	case REQTYPE_META_WRITE:
 	case REQTYPE_GC_WRITE:
@@ -797,7 +766,6 @@ fail:
 /* for snapshot */
 uint32_t dev_ramssd_load (dev_ramssd_info_t* ri, const char* fn)
 {
-	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
 	uint64_t len = 0;
 
@@ -827,7 +795,6 @@ uint32_t dev_ramssd_load (dev_ramssd_info_t* ri, const char* fn)
 
 uint32_t dev_ramssd_store (dev_ramssd_info_t* ri, const char* fn)
 {
-	/*struct file* fp = NULL;*/
 	bdbm_file_t fp = 0;
 	uint64_t pos = 0;
 	uint64_t len = 0;
