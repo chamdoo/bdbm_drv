@@ -233,8 +233,7 @@ static int __hlm_reqs_pool_create_trim_req  (
 	return 0;
 }
 
-static void __hlm_reqs_pool_reset_fmain (
-	bdbm_flash_page_main_t* fmain)
+void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain)
 {
 	int i = 0;
 	while (i < 32) {
@@ -244,8 +243,7 @@ static void __hlm_reqs_pool_reset_fmain (
 	}
 }
 
-static void __hlm_reqs_pool_reset_logaddr (
-	bdbm_logaddr_t* logaddr)
+void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr)
 {
 	int i = 0;
 	while (i < 32) {
@@ -284,8 +282,8 @@ static int __hlm_reqs_pool_create_write_req (
 		int fm_ofs = 0;
 
 		ptr_fm = &ptr_lr->fmain;
-		__hlm_reqs_pool_reset_fmain (ptr_fm);
-		__hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+		hlm_reqs_pool_reset_fmain (ptr_fm);
+		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 
 		/* build mapping-units */
 		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
@@ -359,11 +357,11 @@ static int __hlm_reqs_pool_create_read_req (
 	for (i = 0; i < nr_llm_reqs; i++) {
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 
-		__hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
+		hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
 		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
 		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];
 
-		__hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 		ptr_lr->req_type = br->bi_rw;
 		ptr_lr->logaddr.lpa[0] = pg_start / NR_KPAGES_IN(pool->map_unit);
 		ptr_lr->logaddr.ofs = offset;
@@ -634,7 +632,7 @@ static void __bdbm_hlm_reqs_pool_reset_hlm (
 		lr->ptr_qitem = NULL;
 
 		/* reset fmain */
-		__hlm_reqs_pool_reset_fmain (&lr->fmain);
+		hlm_reqs_pool_reset_fmain (&lr->fmain);
 	}
 
 	/* reset hlm */

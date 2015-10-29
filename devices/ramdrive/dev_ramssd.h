@@ -53,7 +53,7 @@ typedef struct {
 typedef struct {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
 	uint8_t emul_mode;
-	bdbm_device_params_t* nand_params;
+	bdbm_device_params_t* np;
 	void* ptr_ssdram; /* DRAM memory for SSD */
 	dev_ramssd_punit_t* ptr_punits;	/* parallel units */
 	bdbm_spinlock_t ramssd_lock;
@@ -65,7 +65,7 @@ typedef struct {
 #endif
 } dev_ramssd_info_t;
 
-dev_ramssd_info_t* dev_ramssd_create (bdbm_device_params_t* ptr_nand_params, void (*intr_handler)(void*));
+dev_ramssd_info_t* dev_ramssd_create (bdbm_device_params_t* np, void (*intr_handler)(void*));
 void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info);
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ptr_ramssd_info, bdbm_llm_req_t* ptr_llm_req );
 
@@ -76,80 +76,80 @@ uint32_t dev_ramssd_store (dev_ramssd_info_t* ptr_ramssd_info, const char* fn);
 /* some inline functions */
 inline static 
 uint64_t dev_ramssd_get_page_size_main (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->page_main_size;
+	return ptr_ramssd_info->np->page_main_size;
 }
 
 inline static 
 uint64_t dev_ramssd_get_page_size_oob (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->page_oob_size;
+	return ptr_ramssd_info->np->page_oob_size;
 }
 
 inline static 
 uint64_t dev_ramssd_get_page_size (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->page_main_size +
-		ptr_ramssd_info->nand_params->page_oob_size;
+	return ptr_ramssd_info->np->page_main_size +
+		ptr_ramssd_info->np->page_oob_size;
 }
 
 inline static 
 uint64_t dev_ramssd_get_block_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_page_size (ptr_ramssd_info) *	
-		ptr_ramssd_info->nand_params->nr_pages_per_block;
+		ptr_ramssd_info->np->nr_pages_per_block;
 }
 
 inline static 
 uint64_t dev_ramssd_get_chip_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_block_size (ptr_ramssd_info) * 
-		ptr_ramssd_info->nand_params->nr_blocks_per_chip;
+		ptr_ramssd_info->np->nr_blocks_per_chip;
 }
 
 inline static 
 uint64_t dev_ramssd_get_channel_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_chip_size (ptr_ramssd_info) * 
-		ptr_ramssd_info->nand_params->nr_chips_per_channel;
+		ptr_ramssd_info->np->nr_chips_per_channel;
 }
 
 inline static 
 uint64_t dev_ramssd_get_ssd_size (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_channel_size (ptr_ramssd_info) * 
-		ptr_ramssd_info->nand_params->nr_channels;
+		ptr_ramssd_info->np->nr_channels;
 }
 
 inline static 
 uint64_t dev_ramssd_get_pages_per_block (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->nr_pages_per_block;
+	return ptr_ramssd_info->np->nr_pages_per_block;
 }
 
 inline static 
 uint64_t dev_ramssd_get_blocks_per_chips (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->nr_blocks_per_chip;
+	return ptr_ramssd_info->np->nr_blocks_per_chip;
 }
 
 inline static 
 uint64_t dev_ramssd_get_chips_per_channel (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->nr_chips_per_channel;
+	return ptr_ramssd_info->np->nr_chips_per_channel;
 }
 
 inline static 
 uint64_t dev_ramssd_get_channles_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->nr_channels;
+	return ptr_ramssd_info->np->nr_channels;
 }
 
 inline static 
 uint64_t dev_ramssd_get_chips_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
-	return ptr_ramssd_info->nand_params->nr_channels *
-		ptr_ramssd_info->nand_params->nr_chips_per_channel;
+	return ptr_ramssd_info->np->nr_channels *
+		ptr_ramssd_info->np->nr_chips_per_channel;
 }
 
 inline static 
 uint64_t dev_ramssd_get_blocks_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_chips_per_ssd (ptr_ramssd_info) *
-		ptr_ramssd_info->nand_params->nr_blocks_per_chip;
+		ptr_ramssd_info->np->nr_blocks_per_chip;
 }
 
 inline static 
 uint64_t dev_ramssd_get_pages_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {
 	return dev_ramssd_get_blocks_per_ssd (ptr_ramssd_info) *
-		ptr_ramssd_info->nand_params->nr_pages_per_block;
+		ptr_ramssd_info->np->nr_pages_per_block;
 }
 
 inline static 

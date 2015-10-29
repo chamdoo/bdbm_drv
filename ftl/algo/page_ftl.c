@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "utime.h"
 #include "ufile.h"
+#include "hlm_reqs_pool.h"
 
 #include "algo/abm.h"
 #include "algo/page_ftl.h"
@@ -596,6 +597,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
 			int has_valid = 0;
 			/* are there any valid subpages in a block */
+			hlm_reqs_pool_reset_fmain (&r->fmain);
+			hlm_reqs_pool_reset_logaddr (&r->logaddr);
 			for (k = 0; k < np->nr_subpages_per_page; k++) {
 				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
 					has_valid = 1;
