@@ -121,7 +121,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					lr->req_type = REQTYPE_READ_DUMMY;
 				} else {
 #ifdef USE_NEW_RMW
-					/* TEMP - NEW */
 					if (sp_off != lr->logaddr.ofs) {
 						/*bdbm_msg ("sp_off: %llu", sp_off);*/
 						lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
@@ -130,14 +129,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 						lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
 						lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
 					}
-					/* TEMP - NEW */
-
-#if 0
-					bdbm_msg ("READ: lpa = %llu(%llu) <== %llu %llu %llu %llu (%llu)",
-							lr->logaddr.lpa[0], lr->logaddr.ofs,
-							lr->phyaddr.channel_no, lr->phyaddr.chip_no, lr->phyaddr.block_no, lr->phyaddr.page_no,
-							sp_off);
-#endif
 #endif
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
@@ -149,14 +140,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 					goto fail;
 				}
-#if 0
-				bdbm_msg ("WRITE: lpa = %llu, %llu ==> %llu %llu %llu %llu", 
-					lr->logaddr.lpa[0], lr->logaddr.sz,
-					lr->phyaddr.channel_no,
-					lr->phyaddr.chip_no,
-					lr->phyaddr.block_no,
-					lr->phyaddr.page_no);
-#endif
 			} else {
 				bdbm_error ("oops! invalid type (%llx)", lr->req_type);
 				bdbm_bug_on (1);

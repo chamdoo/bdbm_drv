@@ -32,6 +32,7 @@ typedef struct {
 	int32_t pool_size; 	/* # of items */
 	int32_t map_unit;	/* bytes */
 	int32_t io_unit;	/* bytes */
+	int8_t in_place_rmw; /* if it is set (1), the FTL uses in-place-rmw */
 } bdbm_hlm_reqs_pool_t;
 
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (int32_t mapping_unit_size, int32_t io_unit_size);
