@@ -183,44 +183,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 
 		/* (2) setup oob */
-#ifdef USE_NEW_RMW
-		//for (j = 0; j < lr->logaddr.sz; j++) {
 		for (j = 0; j < np->nr_subpages_per_page; j++) {
 			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
-			//if (bdbm_is_write (lr->req_type)) {
-			//	bdbm_msg ("   [%d] lr->foob.data[%d] = %lld", j, j, ((int64_t*)lr->foob.data)[j]);
-			//}
 		}
-#else
-		((uint64_t*)lr->foob.data)[0] = lr->logaddr.lpa[0];
-#endif
 	}
 
-	/* rebuild hlm_req */
-#if 0
-	bdbm_hlm_reqs_pool_rebuild_req (hr, &p->tmp_hr);
-#endif
-
-	/* send hlm_req to LLM */
+	/* (3) send llm_req to llm */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		/* (3) send llm_req to llm */
-#if 0
-		if (bdbm_is_read (lr->req_type)) {
-			bdbm_msg ("HLM_READ: lpa = %llu (%x %x %x %x)",
-				lr->logaddr.lpa[0],
-				lr->fmain.kp_ptr[0][0],
-				lr->fmain.kp_ptr[0][1],
-				lr->fmain.kp_ptr[0][2],
-				lr->fmain.kp_ptr[0][3]);
-		} else if (bdbm_is_write (lr->req_type)) {
-			bdbm_msg ("HLM_WRITE: lpa = %llu (%x %x %x %x)",
-				lr->logaddr.lpa[0],
-				lr->fmain.kp_ptr[0][0],
-				lr->fmain.kp_ptr[0][1],
-				lr->fmain.kp_ptr[0][2],
-				lr->fmain.kp_ptr[0][3]);
-		}
-#endif
 		if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
 			bdbm_error ("oops! make_req () failed");
 			bdbm_bug_on (1);

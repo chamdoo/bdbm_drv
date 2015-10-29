@@ -297,12 +297,6 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 		}
 	}
 
-	/*
-	if (blk == NULL) {
-		bdbm_msg ("what???? blk == NULL: cnt = %lu", cnt);
-	}
-	*/
-
 	return blk;
 }
 
@@ -374,13 +368,6 @@ void bdbm_abm_erase_block (
 			channel_no, chip_no, block_no);
 		return;
 	}
-
-	/*
-	if (blk->status != BDBM_ABM_BLK_CLEAN &&
-		blk->status != BDBM_ABM_BLK_DIRTY) {
-		bdbm_warning ("blk->status is NOT BDBM_ABM_BLK_CLEAN or BDBM_ABM_BLK_DIRTY");
-	}
-	*/
 
 	/* check some error cases */
 	__bdbm_abm_check_status (bai);
@@ -468,13 +455,6 @@ void bdbm_abm_set_to_dirty_block (
 			channel_no, chip_no, block_no);
 		return;
 	}
-
-	/*
-	if (blk->status != BDBM_ABM_BLK_CLEAN &&
-		blk->status != BDBM_ABM_BLK_DIRTY) {
-		bdbm_warning ("blk->status is NOT BDBM_ABM_BLK_CLEAN or BDBM_ABM_BLK_DIRTY");
-	}
-	*/
 
 	/* check some error cases */
 	__bdbm_abm_check_status (bai);
