@@ -427,6 +427,61 @@ void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs)
 	}
 }
 
+void hlm_reqs_pool_write_compaction (
+	bdbm_hlm_req_gc_t* dst, 
+	bdbm_hlm_req_gc_t* src, 
+	bdbm_device_params_t* np)
+{
+	uint64_t dst_loop = 0;
+	uint64_t src_loop = 0;
+	uint64_t dst_kp = 0;
+	uint64_t src_kp = 0;
+	uint64_t i, j;
+	uint64_t nr_punits = np->nr_chips_per_channel * np->nr_channels;
+
+	bdbm_llm_req_t* dst_r = NULL;
+	bdbm_llm_req_t* src_r = NULL;
+
+	dst->nr_llm_reqs = 0;
+	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+		hlm_reqs_pool_reset_fmain (&dst->llm_reqs[i].fmain);
+		/*int j = 0;*/
+		/*bdbm_llm_req_t* r = &dst->llm_reqs[i];*/
+		/*for (j = 0; j < 32; j++) {*/
+		/*r->fmain.kp_stt[j] = KP_STT_HOLE;*/
+		/*r->fmain.kp_ptr[j] = r->fmain.kp_pad[j];*/
+		/*}*/
+	}
+
+	dst_r = &dst->llm_reqs[0];
+	dst->nr_llm_reqs = 1;
+	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+		src_r = &src->llm_reqs[i];
+
+		for (src_kp = 0; src_kp < np->nr_subpages_per_page; src_kp++) {
+			if (src_r->fmain.kp_stt[src_kp] == KP_STT_DATA) {
+				/* if src has data, copy it to dst */
+				dst_r->fmain.kp_stt[dst_kp] = src_r->fmain.kp_stt[src_kp];
+				dst_r->fmain.kp_ptr[dst_kp] = src_r->fmain.kp_ptr[src_kp];
+				dst_r->logaddr.lpa[dst_kp] = src_r->logaddr.lpa[src_kp];
+				((int64_t*)dst_r->foob.data)[dst_kp] = ((int64_t*)src_r->foob.data)[src_kp];
+			} else {
+				/* otherwise, skip it */
+				continue;
+			}
+
+			/* goto the next llm if all kps are full */
+			dst_kp++;
+			if (dst_kp == np->nr_subpages_per_page) {
+				dst_kp = 0;
+				dst_loop++;
+				dst_r++;
+				dst->nr_llm_reqs++;
+			}
+		}
+	}
+}
+
 #if 0
 int bdbm_hlm_reqs_pool_rebuild_req (
 	bdbm_hlm_reqs_pool_t* pool, 

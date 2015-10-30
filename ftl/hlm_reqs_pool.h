@@ -45,5 +45,6 @@ int bdbm_hlm_reqs_pool_rebuild_req (bdbm_hlm_req_t* hr, bdbm_hlm_req_t* tmp_hr);
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain);
 void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr);
 void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs);
+void hlm_reqs_pool_write_compaction (bdbm_hlm_req_gc_t* dst, bdbm_hlm_req_gc_t* src, bdbm_device_params_t* np);
 
 #endif
