@@ -107,7 +107,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
-	uint64_t i = 0, j = 0, sp_off;
+	uint64_t i = 0, j = 0, sp_ofs;
 
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
@@ -115,21 +115,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
 			if (bdbm_is_read (lr->req_type)) {
-				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr, &sp_off) != 0) {
+				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr, &sp_ofs) != 0) {
 					/* Note that there could be dummy reads (e.g., when the
 					 * file-systems are initialized) */
 					lr->req_type = REQTYPE_READ_DUMMY;
 				} else {
-#ifdef USE_NEW_RMW
-					if (sp_off != lr->logaddr.ofs) {
-						/*bdbm_msg ("sp_off: %llu", sp_off);*/
-						lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
-						lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
-						lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
-						lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
-						lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
-					}
-#endif
+					hlm_reqs_pool_relocate_kp (lr, sp_ofs);
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
 				if (ftl->get_free_ppa (bdi, &lr->phyaddr) != 0) {
@@ -148,23 +139,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
 			/* finding the location of the previous data */ 
-			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_off) != 0) {
+			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_ofs) != 0) {
 				/* if it was not written before, change it to a write request */
 				lr->req_type = REQTYPE_WRITE;
 				phyaddr = &lr->phyaddr;
 			} else {
-#ifdef USE_NEW_RMW
-				/* TEMP - NEW */
-				if (sp_off != lr->logaddr.ofs) {
-					//bdbm_msg ("sp_off: %llu", sp_off);
-					lr->logaddr.lpa[sp_off] = lr->logaddr.lpa[lr->logaddr.ofs];
-					lr->fmain.kp_stt[sp_off] = KP_STT_DATA;
-					lr->fmain.kp_ptr[sp_off] = lr->fmain.kp_ptr[lr->logaddr.ofs];
-					lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
-					lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
-				}
-				/* TEMP - NEW */
-#endif
+				hlm_reqs_pool_relocate_kp (lr, sp_ofs);
 				phyaddr = &lr->phyaddr_dst;
 			}
 

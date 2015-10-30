@@ -250,7 +250,7 @@ void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr)
 		logaddr->lpa[i] = -1;
 		i++;
 	}
-	logaddr->ofs = -1;
+	logaddr->ofs = 0;
 }
 
 static int __hlm_reqs_pool_create_write_req (
@@ -357,6 +357,9 @@ static int __hlm_reqs_pool_create_read_req (
 	for (i = 0; i < nr_llm_reqs; i++) {
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 
+		if (pool->in_place_rmw == 0) 
+			bdbm_bug_on (offset != 0);
+
 		hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
 		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
 		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];
@@ -364,7 +367,10 @@ static int __hlm_reqs_pool_create_read_req (
 		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 		ptr_lr->req_type = br->bi_rw;
 		ptr_lr->logaddr.lpa[0] = pg_start / NR_KPAGES_IN(pool->map_unit);
-		ptr_lr->logaddr.ofs = offset;
+		if (pool->in_place_rmw == 1) 
+			ptr_lr->logaddr.ofs = 0;		/* offset in llm is already decided */
+		else
+			ptr_lr->logaddr.ofs = offset;	/* it must be adjusted after getting physical locations */
 		ptr_lr->ptr_hlm_req = (void*)hr;
 
 		/* go to the next */
@@ -409,6 +415,16 @@ int bdbm_hlm_reqs_pool_build_req (
 	}
 
 	return 0;
+}
+
+void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs)
+{
+	if (new_sp_ofs != lr->logaddr.ofs) {
+		lr->fmain.kp_stt[new_sp_ofs] = KP_STT_DATA;
+		lr->fmain.kp_ptr[new_sp_ofs] = lr->fmain.kp_ptr[lr->logaddr.ofs];
+		lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;
+		lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_pad[lr->logaddr.ofs];
+	}
 }
 
 #if 0

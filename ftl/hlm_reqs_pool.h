@@ -41,7 +41,9 @@ bdbm_hlm_req_t* bdbm_hlm_reqs_pool_alloc_item (bdbm_hlm_reqs_pool_t* pool);
 void bdbm_hlm_reqs_pool_free_item (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* req);
 int bdbm_hlm_reqs_pool_build_req (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* hr, bdbm_blkio_req_t* br);
 int bdbm_hlm_reqs_pool_rebuild_req (bdbm_hlm_req_t* hr, bdbm_hlm_req_t* tmp_hr);
+
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain);
 void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr);
+void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs);
 
 #endif

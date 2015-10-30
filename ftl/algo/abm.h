@@ -47,10 +47,7 @@ enum BDBM_ABM_SUBPAGE_STATUS {
 	BDBM_ABM_SUBPAGE_INVALID,
 };
 
-/* NEW */
 typedef uint8_t babm_abm_subpage_t; /* BDBM_ABM_PAGE_STATUS */
-/* NEW */
-/*typedef uint8_t babm_abm_page_t; *//* BDBM_ABM_PAGE_STATUS */
 
 enum BDBM_ABM_BLK_STATUS {
 	BDBM_ABM_BLK_FREE = 0,
