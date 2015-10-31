@@ -284,7 +284,6 @@ void bdbm_drv_close (bdbm_drv_info_t* bdi)
 
 	/* display performance results */
 	pmu_display (bdi);
-	pmu_destory (bdi);
 
 	if (bdi->ptr_host_inf)
 		bdi->ptr_host_inf->close (bdi);
@@ -310,6 +309,8 @@ void bdbm_drv_close (bdbm_drv_info_t* bdi)
 		}
 		bdi->ptr_dm_inf->close (bdi);
 	}
+
+	pmu_destory (bdi);
 
 	bdbm_msg ("[bdbm_drv_main] bdbm_drv is closed");
 }

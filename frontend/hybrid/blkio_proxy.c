@@ -185,6 +185,9 @@ static int __encode_bio_to_proxy_req (
 		}
 	}
 
+	bdbm_msg ("type: %x offset: %llu size: %llu bvec_cnt: %llu", 
+		r->bi_rw, r->bi_offset, r->bi_size, r->bi_bvec_cnt);
+
 	return 0;
 }
 

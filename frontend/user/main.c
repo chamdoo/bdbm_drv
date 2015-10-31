@@ -287,68 +287,66 @@ void bdbm_drv_exit(void)
 #include "platform.h"
 #include "uatomic64.h"
 
-void host_thread_fn (void *data) 
+void host_thread_fn_write (void *data) 
 {
-	int loop;
-	int lpa = 0;
-	int unique_id = 0;
-	int *val = (int*)(data);
-	int step = 31;
+	int i = 0, j = 0;
+	int offset = 0; /* sector (512B) */
+	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (loop = 0; loop < 10000; loop++) {
-		bdbm_host_req_t* host_req = NULL;
+	for (i = 0; i < 10000; i++) {
+		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
-		host_req = (bdbm_host_req_t*)malloc (sizeof (bdbm_host_req_t));
+		/* build blkio req */
+		blkio_req->bi_rw = REQTYPE_WRITE;
+		blkio_req->bi_offset = offset;
+		blkio_req->bi_size = size;
+		blkio_req->bi_bvec_cnt = size / 8;
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
+			blkio_req->bi_bvec_ptr[j][0] = 0x0A;
+			blkio_req->bi_bvec_ptr[j][1] = 0x0B;
+			blkio_req->bi_bvec_ptr[j][2] = 0x0C;
+		}
 
-		host_req->uniq_id = (*val);
-		(*val)++;
-		host_req->req_type = REQTYPE_WRITE;
-		host_req->lpa = lpa;
-		host_req->len = step;
-		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+		/* send req to ftl */
+		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
 
-		host_req->data[0] = 0xA;
-		host_req->data[1] = 0xB;
-		host_req->data[2] = 0xC;
-
-		_bdi->ptr_host_inf->make_req (_bdi, host_req);
-
-		lpa+=step;
+		/* increase offset */
+		offset += size;
 	}
 
 	pthread_exit (0);
 }
 
-void host_thread_fn2 (void *data) 
+void host_thread_fn_read (void *data) 
 {
-	int loop;
-	int lpa = 0;
-	int unique_id = 0;
-	int *val = (int*)(data);
-	int step = 31;
+	int i = 0, j = 0;
+	int offset = 0; /* sector (512B) */
+	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (loop = 0; loop < 10000; loop++) {
-		bdbm_host_req_t* host_req = NULL;
+	for (i = 0; i < 10000; i++) {
+		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)malloc (sizeof (bdbm_blkio_req_t));
 
-		host_req = (bdbm_host_req_t*)malloc (sizeof (bdbm_host_req_t));
+		/* build blkio req */
+		blkio_req->bi_rw = REQTYPE_READ;
+		blkio_req->bi_offset = offset;
+		blkio_req->bi_size = size;
+		blkio_req->bi_bvec_cnt = size / 8;
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
+			if (blkio_req->bi_bvec_ptr[j] == NULL) {
+				bdbm_msg ("bdbm_malloc () failed");
+				exit (-1);
+			}
+			//bdbm_msg ("[main] %d %p", j, blkio_req->bi_bvec_ptr[j]);
+		}
 
-		host_req->uniq_id = (*val);
-		/*host_req->uniq_id = ((uint64_t)host_req) % (2*1024*1024/4-32);*/
-		(*val)++;
-		host_req->req_type = REQTYPE_WRITE;
-		/*host_req->lpa = lpa;*/
-		host_req->lpa = ((uint64_t)host_req) % (2*1024*1024/4-32);
-		/*bdbm_msg ("%llu", host_req->lpa);*/
-		host_req->len = step;
-		host_req->data = (uint8_t*)malloc (4096 * host_req->len);
+		/* send req to ftl */
+		/*bdbm_msg ("[main] lpa: %llu", blkio_req->bi_offset);*/
+		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
 
-		host_req->data[0] = 0xA;
-		host_req->data[1] = 0xB;
-		host_req->data[2] = 0xC;
-
-		_bdi->ptr_host_inf->make_req (_bdi, host_req);
-
-		lpa+=step;
+		/* increase offset */
+		offset += size;
 	}
 
 	pthread_exit (0);
@@ -432,41 +430,37 @@ int main (int argc, char** argv)
 		return -1;
 	}
 
-	bdbm_drv_setup (_bdi, &_host_user_inf, bdbm_dm_get_inf (_bdi));
+	bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi));
 	bdbm_drv_run (_bdi);
 
 	do {
-		bdbm_msg ("[main] run some simulation");
+		bdbm_msg ("[main] start writes");
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 			thread_args[loop_thread] = loop_thread;
 			pthread_create (&thread[loop_thread], NULL, 
-				(void*)&host_thread_fn2, 
+				(void*)&host_thread_fn_write, 
 				(void*)&thread_args[loop_thread]);
 		}
 
 		bdbm_msg ("[main] wait for threads to end...");
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			pthread_join (
-				thread[loop_thread], NULL
-			);
+			pthread_join (thread[loop_thread], NULL);
 		}
 
-		bdbm_msg ("START READ");
+		bdbm_msg ("[main] start reads");
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
 			thread_args[loop_thread] = loop_thread;
 			pthread_create (&thread[loop_thread], NULL, 
-				(void*)&host_thread_fn, 
+				(void*)&host_thread_fn_read, 
 				(void*)&thread_args[loop_thread]);
 		}
 
 		bdbm_msg ("[main] wait for threads to end...");
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			pthread_join (
-				thread[loop_thread], NULL
-			);
+			pthread_join (thread[loop_thread], NULL);
 		}
 
-	} while (1);
+	} while (0);
 
 	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_close (_bdi);

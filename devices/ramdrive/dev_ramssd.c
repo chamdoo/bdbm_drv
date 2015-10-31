@@ -40,7 +40,7 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+//#define DATA_CHECK
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
@@ -211,12 +211,12 @@ static uint8_t __ramssd_read_page (
 	/* copy the main page data to a buffer */
 	if (ri->np->nr_subpages_per_page == 1) {
 		for (loop = 0; loop < nr_kpages; loop++) {
-			if (partial == 1 && kp_stt[loop] == KP_STT_DATA)	continue;
+			if (partial == 1 && kp_stt[loop] == KP_STT_DATA) continue;
 			bdbm_memcpy (kp_ptr[loop], ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
 		}
 	} else {
 		for (loop = 0; loop < nr_kpages; loop++) {
-			if (partial == 1 && kp_stt[loop] == KP_STT_DATA)	continue;
+			if (partial == 1 && kp_stt[loop] == KP_STT_DATA) continue;
 			if (partial == 0 && kp_stt[loop] != KP_STT_DATA) continue;
 			bdbm_memcpy (kp_ptr[loop], ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
 		}
@@ -550,7 +550,7 @@ uint32_t __ramssd_timing_create (dev_ramssd_info_t* ri)
 		break;
 #endif
 	default:
-		bdbm_error ("invalid timing mode");
+		bdbm_error ("invalid timing mode: %llx", ri->emul_mode);
 		ret = 1;
 		break;
 	}

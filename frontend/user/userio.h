@@ -25,8 +25,9 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_HOST_USER_H
 #define _BLUEDBM_HOST_USER_H
 
-extern bdbm_host_inf_t _host_user_inf;
+extern bdbm_host_inf_t _userio_inf;
 
+#if 0
 typedef struct {
 	uint64_t uniq_id;
 	uint32_t req_type; /* read, write, or erase */
@@ -34,11 +35,12 @@ typedef struct {
 	uint64_t len; /* legnth */
 	uint8_t* data;
 } bdbm_host_req_t;
+#endif
 
-uint32_t host_user_open (bdbm_drv_info_t* bdi);
-void host_user_close (bdbm_drv_info_t* bdi);
-void host_user_make_req (bdbm_drv_info_t* bdi, void* bio);
-void host_user_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+uint32_t userio_open (bdbm_drv_info_t* bdi);
+void userio_close (bdbm_drv_info_t* bdi);
+void userio_make_req (bdbm_drv_info_t* bdi, void* bio);
+void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 
 #endif
 

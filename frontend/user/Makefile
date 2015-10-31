@@ -21,12 +21,13 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USER_MODE \
 		  -D USE_PMU \
+		  -D USE_NEW_RMW \
 
-#DMCOMMON := ../../devices/libdummy/libdummy.a
-#DMCOMMON := ../../devices/libramdrive/libramdrive.a
-DMCOMMON := dev_proxy.c
+#DMLIB := ../../devices/libdummy/libdummy.a
+DMLIB := ../../devices/libramdrive/libramdrive.a
+#DMLIB := dev_proxy.c
 
-SRCS := \
+#SRCS := \
 	main.c \
 	userio.c \
 	$(FTL)/ftl_params.c \
@@ -52,17 +53,38 @@ SRCS := \
 	$(COMMON)/utils/upage.c \
 	$(COMMON)/3rd/uilog.c \
 	$(COMMON)/bdbm_main.c \
-	$(DM_COMMON)/dev_params.c \
-	$(DMCOMMON) \
+	$(DMLIB) \
 
+SRCS := \
+	main.c \
+	userio.c \
+	$(FTL)/hlm_reqs_pool.c \
+	$(FTL)/ftl_params.c \
+	$(FTL)/pmu.c \
+	$(FTL)/hlm_nobuf.c \
+	$(FTL)/llm_mq.c \
+	$(FTL)/algo/abm.c \
+	$(FTL)/algo/page_ftl.c \
+	$(FTL)/queue/queue.c \
+	$(FTL)/queue/prior_queue.c \
+	$(FTL)/queue/rd_prior_queue.c \
+	$(COMMON)/utils/utime.c \
+	$(COMMON)/utils/ufile.c \
+	$(COMMON)/utils/uthread.c \
+	$(COMMON)/utils/upage.c \
+	$(COMMON)/3rd/uilog.c \
+	$(COMMON)/bdbm_main.c \
+	$(DMLIB) \
 
-libftl: $(SRCS) $(DMCOMMON)
+libftl: $(SRCS) $(DMLIB)
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:
 	@$(RM) *.o core *~ libftl 
-	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../include; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../common/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../common/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(USER); rm -rf *.o
+	@cd $(FTL); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON)/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON)/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd $(COMMON); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../devices; $(MAKE) clean
 

@@ -127,9 +127,9 @@ typedef struct {
 
 typedef struct {
 	uint64_t bi_rw;
-	uint64_t bi_offset;
-	uint64_t bi_size;
-	uint64_t bi_bvec_cnt;
+	uint64_t bi_offset; /* unit: sector (512B) */
+	uint64_t bi_size; /* unit: sector (512B) */
+	uint64_t bi_bvec_cnt; /* unit: kernel-page (4KB) */
 	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS];
 	uint8_t ret;
 	void* bio;
