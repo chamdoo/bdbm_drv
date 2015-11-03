@@ -206,8 +206,6 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
 	bdbm_page_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	uint64_t i = 0, j = 0;
-	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;	/* e.g., 2 = 8 KB / 4 KB */
 
 	/* create a private data structure */
 	if ((p = (bdbm_page_ftl_private_t*)bdbm_zmalloc 
@@ -279,7 +277,6 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	if (!p)
 		return;
@@ -463,7 +460,6 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 	if ((lpa + len) > np->nr_subpages_per_ssd) {
 		bdbm_warning ("LPA is beyond logical space (%llu = %llu+%llu) %llu", 
 			lpa+len, lpa, len, np->nr_subpages_per_ssd);
-		exit (-1);
 		return 1;
 	}
 
@@ -852,7 +848,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 	bdbm_mutex_lock (&hlm_gc->done);
 	bdbm_mutex_unlock (&hlm_gc->done);
 
-#if 1
+#if 0
 	/* perform write compaction for gc */
 #include "hlm_reqs_pool.h"
 

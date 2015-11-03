@@ -21,12 +21,13 @@ EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
 EXTRA_CFLAGS += -D CONFIG_ENABLE_DEBUG
 EXTRA_CFLAGS += -D USE_PMU
 EXTRA_CFLAGS += -D KERNEL_MODE
+EXTRA_CFLAGS += -D USE_NEW_RMW
 
 #EXTRA_CFLAGS += -D USE_KTIMER
 #EXTRA_CFLAGS += -D EMULATE_BAD_BLOCKS
 #EXTRA_CFLAGS += -D USE_COMPLETION
 
-bdbm_drv-y := \
+#bdbm_drv-y := \
 	kmain.o \
 	blkdev.o \
 	blkio.o \
@@ -52,6 +53,27 @@ bdbm_drv-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/bdbm_main.o \
+
+bdbm_drv-y := \
+	kmain.o \
+	blkdev.o \
+	blkio.o \
+	$(FTL)/ftl_params.o \
+	$(FTL)/pmu.o \
+	$(FTL)/hlm_nobuf.o \
+	$(FTL)/llm_mq.o \
+	$(FTL)/algo/abm.o \
+	$(FTL)/algo/page_ftl.o \
+	$(FTL)/queue/queue.o \
+	$(FTL)/queue/prior_queue.o \
+	$(FTL)/queue/rd_prior_queue.o \
+	$(DM_COMMON)/dev_params.o \
+	$(COMMON)/utils/utime.o \
+	$(COMMON)/utils/ufile.o \
+	$(COMMON)/utils/uthread.o \
+	$(COMMON)/bdbm_main.o \
+	$(FTL)/hlm_reqs_pool.o \
+
 
 obj-m := bdbm_drv.o
 

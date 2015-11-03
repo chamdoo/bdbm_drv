@@ -26,6 +26,8 @@ THE SOFTWARE.
 #include <linux/slab.h>
 #include <linux/interrupt.h>
 
+#include <linux/workqueue.h> /* workqueue */
+
 #elif defined (USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
@@ -40,7 +42,7 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-//#define DATA_CHECK
+#define DATA_CHECK
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
@@ -444,9 +446,7 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 	nr_parallel_units = dev_ramssd_get_chips_per_ssd (ri);
 
 	for (loop = 0; loop < nr_parallel_units; loop++) {
-		unsigned long flags;
-
-		bdbm_spin_lock_irqsave (&ri->ramssd_lock, flags);
+		bdbm_spin_lock (&ri->ramssd_lock);
 		if (ri->ptr_punits[loop].ptr_req != NULL) {
 			dev_ramssd_punit_t* punit;
 			int64_t elapsed_time_in_us;
@@ -457,38 +457,37 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 			if (elapsed_time_in_us >= punit->target_elapsed_time_us) {
 				void* ptr_req = punit->ptr_req;
 				punit->ptr_req = NULL;
-				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+				bdbm_spin_unlock (&ri->ramssd_lock);
 
 				/* call the interrupt handler */
 				ri->intr_handler (ptr_req);
 			} else {
-				bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+				bdbm_spin_unlock (&ri->ramssd_lock);
 			}
 		} else {
-			bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+			bdbm_spin_unlock (&ri->ramssd_lock);
 		}
 	}
 }
 
 
-/* Functions for Timing Management */
-static void __ramssd_timing_cmd_done (unsigned long arg)
+#if defined (KERNEL_MODE)
+static void __dev_ramssd_fops_wq_handler (struct work_struct *w)
 {
-	/* forward it to ramssd_cmd_done */
-	__ramssd_cmd_done ((dev_ramssd_info_t*)arg);
+	dev_ramssd_wq_t* work = (dev_ramssd_wq_t*)w;
+
+	__ramssd_cmd_done ((dev_ramssd_info_t*)work->ri);
 }
 
-#if defined (KERNEL_MODE)
 static enum hrtimer_restart __ramssd_timing_hrtimer_cmd_done (struct hrtimer *ptr_hrtimer)
 {
 	ktime_t ktime;
 	dev_ramssd_info_t* ri;
 	
-	ri = (dev_ramssd_info_t*)container_of 
-		(ptr_hrtimer, dev_ramssd_info_t, hrtimer);
+	ri = (dev_ramssd_info_t*)container_of (ptr_hrtimer, dev_ramssd_info_t, hrtimer);
 
-	/* call a tasklet */
-	tasklet_schedule (ri->tasklet); 
+	/* run workqueue */
+	queue_work (ri->wq, &ri->works.work);
 
 	ktime = ktime_set (0, 5 * 1000);
 	hrtimer_start (&ri->hrtimer, ktime, HRTIMER_MODE_REL);
@@ -506,14 +505,10 @@ uint32_t __ramssd_timing_register_schedule (dev_ramssd_info_t* ri)
 		break;
 #if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_TIMING:
-		/*__ramssd_cmd_done (ri);*/
-		break;
-	case DEVICE_TYPE_RAMDRIVE_INTR:
-		tasklet_schedule (ri->tasklet); 
 		break;
 #endif
 	default:
-		__ramssd_timing_cmd_done ((unsigned long)ri);
+		__ramssd_cmd_done (ri);
 		break;
 	}
 
@@ -531,26 +526,22 @@ uint32_t __ramssd_timing_create (dev_ramssd_info_t* ri)
 #if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_TIMING: 
 		{
+			/* create a timer */
 			ktime_t ktime;
 			hrtimer_init (&ri->hrtimer, CLOCK_REALTIME, HRTIMER_MODE_REL);
 			ri->hrtimer.function = __ramssd_timing_hrtimer_cmd_done;
 			ktime = ktime_set (0, 500 * 1000);
 			hrtimer_start (&ri->hrtimer, ktime, HRTIMER_MODE_REL);
-		}
-		/* no break! we initialize a tasklet together */
-	case DEVICE_TYPE_RAMDRIVE_INTR: 
-		if ((ri->tasklet = (struct tasklet_struct*)
-				bdbm_malloc_atomic (sizeof (struct tasklet_struct))) == NULL) {
-			bdbm_error ("bdbm_malloc_atomic failed");
-			ret = 1;
-		} else {
-			tasklet_init (ri->tasklet, 
-				__ramssd_timing_cmd_done, (unsigned long)ri);
+
+			/* create wq */
+			ri->wq = create_singlethread_workqueue ("bdbm_ramssd_wq");
+			ri->works.ri = (void*)ri;
+			INIT_WORK (&ri->works.work, __dev_ramssd_fops_wq_handler);
 		}
 		break;
 #endif
 	default:
-		bdbm_error ("invalid timing mode: %llx", ri->emul_mode);
+		bdbm_error ("invalid timing mode: %d", ri->emul_mode);
 		ret = 1;
 		break;
 	}
@@ -567,9 +558,8 @@ void __ramssd_timing_destory (dev_ramssd_info_t* ri)
 #if defined (KERNEL_MODE)
 	case DEVICE_TYPE_RAMDRIVE_TIMING:
 		hrtimer_cancel (&ri->hrtimer);
-		/* no break! we destroy a tasklet */
-	case DEVICE_TYPE_RAMDRIVE_INTR:
-		tasklet_kill (ri->tasklet);
+		if (ri->wq) 
+			destroy_workqueue (ri->wq);
 		break;
 #endif
 	default:
@@ -661,7 +651,6 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 	uint32_t ret;
 
 	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
-		unsigned long flags;
 		int64_t target_elapsed_time_us = 0;
 		uint64_t punit_id = r->phyaddr.punit_id;
 
@@ -699,20 +688,19 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		}
 
 		/* register reqs */
-		bdbm_spin_lock_irqsave (&ri->ramssd_lock, flags);
+		bdbm_spin_lock (&ri->ramssd_lock);
 		if (ri->ptr_punits[punit_id].ptr_req == NULL) {
 			ri->ptr_punits[punit_id].ptr_req = (void*)r;
-			/*ri->ptr_punits[punit_id].sw = bdbm_stopwatch_start ();*/
 			bdbm_stopwatch_start (&ri->ptr_punits[punit_id].sw);
 			ri->ptr_punits[punit_id].target_elapsed_time_us = target_elapsed_time_us;
 		} else {
 			bdbm_error ("More than two requests are assigned to the same parallel unit (ptr=%p, punit=%llu)",
 				ri->ptr_punits[punit_id].ptr_req, punit_id);
-			bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+			bdbm_spin_unlock (&ri->ramssd_lock);
 			ret = 1;
 			goto fail;
 		}
-		bdbm_spin_unlock_irqrestore (&ri->ramssd_lock, flags);
+		bdbm_spin_unlock (&ri->ramssd_lock);
 
 		/* register reqs for callback */
 		__ramssd_timing_register_schedule (ri);

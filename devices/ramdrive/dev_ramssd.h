@@ -50,6 +50,13 @@ typedef struct {
 	bdbm_stopwatch_t sw;
 } dev_ramssd_punit_t;
 
+#if defined (KERNEL_MODE)
+typedef struct {
+	struct work_struct work; /* it must be at the end of structre */
+	void* ri;
+} dev_ramssd_wq_t;
+#endif
+
 typedef struct {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
 	uint8_t emul_mode;
@@ -60,8 +67,9 @@ typedef struct {
 	void (*intr_handler) (void*);
 
 #if defined (KERNEL_MODE)
-	struct tasklet_struct* tasklet;	/* tasklet */
 	struct hrtimer hrtimer;	/* hrtimer must be at the end of the structure */
+	struct workqueue_struct *wq;
+	dev_ramssd_wq_t works;
 #endif
 } dev_ramssd_info_t;
 

@@ -69,9 +69,9 @@ uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 	bdbm_hlm_nobuf_private_t* p;
 
 	/* create private */
-	if ((p = (bdbm_hlm_nobuf_private_t*)bdbm_malloc_atomic
+	if ((p = (bdbm_hlm_nobuf_private_t*)bdbm_malloc
 			(sizeof(bdbm_hlm_nobuf_private_t))) == NULL) {
-		bdbm_error ("bdbm_malloc_atomic failed");
+		bdbm_error ("bdbm_malloc failed");
 		return 1;
 	}
 
@@ -86,7 +86,7 @@ void hlm_nobuf_destroy (bdbm_drv_info_t* bdi)
 	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 
 	/* free priv */
-	bdbm_free_atomic (p);
+	bdbm_free (p);
 }
 
 uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
@@ -104,7 +104,6 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
-	bdbm_hlm_nobuf_private_t* p = (bdbm_hlm_nobuf_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
 	uint64_t i = 0, j = 0, sp_ofs;
@@ -132,7 +131,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					goto fail;
 				}
 			} else {
-				bdbm_error ("oops! invalid type (%llx)", lr->req_type);
+				bdbm_error ("oops! invalid type (%x)", lr->req_type);
 				bdbm_bug_on (1);
 			}
 		} else if (bdbm_is_rmw (lr->req_type)) {
@@ -158,7 +157,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				goto fail;
 			}
 		} else {
-			bdbm_error ("oops! invalid type (%llx)", lr->req_type);
+			bdbm_error ("oops! invalid type (%x)", lr->req_type);
 			bdbm_bug_on (1);
 		}
 

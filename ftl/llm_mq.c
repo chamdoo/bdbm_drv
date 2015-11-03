@@ -118,8 +118,6 @@ int __llm_mq_thread (void* arg)
 				continue;
 			}
 
-			/*bdbm_msg ("lock: %lld", loop);*/
-
 			r->ptr_qitem = qitem;
 
 			pmu_update_q (bdi, r);
@@ -127,10 +125,6 @@ int __llm_mq_thread (void* arg)
 			if (cnt % 50000 == 0) {
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
 			}
-
-			/*if (bdbm_is_rmw (r->req_type)) {*/
-			/*bdbm_msg ("To DEV: lpa=%llu", r->logaddr.lpa[0]);*/
-				/*}*/
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_mutex_unlock (&p->punit_locks[loop]);
@@ -246,22 +240,6 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	bdbm_mutex_lock (&p->dbg_seq);
 #endif
 
-	/*
-	if (bdbm_is_rmw (r->req_type)) {
-		bdbm_msg ("RMW To LLM: lpa=%llu (%x %x %x %x) (%llu %llu %llu %llu) => (%llu %llu %llu %llu)", 
-			r->logaddr.lpa[0], r->fmain.kp_stt[0], r->fmain.kp_stt[1], r->fmain.kp_stt[2], r->fmain.kp_stt[3],
-			r->phyaddr_src.channel_no, r->phyaddr_src.chip_no, r->phyaddr_src.block_no, r->phyaddr_src.page_no,
-			r->phyaddr_dst.channel_no, r->phyaddr_dst.chip_no, r->phyaddr_dst.block_no, r->phyaddr_dst.page_no
-		);
-	} else if (bdbm_is_read (r->req_type)) {
-		bdbm_msg ("READ: lpa=%llu (%x %x %x %x) (%llu %llu %llu %llu)", 
-			r->logaddr.lpa[0], r->fmain.kp_stt[0], r->fmain.kp_stt[1], r->fmain.kp_stt[2], r->fmain.kp_stt[3],
-			r->phyaddr.channel_no, r->phyaddr.chip_no, r->phyaddr.block_no, r->phyaddr.page_no
-		);
-
-	}
-	*/
-
 	/* obtain the elapsed time taken by FTL algorithms */
 	pmu_update_sw (bdi, r);
 
@@ -283,7 +261,6 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		}
 	} else if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
 		bdbm_bug_on (1);
-		exit (-1);
 	} else {
 		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
@@ -326,13 +303,6 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 
 		/* remove it from the Q; this automatically triggers another request to be sent to NAND flash */
 		bdbm_prior_queue_remove (p->q, qitem);
-
-		/*
-		if (bdbm_prior_queue_move (p->q, r->phyaddr.punit_id, qitem)) {
-			bdbm_msg ("bdbm_prior_queue_enqueue failed");
-			bdbm_bug_on (1);
-		}
-		*/
 
 		/* wake up thread if it sleeps */
 		bdbm_thread_wakeup (p->llm_thread);

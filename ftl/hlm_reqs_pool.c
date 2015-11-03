@@ -116,7 +116,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	struct list_head* next = NULL;
 	struct list_head* temp = NULL;
 	bdbm_hlm_req_t* item = NULL;
-	uint64_t count = 0;
+	int32_t count = 0;
 
 	if (!pool) return;
 
@@ -137,7 +137,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	}
 
 	if (count != pool->pool_size) {
-		bdbm_warning ("oops! count != pool->pool_size (%lld != %lld)",
+		bdbm_warning ("oops! count != pool->pool_size (%d != %d)",
 			count, pool->pool_size);
 	}
 
@@ -341,8 +341,7 @@ static int __hlm_reqs_pool_create_read_req (
 	bdbm_hlm_req_t* hr,
 	bdbm_blkio_req_t* br)
 {
-	int64_t pg_start, pg_end;
-	int64_t i = 0, j = 0, k = 0;
+	int64_t pg_start, pg_end, i = 0;
 	int64_t offset = 0, bvec_cnt = 0, nr_llm_reqs;
 	bdbm_llm_req_t* ptr_lr = NULL;
 
@@ -432,11 +431,7 @@ void hlm_reqs_pool_write_compaction (
 	bdbm_hlm_req_gc_t* src, 
 	bdbm_device_params_t* np)
 {
-	uint64_t dst_loop = 0;
-	uint64_t src_loop = 0;
-	uint64_t dst_kp = 0;
-	uint64_t src_kp = 0;
-	uint64_t i, j;
+	uint64_t dst_loop = 0, dst_kp = 0, src_kp = 0, i = 0;
 	uint64_t nr_punits = np->nr_chips_per_channel * np->nr_channels;
 
 	bdbm_llm_req_t* dst_r = NULL;
@@ -445,12 +440,6 @@ void hlm_reqs_pool_write_compaction (
 	dst->nr_llm_reqs = 0;
 	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
 		hlm_reqs_pool_reset_fmain (&dst->llm_reqs[i].fmain);
-		/*int j = 0;*/
-		/*bdbm_llm_req_t* r = &dst->llm_reqs[i];*/
-		/*for (j = 0; j < 32; j++) {*/
-		/*r->fmain.kp_stt[j] = KP_STT_HOLE;*/
-		/*r->fmain.kp_ptr[j] = r->fmain.kp_pad[j];*/
-		/*}*/
 	}
 
 	dst_r = &dst->llm_reqs[0];
@@ -481,270 +470,4 @@ void hlm_reqs_pool_write_compaction (
 		}
 	}
 }
-
-#if 0
-int bdbm_hlm_reqs_pool_rebuild_req (
-	bdbm_hlm_reqs_pool_t* pool, 
-	bdbm_hlm_req_t** hr)
-{
-	bdbm_llm_req_t* new_lr = NULL;
-	bdbm_hlm_req_t* new_hr = NULL;
-	bdbm_llm_req_t* old_lr = NULL;
-	bdbm_hlm_req_t* old_hr = *hr;
-	int32_t i = 0, offset = 0;
-
-	/* only supports a read operation */
-	if (old_hr->req_type != REQTYPE_READ)
-		return 0;
-
-	/* create new hlm_req */
-	if ((new_hr = bdbm_hlm_reqs_pool_alloc_item (pool)) == NULL) {
-		bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
-		return 1;
-	}
-
-	/*
-		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
-		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];
-		ptr_lr->fmain.sz = 1;
-
-		ptr_lr->req_type = br->bi_rw;
-		ptr_lr->logaddr.lpa[0] = pg_start / NR_KPAGES_IN(pool->map_unit);
-		ptr_lr->logaddr.ofs = offset;
-		ptr_lr->logaddr.sz = 1;
-		ptr_lr->ptr_hlm_req = (void*)hr;
-	*/
-
-	new_lr = &new_hr->llm_reqs[0];
-
-	/* it rebuilds new hlm_req using old hlm_req */
-	bdbm_hlm_for_each_llm_req (old_lr, old_hr, i) {
-		bdbm_bug_on (old_lr->req_type != REQTYPE_READ);
-
-		offset = old_lr->logaddr.ofs;
-
-		bdbm_bug_on (old_lr->fmain.kp_stt[offset] != KP_STT_DATA);
-	
-		/* copy old_lr => new_lr */
-		new_lr->fmain.kp_stt[offset] = old_lr->fmain.kp_stt[offset];
-		new_lr->fmain.kp_ptr[offset] = old_lr->fmain.kp_ptr[offset];
-		new_lr->fmain.sz = 1;
-
-		new_lr->req_type = old_lr->req_type;
-		new_lr->logaddr.lpa[0] = old_lr->logaddr.lpa[0];
-		new_lr->logaddr.ofs = old_lr->logaddr.ofs;
-		new_lr->logaddr.sz = old_lr->logaddr.sz;
-		new_lr->ptr_hlm_req = old_lr->ptr_hlm_req;
-	}
-
-	/* intialize new hlm_req */
-	new_hr->req_type = old_hr->req_type;
-	bdbm_stopwatch_start (&new_hr->sw);
-	new_hr->nr_llm_reqs = old_hr->nr_llm_reqs;
-	atomic64_set (&new_hr->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&new_hr->done);
-	new_hr->blkio_req = (void*)old_hr->blkio_req;
-	new_hr->ret = 0;
-
-	/* remove old hlm_req */
-	bdbm_mutex_unlock (&old_hr->done);
-	bdbm_hlm_reqs_pool_free_item (pool, old_hr);
-
-	/* change the pointer */
-	*hr = new_hr;
-
-	return 0;
-}
-
-int bdbm_hlm_reqs_pool_rebuild_req (
-	bdbm_hlm_req_t* hr)
-{
-	bdbm_llm_req_t* prev_lr = NULL;
-	bdbm_llm_req_t* next_lr = NULL;
-	int i = 0, offset = 0, nr_llm_req = 0;
-
-	/* only supports a read operation */
-	if (hr->req_type != REQTYPE_READ)
-		return 0;
-
-	/* it rebuilds new hlm_req using old hlm_req */
-	bdbm_hlm_for_each_llm_req (next_lr, hr, i) {
-		/* is it first? */
-		if (prev_lr == NULL) {
-			prev_lr = next_lr;
-			nr_llm_req++;
-			continue;
-		}
-
-		/* has data */
-		if (next_lr->fmain.sz == 0)
-			continue;
-		
-		/* has the same LPA? */
-		if (prev_lr->logaddr.lpa[0] != next_lr->logaddr.lpa[0]) {
-			prev_lr = next_lr;
-			nr_llm_req++;
-			continue;
-		}
-
-		/* has the same physical LPA? */
-		if (memcmp (&prev_lr->phyaddr, &next_lr->phyaddr, sizeof (bdbm_phyaddr_t)) != 0) {
-			prev_lr = next_lr;
-			nr_llm_req++;
-			continue;
-		}
-
-		/* kp is empty? */
-		offset = next_lr->logaddr.ofs;
-		bdbm_bug_on (next_lr->fmain.kp_stt[offset] != KP_STT_DATA);
-		if (prev_lr->fmain.kp_stt[offset] == KP_STT_DATA) {
-			prev_lr = next_lr;
-			nr_llm_req++;
-			continue;
-		}
-
-		/* ok! next_lr can be merged with prev_lr */
-		prev_lr->fmain.kp_stt[offset] = next_lr->fmain.kp_stt[offset];
-		prev_lr->fmain.kp_ptr[offset] = next_lr->fmain.kp_ptr[offset];
-		prev_lr->fmain.sz++;
-
-		/* */
-		next_lr->fmain.kp_stt[offset] = KP_STT_HOLE;
-		next_lr->fmain.kp_ptr[offset] = next_lr->fmain.kp_pad[offset];
-		next_lr->fmain.sz--;
-
-		next_lr->logaddr.lpa[0] = -1;
-
-
-#if 0
-		bdbm_bug_on (old_lr->req_type != REQTYPE_READ);
-
-		offset = old_lr->logaddr.ofs;
-
-		bdbm_bug_on (old_lr->fmain.kp_stt[offset] != KP_STT_DATA);
-	
-		/* copy old_lr => new_lr */
-		new_lr->fmain.kp_stt[offset] = old_lr->fmain.kp_stt[offset];
-		new_lr->fmain.kp_ptr[offset] = old_lr->fmain.kp_ptr[offset];
-		new_lr->fmain.sz = 1;
-
-		new_lr->req_type = old_lr->req_type;
-		new_lr->logaddr.lpa[0] = old_lr->logaddr.lpa[0];
-		new_lr->logaddr.ofs = old_lr->logaddr.ofs;
-		new_lr->logaddr.sz = old_lr->logaddr.sz;
-		new_lr->ptr_hlm_req = old_lr->ptr_hlm_req;
-#endif
-	}
-
-	return 0;
-}
-#endif
-
-#if 0
-static void __bdbm_hlm_reqs_pool_copy_hlm (
-	bdbm_hlm_req_t* hr_src,
-	bdbm_hlm_req_t* hr_dst)
-{
-	bdbm_llm_req_t* lr_src = NULL;
-	bdbm_llm_req_t* lr_dst = NULL;
-	int i = 0, j = 0;
-
-	hr_dst->req_type = hr_src->req_type;
-	hr_dst->sw = hr_src->sw;
-
-	if (hr_src->req_type == REQTYPE_TRIM) {
-		hr_dst->lpa = hr_src->lpa;
-		hr_dst->len = hr_src->len;
-	} else {
-		hr_dst->nr_llm_reqs = hr_src->nr_llm_reqs;
-		atomic64_set (&hr_dst->nr_llm_reqs_done, 0);
-
-		lr_dst = &hr_dst->llm_reqs[0];
-		bdbm_hlm_for_each_llm_req (lr_src, hr_src, i) {
-			/* copy llm */
-			lr_dst->req_type = lr_src->req_type;
-			lr_dst->ret = lr_src->ret;
-			lr_dst->ptr_hlm_req = lr_src->ptr_hlm_req;
-			lr_dst->ptr_qitem = lr_src->ptr_qitem;
-			lr_dst->logaddr = lr_src->logaddr;
-			lr_dst->phyaddr = lr_src->phyaddr;
-			lr_dst->phyaddr_src = lr_src->phyaddr_src;
-			lr_dst->phyaddr_dst = lr_src->phyaddr_dst;
-
-			/* copy fmain */
-			lr_dst->fmain.sz = lr_src->fmain.sz;
-			for (j = 0; j < 32; j++) {
-				lr_dst->fmain.kp_stt[j] = lr_src->fmain.kp_stt[j];
-				if (lr_src->fmain.kp_stt[j] == KP_STT_DATA)
-					lr_dst->fmain.kp_ptr[j] = lr_src->fmain.kp_ptr[j];
-				else
-					lr_dst->fmain.kp_ptr[j] = lr_dst->fmain.kp_pad[j];
-			}
-			lr_dst++;
-		}
-		// bdbm_mutex_init (&item->done); /* skip it */
-	}
-
-	hr_dst->blkio_req = hr_src->blkio_req;
-	hr_dst->ret = 0;
-}
-
-static void __bdbm_hlm_reqs_pool_reset_hlm (
-	bdbm_hlm_req_t* hr)
-{
-	bdbm_llm_req_t* lr = NULL;
-	int i = 0;
-
-	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		/* reset llm */
-		lr->req_type = -1;
-		lr->ret = 0;
-		lr->ptr_hlm_req = NULL;
-		lr->ptr_qitem = NULL;
-
-		/* reset fmain */
-		hlm_reqs_pool_reset_fmain (&lr->fmain);
-	}
-
-	/* reset hlm */
-	hr->nr_llm_reqs = 0;
-	atomic64_set (&hr->nr_llm_reqs_done, 0);
-	hr->ret = 0;
-	hr->req_type = 0;
-}
-
-static int __bdbm_hlm_reqs_pool_rebuild_req (
-	bdbm_hlm_req_t* hr,
-	bdbm_hlm_req_t* tmp_hr)
-{
-	return 0;
-}
-
-int bdbm_hlm_reqs_pool_rebuild_req (
-	bdbm_hlm_req_t* hr,
-	bdbm_hlm_req_t* tmp_hr)
-{
-	int ret;
-
-	/* only supports a read operation */
-	if (hr->req_type != REQTYPE_READ)
-		return 0;
-	
-	/* copy hr to tmp_hr */
-	__bdbm_hlm_reqs_pool_copy_hlm (hr, tmp_hr);
-
-	/* reset hr */
-	__bdbm_hlm_reqs_pool_reset_hlm (hr);
-
-	/* copy tmp_hr to hr */
-	__bdbm_hlm_reqs_pool_copy_hlm (tmp_hr, hr);
-
-	/* rebuild hr */
-	ret = __bdbm_hlm_reqs_pool_rebuild_req (hr, tmp_hr);
-
-	return ret;
-}
-#endif
-
-
 

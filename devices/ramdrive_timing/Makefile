@@ -15,7 +15,8 @@ EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \
 	-D CONFIG_ENABLE_DEBUG \
 	-D CONFIG_DEVICE_TYPE_RAMDRIVE_TIMING \
-	-D KERNEL_MODE
+	-D KERNEL_MODE \
+	-D USE_NEW_RMW \
 
 risa_dev_ramdrive_timing-y := \
 	$(COMMON)/utils/ufile.o \
