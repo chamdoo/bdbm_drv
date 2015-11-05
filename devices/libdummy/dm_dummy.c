@@ -58,6 +58,7 @@ struct dm_user_private {
 
 static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
+#if 0
 	/* user-specified parameters */
 	params->nr_channels = _param_nr_channels;
 	params->nr_chips_per_channel = _param_nr_chips_per_channel;
@@ -95,6 +96,8 @@ static void __dm_setup_device_params (bdbm_device_params_t* params)
 	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
 	params->device_capacity_in_byte *= params->nr_pages_per_block;
 	params->device_capacity_in_byte *= params->page_main_size;
+#endif
+	*params = get_default_device_params ();
 }
 
 uint32_t dm_user_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)

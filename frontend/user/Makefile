@@ -1,7 +1,7 @@
 # Makefile for a RISA Device Driver
 #
 
-CC = gcc
+CC = gcc -g -pg
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
@@ -24,8 +24,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_NEW_RMW \
 
 #DMLIB := ../../devices/libdummy/libdummy.a
-DMLIB := ../../devices/libramdrive/libramdrive.a
-#DMLIB := dev_proxy.c
+#DMLIB := ../../devices/libramdrive/libramdrive.a
+DMLIB := dev_proxy.c $(DM_COMMON)/dev_params.c
 
 #SRCS := \
 	main.c \
@@ -56,8 +56,8 @@ DMLIB := ../../devices/libramdrive/libramdrive.a
 	$(DMLIB) \
 
 SRCS := \
-	main.c \
 	userio.c \
+	main.c \
 	$(FTL)/hlm_reqs_pool.c \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
@@ -76,15 +76,16 @@ SRCS := \
 	$(COMMON)/bdbm_main.c \
 	$(DMLIB) \
 
+SRCS2 := \
+	main.c \
+
 libftl: $(SRCS) $(DMLIB)
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:
 	@$(RM) *.o core *~ libftl 
-	@cd $(USER); rm -rf *.o
 	@cd $(FTL); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd $(COMMON)/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd $(COMMON)/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd $(COMMON); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
-	@cd ../../devices; $(MAKE) clean
-

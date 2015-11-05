@@ -149,13 +149,11 @@ typedef enum {
 } kp_stt_t;
 
 typedef struct {
-	//uint64_t sz;
 	int64_t lpa[32];
 	int32_t ofs;	/* only used for reads */
 } bdbm_logaddr_t;
 
 typedef struct {
-	//uint64_t sz;
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
 	uint8_t  kp_pad[32][KPAGE_SIZE];
@@ -190,7 +188,6 @@ typedef struct {
 		/* for rw ops */
 		struct {
 			uint64_t nr_llm_reqs;
-			/*uint64_t nr_llm_reqs_done;*/
 			atomic64_t nr_llm_reqs_done;
 			bdbm_llm_req_t llm_reqs[BDBM_BLKIO_MAX_VECS];
 			bdbm_mutex_t done;

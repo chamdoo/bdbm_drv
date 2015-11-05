@@ -127,9 +127,7 @@ uint32_t dm_proxy_open (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 
-	size = 4096 + p->punit * 
-		(bdi->parm_dev.page_main_size + 
-		 bdi->parm_dev.page_oob_size);
+	size = 4096 + p->punit * (bdi->parm_dev.page_main_size +  bdi->parm_dev.page_oob_size);
 
 	/* get mmap to check the status of a device */
 	if ((p->mmap_shared = mmap (NULL, 
@@ -187,9 +185,9 @@ uint32_t dm_proxy_make_req (
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
 	bdbm_llm_req_ioctl_t ior;
-	int loop, punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
-	int nr_kp_per_fp = 1;
-	int ret;
+	int punit_id = BDBM_GET_PUNIT_ID (bdi, (&r->phyaddr));
+	int nr_kpages = np->page_main_size / KPAGE_SIZE;
+	int loop, ret;
 
 	/* check error cases */
 	bdbm_spin_lock (&p->lock);
@@ -203,6 +201,7 @@ uint32_t dm_proxy_make_req (
 	bdbm_spin_unlock (&p->lock);
 
 	/* build llm_ioctl_req commands */
+#if 0
 	ior.req_type = r->req_type;
 	ior.lpa = r->lpa;
 	ior.channel_no = r->phyaddr->channel_no;
@@ -215,7 +214,7 @@ uint32_t dm_proxy_make_req (
 	if (r->req_type == REQTYPE_WRITE ||
 		r->req_type == REQTYPE_RMW_WRITE ||
 		r->req_type == REQTYPE_GC_WRITE) {
-		for (loop = 0; loop < nr_kp_per_fp; loop++) {
+		for (loop = 0; loop < nr_kpages; loop++) {
 			if (r->kpg_flags != NULL) 
 				ior.kpg_flags[loop] = r->kpg_flags[loop];
 			else
@@ -225,6 +224,29 @@ uint32_t dm_proxy_make_req (
 		}
 		memcpy (p->punit_oob_pages[punit_id], 
 			r->ptr_oob, bdi->parm_dev.page_oob_size);
+	}
+#endif
+
+	ior.req_type = r->req_type;
+	ior.ret = r->ret;
+	ior.logaddr = r->logaddr;
+	ior.phyaddr = r->phyaddr;
+	for (loop = 0; loop < nr_kpages; loop++) {
+		ior.kp_stt[loop] = r->fmain.kp_stt[loop];
+		if (bdbm_is_write (r->req_type)) {
+			bdbm_memcpy (
+				p->punit_main_pages[punit_id] + (loop*KPAGE_SIZE),
+				r->fmain.kp_ptr[loop], 
+				KPAGE_SIZE
+			);
+		}
+	}
+	if (bdbm_is_write (r->req_type)) {
+		bdbm_memcpy (
+			p->punit_oob_pages[punit_id], 
+			r->foob.data, 
+			bdi->parm_dev.page_oob_size
+		);
 	}
 
 	/* send llm_ioctl_req to the device */
@@ -242,11 +264,9 @@ int __dm_proxy_thread (void* arg)
 	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_dm_inf_t* dm_inf = (bdbm_dm_inf_t*)BDBM_GET_DM_INF(bdi);
 	bdbm_dm_proxy_t* p = (bdbm_dm_proxy_t*)BDBM_DM_PRIV(bdi);
-	int nr_kp_per_fp = 1;
 	struct pollfd fds[1];
-	int nr_punit;
-	int loop;
-	int ret;
+	int nr_kpages = np->page_main_size / KPAGE_SIZE;
+	int loop, ret, k;
 
 	while (p->stop != 1) {
 		/* prepare arguments for poll */
@@ -262,7 +282,7 @@ int __dm_proxy_thread (void* arg)
 
 		/* (2) error: poll () returns error for some reasones */
 		if (ret < 0) {
-			bdbm_error ("poll () returns errors (ret: %d, msg: %s)", ret, strerror (errno));
+			//bdbm_error ("poll () returns errors (ret: %d, msg: %s)", ret, strerror (errno));
 			continue;
 		}
 
@@ -284,14 +304,30 @@ int __dm_proxy_thread (void* arg)
 					bdbm_spin_unlock (&p->lock);
 
 					/* copy Kernel-data to user-space if it is necessary */
+#if 0
 					if (r->req_type == REQTYPE_READ ||
 						r->req_type == REQTYPE_RMW_READ ||
 						r->req_type == REQTYPE_GC_READ) {
 						int k;
-						for (k = 0; k < nr_kp_per_fp; k++) {
+						for (k = 0; k < nr_kpages; k++) {
 							memcpy (r->pptr_kpgs[k], p->punit_main_pages[loop] + (k * KERNEL_PAGE_SIZE), KERNEL_PAGE_SIZE);
 						}
 						memcpy (r->ptr_oob, p->punit_oob_pages[loop], bdi->parm_dev.page_oob_size);
+					}
+#endif
+					if (bdbm_is_read (r->req_type)) {
+						for (k = 0; k < nr_kpages; k++) {
+							bdbm_memcpy (
+								r->fmain.kp_ptr[k], 
+								p->punit_main_pages[loop] + (k*KPAGE_SIZE), 
+								KPAGE_SIZE
+							);
+						}
+						bdbm_memcpy (
+							r->foob.data, 
+							p->punit_oob_pages[loop], 
+							bdi->parm_dev.page_oob_size
+						);
 					}
 
 					/* call end_req () to end the request */

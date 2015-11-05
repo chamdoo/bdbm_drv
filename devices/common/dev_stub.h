@@ -32,6 +32,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 
+#if 0
 typedef struct {
 	uint32_t req_type; /* read, write, or erase */
 	uint64_t lpa; /* logical page address */
@@ -44,6 +45,16 @@ typedef struct {
 	uint8_t kpg_flags[16]; /* maximum page size is assumed to be 64KB */
 	uint8_t ret; /* return value */
 } bdbm_llm_req_ioctl_t;
+#endif
+
+typedef struct {
+	uint32_t req_type; /* read, write, or erase */
+	uint8_t ret; /* return value */
+	bdbm_logaddr_t logaddr;
+	bdbm_phyaddr_t phyaddr;
+	kp_stt_t kp_stt[32];
+} bdbm_llm_req_ioctl_t;
+
 
 #define BDBM_DM_IOCTL_NAME		"bdbm_dm_stub"
 #define BDBM_DM_IOCTL_DEVNAME	"/dev/bdbm_dm_stub"

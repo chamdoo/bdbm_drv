@@ -82,81 +82,6 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 	.end_req = __dm_intr_handler, /* 'dm' automatically calls 'end_req' when it gets acks from devices */
 };
 
-#ifdef OLD_HLM
-void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
-{
-	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
-	uint64_t punit_id = BDBM_GET_PUNIT_ID (bdi, r->phyaddr);
-	unsigned long flags;
-
-	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
-	if (s->punit_busy[punit_id] != 1) {
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
-		/* hmm... this is a serious bug... */
-		bdbm_error ("s->punit_busy[punit_id] must be 1 (val = %u)", 
-			s->punit_busy[punit_id]);
-		bdbm_bug_on (1);
-		return;
-	}
-	s->punit_busy[punit_id] = 2;	/* (2) busy to done */
-	bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
-
-	wake_up_interruptible (&(s->pollwq));
-}
-
-/* TODO: We should improve it to use mmap to avoid useless malloc, memcpy, free, etc */
-static bdbm_llm_req_t* __get_llm_req (
-	bdbm_dm_stub_t* s,
-	bdbm_llm_req_ioctl_t __user *ur)
-{
-	uint32_t nr_kp_per_fp = 1;
-	uint64_t punit_id, loop;
-	bdbm_llm_req_t* r = NULL;
-	bdbm_llm_req_ioctl_t kr;
-
-	if (ur == NULL) {
-		bdbm_warning ("user-level llm_req is NULL");
-		return NULL;
-	}
-
- 	/* is it accessable ?*/
-	if (access_ok (VERIFY_READ, ur, sizeof (kr)) != 1) {
-		bdbm_warning ("access_ok () failed");
-		return NULL;
-	}
-	copy_from_user (&kr, ur, sizeof (kr));
-
-	/* create bdbm_llm_req_t */
-	if ((r = (bdbm_llm_req_t*)bdbm_zmalloc 
-			(sizeof (bdbm_llm_req_t))) == NULL) {
-		bdbm_warning ("bdbm_zmalloc () failed");
-		return NULL;
-	}
-
-	/* initialize it */
-	r->req_type = kr.req_type;
-	r->lpa = kr.lpa;
-	r->phyaddr_r.channel_no = kr.channel_no;
-	r->phyaddr_r.chip_no = kr.chip_no;
-	r->phyaddr_r.block_no = kr.block_no;
-	r->phyaddr_r.page_no = kr.page_no;
-	r->phyaddr = &r->phyaddr_r;
-	r->kpg_flags = (uint8_t*)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t));
-	r->pptr_kpgs = (uint8_t**)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t*));
-
-  	punit_id = BDBM_GET_PUNIT_ID (s->bdi, r->phyaddr);
-	for (loop = 0; loop < nr_kp_per_fp; loop++) {
-		r->kpg_flags[loop] = kr.kpg_flags[loop];
-		r->pptr_kpgs[loop] = 
-			s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
-	}
-	r->ptr_oob = s->punit_oob_pages[punit_id];
-	r->ret = 1;
-
-	return r;
-}
-
-#else
 void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
@@ -184,11 +109,16 @@ static bdbm_llm_req_t* __get_llm_req (
 	bdbm_dm_stub_t* s,
 	bdbm_llm_req_ioctl_t __user *ur)
 {
-	uint32_t nr_kp_per_fp = 1;
-	uint64_t punit_id, loop;
-	bdbm_llm_req_t* r = NULL;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(s->bdi);
 	bdbm_llm_req_ioctl_t kr;
+	bdbm_llm_req_t* r = NULL;
+	uint64_t nr_kpages = np->page_main_size / KPAGE_SIZE;
+	uint64_t punit_id;
+	uint64_t loop;
+
+#if 0
 	bdbm_phyaddr_t* phy;
+#endif
 
 	if (ur == NULL) {
 		bdbm_warning ("user-level llm_req is NULL");
@@ -203,13 +133,13 @@ static bdbm_llm_req_t* __get_llm_req (
 	copy_from_user (&kr, ur, sizeof (kr));
 
 	/* create bdbm_llm_req_t */
-	if ((r = (bdbm_llm_req_t*)bdbm_zmalloc 
-			(sizeof (bdbm_llm_req_t))) == NULL) {
+	if ((r = (bdbm_llm_req_t*)bdbm_malloc_atomic (sizeof (bdbm_llm_req_t))) == NULL) {
 		bdbm_warning ("bdbm_zmalloc () failed");
 		return NULL;
 	}
 
 	/* initialize it */
+#if 0
 	r->req_type = kr.req_type;
 	r->logaddr.lpa[0] = kr.lpa;
 	r->phyaddr.channel_no = kr.channel_no;
@@ -227,11 +157,23 @@ static bdbm_llm_req_t* __get_llm_req (
 			s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
 	}
 	r->ret = 1;
+#endif
+
+	r->req_type = kr.req_type;
+	r->logaddr = kr.logaddr;
+	r->phyaddr = kr.phyaddr;
+	r->ret = 1;
+  	punit_id = BDBM_GET_PUNIT_ID (s->bdi, (&r->phyaddr));
+	for (loop = 0; loop < nr_kpages; loop++) {
+		r->fmain.kp_stt[loop] = kr.kp_stt[loop];
+		r->fmain.kp_ptr[loop] = s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
+	}
+	if (bdbm_is_write (r->req_type)) {
+		bdbm_memcpy (r->foob.data, s->punit_oob_pages[punit_id], np->page_oob_size);
+	}
 
 	return r;
 }
-#endif
-
 
 static void __return_llm_req (
 	bdbm_dm_stub_t* s,
@@ -242,29 +184,14 @@ static void __return_llm_req (
 	if (access_ok (VERIFY_WRITE, ur, sizeof (*ur)) != 1) {
 		bdbm_warning ("access_ok () failed");
 	} else {
-		/*copy_to_user (&ur->ret, &kr->ret, sizeof (uint8_t));*/
+		copy_to_user (&ur->ret, &kr->ret, sizeof (uint8_t));
 	}
 }
 
-#ifdef OLD_HLM
 static void __free_llm_req (bdbm_llm_req_t* kr)
 {
-	/*int loop = 0;*/
-	/*uint32_t nr_kp_per_fp = 1;*/
-	/*bdbm_free (kr->phyaddr);*/
-	bdbm_free (kr->kpg_flags);
-	/*for (loop = 0; loop < nr_kp_per_fp; loop++)*/
-	/*free_page ((unsigned long)kr->pptr_kpgs[loop]);*/
-	bdbm_free (kr->pptr_kpgs);
-	/*bdbm_free (kr->ptr_oob);*/
-	bdbm_free (kr);
+	bdbm_free_atomic (kr);
 }
-#else
-static void __free_llm_req (bdbm_llm_req_t* kr)
-{
-	bdbm_free (kr);
-}
-#endif
 
 static int dm_stub_probe (bdbm_dm_stub_t* s)
 {
@@ -350,13 +277,6 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 		if (s->kr) bdbm_free (s->kr);
 		if (s->ur) bdbm_free (s->ur);
 
-		s->punit_oob_pages = NULL;
-		s->punit_main_pages = NULL;
-		s->punit_busy = NULL;
-		s->mmap_shared = NULL;
-		s->kr = NULL;
-		s->ur = NULL;
-
 		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
 		bdbm_spin_unlock (&s->lock);
 
@@ -421,62 +341,6 @@ static int dm_stub_close (bdbm_dm_stub_t* s)
 	return 0;
 }
 
-#ifdef OLD_HLM
-static int dm_stub_make_req (
-	bdbm_dm_stub_t* s, 
-	bdbm_llm_req_ioctl_t __user *ur)
-{
-	bdbm_drv_info_t* bdi = s->bdi;
-	bdbm_llm_req_t* kr = NULL;
-	uint32_t punit_id;
-	unsigned long flags;
-
-	if (bdi->ptr_dm_inf->make_req == NULL) {
-		bdbm_warning ("ptr_dm_inf->make_req is NULL");
-		return -ENOTTY;
-	} 
-
-	/* the current implementation of bdbm_dm stub only supports a single client */
-	bdbm_spin_lock (&s->lock);
-	if (s->ref_cnt == 0) {
-		bdbm_warning ("oops! bdbm_dm_stub is not open");
-		bdbm_spin_unlock (&s->lock);
-		return -EBUSY;
-	}
-	bdbm_spin_unlock (&s->lock);
-
-	/* copy user-level llm_req to kernel-level */
-	if ((kr = __get_llm_req (s, ur)) == NULL) {
-		bdbm_warning ("__get_llm_req () failed (ur=%p, kr=%p)", ur, kr);
-		return -EIO;
-	}
-
-	/* get punit_id */
-	punit_id = BDBM_GET_PUNIT_ID (bdi, kr->phyaddr);
-
-	/* see if there is an on-going request */
-	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
-	if (s->punit_busy[punit_id] != 0 ||
-		s->ur[punit_id] != NULL || 
-		s->kr[punit_id] != NULL) {
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
-		bdbm_warning ("oops! the punit for the request is busy (punit_id = %u)", punit_id);
-		__free_llm_req (kr);
-		return -EBUSY;
-	}
-	s->punit_busy[punit_id] = 1; /* (1) idle to busy */
-	s->ur[punit_id] = ur;
-	s->kr[punit_id] = kr;
-	bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
-
-	/* call make_req */ 
-	if (bdi->ptr_dm_inf->make_req (bdi, kr) != 0) {
-		return -EIO;
-	}
-
-	return 0;
-}
-#else
 static int dm_stub_make_req (
 	bdbm_dm_stub_t* s, 
 	bdbm_llm_req_ioctl_t __user *ur)
@@ -531,7 +395,6 @@ static int dm_stub_make_req (
 
 	return 0;
 }
-#endif
 
 static int dm_stub_end_req (bdbm_dm_stub_t* s)
 {
@@ -559,7 +422,9 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
 		
 		/* let's finish it */
 		if (ur != NULL && kr != NULL) {
-			/* setup results and destroy a kernel copy */
+			/* copy oob; setup results; and destroy a kernel copy */
+			if (bdbm_is_read (kr->req_type))
+				bdbm_memcpy (s->punit_oob_pages[loop], kr->foob.data, s->bdi->parm_dev.page_oob_size);
 			__return_llm_req (s, ur, kr);
 			__free_llm_req (kr);
 

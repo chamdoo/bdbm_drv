@@ -38,6 +38,7 @@ default: modules
 .PHONY: modules
 modules:
 	@$(MAKE) -C $(KROOT) M=$(PWD) modules
+	@chmod +x risa_dev_ramdrive_timing.ko
 
 .PHONY: modules_check
 modules_check:
