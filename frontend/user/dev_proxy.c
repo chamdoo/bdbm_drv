@@ -201,32 +201,6 @@ uint32_t dm_proxy_make_req (
 	bdbm_spin_unlock (&p->lock);
 
 	/* build llm_ioctl_req commands */
-#if 0
-	ior.req_type = r->req_type;
-	ior.lpa = r->lpa;
-	ior.channel_no = r->phyaddr->channel_no;
-	ior.chip_no = r->phyaddr->chip_no;
-	ior.block_no = r->phyaddr->block_no;
-	ior.page_no = r->phyaddr->page_no;
-	ior.ret = r->ret;
-
-	/* copy user-data to Kernel if it is necessary */
-	if (r->req_type == REQTYPE_WRITE ||
-		r->req_type == REQTYPE_RMW_WRITE ||
-		r->req_type == REQTYPE_GC_WRITE) {
-		for (loop = 0; loop < nr_kpages; loop++) {
-			if (r->kpg_flags != NULL) 
-				ior.kpg_flags[loop] = r->kpg_flags[loop];
-			else
-				ior.kpg_flags[loop] = 0; /* not used */
-			memcpy (p->punit_main_pages[punit_id] + (loop * KERNEL_PAGE_SIZE), 
-				r->pptr_kpgs[loop], KERNEL_PAGE_SIZE);
-		}
-		memcpy (p->punit_oob_pages[punit_id], 
-			r->ptr_oob, bdi->parm_dev.page_oob_size);
-	}
-#endif
-
 	ior.req_type = r->req_type;
 	ior.ret = r->ret;
 	ior.logaddr = r->logaddr;
@@ -304,17 +278,6 @@ int __dm_proxy_thread (void* arg)
 					bdbm_spin_unlock (&p->lock);
 
 					/* copy Kernel-data to user-space if it is necessary */
-#if 0
-					if (r->req_type == REQTYPE_READ ||
-						r->req_type == REQTYPE_RMW_READ ||
-						r->req_type == REQTYPE_GC_READ) {
-						int k;
-						for (k = 0; k < nr_kpages; k++) {
-							memcpy (r->pptr_kpgs[k], p->punit_main_pages[loop] + (k * KERNEL_PAGE_SIZE), KERNEL_PAGE_SIZE);
-						}
-						memcpy (r->ptr_oob, p->punit_oob_pages[loop], bdi->parm_dev.page_oob_size);
-					}
-#endif
 					if (bdbm_is_read (r->req_type)) {
 						for (k = 0; k < nr_kpages; k++) {
 							bdbm_memcpy (

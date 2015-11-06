@@ -1,7 +1,7 @@
 # Makefile for a RISA Device Driver
 #
 
-CC = gcc -g -pg
+CC = gcc
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common

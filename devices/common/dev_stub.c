@@ -87,11 +87,10 @@ void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)bdi->private_data;
 	bdbm_phyaddr_t* p = &r->phyaddr;
 	uint64_t punit_id = BDBM_GET_PUNIT_ID (bdi, p);
-	unsigned long flags;
 
-	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
+	bdbm_spin_lock (&s->lock_busy);
 	if (s->punit_busy[punit_id] != 1) {
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		bdbm_spin_unlock (&s->lock_busy);
 		/* hmm... this is a serious bug... */
 		bdbm_error ("s->punit_busy[punit_id] must be 1 (val = %u)", 
 			s->punit_busy[punit_id]);
@@ -99,7 +98,7 @@ void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		return;
 	}
 	s->punit_busy[punit_id] = 2;	/* (2) busy to done */
-	bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+	bdbm_spin_unlock (&s->lock_busy);
 
 	wake_up_interruptible (&(s->pollwq));
 }
@@ -115,10 +114,6 @@ static bdbm_llm_req_t* __get_llm_req (
 	uint64_t nr_kpages = np->page_main_size / KPAGE_SIZE;
 	uint64_t punit_id;
 	uint64_t loop;
-
-#if 0
-	bdbm_phyaddr_t* phy;
-#endif
 
 	if (ur == NULL) {
 		bdbm_warning ("user-level llm_req is NULL");
@@ -139,26 +134,6 @@ static bdbm_llm_req_t* __get_llm_req (
 	}
 
 	/* initialize it */
-#if 0
-	r->req_type = kr.req_type;
-	r->logaddr.lpa[0] = kr.lpa;
-	r->phyaddr.channel_no = kr.channel_no;
-	r->phyaddr.chip_no = kr.chip_no;
-	r->phyaddr.block_no = kr.block_no;
-	r->phyaddr.page_no = kr.page_no;
-	/*r->fmain.kp_stt = (uint8_t*)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t));*/
-	/*r->fmain.kp_ptr = (uint8_t**)bdbm_malloc (nr_kp_per_fp * sizeof (uint8_t*));*/
-
-	phy = &(r->phyaddr);
-  	punit_id = BDBM_GET_PUNIT_ID (s->bdi, phy);
-	for (loop = 0; loop < nr_kp_per_fp; loop++) {
-		r->fmain.kp_stt[loop] = kr.kpg_flags[loop];
-		r->fmain.kp_ptr[loop] = 
-			s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
-	}
-	r->ret = 1;
-#endif
-
 	r->req_type = kr.req_type;
 	r->logaddr = kr.logaddr;
 	r->phyaddr = kr.phyaddr;
@@ -214,8 +189,7 @@ static int dm_stub_probe (bdbm_dm_stub_t* s)
 static int dm_stub_open (bdbm_dm_stub_t* s)
 {
 	bdbm_drv_info_t* bdi = s->bdi;
-	unsigned long flags;
-	uint64_t mmap_ofs, loop;
+	uint64_t mmap_ofs, i;
 
 	if (bdi->ptr_dm_inf->open == NULL) {
 		bdbm_warning ("ptr_dm_inf->open is NULL");
@@ -224,11 +198,11 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 
 	/* a big spin-lock; but not a problem with open */
 	bdbm_spin_lock (&s->lock);
-	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
+	bdbm_spin_lock (&s->lock_busy);
 
 	/* are there any other clients? */
 	if (s->ref_cnt > 0) {
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		bdbm_spin_unlock (&s->lock_busy);
 		bdbm_spin_unlock (&s->lock);
 		bdbm_warning ("dm_stub is already open for other clients (%u)", s->ref_cnt);
 		return -EBUSY;
@@ -236,7 +210,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 
 	/* initialize internal variables */
 	s->punit = bdi->parm_dev.nr_chips_per_channel * bdi->parm_dev.nr_channels;
-	s->mmap_shared_size = KERNEL_PAGE_SIZE + PAGE_ALIGN (
+	s->mmap_shared_size = KPAGE_SIZE + PAGE_ALIGN (
 		s->punit * (bdi->parm_dev.page_main_size + bdi->parm_dev.page_oob_size));
 
 	bdbm_msg ("s->punit=%llu, s->mmap_shared_size=%llu", s->punit, s->mmap_shared_size);
@@ -246,16 +220,18 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	s->punit_busy = (uint8_t*)bdbm_malloc_atomic (s->punit * sizeof (uint8_t));
 	s->punit_main_pages = (uint8_t**)bdbm_zmalloc (s->punit * sizeof (uint8_t*));
 	s->punit_oob_pages = (uint8_t**)bdbm_zmalloc (s->punit * sizeof (uint8_t*));
-	s->mmap_shared = (uint8_t*)kmalloc (s->mmap_shared_size, GFP_KERNEL); 	/* kmalloc () is OK because a relatively smaller amount of memory than 1 MB is needed for mmap_shared */
+	s->mmap_shared = (uint8_t*)bdbm_zmalloc (s->mmap_shared_size);
+	for (i = 0; i < s->mmap_shared_size; i+=KPAGE_SIZE)
+		SetPageReserved (vmalloc_to_page ((void*)(((unsigned long)s->mmap_shared)+i)));
 
 	/* setup other stuffs */
 	mmap_ofs = 0;
 	s->punit_done = s->mmap_shared;
-	mmap_ofs += KERNEL_PAGE_SIZE;
-	for (loop = 0; loop < s->punit; loop++) {
-		s->punit_main_pages[loop] = s->mmap_shared + mmap_ofs;
+	mmap_ofs += KPAGE_SIZE;
+	for (i = 0; i < s->punit; i++) {
+		s->punit_main_pages[i] = s->mmap_shared + mmap_ofs;
 		mmap_ofs += bdi->parm_dev.page_main_size;
-		s->punit_oob_pages[loop] = s->mmap_shared + mmap_ofs;
+		s->punit_oob_pages[i] = s->mmap_shared + mmap_ofs;
 		mmap_ofs += bdi->parm_dev.page_oob_size;
 	}
 
@@ -273,11 +249,15 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 		if (s->punit_oob_pages) bdbm_free (s->punit_oob_pages);
 		if (s->punit_main_pages) bdbm_free (s->punit_main_pages);
 		if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
-		if (s->mmap_shared) kfree (s->mmap_shared);
 		if (s->kr) bdbm_free (s->kr);
 		if (s->ur) bdbm_free (s->ur);
+		if (s->mmap_shared) {
+			for (i = 0; i < s->mmap_shared_size; i+=KPAGE_SIZE)
+				ClearPageReserved (vmalloc_to_page ((void*)(((unsigned long)s->mmap_shared)+i)));
+			bdbm_free (s->mmap_shared);
+		}
 
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		bdbm_spin_unlock (&s->lock_busy);
 		bdbm_spin_unlock (&s->lock);
 
 		bdbm_warning ("bdbm_malloc failed \
@@ -291,7 +271,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 	/* increase ref_cnt */
 	s->ref_cnt = 1;
 
-	bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+	bdbm_spin_unlock (&s->lock_busy);
 	bdbm_spin_unlock (&s->lock);
 
 	/* call open */
@@ -306,6 +286,7 @@ static int dm_stub_open (bdbm_dm_stub_t* s)
 static int dm_stub_close (bdbm_dm_stub_t* s)
 {
 	bdbm_drv_info_t* bdi = s->bdi;
+	long i;
 
 	if (bdi->ptr_dm_inf->close == NULL) {
 		bdbm_warning ("ptr_dm_inf->close is NULL");
@@ -328,7 +309,11 @@ static int dm_stub_close (bdbm_dm_stub_t* s)
 	if (s->punit_oob_pages) bdbm_free (s->punit_oob_pages);
 	if (s->punit_main_pages) bdbm_free (s->punit_main_pages);
 	if (s->punit_busy) bdbm_free_atomic (s->punit_busy);
-	if (s->mmap_shared) kfree (s->mmap_shared);
+	if (s->mmap_shared) {
+		for (i = 0; i < s->mmap_shared_size; i+=KPAGE_SIZE)
+			ClearPageReserved (vmalloc_to_page ((void*)(((unsigned long)s->mmap_shared)+i)));
+		bdbm_free (s->mmap_shared);
+	}
 	if (s->kr) bdbm_free (s->kr);
 	if (s->ur) bdbm_free (s->ur);
 
@@ -348,7 +333,6 @@ static int dm_stub_make_req (
 	bdbm_drv_info_t* bdi = s->bdi;
 	bdbm_llm_req_t* kr = NULL;
 	uint32_t punit_id;
-	unsigned long flags;
 
 	if (bdi->ptr_dm_inf->make_req == NULL) {
 		bdbm_warning ("ptr_dm_inf->make_req is NULL");
@@ -374,11 +358,11 @@ static int dm_stub_make_req (
 	punit_id = BDBM_GET_PUNIT_ID (bdi, (&kr->phyaddr));
 
 	/* see if there is an on-going request */
-	bdbm_spin_lock_irqsave (&s->lock_busy, flags);
+	bdbm_spin_lock (&s->lock_busy);
 	if (s->punit_busy[punit_id] != 0 ||
 		s->ur[punit_id] != NULL || 
 		s->kr[punit_id] != NULL) {
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		bdbm_spin_unlock (&s->lock_busy);
 		bdbm_warning ("oops! the punit for the request is busy (punit_id = %u)", punit_id);
 		__free_llm_req (kr);
 		return -EBUSY;
@@ -386,7 +370,7 @@ static int dm_stub_make_req (
 	s->punit_busy[punit_id] = 1; /* (1) idle to busy */
 	s->ur[punit_id] = ur;
 	s->kr[punit_id] = kr;
-	bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+	bdbm_spin_unlock (&s->lock_busy);
 
 	/* call make_req */ 
 	if (bdi->ptr_dm_inf->make_req (bdi, kr) != 0) {
@@ -400,36 +384,34 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
 {
 	bdbm_llm_req_t* kr = NULL;
 	bdbm_llm_req_ioctl_t* ur = NULL;
-	uint64_t loop;
+	uint64_t i;
 	int ret = 1;
 
 	/* see if there are available punits */
-	for (loop = 0; loop < s->punit; loop++) {
-		unsigned long flags;
-
+	for (i = 0; i < s->punit; i++) {
 		/* see if there is a request that ends */
-		bdbm_spin_lock_irqsave (&s->lock_busy, flags);
-		if (s->punit_busy[loop] != 2) {
-			bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		bdbm_spin_lock (&s->lock_busy);
+		if (s->punit_busy[i] != 2) {
+			bdbm_spin_unlock (&s->lock_busy);
 			continue;
 		}
-		kr = s->kr[loop];
-		ur = s->ur[loop];
-		s->kr[loop] = NULL;
-		s->ur[loop] = NULL;
-		s->punit_busy[loop] = 0;	/* (3) done to idle */
-		bdbm_spin_unlock_irqrestore (&s->lock_busy, flags);
+		kr = s->kr[i];
+		ur = s->ur[i];
+		s->kr[i] = NULL;
+		s->ur[i] = NULL;
+		s->punit_busy[i] = 0;	/* (3) done to idle */
+		bdbm_spin_unlock (&s->lock_busy);
 		
 		/* let's finish it */
 		if (ur != NULL && kr != NULL) {
 			/* copy oob; setup results; and destroy a kernel copy */
 			if (bdbm_is_read (kr->req_type))
-				bdbm_memcpy (s->punit_oob_pages[loop], kr->foob.data, s->bdi->parm_dev.page_oob_size);
+				bdbm_memcpy (s->punit_oob_pages[i], kr->foob.data, s->bdi->parm_dev.page_oob_size);
 			__return_llm_req (s, ur, kr);
 			__free_llm_req (kr);
 
 			/* done */
-			s->punit_done[loop] = 1; /* don't need to use a lock for this */
+			s->punit_done[i] = 1; /* don't need to use a lock for this */
 			ret = 0;
 		} else {
 			bdbm_error ("hmm... this is impossible");
@@ -484,6 +466,8 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 {
 	bdbm_dm_stub_t* s = filp->private_data;
 	uint64_t size = vma->vm_end - vma->vm_start;
+ 	unsigned long pfn, start = vma->vm_start;
+	char *vmalloc_addr = (char *)s->mmap_shared;
 
 	if (s == NULL) {
 		bdbm_warning ("dm_stub is not created yet");
@@ -496,12 +480,14 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 	}
 
 	vma->vm_page_prot = pgprot_noncached (vma->vm_page_prot);
-	vma->vm_pgoff = __pa(s->mmap_shared) >> PAGE_SHIFT;
-
-	if (remap_pfn_range (vma, vma->vm_start, 
-			__pa(s->mmap_shared) >> PAGE_SHIFT,
-			size, vma->vm_page_prot)) {
-		return -EAGAIN;
+	while (size > 0) {
+		pfn = vmalloc_to_pfn (vmalloc_addr);
+		if (remap_pfn_range (vma, start, pfn, PAGE_SIZE, PAGE_SHARED) < 0) {
+			return -EAGAIN;
+		}
+		start += PAGE_SIZE;
+		vmalloc_addr += PAGE_SIZE;
+		size -= PAGE_SIZE;
 	}
 
 	vma->vm_ops = &mmap_vm_ops;
@@ -512,6 +498,7 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 
 	return 0;
 }
+
 
 static int dm_fops_create (struct inode *inode, struct file *filp)
 {

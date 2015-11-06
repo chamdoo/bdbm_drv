@@ -204,7 +204,6 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 		int i = 0;
 		for (i = 0; i < r->bi_bvec_cnt; i++) {
 			if (bdbm_is_read (r->bi_rw)) {
-			//bdbm_msg ("[userio] %d %p", i, r->bi_bvec_ptr[i]);
 			if (r->bi_bvec_ptr[i][0] != 0x0A ||
 				r->bi_bvec_ptr[i][1] != 0x0B ||
 				r->bi_bvec_ptr[i][2] != 0x0C) {
