@@ -184,10 +184,10 @@ static int __encode_bio_to_proxy_req (
 			}
 		}
 	}
-
+/*
 	bdbm_msg ("type: %x offset: %llu size: %llu bvec_cnt: %llu", 
 		r->bi_rw, r->bi_offset, r->bi_size, r->bi_bvec_cnt);
-
+*/
 	return 0;
 }
 
@@ -795,8 +795,11 @@ static int blkio_proxy_ioctl_exit (void)
 
 /* NOTE: We create fake interfaces to avoid compile errors. Do not use them for
  * any other purposes! */
-bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;
-bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;
-bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;
-bdbm_host_inf_t _blkio_inf;
+/*bdbm_ftl_inf_t _ftl_block_ftl, _ftl_page_ftl, _ftl_dftl, _ftl_no_ftl;*/
+/*bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_nobuf_inf, _hlm_rsd_inf;*/
+/*bdbm_llm_inf_t _llm_mq_inf, _llm_noq_inf;*/
+/*bdbm_host_inf_t _blkio_inf;*/
 
+bdbm_hlm_inf_t _hlm_nobuf_inf;
+bdbm_ftl_inf_t _ftl_page_ftl;
+bdbm_llm_inf_t _llm_mq_inf;
