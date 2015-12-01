@@ -24,8 +24,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_NEW_RMW \
 
 #DMLIB := ../../devices/libdummy/libdummy.a
-#DMLIB := ../../devices/libramdrive/libramdrive.a
-DMLIB := dev_proxy.c $(DM_COMMON)/dev_params.c
+DMLIB := ../../devices/libramdrive/libramdrive.a
+#DMLIB := dev_proxy.c $(DM_COMMON)/dev_params.c
 
 #SRCS := \
 	main.c \

@@ -126,7 +126,8 @@ int __host_proxy_stub_thread (void* arg)
 uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 {
 	bdbm_blkio_stub_private_t* p = NULL;
-	int size;
+	int mmap_size;
+	int mapping_unit_size;
 
 	/* create a private data for host_proxy */
 	if ((p = bdbm_malloc (sizeof (bdbm_blkio_stub_private_t))) == NULL) {
@@ -147,9 +148,9 @@ uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 	}
 
 	/* create mmap_reqs */
-	size = sizeof (bdbm_blkio_proxy_req_t) * BDBM_PROXY_MAX_REQS;
+	mmap_size = sizeof (bdbm_blkio_proxy_req_t) * BDBM_PROXY_MAX_REQS;
 	if ((p->mmap_reqs = mmap (NULL,
-			size,
+			mmap_size,
 			PROT_READ | PROT_WRITE, 
 			MAP_SHARED, 
 			p->fd, 0)) == NULL) {
@@ -158,12 +159,13 @@ uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 	}
 
 	/* create hlm_reqs pool */
+	if (bdi->parm_dev.nr_subpages_per_page == 1)
+		mapping_unit_size = bdi->parm_dev.page_main_size;
+	else
+		mapping_unit_size = KERNEL_PAGE_SIZE;
+
 	if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
-#ifdef USE_NEW_RMW
-			KERNEL_PAGE_SIZE,	/* mapping unit */
-#else
-			bdi->parm_dev.page_main_size,	/* mapping unit */
-#endif
+			mapping_unit_size,	/* mapping unit */
 			bdi->parm_dev.page_main_size	/* io unit */	
 			)) == NULL) {
 		bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");

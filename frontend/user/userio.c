@@ -55,6 +55,7 @@ uint32_t userio_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
 	bdbm_userio_private_t* p;
+	int mapping_unit_size;
 
 	/* create a private data structure */
 	if ((p = (bdbm_userio_private_t*)bdbm_malloc_atomic
@@ -66,12 +67,13 @@ uint32_t userio_open (bdbm_drv_info_t* bdi)
 	bdbm_mutex_init (&p->host_lock);
 
 	/* create hlm_reqs pool */
+	if (bdi->parm_dev.nr_subpages_per_page == 1)
+		mapping_unit_size = bdi->parm_dev.page_main_size;
+	else
+		mapping_unit_size = KERNEL_PAGE_SIZE;
+
 	if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
-#ifdef USE_NEW_RMW
-			KERNEL_PAGE_SIZE,	/* mapping unit */
-#else
-			bdi->parm_dev.page_main_size,	/* mapping unit */
-#endif
+			mapping_unit_size,	/* mapping unit */
 			bdi->parm_dev.page_main_size	/* io unit */	
 			)) == NULL) {
 		bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");
