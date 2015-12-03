@@ -136,9 +136,9 @@ void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag
 	priv->llm_reqs[tag] = NULL;
 	if (status != 0) {
 		bdbm_msg ("*** bad block detected! (%llu, %llu, %llu) ***", 
-			r->phyaddr->channel_no,
-			r->phyaddr->chip_no,
-			r->phyaddr->block_no);
+			r->phyaddr.channel_no,
+			r->phyaddr.chip_no,
+			r->phyaddr.block_no);
 		r->ret = 1; /* oops! it is a bad block */
 	}
 	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
@@ -414,6 +414,7 @@ void dm_bluedbm_close (bdbm_drv_info_t* bdi)
 	bdbm_msg ("dm_bluedbm_close is destroyed"); 
 }
 
+#if 0
 void __copy_dma_to_bio (
 	bdbm_drv_info_t* bdi,
 	bdbm_llm_req_t* r)
@@ -425,7 +426,7 @@ void __copy_dma_to_bio (
 	uint32_t loop = 0;
 
 	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->rbuf[r->phyaddr->punit_id];
+	ptr_dma_addr = (uint8_t*)priv->rbuf[r->phyaddr.punit_id];
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_pages; loop++) {
@@ -451,7 +452,48 @@ void __copy_dma_to_bio (
 		);
 	}
 }
+#endif
 
+void __copy_dma_to_bio (
+	bdbm_drv_info_t* bdi,
+	bdbm_llm_req_t* r)
+{
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	uint8_t* ptr_dma_addr = NULL;
+	uint32_t nr_pages = 0;
+	uint32_t loop = 0;
+
+	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
+	ptr_dma_addr = (uint8_t*)priv->rbuf[r->phyaddr.punit_id];
+
+	/* copy the main page data to a buffer */
+	for (loop = 0; loop < nr_pages; loop++) {
+		if (bdbm_is_read (r->req_type) && bdbm_is_rmw (r->req_type)) {
+			/* skip reading the page if it is part of RMW */
+			if (r->fmain.kp_stt[loop] == KP_STT_DATA)
+				continue;
+		}
+		bdbm_memcpy (
+			r->fmain.kp_ptr[loop],
+			ptr_dma_addr + KERNEL_PAGE_SIZE * loop, 
+			KPAGE_SIZE
+		);
+	}
+
+	/* copy the OOB data to a buffer */
+	if (bdbm_is_read (r->req_type)) {
+		if (!bdbm_is_rmw (r->req_type)) {
+			bdbm_memcpy (
+				r->foob.data, 
+				ptr_dma_addr + np->page_main_size,
+				np->page_oob_size
+			);
+		}
+	}
+}
+
+#if 0
 void __copy_bio_to_dma (
 	bdbm_drv_info_t* bdi,
 	bdbm_llm_req_t* r)
@@ -463,7 +505,7 @@ void __copy_bio_to_dma (
 	uint32_t loop = 0;
 
 	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->wbuf[r->phyaddr->punit_id];
+	ptr_dma_addr = (uint8_t*)priv->wbuf[r->phyaddr.punit_id];
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_pages; loop++) {
@@ -478,6 +520,39 @@ void __copy_bio_to_dma (
 	if (np->page_oob_size != 0 && r->ptr_oob != NULL) {
 		bdbm_memcpy (ptr_dma_addr + np->page_main_size,
 			r->ptr_oob, np->page_oob_size
+		);
+	}
+}
+#endif
+
+void __copy_bio_to_dma (
+	bdbm_drv_info_t* bdi,
+	bdbm_llm_req_t* r)
+{
+	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+ 	uint8_t* ptr_dma_addr = NULL;
+	uint32_t nr_pages = 0;
+	uint32_t loop = 0;
+
+	nr_pages = np->page_main_size / KPAGE_SIZE;
+	ptr_dma_addr = (uint8_t*)priv->wbuf[r->phyaddr.punit_id];
+
+	/* copy the main page data to a buffer */
+	for (loop = 0; loop < nr_pages; loop++) {
+		bdbm_memcpy (
+			ptr_dma_addr + KPAGE_SIZE * loop, 
+			r->fmain.kp_ptr[loop],
+			KPAGE_SIZE
+		);
+	}
+
+	/* copy the OOB data to a buffer */
+	if (bdbm_is_write (r->req_type)) {
+		bdbm_memcpy (
+			ptr_dma_addr + np->page_main_size,
+			r->foob.data, 
+			np->page_oob_size
 		);
 	}
 }
@@ -496,7 +571,7 @@ uint32_t dm_bluedbm_make_req (
 	}
 
 	/* check punit (= tags) */
-	punit_id = r->phyaddr->punit_id;
+	punit_id = r->phyaddr.punit_id;
 
 	spin_lock_irqsave (&priv->lock, flags);
 	if (priv->llm_reqs[punit_id] != NULL) {
@@ -511,11 +586,11 @@ uint32_t dm_bluedbm_make_req (
 	switch (r->req_type) {
 	case REQTYPE_WRITE:
 		bdbm_msg ("[W-NM] %llu (%llu,%llu,%llu,%llu)",
-			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
+			r->lpa, r->phyaddr.channel_no, r->phyaddr.chip_no, r->phyaddr.block_no, r->phyaddr.page_no);
 		break;
 	case REQTYPE_RMW_WRITE:
 		bdbm_msg ("[W-RW] %llu (%llu,%llu,%llu,%llu)", 
-			r->lpa, r->phyaddr->channel_no, r->phyaddr->chip_no, r->phyaddr->block_no, r->phyaddr->page_no);
+			r->lpa, r->phyaddr.channel_no, r->phyaddr.chip_no, r->phyaddr.block_no, r->phyaddr.page_no);
 		break;
 	case REQTYPE_GC_WRITE:
 		bdbm_msg ("[W-GC] %llu (%llu,%llu,%llu,%llu)", 
@@ -547,10 +622,10 @@ uint32_t dm_bluedbm_make_req (
 		__copy_bio_to_dma (bdi, r);
 		FlashRequest_writePage (
 			&priv->intarr[3], 
-			r->phyaddr->channel_no, 
-			r->phyaddr->chip_no, 
-			r->phyaddr->block_no+BLKOFS, 
-			r->phyaddr->page_no, 
+			r->phyaddr.channel_no, 
+			r->phyaddr.chip_no, 
+			r->phyaddr.block_no+BLKOFS, 
+			r->phyaddr.page_no, 
 			punit_id);
 		break;
 
@@ -560,19 +635,19 @@ uint32_t dm_bluedbm_make_req (
 	case REQTYPE_META_READ:
 		FlashRequest_readPage (
 			&priv->intarr[3], 
-			r->phyaddr->channel_no, 
-			r->phyaddr->chip_no, 
-			r->phyaddr->block_no+BLKOFS, 
-			r->phyaddr->page_no, 
+			r->phyaddr.channel_no, 
+			r->phyaddr.chip_no, 
+			r->phyaddr.block_no+BLKOFS, 
+			r->phyaddr.page_no, 
 			punit_id);
 		break;
 
 	case REQTYPE_GC_ERASE:
 		FlashRequest_eraseBlock (
 			&priv->intarr[3], 
-			r->phyaddr->channel_no, 
-			r->phyaddr->chip_no, 
-			r->phyaddr->block_no+BLKOFS, 
+			r->phyaddr.channel_no, 
+			r->phyaddr.chip_no, 
+			r->phyaddr.block_no+BLKOFS, 
 			punit_id);
 		break;
 
