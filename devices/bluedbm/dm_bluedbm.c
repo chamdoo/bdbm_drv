@@ -187,8 +187,6 @@ int event_handler_fn (void* arg)
 	while (1) {
 		manual_event (priv);
 		yield ();
-		/*msleep (0);*/
-		/*udelay(1);*/
 		if (kthread_should_stop ()) {
 			bdbm_msg ("event_handler_fn ends");
 			break;
@@ -231,12 +229,6 @@ int connectal_handler_fn (void* arg)
 	uint32_t* src_buffer;
 
 	/* create portals in FPGA */
-#if 0
-	init_portal_internal (&priv->intarr[2], IfcNames_HostMMUConfigRequest, NULL); // fpga3
-	init_portal_internal (&priv->intarr[0], IfcNames_HostMMUConfigIndication, MMUConfigIndicationWrapper_handleMessage); // fpga1
-	init_portal_internal (&priv->intarr[3], IfcNames_FlashRequest, NULL); // fpga4
-	init_portal_internal (&priv->intarr[1], IfcNames_FlashIndication, FlashIndicationWrapper_handleMessage); // fpga2
-#endif
 	init_portal_internal (&priv->intarr[2], IfcNames_HostMMURequest, NULL, NULL, NULL, NULL, MMURequest_reqinfo); // fpga3
 	init_portal_internal (&priv->intarr[0], IfcNames_HostMMUIndication, MMUIndication_handleMessage, &MMUIndication_cbTable, NULL, NULL, MMUIndication_reqinfo); // fpga1
 	init_portal_internal (&priv->intarr[3], IfcNames_FlashRequest, NULL, NULL, NULL, NULL, FlashRequest_reqinfo); // fpga4
@@ -310,8 +302,6 @@ static void __dm_setup_device_params (bdbm_device_params_t* params)
 uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 {
 	struct dm_bluedbm_private* priv = NULL;
-	/*bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);*/
-	/*uint32_t nr_punit = np->nr_channels * np->nr_chips_per_channel;*/
 	uint32_t nr_punit;
 
 	/* setup NAND parameters according to users' inputs */
@@ -414,46 +404,6 @@ void dm_bluedbm_close (bdbm_drv_info_t* bdi)
 	bdbm_msg ("dm_bluedbm_close is destroyed"); 
 }
 
-#if 0
-void __copy_dma_to_bio (
-	bdbm_drv_info_t* bdi,
-	bdbm_llm_req_t* r)
-{
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	uint8_t* ptr_dma_addr = NULL;
-	uint32_t nr_pages = 0;
-	uint32_t loop = 0;
-
-	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->rbuf[r->phyaddr.punit_id];
-
-	/* copy the main page data to a buffer */
-	for (loop = 0; loop < nr_pages; loop++) {
-		if (r->req_type == REQTYPE_RMW_READ && 
-			r->kpg_flags[loop] == MEMFLAG_KMAP_PAGE) {
-			continue;
-		}
-
-		bdbm_memcpy (
-			r->pptr_kpgs[loop],
-			ptr_dma_addr + KERNEL_PAGE_SIZE * loop, 
-			KERNEL_PAGE_SIZE
-		);
-	}
-
-	/* copy the OOB data to a buffer */
-	if (r->req_type != REQTYPE_RMW_READ && 
-		r->ptr_oob != NULL &&
-		np->page_oob_size != 0) {
-		bdbm_memcpy (r->ptr_oob, 
-			ptr_dma_addr + np->page_main_size,
-			np->page_oob_size
-		);
-	}
-}
-#endif
-
 void __copy_dma_to_bio (
 	bdbm_drv_info_t* bdi,
 	bdbm_llm_req_t* r)
@@ -492,38 +442,6 @@ void __copy_dma_to_bio (
 		}
 	}
 }
-
-#if 0
-void __copy_bio_to_dma (
-	bdbm_drv_info_t* bdi,
-	bdbm_llm_req_t* r)
-{
-	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
- 	uint8_t* ptr_dma_addr = NULL;
-	uint32_t nr_pages = 0;
-	uint32_t loop = 0;
-
-	nr_pages = np->page_main_size / KERNEL_PAGE_SIZE;
-	ptr_dma_addr = (uint8_t*)priv->wbuf[r->phyaddr.punit_id];
-
-	/* copy the main page data to a buffer */
-	for (loop = 0; loop < nr_pages; loop++) {
-		bdbm_memcpy (
-			ptr_dma_addr + KERNEL_PAGE_SIZE * loop, 
-			r->pptr_kpgs[loop], 
-			KERNEL_PAGE_SIZE
-		);
-	}
-
-	/* copy the OOB data to a buffer */
-	if (np->page_oob_size != 0 && r->ptr_oob != NULL) {
-		bdbm_memcpy (ptr_dma_addr + np->page_main_size,
-			r->ptr_oob, np->page_oob_size
-		);
-	}
-}
-#endif
 
 void __copy_bio_to_dma (
 	bdbm_drv_info_t* bdi,
