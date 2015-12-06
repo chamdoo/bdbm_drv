@@ -24,10 +24,11 @@ THE SOFTWARE.
 
 #include <linux/kernel.h>
 
+#include "params.h"
 #include "raw-flash.h"
 #include "platform.h"
 #include "debug.h"
-#include "hw.h"
+#include "devices.h"
 
 /*#define DEBUG_FLASH_RAW*/
 
@@ -53,6 +54,7 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 	.end_req = __dm_intr_handler, /* 'dm' automatically calls 'end_req' when it gets acks from devices */
 };
 
+#if 0
 bdbm_params_t* read_driver_params (void)
 {
 	bdbm_params_t* p = NULL;
@@ -71,6 +73,7 @@ bdbm_params_t* read_driver_params (void)
 
 	return p;
 }
+#endif
 
 static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 {
@@ -97,17 +100,21 @@ static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 				bdbm_mutex_free (rf->rr[i].done);
 				bdbm_free (rf->rr[i].done);
 			}
+#if 0
 			if (rf->rr[i].pptr_kpgs) {
 				bdbm_free (rf->rr[i].pptr_kpgs);
 			}
+#endif
 		}
 	}
 
 	if (rf->punit_status)
 		bdbm_free (rf->punit_status);
 
+#if 0
 	if (rf->bdi.ptr_bdbm_params)
 		bdbm_free (rf->bdi.ptr_bdbm_params);
+#endif
 
 	if (rf->rr)
 		bdbm_free (rf->rr);
@@ -115,6 +122,7 @@ static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 	bdbm_free (rf);
 }
 
+#if 0
 static void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
 {
 	bdbm_msg ("=====================================================================");
@@ -131,6 +139,25 @@ static void __bdbm_raw_flash_show_nand_params (bdbm_params_t* p)
 	bdbm_msg ("# of kernel pages per flash page: %llu", p->nand.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_msg ("");
 }
+#endif
+
+static void __bdbm_raw_flash_show_nand_params (bdbm_device_params_t* parm_dev)
+{
+	bdbm_msg ("=====================================================================");
+	bdbm_msg ("< NAND PARAMETERS >");
+	bdbm_msg ("=====================================================================");
+	bdbm_msg ("# of channels = %llu", parm_dev->nr_channels);
+	bdbm_msg ("# of chips per channel = %llu", parm_dev->nr_chips_per_channel);
+	bdbm_msg ("# of blocks per chip = %llu", parm_dev->nr_blocks_per_chip);
+	bdbm_msg ("# of pages per block = %llu", parm_dev->nr_pages_per_block);
+	bdbm_msg ("page main size  = %llu bytes", parm_dev->page_main_size);
+	bdbm_msg ("page oob size = %llu bytes", parm_dev->page_oob_size);
+	bdbm_msg ("SSD type = %u (0: ramdrive, 1: ramdrive with timing , 2: BlueDBM(emul), 3: BlueDBM)", parm_dev->device_type);
+	bdbm_msg ("# of punits: %llu", BDBM_GET_NR_PUNITS ((*parm_dev)));
+	bdbm_msg ("# of kernel pages per flash page: %llu", parm_dev->page_main_size / KERNEL_PAGE_SIZE);
+	bdbm_msg ("");
+}
+
 
 bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 {
@@ -145,12 +172,14 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 	}
 	bdi = &rf->bdi; /* for convenience */
 
+#if 0
 	/* create params_t */
 	if ((bdi->ptr_bdbm_params = (bdbm_params_t*)bdbm_zmalloc 
 			(sizeof (bdbm_params_t))) == NULL) {
 		bdbm_error ("bdbm_zmalloc () failed");
 		goto fail;
 	}
+#endif
 
 	/* obtain dm_inf from the device */
 	if (bdbm_dm_init (bdi) != 0)  {
@@ -164,7 +193,10 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 	bdi->ptr_dm_inf = dm;
 
 	/* probe the device and get the device paramters */
+#if 0
 	if (dm->probe (bdi, &bdi->ptr_bdbm_params->nand) != 0) {
+#endif
+	if (dm->probe (bdi, &bdi->parm_dev) != 0) {
 		bdbm_error ("dm->probe () failed");
 		goto fail;
 	} else {
@@ -176,7 +208,10 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 
 		/* NOTE: disply device parameters. note that these parameters can be
 		 * set manually by modifying the "include/params.h" file. */
+#if 0
 		__bdbm_raw_flash_show_nand_params (bdi->ptr_bdbm_params);
+#endif
+		__bdbm_raw_flash_show_nand_params (&bdi->parm_dev);
 	}
 
 	/* create llm_reqs */
@@ -186,11 +221,15 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 		goto fail;
 	} else {
 		uint64_t i = 0;
+#if 0
 		uint32_t nr_kp_per_fp = 1;
+#endif
 
 		rf->punit_status = bdbm_malloc (sizeof (atomic_t) * rf->nr_punits);
 		for (i = 0; i < rf->nr_punits; i++) {
+#if 0
 			rf->rr[i].pptr_kpgs = bdbm_zmalloc (nr_kp_per_fp * sizeof (uint8_t*));
+#endif
 			rf->rr[i].done = bdbm_malloc (sizeof (bdbm_mutex_t));
 
 			bdbm_mutex_init (rf->rr[i].done); /* start with unlock */
@@ -234,24 +273,24 @@ static void __dm_intr_handler (
 	bdbm_raw_flash_t* rf = (bdbm_raw_flash_t*)bdi->private_data;
 
 #ifdef DEBUG_FLASH_RAW
-	bdbm_msg ("[%s] punit_id = %llu", __FUNCTION__, r->phyaddr->punit_id);
+	bdbm_msg ("[%s] punit_id = %llu", __FUNCTION__, r->phyaddr.punit_id);
 #endif
 
-	bdbm_bug_on (r->phyaddr->punit_id >= BDBM_GET_NR_PUNITS ((*rf->np)));
-	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr->punit_id]) != FLASH_RAW_PUNIT_BUSY);
+	bdbm_bug_on (r->phyaddr.punit_id >= BDBM_GET_NR_PUNITS ((*rf->np)));
+	bdbm_bug_on (atomic_read (&rf->punit_status[r->phyaddr.punit_id]) != FLASH_RAW_PUNIT_BUSY);
 
 #ifdef DEBUG_FLASH_RAW
-	if (r->ret != 0 && r->phyaddr) {
+	if (r->ret != 0) {
 		bdbm_msg ("oops: (%llu, %llu, %llu) ret = %u",
-			r->phyaddr->channel_no,
-			r->phyaddr->chip_no,
-			r->phyaddr->block_no,
+			r->phyaddr.channel_no,
+			r->phyaddr.chip_no,
+			r->phyaddr.block_no,
 			r->ret);
 	}
 #endif
 
 	/* free mutex & free punit */
-	atomic_set (&rf->punit_status[r->phyaddr->punit_id], FLASH_RAW_PUNIT_IDLE); 
+	atomic_set (&rf->punit_status[r->phyaddr.punit_id], FLASH_RAW_PUNIT_IDLE); 
 	bdbm_mutex_unlock (r->done);
 }
 
@@ -327,26 +366,28 @@ int __bdbm_raw_flash_rwe_async (
 	switch (io) {
 	case FLASH_RAW_ERASE:
 		r->req_type = REQTYPE_GC_ERASE;
-		r->phyaddr_w = phyaddr;
-		r->phyaddr = &r->phyaddr_w;
+		r->phyaddr = phyaddr;
 		break;
 	case FLASH_RAW_READ:
 		r->req_type = REQTYPE_READ;
-		r->phyaddr_r = phyaddr;
-		r->phyaddr = &r->phyaddr_r;
+		r->phyaddr = phyaddr;
 		break;
 	case FLASH_RAW_WRITE:
 		r->req_type = REQTYPE_WRITE;
-		r->phyaddr_w = phyaddr;
-		r->phyaddr = &r->phyaddr_w;
+		r->phyaddr = phyaddr;
 		break;
 	default:
 		break;
 	}
-	r->lpa = lpa;
+#if 0
 	for (i = 0; i < rf->nr_kp_per_fp; i++)
 		r->pptr_kpgs[i] = ptr_data + ((KERNEL_PAGE_SIZE) * i);
 	r->ptr_oob = ptr_oob;
+#endif
+	for (i = 0; i < rf->nr_kp_per_fp; i++)
+		r->fmain.kp_ptr[i] = ptr_data + ((KERNEL_PAGE_SIZE) * i);
+	if (ptr_oob)
+		bdbm_memcpy (r->foob.data, ptr_oob, rf->np->page_oob_size);
 	r->ret = 0; /* success by default */
 
 	/* send the reqest to the device */
@@ -356,8 +397,8 @@ int __bdbm_raw_flash_rwe_async (
 #ifdef DEBUG_FLASH_RAW
 	bdbm_msg ("[%s] submit - punit_id = %llu (status = %d)", 
 		__FUNCTION__, 
-		r->phyaddr->punit_id, 
-		atomic_read (&rf->punit_status[r->phyaddr->punit_id]));
+		r->phyaddr.punit_id, 
+		atomic_read (&rf->punit_status[r->phyaddr.punit_id]));
 #endif
 
 	if ((ret = dm->make_req (bdi, r)) != 0) {

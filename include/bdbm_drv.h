@@ -168,6 +168,7 @@ typedef struct {
 	uint8_t ret;	/* old for GC */
 	void* ptr_hlm_req;
 	void* ptr_qitem;
+	bdbm_mutex_t* done;	/* maybe used by applications that require direct notifications from an interrupt handler */
 
 	/* logical / physical info */
 	bdbm_logaddr_t logaddr;

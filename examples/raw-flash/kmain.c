@@ -33,7 +33,7 @@ THE SOFTWARE.
 
 #include <linux/kernel.h>
 #include "raw-flash.h"
-#include "utils/utime.h"
+#include "utime.h"
 
 
 bdbm_raw_flash_t* rf = NULL;
@@ -388,9 +388,9 @@ static int __init raw_flash_init (void)
 		return -1;
 
 	/* do a test */
-	/*run_async_test (np, 0); *//* don't check values; throughput test */
+	run_async_test (np, 0); /* don't check values; throughput test */
 	/*run_async_test (np, 1); *//* check values */
-	run_sync_test (np);
+	/*run_sync_test (np);*/
 	/* done */
 
 	return 0;

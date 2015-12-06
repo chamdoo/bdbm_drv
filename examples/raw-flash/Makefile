@@ -1,17 +1,22 @@
 # Makefile for a RISA Device Driver
 #
 
-COMMON := ../../include
+INCLUDE := ../../include
+COMMON := ../../common
 
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := -I$(PWD)/../../include
 
 EXTRA_CFLAGS += \
-	-D KERNEL_MODE \
-	-D CONFIG_ENABLE_MSG \
-	-D CONFIG_ENABLE_DEBUG \
+	-I$(PWD)/$(INCLUDE) \
+	-I$(PWD)/$(COMMON)/utils \
+	-I$(PWD)/$(COMMON)/3rd \
+
+EXTRA_CFLAGS += -D KERNEL_MODE
+EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG
+EXTRA_CFLAGS +=	-D CONFIG_ENABLE_DEBUG
 
 module_main-y := \
 	kmain.o \
