@@ -34,11 +34,7 @@ THE SOFTWARE.
 #include <unistd.h>
 #include <stdint.h>
 
-#include "../ioctl.h"
-
-
-/*#define BDBM_FORMAT _IOR(0, 0, int)*/
-/*#define BDBM_FORMAT_CHECK _IOR(0, 1, int)*/
+#include "../frontend/kernel/blkdev_ioctl.h"
 
 
 struct bdbm_format_args {
