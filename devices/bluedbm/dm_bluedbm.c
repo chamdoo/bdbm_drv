@@ -28,6 +28,8 @@ THE SOFTWARE.
 #include <linux/fs.h>
 #include <linux/kthread.h>
 #include <linux/delay.h> /* mdelay */
+#include <linux/hrtimer.h> /* hrtimer */
+#include <linux/workqueue.h> /* workqueue */
 
 #include "portal.h"  
 #include "portalmem.h"
@@ -42,6 +44,7 @@ THE SOFTWARE.
 #include "platform.h"
 #include "dev_params.h"
 
+//#define USE_TIMER
 
 /*#define BDBM_DBG*/
 #define MAX_INDARRAY 4
@@ -59,8 +62,12 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 	.store = dm_bluedbm_store,
 };
 
+typedef struct {
+	struct work_struct work; /* it must be at the end of structre */
+	void* user;
+} dm_bluedbm_wq_t;
+
 struct dm_bluedbm_private {
-	bdbm_completion_t event_handler_completion;
 	bdbm_completion_t connectal_completion;
 	bdbm_completion_t connectal_completion_init;
 
@@ -70,7 +77,13 @@ struct dm_bluedbm_private {
 	sem_t flash_sem;
 
 	/* for thread management */
+	bdbm_completion_t event_handler_completion;
 	struct task_struct *event_handler;
+
+	struct hrtimer hrtimer;	/* hrtimer must be at the end of the structure */
+	struct workqueue_struct *wq;
+	dm_bluedbm_wq_t works;
+
 	struct task_struct *connectal_handler;
 
 	/* for tag management */
@@ -93,56 +106,52 @@ void FlashIndicationreadDone_cb (struct PortalInternal *p, const uint32_t tag)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	bdbm_llm_req_t* r = NULL;
-	unsigned long flags;
 
-	bdbm_spin_lock_irqsave (&priv->lock, flags);
-	if ((r = priv->llm_reqs[tag]) == NULL) {
-		bdbm_spin_unlock_irqrestore (&priv->lock, flags);
+	if ((r = priv->llm_reqs[tag]) == NULL)
 		bdbm_bug_on (1);
-	}
-	priv->llm_reqs[tag] = NULL;
+
 	__copy_dma_to_bio (_bdi_dm, r);
+
+	bdbm_spin_lock (&priv->lock);
+	priv->llm_reqs[tag] = NULL;
+	bdbm_spin_unlock (&priv->lock);
+
 	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
-	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag )
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	bdbm_llm_req_t* r = NULL;
-	unsigned long flags;
 
-	bdbm_spin_lock_irqsave (&priv->lock, flags);
-	if ((r = priv->llm_reqs[tag]) == NULL) {
-		bdbm_spin_unlock_irqrestore (&priv->lock, flags);
+	if ((r = priv->llm_reqs[tag]) == NULL)
 		bdbm_bug_on (1);
-	}
+
+	bdbm_spin_lock (&priv->lock);
 	priv->llm_reqs[tag] = NULL;
+	bdbm_spin_unlock (&priv->lock);
+
 	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
-	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status )
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (_bdi_dm);
 	bdbm_llm_req_t* r = NULL;
-	unsigned long flags;
 
-	bdbm_spin_lock_irqsave (&priv->lock, flags);
-	if ((r = priv->llm_reqs[tag]) == NULL) {
-		bdbm_spin_unlock_irqrestore (&priv->lock, flags);
+	if ((r = priv->llm_reqs[tag]) == NULL)
 		bdbm_bug_on (1);
-	}
-	priv->llm_reqs[tag] = NULL;
+
 	if (status != 0) {
-		bdbm_msg ("*** bad block detected! (%llu, %llu, %llu) ***", 
-			r->phyaddr.channel_no,
-			r->phyaddr.chip_no,
-			r->phyaddr.block_no);
+		bdbm_msg ("*** bad block detected! (%llu, %llu, %llu) ***", r->phyaddr.channel_no, r->phyaddr.chip_no, r->phyaddr.block_no);
 		r->ret = 1; /* oops! it is a bad block */
 	}
+
+	bdbm_spin_lock (&priv->lock);
+	priv->llm_reqs[tag] = NULL;
+	bdbm_spin_unlock (&priv->lock);
+
 	_bdi_dm->ptr_dm_inf->end_req (_bdi_dm, r);
-	bdbm_spin_unlock_irqrestore (&priv->lock, flags);
 }
 
 void FlashIndicationdebugDumpResp_cb (  struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 )
@@ -179,6 +188,7 @@ void manual_event (struct dm_bluedbm_private* priv)
 		portalCheckIndication(&priv->intarr[i]);
 }
 
+#ifndef USE_TIMER
 int event_handler_fn (void* arg) 
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
@@ -196,6 +206,29 @@ int event_handler_fn (void* arg)
 	bdbm_complete (priv->event_handler_completion);
 	return 0;
 }
+#else
+static void __bluedbm_wq_handler (struct work_struct *w)
+{
+	dm_bluedbm_wq_t* work = (dm_bluedbm_wq_t*)w;
+	manual_event ((struct dm_bluedbm_private*)work->user);
+}
+
+static enum hrtimer_restart __bluedbm_timing_hrtimer_cmd_done (struct hrtimer *ptr_hrtimer)
+{
+	ktime_t ktime;
+	struct dm_bluedbm_private* priv;
+	
+	priv = (struct dm_bluedbm_private*)container_of (ptr_hrtimer, struct dm_bluedbm_private, hrtimer);
+
+	/* run workqueue */
+	queue_work (priv->wq, &priv->works.work);
+
+	ktime = ktime_set (0, 50 * 1000);
+	hrtimer_start (&priv->hrtimer, ktime, HRTIMER_MODE_REL);
+
+	return HRTIMER_NORESTART;
+}
+#endif
 
 MMUIndicationCb MMUIndication_cbTable = {
 	MMUIndicationWrapperidResponse_cb,
@@ -238,7 +271,25 @@ int connectal_handler_fn (void* arg)
 	sem_init (&priv->flash_sem, 0, 0);
 
 	/* create and run a thread for message handling */
+#ifndef USE_TIMER
 	wake_up_process (priv->event_handler);
+#else
+	{
+		/* create a timer */
+		ktime_t ktime;
+		hrtimer_init (&priv->hrtimer, CLOCK_REALTIME, HRTIMER_MODE_REL);
+		priv->hrtimer.function = __bluedbm_timing_hrtimer_cmd_done;
+		ktime = ktime_set (0, 500 * 1000);
+		hrtimer_start (&priv->hrtimer, ktime, HRTIMER_MODE_REL);
+
+		/* create wq */
+		priv->wq = create_singlethread_workqueue ("bdbm_bluedbm_wq");
+		priv->works.user = (void*)priv;
+		INIT_WORK (&priv->works.work, __bluedbm_wq_handler);
+
+		bdbm_msg ("registered a timer for checking events from HW");
+	}
+#endif
 
 	/* get the mapped-memory from Connectal */
 	src_alloc = portalAlloc (src_alloc_sz);
@@ -332,16 +383,22 @@ uint32_t dm_bluedbm_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		bdbm_warning ("bdbm_zmalloc failed");
 		goto fail;
 	}
+#ifndef USE_TIMER
 	bdbm_init_completion (priv->event_handler_completion);
+#endif
 	bdbm_init_completion (priv->connectal_completion);
 	bdbm_init_completion (priv->connectal_completion_init);
 
 	/* register a bdbm device */
+#ifndef USE_TIMER
 	if ((priv->event_handler = kthread_create (
 			event_handler_fn, (void*)bdi, "event_handler_fn")) == NULL) {
 		bdbm_error ("kthread_create failed");
 		goto fail;
 	}
+#else
+	/* TODO: create a timer */
+#endif
 	if ((priv->connectal_handler = kthread_create (
 			connectal_handler_fn, (void*)bdi, "connectal_handler_fn")) == NULL) {
 		bdbm_error ("kthread_create failed");
@@ -380,6 +437,7 @@ void dm_bluedbm_close (bdbm_drv_info_t* bdi)
 	if (priv == NULL)
 		return;
 
+#ifndef USE_TIMER
 	if (priv->event_handler) {
 		kthread_stop (priv->event_handler);
 		wait_for_completion_timeout (
@@ -387,6 +445,14 @@ void dm_bluedbm_close (bdbm_drv_info_t* bdi)
 			msecs_to_jiffies(2000));
 		bdbm_msg ("event_handler done");
 	}
+#else
+	hrtimer_cancel (&priv->hrtimer);
+	if (priv->wq) {
+		destroy_workqueue (priv->wq);
+	}
+	bdbm_msg ("destoryed timer for bluedbm");
+#endif
+
 	if (priv->connectal_handler) {
 		send_sig (SIGKILL, priv->connectal_handler, 0);
 		wait_for_completion_timeout (
@@ -424,21 +490,13 @@ void __copy_dma_to_bio (
 			if (r->fmain.kp_stt[loop] == KP_STT_DATA)
 				continue;
 		}
-		bdbm_memcpy (
-			r->fmain.kp_ptr[loop],
-			ptr_dma_addr + KERNEL_PAGE_SIZE * loop, 
-			KPAGE_SIZE
-		);
+		bdbm_memcpy (r->fmain.kp_ptr[loop], ptr_dma_addr + KERNEL_PAGE_SIZE * loop, KPAGE_SIZE);
 	}
 
 	/* copy the OOB data to a buffer */
 	if (bdbm_is_read (r->req_type)) {
 		if (!bdbm_is_rmw (r->req_type)) {
-			bdbm_memcpy (
-				r->foob.data, 
-				ptr_dma_addr + np->page_main_size,
-				np->page_oob_size
-			);
+			bdbm_memcpy (r->foob.data, ptr_dma_addr + np->page_main_size, np->page_oob_size);
 		}
 	}
 }
@@ -458,20 +516,12 @@ void __copy_bio_to_dma (
 
 	/* copy the main page data to a buffer */
 	for (loop = 0; loop < nr_pages; loop++) {
-		bdbm_memcpy (
-			ptr_dma_addr + KPAGE_SIZE * loop, 
-			r->fmain.kp_ptr[loop],
-			KPAGE_SIZE
-		);
+		bdbm_memcpy (ptr_dma_addr + KPAGE_SIZE * loop, r->fmain.kp_ptr[loop], KPAGE_SIZE);
 	}
 
 	/* copy the OOB data to a buffer */
 	if (bdbm_is_write (r->req_type)) {
-		bdbm_memcpy (
-			ptr_dma_addr + np->page_main_size,
-			r->foob.data, 
-			np->page_oob_size
-		);
+		bdbm_memcpy (ptr_dma_addr + np->page_main_size, r->foob.data, np->page_oob_size);
 	}
 }
 
@@ -480,7 +530,6 @@ uint32_t dm_bluedbm_make_req (
 	bdbm_llm_req_t* r)
 {
 	struct dm_bluedbm_private* priv = BDBM_DM_PRIV (bdi);
-	unsigned long flags;
 	uint32_t punit_id;
 
 	if (r->req_type == REQTYPE_READ_DUMMY) {
@@ -491,14 +540,14 @@ uint32_t dm_bluedbm_make_req (
 	/* check punit (= tags) */
 	punit_id = r->phyaddr.punit_id;
 
-	spin_lock_irqsave (&priv->lock, flags);
+	spin_lock (&priv->lock);
 	if (priv->llm_reqs[punit_id] != NULL) {
-		spin_unlock_irqrestore (&priv->lock, flags);
+		spin_unlock (&priv->lock);
 		bdbm_error ("punit_id (%u) is busy...", punit_id);
 		bdbm_bug_on (1);
 	} else
 		priv->llm_reqs[punit_id] = r;
-	spin_unlock_irqrestore (&priv->lock, flags);
+	spin_unlock (&priv->lock);
 
 #ifdef BDBM_DBG
 	switch (r->req_type) {

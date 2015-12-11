@@ -62,9 +62,11 @@ SRCS := \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
+	$(FTL)/hlm_rsd.c \
 	$(FTL)/llm_mq.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/page_ftl.c \
+	$(FTL)/algo/block_ftl.c \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(FTL)/queue/rd_prior_queue.c \
