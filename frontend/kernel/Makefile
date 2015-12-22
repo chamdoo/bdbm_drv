@@ -6,8 +6,9 @@ INCLUDE := ../../include
 COMMON := ../../common
 DM_COMMON := ../../devices/common
 
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
@@ -64,15 +65,16 @@ bdbm_drv-y := \
 	$(FTL)/llm_mq.o \
 	$(FTL)/algo/abm.o \
 	$(FTL)/algo/page_ftl.o \
+	$(FTL)/algo/block_ftl.o \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
 	$(FTL)/queue/rd_prior_queue.o \
+	$(FTL)/hlm_reqs_pool.o \
 	$(DM_COMMON)/dev_params.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/bdbm_main.o \
-	$(FTL)/hlm_reqs_pool.o \
 
 
 obj-m := bdbm_drv.o
@@ -103,5 +105,9 @@ kernel_clean:
 .PHONY: clean
 clean: kernel_clean
 	@rm -rf Module.markers modules.order
-	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
+	@cd ../../ftl; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd; cd -;
+	@cd $(FTL); rm *.o; cd -;
+	@cd $(COMMON)/utils; rm *.o; cd -;
+	@cd $(COMMON)/3rd; rm *.o; cd -;
+	@cd $(DM_COMMON); rm *.o; cd -;
 

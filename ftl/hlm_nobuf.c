@@ -122,7 +122,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					hlm_reqs_pool_relocate_kp (lr, sp_ofs);
 				}
 			} else if (bdbm_is_write (lr->req_type)) {
-				if (ftl->get_free_ppa (bdi, &lr->phyaddr) != 0) {
+				if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
 					bdbm_error ("`ftl->get_free_ppa' failed");
 					goto fail;
 				}
@@ -148,7 +148,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			}
 
 			/* getting the location to which data will be written */
-			if (ftl->get_free_ppa (bdi, phyaddr) != 0) {
+			if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
 				bdbm_error ("`ftl->get_free_ppa' failed");
 				goto fail;
 			}
@@ -183,40 +183,84 @@ fail:
 	return 1;
 }
 
-uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)
+void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
-	uint32_t ret, loop = 0;
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+
+	if (dp->mapping_type == MAPPING_POLICY_PAGE) {
+		uint32_t loop;
+		/* see if foreground GC is needed or not */
+		for (loop = 0; loop < 10; loop++) {
+			if (hr->req_type == REQTYPE_WRITE && 
+				ftl->is_gc_needed != NULL && 
+				ftl->is_gc_needed (bdi, 0)) {
+				/* perform GC before sending requests */ 
+				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+				ftl->do_gc (bdi, 0);
+			} else
+				break;
+		}
+	} else if (dp->mapping_type == MAPPING_POLICY_SEGMENT) {
+		bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
+		/* perform mapping with the FTL */
+		if (hr->req_type == REQTYPE_WRITE && ftl->is_gc_needed != NULL) {
+			bdbm_llm_req_t* lr = NULL;
+			uint64_t i = 0;
+			bdbm_hlm_for_each_llm_req (lr, hr, i) {
+				/* NOTE: segment-level ftl does not support fine-grain rmw */
+				if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
+					/* perform GC before sending requests */ 
+					bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+					ftl->do_gc (bdi, lr->logaddr.lpa[0]);
+				}
+			}
+		}
+	} else {
+		/* do nothing */
+	}
+}
+
+uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
+{
+	uint32_t ret;
 	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
 
 	/* is req_type correct? */
-	bdbm_bug_on (!bdbm_is_normal (ptr_hlm_req->req_type));
+	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
 
+	/*bdbm_msg ("[HLM-MAKEREQ] %x", hr->req_type);*/
+
+	__hlm_nobuf_check_ondemand_gc (bdi, hr);
+#if 0
 	/* trigger gc if necessary */
 	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
 		bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 		/* see if foreground GC is needed or not */
 		for (loop = 0; loop < 10; loop++) {
-			if (ptr_hlm_req->req_type == REQTYPE_WRITE && 
+			if (hr->req_type == REQTYPE_WRITE && 
 				ftl->is_gc_needed != NULL && 
-				ftl->is_gc_needed (bdi)) {
+				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
-				ftl->do_gc (bdi);
+				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+				ftl->do_gc (bdi, 0);
 			} else
 				break;
 		}
 	}
+#endif
 
 	/* perform i/o */
-	if (bdbm_is_trim (ptr_hlm_req->req_type)) {
-		if ((ret = __hlm_nobuf_make_trim_req (bdi, ptr_hlm_req)) == 0) {
+	if (bdbm_is_trim (hr->req_type)) {
+		if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {
 			/* call 'ptr_host_inf->end_req' directly */
-			bdi->ptr_host_inf->end_req (bdi, ptr_hlm_req);
-			/* ptr_hlm_req is now NULL */
+			bdi->ptr_host_inf->end_req (bdi, hr);
+			/* hr is now NULL */
 		}
 	} else {
-		ret = __hlm_nobuf_make_rw_req (bdi, ptr_hlm_req);
+		ret = __hlm_nobuf_make_rw_req (bdi, hr);
 	} 
 
 	return ret;
@@ -231,6 +275,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lr->req_type |= REQTYPE_DONE;
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
+		/*bdbm_msg ("[HLM-DONE] %x", hr->req_type);*/
 		/* finish the host request */
 		bdbm_mutex_unlock (&hr->done);
 		bdi->ptr_host_inf->end_req (bdi, hr);

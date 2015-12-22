@@ -59,44 +59,47 @@ bdbm_hlm_inf_t _hlm_rsd_inf = {
 	.end_req = hlm_rsd_end_req,
 };
 
-struct segment_buf {
+typedef struct {
 	uint32_t seg_no;
 	bdbm_hlm_req_t* hlm_req;
 	UT_hash_handle hh;	/* hash header */
-};
+} segment_buf_t;
 
 /* data structures for hlm_rsd */
-struct bdbm_hlm_rsd_private {
+typedef struct {
+#if 0
 	bdbm_ftl_inf_t* ptr_ftl_inf;	/* for hlm_nobuff (it must be on top of this structure) */
+#endif
 
-	/* buffers for segments; 
-	 * NOTE: the contents of buffers must be materialized to NAND flash
-	 * when a flush command arrives.
-	 */
-	struct segment_buf* seg_buf;
-};
+	/* buffers for segments; NOTE: the contents of buffers must be materialized
+	 * to NAND flash when a flush command arrives. */
+	segment_buf_t* seg_buf;
+}bdbm_hlm_rsd_private_t;
 
 /* interface functions for hlm_rsd */
 uint32_t hlm_rsd_create (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_rsd_private* p = NULL;
+	bdbm_hlm_rsd_private_t* p = NULL;
 	bdbm_ftl_params* parms = BDBM_GET_DRIVER_PARAMS(bdi);
 
 	/* create private */
-	if ((p = (struct bdbm_hlm_rsd_private*)bdbm_malloc_atomic
-			(sizeof(struct bdbm_hlm_rsd_private))) == NULL) {
+	if ((p = (bdbm_hlm_rsd_private_t*)bdbm_malloc
+			(sizeof(bdbm_hlm_rsd_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		return 1;
 	}
 
+#if 0
 	/* setup FTL function pointers */
 	if ((p->ptr_ftl_inf = BDBM_GET_FTL_INF (bdi)) == NULL) {
 		bdbm_error ("ftl is not valid");
 		return 1;
 	}
-	if (parms->mapping_type != MAPPING_POLICY_SEGMENT) {
+#endif
+
+	/* check the type of the FTL */
+	if (parms->mapping_type != MAPPING_POLICY_SEGMENT)
 		bdbm_warning ("ftl is not for RSD!!!");
-	}
 
 	/* keep the private structure */
 	bdi->ptr_hlm_inf->ptr_private = (void*)p;
@@ -106,9 +109,10 @@ uint32_t hlm_rsd_create (bdbm_drv_info_t* bdi)
 
 void hlm_rsd_destroy (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
+	bdbm_hlm_rsd_private_t* p = (bdbm_hlm_rsd_private_t*)BDBM_HLM_PRIV(bdi);
 
-	bdbm_free_atomic (p);
+	/* free priv */
+	bdbm_free (p);
 }
 
 bdbm_hlm_req_t* __hlm_rsd_duplicate_hlm_req (
@@ -124,8 +128,7 @@ bdbm_hlm_req_t* __hlm_rsd_duplicate_hlm_req (
 		bdbm_bug_on (1);
 	}
 
-	if ((new_hlm_req = (bdbm_hlm_req_t*)bdbm_malloc_atomic
-			(sizeof (bdbm_hlm_req_t))) == NULL) {
+	if ((new_hlm_req = (bdbm_hlm_req_t*)bdbm_malloc (sizeof (bdbm_hlm_req_t))) == NULL) {
 		bdbm_bug_on (1);
 	}
 
@@ -138,17 +141,17 @@ bdbm_hlm_req_t* __hlm_rsd_duplicate_hlm_req (
 	new_hlm_req->queued = 1;	/* mark it queued */
 	new_hlm_req->sw = hlm_req->sw;
 
-	if ((new_hlm_req->pptr_kpgs = (uint8_t**)bdbm_malloc_atomic
+	if ((new_hlm_req->pptr_kpgs = (uint8_t**)bdbm_malloc
 			(sizeof(uint8_t*) * new_hlm_req->len * nr_kp_per_fp)) == NULL) {
 		bdbm_bug_on (1);
 	}
-	if ((new_hlm_req->kpg_flags = (uint8_t*)bdbm_malloc_atomic
+	if ((new_hlm_req->kpg_flags = (uint8_t*)bdbm_malloc
 			(sizeof(uint8_t) * new_hlm_req->len * nr_kp_per_fp)) == NULL) {
 		bdbm_bug_on (1);
 	}
 	for (i = 0; i < new_hlm_req->len * nr_kp_per_fp; i++) {
 		new_hlm_req->kpg_flags[i] = hlm_req->kpg_flags[i];
-		if ((new_hlm_req->pptr_kpgs[i] = (uint8_t*)bdbm_malloc_atomic (KERNEL_PAGE_SIZE)) == NULL) {
+		if ((new_hlm_req->pptr_kpgs[i] = (uint8_t*)bdbm_malloc (KERNEL_PAGE_SIZE)) == NULL) {
 			bdbm_bug_on (1);
 		}
 		bdbm_memcpy (
@@ -169,25 +172,25 @@ void __hlm_rsd_delete_hlm_req (
 	uint32_t i = 0;
 
 	for (i = 0; i < hlm_req->len * nr_kp_per_fp; i++) {
-		bdbm_free_atomic (hlm_req->pptr_kpgs[i]);
+		bdbm_free (hlm_req->pptr_kpgs[i]);
 	}
-	bdbm_free_atomic (hlm_req->pptr_kpgs);
-	bdbm_free_atomic (hlm_req->kpg_flags);
-	bdbm_free_atomic (hlm_req);
+	bdbm_free (hlm_req->pptr_kpgs);
+	bdbm_free (hlm_req->kpg_flags);
+	bdbm_free (hlm_req);
 }
 
 uint32_t __hlm_rsd_make_rm_seg (
 	bdbm_drv_info_t* bdi, 
 	uint32_t seg_no)
 {
-	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
-	struct segment_buf* b = NULL;
+	bdbm_hlm_rsd_private_t* p = (bdbm_hlm_rsd_private_t*)BDBM_HLM_PRIV(bdi);
+	segment_buf_t* b = NULL;
 
 	HASH_FIND_INT (p->seg_buf, &seg_no, b);
 	if (b != NULL) {
 		HASH_DEL (p->seg_buf, b);
 		__hlm_rsd_delete_hlm_req (bdi, b->hlm_req);
-		bdbm_free_atomic (b);
+		bdbm_free (b);
 	}
 
 	return 0;
@@ -197,11 +200,11 @@ uint32_t __hlm_rsd_make_req_r (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* new_hlm_req)
 {
-	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
+	bdbm_hlm_rsd_private_t* p = (bdbm_hlm_rsd_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_hlm_req_t* old_hlm_req = NULL;
-	struct segment_buf* b = NULL;
+	segment_buf_t* b = NULL;
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
 	uint32_t seg_no;
 
@@ -285,11 +288,11 @@ uint32_t __hlm_rsd_make_req_w (
 	bdbm_drv_info_t* bdi, 
 	bdbm_hlm_req_t* new_hlm_req)
 {
-	struct bdbm_hlm_rsd_private* p = (struct bdbm_hlm_rsd_private*)BDBM_HLM_PRIV(bdi);
+	bdbm_hlm_rsd_private_t* p = (bdbm_hlm_rsd_private_t*)BDBM_HLM_PRIV(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_hlm_req_t* old_hlm_req = NULL;
-	struct segment_buf* b = NULL;
+	segment_buf_t* b = NULL;
 	uint32_t ret = 0;
 
 	uint64_t nr_kp_per_fp = np->page_main_size / KERNEL_PAGE_SIZE;
@@ -368,7 +371,7 @@ uint32_t __hlm_rsd_make_req_w (
 
 		/* remove it from the hash table */
 		HASH_DEL (p->seg_buf, b);
-		bdbm_free_atomic (b);
+		bdbm_free (b);
 	}
 
 	/* [step2] submit a prev req if it is available */
@@ -406,8 +409,7 @@ uint32_t __hlm_rsd_make_req_w (
 				new_hlm_req->pptr_kpgs[1][511]);
 #endif
 			/* put the req into the buffer */
-			if ((b = (struct segment_buf*)bdbm_malloc_atomic
-					(sizeof (struct segment_buf))) == NULL) {
+			if ((b = (segment_buf_t*)bdbm_malloc (sizeof (segment_buf_t))) == NULL) {
 				bdbm_bug_on (1);
 			}
 			b->seg_no = seg_no;
@@ -469,9 +471,9 @@ void __hlm_rsd_end_req (
 			}	
 		}
 #endif
-		bdbm_free_atomic (ptr_llm_req->ptr_oob);
+		bdbm_free (ptr_llm_req->ptr_oob);
 	}
-	bdbm_free_atomic (ptr_llm_req);
+	bdbm_free (ptr_llm_req);
 
 	/* increase # of reqs finished */
 	ptr_hlm_req->nr_done_reqs++; 

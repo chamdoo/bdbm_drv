@@ -166,6 +166,12 @@ static int __encode_bio_to_proxy_req (
 	r->bi_bvec_cnt = 0;
 	r->bio = (void*)bio;
 
+#if 0
+	if (r->bi_rw == REQTYPE_WRITE) {
+		bdbm_msg ("proxy - [%llx] offset: %llu, size: %llu", r->bi_rw, r->bi_offset*512/4096, r->bi_size/8);
+	}
+#endif
+
 	/* get the data from the bio */
 	if (r->bi_rw != REQTYPE_TRIM) {
 		bio_for_each_segment (bvec, bio, loop) {

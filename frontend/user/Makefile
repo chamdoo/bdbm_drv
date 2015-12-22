@@ -62,7 +62,6 @@ SRCS := \
 	$(FTL)/ftl_params.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
-	$(FTL)/hlm_rsd.c \
 	$(FTL)/llm_mq.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/page_ftl.c \

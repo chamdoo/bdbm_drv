@@ -297,6 +297,7 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 
 uint32_t bdbm_page_ftl_get_free_ppa (
 	bdbm_drv_info_t* bdi, 
+	int64_t lpa,
 	bdbm_phyaddr_t* ppa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -482,7 +483,7 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 	return 0;
 }
 
-uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi)
+uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
@@ -741,7 +742,7 @@ erase_blks:
 }
 #endif
 
-uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
+uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
@@ -917,7 +918,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 			}
 		}
 		r->ptr_hlm_req = (void*)hlm_gc_w;
-		if (bdbm_page_ftl_get_free_ppa (bdi, &r->phyaddr) != 0) {
+		if (bdbm_page_ftl_get_free_ppa (bdi, 0, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
 		}
@@ -1124,7 +1125,6 @@ void __bdbm_page_badblock_scan_eraseblks (
 			r = &hlm_gc->llm_reqs[punit_id];
 			r->req_type = REQTYPE_GC_ERASE;
 			r->logaddr.lpa[0] = -1ULL; /* lpa is not available now */
-			//r->logaddr.sz = 0;
 			r->phyaddr.channel_no = b->channel_no;
 			r->phyaddr.chip_no = b->chip_no;
 			r->phyaddr.block_no = b->block_no;

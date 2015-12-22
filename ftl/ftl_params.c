@@ -50,7 +50,8 @@ int _param_wl_policy 				= WL_POLICY_NONE;
 int _param_queuing_policy			= QUEUE_POLICY_MULTI_FIFO;
 int _param_trim						= TRIM_ENABLE;
 int _param_snapshot					= SNAPSHOT_DISABLE;
-int _param_mapping_type				= MAPPING_POLICY_PAGE;
+//int _param_mapping_type				= MAPPING_POLICY_PAGE;
+int _param_mapping_type				= MAPPING_POLICY_SEGMENT;
 int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 

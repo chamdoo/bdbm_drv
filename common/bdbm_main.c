@@ -58,7 +58,8 @@ THE SOFTWARE.
 #include "ufile.h"
 
 /* TEMP */
-bdbm_ftl_inf_t _ftl_block_ftl, _ftl_dftl, _ftl_no_ftl;
+//bdbm_ftl_inf_t _ftl_block_ftl, _ftl_dftl, _ftl_no_ftl;
+bdbm_ftl_inf_t _ftl_dftl, _ftl_no_ftl;
 bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_rsd_inf;
 bdbm_llm_inf_t _llm_noq_inf;
 /* TEMP */

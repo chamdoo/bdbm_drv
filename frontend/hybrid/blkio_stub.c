@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "blkio_proxy_ioctl.h"
 #include "hlm_reqs_pool.h"
 
+//#define ENABLE_DISPLAY
 
 bdbm_host_inf_t _blkio_stub_inf = {
 	.ptr_private = NULL,
@@ -97,6 +98,9 @@ int __host_proxy_stub_thread (void* arg)
 			for (i = 0; i < BDBM_PROXY_MAX_REQS; i++) {
 				/* fetch the outstanding request from mmap */
 				proxy_req = &p->mmap_reqs[i];
+				if (proxy_req->id != i) {
+					bdbm_msg ("proxy_req->id: %llu i: %llu", proxy_req->id != i);
+				}
 				bdbm_bug_on (proxy_req->id != i);
 
 				/* are there any requests to send to the device? */
@@ -223,11 +227,42 @@ static void __blkio_stub_finish (
 	ioctl (p->fd, BDBM_BLOCKIO_PROXY_IOCTL_DONE, &proxy_req->id);
 }
 
+#ifdef ENABLE_DISPLAY
+static void __blkio_display_req (
+	bdbm_drv_info_t* bdi, 
+	bdbm_hlm_req_t* hlm_req)
+{
+	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+	uint64_t seg_no = 0;
+
+	if (ftl->get_segno) {
+		seg_no = ftl->get_segno (bdi, hlm_req->lpa);
+	}
+
+	switch (hlm_req->req_type) {
+	case REQTYPE_TRIM:
+		bdbm_msg ("[%llu] TRIM\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
+		break;
+	case REQTYPE_READ:
+		bdbm_msg ("[%llu] READ\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
+		break;
+	case REQTYPE_WRITE:
+		bdbm_msg ("[%llu] WRITE\t%llu\t%llu", seg_no, hlm_req->lpa, hlm_req->len);
+		break;
+	default:
+		bdbm_error ("invalid REQTYPE (%u)", hlm_req->req_type);
+		break;
+	}
+}
+#endif
+
 void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 {
 	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
 	bdbm_hlm_req_t* hr = NULL;
+
+	//bdbm_msg ("make_req - [%llx] offset: %llu, size: %llu", br->bi_rw, br->bi_offset*512/4096, br->bi_size/8);
 
 	/* get a free hlm_req from the hlm_reqs_pool */
 	if ((hr = bdbm_hlm_reqs_pool_alloc_item (p->hlm_reqs_pool)) == NULL) {
@@ -242,6 +277,10 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 		bdbm_bug_on (1);
 		return;
 	}
+
+#ifdef ENABLE_DISPLAY
+	__blkio_display_req (bdi, hr);
+#endif
 
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);
@@ -262,10 +301,12 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
 	bdbm_blkio_stub_private_t* p = (bdbm_blkio_stub_private_t*)BDBM_HOST_PRIV(bdi);
-	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)req->blkio_req;
+
+	//bdbm_msg ("end_req - [%llx] offset: %llu, size: %llu", br->bi_rw, br->bi_offset*512/4096, br->bi_size/8);
 
 	/* finish the proxy request */
-	__blkio_stub_finish (bdi, r);
+	__blkio_stub_finish (bdi, br);
 
 	/* decreate # of reqs */
 	atomic_dec (&p->nr_host_reqs);
