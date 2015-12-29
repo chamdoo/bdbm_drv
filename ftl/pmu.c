@@ -440,11 +440,11 @@ void pmu_display (bdbm_drv_info_t* bdi)
 	bdbm_msg ("< PERFORMANCE SUMMARY >");
 
 	exetime = bdbm_stopwatch_get_elapsed_time (&bdi->pm.exetime);
-	bdbm_msg ("(0) Execution Time (us): %ld.%ld", 
+	bdbm_msg ("[0] Execution Time (us): %ld.%ld", 
 		exetime.tv_sec, exetime.tv_usec);
 	bdbm_msg ("");
 
-	bdbm_msg ("(1) Total I/Os");
+	bdbm_msg ("[1] Total I/Os");
 	bdbm_msg ("# of page reads: %ld", 
 		atomic64_read (&bdi->pm.page_read_cnt) + 
 		atomic64_read (&bdi->pm.rmw_read_cnt) + 
@@ -462,7 +462,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
 		atomic64_read (&bdi->pm.gc_erase_cnt));
 	bdbm_msg ("");
 
-	bdbm_msg ("(2) Normal I/Os");
+	bdbm_msg ("[2] Normal I/Os");
 	bdbm_msg ("# of page reads: %ld", 
 		atomic64_read (&bdi->pm.page_read_cnt));
 	bdbm_msg ("# of page writes: %ld", 
@@ -474,7 +474,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
 	bdbm_msg ("");
 
 
-	bdbm_msg ("(3) GC I/Os");
+	bdbm_msg ("[3] GC I/Os");
 	bdbm_msg ("# of GC invocation: %ld",
 		atomic64_read (&bdi->pm.gc_cnt));
 	bdbm_msg ("# of page reads: %ld",
@@ -485,14 +485,14 @@ void pmu_display (bdbm_drv_info_t* bdi)
 		atomic64_read (&bdi->pm.gc_erase_cnt));
 	bdbm_msg ("");
 
-	bdbm_msg ("(4) Meta I/Os");
+	bdbm_msg ("[4] Meta I/Os");
 	bdbm_msg ("# of meta page reads: %ld",
 		atomic64_read (&bdi->pm.meta_read_cnt));
 	bdbm_msg ("# of meta page writes: %ld",
 		atomic64_read (&bdi->pm.meta_write_cnt));
 	bdbm_msg ("");
 
-	bdbm_msg ("(4) Elapsed Time");
+	bdbm_msg ("[5] Elapsed Time");
 	bdbm_msg ("page read (us): %llu (S:%llu + Q:%llu + D:%llu)",
 		bdi->pm.time_r_tot, 
 		bdi->pm.time_r_sw,
@@ -510,7 +510,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
 		bdi->pm.time_rmw_tot - bdi->pm.time_rmw_q);
 	bdbm_msg ("");
 
-	bdbm_msg ("(5) Utilization (R)");
+	bdbm_msg ("[6] Utilization (R)");
 	for (i = 0; i < np->nr_chips_per_channel; i++) {
 		for (j = 0; j < np->nr_channels; j++) {
 			sprintf (str, "% 8ld ", atomic64_read (&bdi->pm.util_r[j*np->nr_chips_per_channel+i]));
@@ -521,7 +521,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
 	}
 	bdbm_msg ("");
 
-	bdbm_msg ("(6) Utilization (W)");
+	bdbm_msg ("[7] Utilization (W)");
 	for (i = 0; i < np->nr_chips_per_channel; i++) {
 		for (j = 0; j < np->nr_channels; j++) {
 			sprintf (str, "% 8ld ", atomic64_read (&bdi->pm.util_w[j*np->nr_chips_per_channel+i]));

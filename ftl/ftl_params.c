@@ -50,8 +50,9 @@ int _param_wl_policy 				= WL_POLICY_NONE;
 int _param_queuing_policy			= QUEUE_POLICY_MULTI_FIFO;
 int _param_trim						= TRIM_ENABLE;
 int _param_snapshot					= SNAPSHOT_DISABLE;
-//int _param_mapping_type				= MAPPING_POLICY_PAGE;
-int _param_mapping_type				= MAPPING_POLICY_SEGMENT;
+int _param_mapping_type				= MAPPING_POLICY_PAGE;
+/*int _param_mapping_type				= MAPPING_POLICY_RSD;*/
+/*int _param_mapping_type				= MAPPING_POLICY_RSD;*/
 int _param_llm_type					= LLM_MULTI_QUEUE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 
@@ -83,7 +84,7 @@ void display_ftl_params (bdbm_ftl_params* p)
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("FTL CONFIGURATION");
 	bdbm_msg ("=====================================================================");
-	bdbm_msg ("mapping type = %d (1: no ftl, 2: block-mapping, 3: page-mapping, 4: dftl)", p->mapping_type);
+	bdbm_msg ("mapping type = %d (1: no ftl, 2: block-mapping, 3: RSD, 4: page-mapping, 5: dftl)", p->mapping_type);
 	bdbm_msg ("gc policy = %d (1: merge 2: random, 3: greedy, 4: cost-benefit)", p->gc_policy);
 	bdbm_msg ("wl policy = %d (1: none, 2: swap)", p->wl_policy);
 	bdbm_msg ("trim mode = %d (1: enable, 2: disable)", p->trim);

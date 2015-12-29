@@ -61,14 +61,38 @@ THE SOFTWARE.
 /* main data structure */
 bdbm_drv_info_t* _bdi = NULL;
 
-#define NUM_THREADS	20
+/*#define NUM_THREADS	20*/
 /*#define NUM_THREADS	20*/
 /*#define NUM_THREADS	10*/
-/*#define NUM_THREADS	1*/
+#define NUM_THREADS	1
 
 #include "bdbm_drv.h"
 #include "platform.h"
 #include "uatomic64.h"
+
+void nvme_cb_done (void* req)
+{
+	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req;
+	int i = 0;
+
+	for (i = 0; i < r->bi_bvec_cnt; i++) {
+		if (bdbm_is_read (r->bi_rw)) {
+		if (r->bi_bvec_ptr[i][0] != 0x0A ||
+			r->bi_bvec_ptr[i][1] != 0x0B ||
+			r->bi_bvec_ptr[i][2] != 0x0C) {
+#if 0
+			bdbm_msg ("[%llu] data corruption: %X %X %X",
+				r->bi_offset,
+				r->bi_bvec_ptr[i][0],
+				r->bi_bvec_ptr[i][1],
+				r->bi_bvec_ptr[i][2]);
+#endif
+		}
+		}
+		bdbm_free (r->bi_bvec_ptr[i]);
+	}
+	bdbm_free (r);
+}
 
 void host_thread_fn_write (void *data) 
 {
@@ -76,7 +100,7 @@ void host_thread_fn_write (void *data)
 	int offset = 0; /* sector (512B) */
 	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 10000; i++) {
+	for (i = 0; i < 1; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
@@ -84,6 +108,7 @@ void host_thread_fn_write (void *data)
 		blkio_req->bi_offset = offset;
 		blkio_req->bi_size = size;
 		blkio_req->bi_bvec_cnt = size / 8;
+		blkio_req->cb_done = nvme_cb_done;
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
 			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
 			blkio_req->bi_bvec_ptr[j][0] = 0x0A;
@@ -107,25 +132,24 @@ void host_thread_fn_read (void *data)
 	int offset = 0; /* sector (512B) */
 	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 10000; i++) {
-		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)malloc (sizeof (bdbm_blkio_req_t));
+	for (i = 0; i < 1; i++) {
+		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
 		blkio_req->bi_rw = REQTYPE_READ;
 		blkio_req->bi_offset = offset;
 		blkio_req->bi_size = size;
 		blkio_req->bi_bvec_cnt = size / 8;
+		blkio_req->cb_done = nvme_cb_done;
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
 			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
 			if (blkio_req->bi_bvec_ptr[j] == NULL) {
 				bdbm_msg ("bdbm_malloc () failed");
 				exit (-1);
 			}
-			//bdbm_msg ("[main] %d %p", j, blkio_req->bi_bvec_ptr[j]);
 		}
 
 		/* send req to ftl */
-		/*bdbm_msg ("[main] lpa: %llu", blkio_req->bi_offset);*/
 		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
 
 		/* increase offset */
@@ -144,7 +168,7 @@ int main (int argc, char** argv)
 
 	bdbm_msg ("[main] run ftlib... (%d)", sizeof (bdbm_llm_req_t));
 
-	bdbm_msg ("[user-main] initialize bdbm_drv");
+	bdbm_msg ("[nvme-main] initialize bdbm_drv");
 	if ((_bdi = bdbm_drv_create ()) == NULL) {
 		bdbm_error ("[kmain] bdbm_drv_create () failed");
 		return -1;
@@ -187,6 +211,7 @@ int main (int argc, char** argv)
 
 	} while (0);
 
+	sleep (1);
 	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_close (_bdi);
 	bdbm_dm_exit (_bdi);

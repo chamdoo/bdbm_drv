@@ -40,7 +40,7 @@ THE SOFTWARE.
 #include "debug.h"
 
 #include "ftl_params.h"
-#include "dev_params.h"
+#include "../devices/common/dev_params.h"
 
 #include "llm_noq.h"
 #include "llm_mq.h"
@@ -59,8 +59,8 @@ THE SOFTWARE.
 
 /* TEMP */
 //bdbm_ftl_inf_t _ftl_block_ftl, _ftl_dftl, _ftl_no_ftl;
-bdbm_ftl_inf_t _ftl_dftl, _ftl_no_ftl;
-bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf, _hlm_rsd_inf;
+bdbm_ftl_inf_t _ftl_dftl, _ftl_no_ftl, _ftl_block_ftl;
+bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf;
 bdbm_llm_inf_t _llm_noq_inf;
 /* TEMP */
 
@@ -99,6 +99,8 @@ int bdbm_drv_setup (
 	/* setup device */
 	bdi->ptr_dm_inf = dm_inf;
 
+	bdbm_msg ("bdbm_main.c: %p", bdi->ptr_dm_inf->ptr_private);
+
 	/* setup ftl */
 	switch (bdi->parm_ftl.hlm_type) {
 	case HLM_NOT_SPECIFIED:
@@ -109,9 +111,6 @@ int bdbm_drv_setup (
 		break;
 	case HLM_BUFFER:
 		bdi->ptr_hlm_inf = &_hlm_buf_inf;
-		break;
-	case HLM_RSD:
-		bdi->ptr_hlm_inf = &_hlm_rsd_inf;
 		break;
 	case HLM_DFTL:
 		bdi->ptr_hlm_inf = &_hlm_dftl_inf;
@@ -145,7 +144,10 @@ int bdbm_drv_setup (
 	case MAPPING_POLICY_NO_FTL:
 		bdi->ptr_ftl_inf = &_ftl_no_ftl;
 		break;
-	case MAPPING_POLICY_SEGMENT:
+	case MAPPING_POLICY_BLOCK:
+		bdi->ptr_ftl_inf = &_ftl_block_ftl;
+		break;
+	case MAPPING_POLICY_RSD:
 		bdi->ptr_ftl_inf = &_ftl_block_ftl;
 		break;
 	case MAPPING_POLICY_PAGE:

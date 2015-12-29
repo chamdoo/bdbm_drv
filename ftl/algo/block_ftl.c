@@ -108,6 +108,7 @@ typedef struct {
 
 /* function prototypes */
 uint32_t __bdbm_block_ftl_do_gc_segment (bdbm_drv_info_t* bdi, uint64_t seg_no);
+uint32_t __bdbm_block_ftl_do_gc_block_merge (bdbm_drv_info_t* bdi, uint64_t seg_no, uint64_t blk_no);
 //uint32_t __hlm_rsd_make_rm_seg (bdbm_drv_info_t* bdi, uint32_t seg_no);
 
 
@@ -137,11 +138,18 @@ uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)
 	bdbm_abm_info_t* abm = NULL;
 	bdbm_block_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS(bdi);
 
 	uint64_t nr_segs;
 	uint64_t nr_blks_per_seg;
 	uint64_t nr_pgs_per_seg;
 	uint64_t i, j;
+
+	/* check FTL parameters */
+	if (dp->mapping_type != MAPPING_POLICY_RSD && 
+		dp->mapping_type != MAPPING_POLICY_BLOCK) {
+		return 1;
+	}
 
 	/* create 'bdbm_abm_info' */
 	if ((abm = bdbm_abm_create (np, 0)) == NULL) {
@@ -555,10 +563,13 @@ uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 			if (p->nr_valid_pgs[segment_no] == 0) {
 				ret = 1; /* trigger GC */
 			} else {
-				bdbm_msg ("[%llu] OOPS! # of valid pages: %llu, # of trimmed pages: %llu",
-					segment_no,	
-					p->nr_valid_pgs[segment_no], 
-					p->nr_trim_pgs[segment_no]);
+				bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS(bdi);
+				if (dp->mapping_type == MAPPING_POLICY_RSD) {
+					/* this case should not happen with RSD */
+					bdbm_error ("[%llu] OOPS!!! # of valid pages: %llu, # of trimmed pages: %llu",
+						segment_no,	p->nr_valid_pgs[segment_no], p->nr_trim_pgs[segment_no]);
+				}
+				ret = 1; /* t */
 			}
 		}
 	}
@@ -652,7 +663,7 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 
 		/* is it not allocated? */
 		if (e->status == BFTL_NOT_ALLOCATED)
-			continue;
+			continue; /* if it is, ignore it */
 
 		/* check error cases */
 		bdbm_bug_on (e->channel_no == -1);
@@ -675,6 +686,159 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 	p->nr_dead_segs--;
 
 	//__hlm_rsd_make_rm_seg (bdi, seg_no);
+
+	return 0;
+}
+
+#include "hlm_reqs_pool.h"
+
+uint32_t __bdbm_block_ftl_do_gc_block_merge (
+	bdbm_drv_info_t* bdi,
+	uint64_t seg_no,
+	uint64_t blk_no)
+{
+	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_mapping_entry_t* e = &p->mt[seg_no][blk_no];
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	uint64_t j, k, nr_valid_pgs = 0, nr_trim_pgs = 0;
+
+	if (e->status == BFTL_NOT_ALLOCATED)
+		return 0; /* if it is, ignore it */
+
+	/* ---------------------------------------------------------------- */
+	/* [STEP1] build hlm_req_gc for reads */
+	for (j = 0; j < np->nr_pages_per_block; j++) {
+		/* are there any valid page in a block */
+		if (e->pst[j] == BFTL_PG_VALID) {
+			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_valid_pgs++];
+
+			hlm_reqs_pool_reset_fmain (&r->fmain);
+			hlm_reqs_pool_reset_logaddr (&r->logaddr);
+
+			r->logaddr.lpa[0] = -1; /* the subpage contains new data */
+			r->fmain.kp_stt[0] = KP_STT_DATA;
+			r->req_type = REQTYPE_GC_READ;
+			r->phyaddr.channel_no = e->channel_no;
+			r->phyaddr.chip_no = e->chip_no;
+			r->phyaddr.block_no = e->block_no;
+			r->phyaddr.page_no = j;
+			r->phyaddr.punit_id = BDBM_GET_PUNIT_ID (bdi, (&r->phyaddr));
+			r->ptr_hlm_req = (void*)hlm_gc;
+			r->ret = 0;
+		} else if (e->pst[j] == BFTL_PG_INVALID) {
+			nr_trim_pgs++;
+		}
+	}
+
+	bdbm_msg ("[MERGE-BEGIN] valid: %llu invalid: %llu", nr_valid_pgs, nr_trim_pgs);
+
+	/* wait until Q in llm becomes empty 
+	 * TODO: it might be possible to further optimize this */
+	bdi->ptr_llm_inf->flush (bdi);
+
+	/* send read reqs to llm */
+	if (nr_valid_pgs > 0) {
+		hlm_gc->req_type = REQTYPE_GC_READ;
+		hlm_gc->nr_llm_reqs = nr_valid_pgs;
+		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
+		bdbm_mutex_lock (&hlm_gc->done);
+		for (j = 0; j < nr_valid_pgs; j++) {
+			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[j])) != 0) {
+				bdbm_error ("llm_make_req failed");
+				bdbm_bug_on (1);
+			}
+		}
+		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_mutex_unlock (&hlm_gc->done);
+	}
+
+	/* ---------------------------------------------------------------- */
+	/* [STEP2] erase a block (do not consider wear-leveling new) */
+	{
+		uint8_t is_bad = 0;
+		//bdbm_llm_req_t* r = &hlm_gc->llm_reqs[0];
+		bdbm_llm_req_t rr;
+		bdbm_llm_req_t* r = &rr;
+
+		/* setup an erase request */
+		r->req_type = REQTYPE_GC_ERASE;
+		r->logaddr.lpa[0] = -1ULL; /* lpa is not available now */
+		r->phyaddr.channel_no = e->channel_no;
+		r->phyaddr.chip_no = e->chip_no;
+		r->phyaddr.block_no = e->block_no;
+		r->phyaddr.page_no = 0;
+		r->phyaddr.punit_id = BDBM_GET_PUNIT_ID (bdi, (&r->phyaddr));
+		r->ptr_hlm_req = (void*)hlm_gc;
+		r->ret = 0;
+
+		/* send erase reqs to llm */
+		hlm_gc->req_type = REQTYPE_GC_ERASE;
+		hlm_gc->nr_llm_reqs = 1;
+		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
+		bdbm_mutex_lock (&hlm_gc->done);
+		if ((bdi->ptr_llm_inf->make_req (bdi, r)) != 0) {
+			bdbm_error ("llm_make_req failed");
+			bdbm_bug_on (1);
+		}
+		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_mutex_unlock (&hlm_gc->done);
+
+		if (r->ret != 0)
+			is_bad = 1; /* bad block */
+		bdbm_abm_erase_block (p->abm, e->channel_no, e->chip_no, e->block_no, is_bad);
+
+		/* reset all the variables */
+		e->status = BFTL_NOT_ALLOCATED;
+		e->channel_no = -1;
+		e->chip_no = -1;
+		e->block_no = -1;
+		e->rw_pg_ofs = -1;
+		bdbm_memset (e->pst, BFTL_PG_FREE, sizeof (uint8_t) * np->nr_pages_per_block);
+
+		bdbm_bug_on (nr_trim_pgs > p->nr_trim_pgs[seg_no]);
+		bdbm_bug_on (nr_valid_pgs > p->nr_valid_pgs[seg_no]); 	
+		p->nr_trim_pgs[seg_no] -= nr_trim_pgs;
+		p->nr_valid_pgs[seg_no] -= nr_valid_pgs;
+	}
+
+	/* ---------------------------------------------------------------- */
+	/* [STEP3] build hlm_req_gc for writes */
+	if (nr_valid_pgs > 0) {
+		for (j = 0; j < nr_valid_pgs; j++) {
+			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[j];
+
+			bdbm_bug_on (r->fmain.kp_stt[0] != KP_STT_DATA);
+
+			r->req_type = REQTYPE_GC_WRITE;	/* change to write */
+			r->logaddr.lpa[0] = ((uint64_t*)r->foob.data)[0];
+
+			if (bdbm_block_ftl_get_free_ppa (bdi, r->logaddr.lpa[0], &r->phyaddr) != 0) {
+				bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
+				bdbm_bug_on (1);
+			}
+			if (bdbm_block_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
+				bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
+				bdbm_bug_on (1);
+			}
+		}
+
+		/* send write reqs to llm */
+		hlm_gc->req_type = REQTYPE_GC_WRITE;
+		hlm_gc->nr_llm_reqs = nr_valid_pgs;
+		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
+		bdbm_mutex_lock (&hlm_gc->done);
+		for (j = 0; j < nr_valid_pgs; j++) {
+			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[j])) != 0) {
+				bdbm_error ("llm_make_req failed");
+				bdbm_bug_on (1);
+			}
+		}
+		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_mutex_unlock (&hlm_gc->done);
+	}
+
+	bdbm_msg ("[MERGE-END] valid: %llu invalid: %llu", nr_valid_pgs, nr_trim_pgs);
 
 	return 0;
 }
@@ -712,7 +876,12 @@ uint32_t bdbm_block_ftl_do_gc (
 
 	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
 	uint64_t segment_no = __bdbm_block_ftl_get_segment_no (p, lpa);
-	return __bdbm_block_ftl_do_gc_segment (bdi, segment_no);
+	uint64_t block_no = __bdbm_block_ftl_get_block_no (p, lpa);
+
+	if (p->nr_valid_pgs[segment_no] == 0) {
+		return __bdbm_block_ftl_do_gc_segment (bdi, segment_no);
+	} else
+		return __bdbm_block_ftl_do_gc_block_merge (bdi, segment_no, block_no);
 }
 
 uint64_t bdbm_block_ftl_get_segno (bdbm_drv_info_t* bdi, uint64_t lpa)

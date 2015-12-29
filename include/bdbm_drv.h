@@ -126,13 +126,15 @@ typedef struct {
 #define BDBM_BLKIO_MAX_VECS 128
 
 typedef struct {
-	uint64_t bi_rw;
+	uint64_t bi_rw; /* REQTYPE_WRITE or REQTYPE_READ */
 	uint64_t bi_offset; /* unit: sector (512B) */
 	uint64_t bi_size; /* unit: sector (512B) */
-	uint64_t bi_bvec_cnt; /* unit: kernel-page (4KB) */
-	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS];
-	uint8_t ret;
-	void* bio;
+	uint64_t bi_bvec_cnt; /* unit: kernel-page (4KB); it must be equal to 'bi_size / 8' */
+	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS]; /* an array of 4 KB data for bvec */
+	uint8_t ret; /* a return value will be kept here */
+	void* bio; /* reserved for kernel's bio requests */
+	void* user; /* keep user's data structure */
+	void (*cb_done) (void* req); /* call-back function which is called when a request is done */
 } bdbm_blkio_req_t;
 
 #define BDBM_ALIGN_UP(addr,size)		(((addr)+((size)-1))&(~((size)-1)))

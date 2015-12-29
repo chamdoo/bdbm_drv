@@ -183,6 +183,7 @@ fail:
 	return 1;
 }
 
+/* TODO: it must be more general... */
 void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
@@ -201,8 +202,8 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			} else
 				break;
 		}
-	} else if (dp->mapping_type == MAPPING_POLICY_SEGMENT) {
-		bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
+	} else if (dp->mapping_type == MAPPING_POLICY_RSD ||
+			   dp->mapping_type == MAPPING_POLICY_BLOCK) {
 		/* perform mapping with the FTL */
 		if (hr->req_type == REQTYPE_WRITE && ftl->is_gc_needed != NULL) {
 			bdbm_llm_req_t* lr = NULL;
@@ -224,16 +225,15 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
-	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
 
 	/* is req_type correct? */
 	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
 
-	/*bdbm_msg ("[HLM-MAKEREQ] %x", hr->req_type);*/
-
+	/* do we need to do garbage collection? */
 	__hlm_nobuf_check_ondemand_gc (bdi, hr);
+
 #if 0
 	/* trigger gc if necessary */
 	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
