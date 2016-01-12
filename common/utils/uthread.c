@@ -23,7 +23,8 @@ THE SOFTWARE.
 */
 
 #include "debug.h"
-#include "platform.h"
+#include "usync.h"
+#include "umemory.h"
 #include "uthread.h"
 
 #if defined(KERNEL_MODE)

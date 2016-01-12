@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 #include "params.h"
 #include "raw-flash.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 #include "devices.h"
 

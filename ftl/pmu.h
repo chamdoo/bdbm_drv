@@ -2,7 +2,7 @@
 #define __BLUEDBM_PMU_H
 
 #include "utime.h"
-#include "platform.h"
+#include "umemory.h"
 
 /* performance monitor functions */
 void pmu_create (bdbm_drv_info_t* bdi);

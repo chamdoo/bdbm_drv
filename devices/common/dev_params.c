@@ -39,7 +39,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "params.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 
 //#define SZ_PAGE	32

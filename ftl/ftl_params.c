@@ -37,7 +37,7 @@ THE SOFTWARE.
 #endif
 
 #include "params.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 #include "bdbm_drv.h"
 

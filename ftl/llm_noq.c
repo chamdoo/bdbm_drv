@@ -35,7 +35,7 @@ THE SOFTWARE.
 #endif
 
 #include "debug.h"
-#include "platform.h"
+#include "umemory.h"
 #include "params.h"
 #include "bdbm_drv.h"
 #include "llm_noq.h"

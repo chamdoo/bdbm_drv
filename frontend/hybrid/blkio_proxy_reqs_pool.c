@@ -26,7 +26,7 @@ THE SOFTWARE.
 #include <linux/module.h>
 
 #include "bdbm_drv.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 
 #include "blkio_proxy.h"

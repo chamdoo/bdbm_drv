@@ -25,24 +25,35 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_DRV_H
 #define _BLUEDBM_DRV_H
 
+/*** KERNEL_MODE ***/
 #if defined(KERNEL_MODE)
 #define KERNEL_PAGE_SIZE	PAGE_SIZE
 
+/*** USER_MODE ***/
 #elif defined(USER_MODE)
 #include <stdint.h>
 #include "uatomic.h"
 #include "uatomic64.h"
 #include "ulist.h"
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
+#define module_param(a,b,c)
+#define MODULE_PARM_DESC(a,b)
 #define KERNEL_PAGE_SIZE	4096	/* a default page size */
 
+/*** ELSE???? ***/
 #else
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
+/*** COMMON ***/
 #include "params.h"
 #include "utime.h"
-#include "platform.h"
+/*#include "platform.h"*/
+
+#include "usync.h"
 
 #define KPAGE_SIZE KERNEL_PAGE_SIZE
 

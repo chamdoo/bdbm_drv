@@ -41,7 +41,8 @@ THE SOFTWARE.
 #include "dev_params.h"
 #include "debug.h"
 #include "dm_bluedbm.h"
-#include "platform.h"
+#include "umemory.h"
+#include "uthread.h"
 #include "dev_params.h"
 
 //#define USE_TIMER

@@ -25,8 +25,6 @@ THE SOFTWARE.
 #ifndef _BLUEDBM_DEBUG_H
 #define _BLUEDBM_DEBUG_H
 
-#include "platform.h"
-
 #if defined(KERNEL_MODE) /* KERNEL_MODE */
 #ifdef CONFIG_ENABLE_MSG
 	#define bdbm_msg(fmt, ...)  \

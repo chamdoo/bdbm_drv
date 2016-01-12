@@ -27,7 +27,7 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
-#include "platform.h"
+#include "umemory.h"
 #include "params.h"
 #include "utime.h"
 #include "uthread.h"

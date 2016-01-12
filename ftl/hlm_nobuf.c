@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include "hlm_nobuf.h"
 #include "hlm_reqs_pool.h"
 #include "utime.h"
+#include "umemory.h"
 
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"

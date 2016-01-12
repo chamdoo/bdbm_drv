@@ -37,7 +37,7 @@ THE SOFTWARE.
 #endif
 
 #include "bdbm_drv.h"
-#include "platform.h"
+#include "umemory.h"
 #include "params.h"
 #include "ftl_params.h"
 #include "debug.h"
@@ -67,7 +67,6 @@ bdbm_drv_info_t* _bdi = NULL;
 /*#define NUM_THREADS	1*/
 
 #include "bdbm_drv.h"
-#include "platform.h"
 #include "uatomic64.h"
 
 void host_thread_fn_write (void *data) 

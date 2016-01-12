@@ -40,7 +40,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "params.h"
 #include "bdbm_drv.h"
-#include "platform.h"
+#include "umemory.h"
 #include "pmu.h"
 #include "utime.h"
 

@@ -29,7 +29,7 @@ THE SOFTWARE.
 #include <linux/slab.h>
 
 #include "bdbm_drv.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 #include "utime.h"
 

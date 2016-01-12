@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "debug.h"
 #include "abm.h"
+#include "umemory.h"
 #include "block_ftl.h"
 
 #define DBG_ALLOW_INPLACE_UPDATE

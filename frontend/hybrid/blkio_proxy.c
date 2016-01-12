@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include <linux/jiffies.h> /* jiffies */
 
 #include "bdbm_drv.h"
-#include "platform.h"
+#include "umemory.h"
 #include "debug.h"
 
 #include "blkio_proxy.h"

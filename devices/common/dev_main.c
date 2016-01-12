@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #if defined (KERNEL_MODE)
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include "dev_stub.h"
 
 #elif defined (USER_MODE)

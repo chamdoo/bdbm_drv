@@ -39,6 +39,7 @@ THE SOFTWARE.
 #include "dev_ramssd.h"
 
 #include "utime.h"
+#include "umemory.h"
 
 
 /* interface for dm */
@@ -149,7 +150,7 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 #include "../../ftl/hlm_reqs_pool.h"
 
-	uint32_t i, ret;
+	uint32_t i, ret = 1;
 	bdbm_llm_req_t* lr = NULL;
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
 

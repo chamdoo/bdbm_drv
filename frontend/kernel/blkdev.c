@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "blkdev.h"
 #include "blkdev_ioctl.h"
+#include "umemory.h"
 
 
 int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsigned long arg);

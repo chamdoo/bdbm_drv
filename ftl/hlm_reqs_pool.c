@@ -38,6 +38,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "bdbm_drv.h"
 #include "hlm_reqs_pool.h"
+#include "umemory.h"
 
 
 #define DEFAULT_POOL_SIZE		128

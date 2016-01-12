@@ -34,7 +34,11 @@ THE SOFTWARE.
 #include <linux/kthread.h>
 #include <linux/sched.h>
 
-#include "platform.h"
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,0)
+#define bdbm_daemonize(a) daemonize(a)
+#else
+#define bdbm_daemonize(a)
+#endif
 
 typedef struct {
 	/* thread management */
@@ -52,7 +56,6 @@ typedef struct {
 
 #include <stdint.h>
 #include <pthread.h>
-
 #include "uatomic64.h"
 
 #define SIGKILL	0xCCCC
@@ -63,7 +66,6 @@ typedef struct {
 	bdbm_mutex_t thread_sleep;
 	pthread_cond_t thread_con;
 	pthread_t thread;
-	/*atomic64_t is_sleep;*/
 
 	/* user management */
 	void* user_data;
@@ -79,11 +81,9 @@ void bdbm_thread_wakeup (bdbm_thread_t* k);
 void bdbm_thread_stop (bdbm_thread_t* k);
 void bdbm_thread_msleep (uint32_t ms);
 void bdbm_thread_yield (void);
-
 void bdbm_thread_schedule_setup (bdbm_thread_t* k);
 void bdbm_thread_schedule_cancel (bdbm_thread_t* k);
 int bdbm_thread_schedule_sleep (bdbm_thread_t* k);
-
 
 #endif /* _BLUEDBM_THREAD_H */
 

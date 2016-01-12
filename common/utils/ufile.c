@@ -28,7 +28,7 @@ THE SOFTWARE.
 #include <linux/syscalls.h>
 
 #include "debug.h"
-#include "platform.h"
+#include "umemory.h"
 #include "ufile.h"
 
 #elif defined(USER_MODE)

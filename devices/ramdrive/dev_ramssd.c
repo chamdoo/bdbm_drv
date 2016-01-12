@@ -37,7 +37,7 @@ THE SOFTWARE.
 #endif
 
 #include "debug.h"
-#include "platform.h"
+#include "umemory.h"
 #include "bdbm_drv.h"
 #include "ufile.h"
 #include "dev_ramssd.h"
@@ -61,6 +61,7 @@ static void __display_hex_values (uint8_t* host, uint8_t* back)
 		host[0], host[1], host[2], host[3], host[4], 
 		back[0], back[1], back[2], back[3], back[4]);
 }
+#if 0
 static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 {
 	int i = 0;
@@ -70,6 +71,7 @@ static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 			back[i+0], back[i+1], back[i+2], back[i+3]);
 	}
 }
+#endif
 #endif
 
 /* Functions for Managing DRAM SSD */
@@ -241,7 +243,7 @@ static uint8_t __ramssd_read_page (
 			if (partial == 1 && kp_stt[loop] == KP_STT_DATA)	continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			if (memcmp (kp_ptr[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE) != 0) {
-				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%llu", lpa, loop);
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u", lpa, loop);
 				__display_hex_values (kp_ptr[loop], ptr_data_org+(loop*KPAGE_SIZE));
 			}
 		}
@@ -254,7 +256,7 @@ static uint8_t __ramssd_read_page (
 			if (partial == 0 && kp_stt[loop] != KP_STT_DATA) continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
 			if (memcmp (kp_ptr[loop], ptr_data_org, KPAGE_SIZE) != 0) {
-				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%llu pos=%d", lpa, loop);
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u", lpa, loop);
 				__display_hex_values (kp_ptr[loop], ptr_data_org);
 			}
 		}

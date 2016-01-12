@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "utime.h"
 #include "ufile.h"
+#include "umemory.h"
 #include "hlm_reqs_pool.h"
 
 #include "algo/abm.h"

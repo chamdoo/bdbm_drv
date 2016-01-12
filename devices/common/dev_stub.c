@@ -42,7 +42,7 @@ THE SOFTWARE.
 
 #include "dev_params.h"
 #include "dev_stub.h"
-#include "platform.h"
+#include "umemory.h"
 
 
 /* exported by the device implementation module */
