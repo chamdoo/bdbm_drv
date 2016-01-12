@@ -99,8 +99,6 @@ int bdbm_drv_setup (
 	/* setup device */
 	bdi->ptr_dm_inf = dm_inf;
 
-	bdbm_msg ("bdbm_main.c: %p", bdi->ptr_dm_inf->ptr_private);
-
 	/* setup ftl */
 	switch (bdi->parm_ftl.hlm_type) {
 	case HLM_NOT_SPECIFIED:

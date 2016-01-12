@@ -67,6 +67,8 @@ SRCS := \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/hlm_reqs_pool.c \
 	$(FTL)/llm_mq.c \
+	$(FTL)/llm_noq.c \
+	$(FTL)/llm_noq_lock.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/page_ftl.c \
 	$(FTL)/algo/block_ftl.c \

@@ -87,7 +87,7 @@ static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 	if (rf->rr) {
 		for (i = 0; i < rf->nr_punits; i++) {
 			if (rf->rr[i].done) {
-				bdbm_mutex_lock (rf->rr[i].done);
+				bdbm_sema_lock (rf->rr[i].done);
 			}
 		}
 	}
@@ -96,8 +96,8 @@ static void __bdbm_raw_flash_destory (bdbm_raw_flash_t* rf)
 	if (rf->rr) {
 		for (i = 0; i < rf->nr_punits; i++) {
 			if (rf->rr[i].done) {
-				bdbm_mutex_unlock (rf->rr[i].done);
-				bdbm_mutex_free (rf->rr[i].done);
+				bdbm_sema_unlock (rf->rr[i].done);
+				bdbm_sema_free (rf->rr[i].done);
 				bdbm_free (rf->rr[i].done);
 			}
 #if 0
@@ -230,9 +230,9 @@ bdbm_raw_flash_t* bdbm_raw_flash_init (void)
 #if 0
 			rf->rr[i].pptr_kpgs = bdbm_zmalloc (nr_kp_per_fp * sizeof (uint8_t*));
 #endif
-			rf->rr[i].done = bdbm_malloc (sizeof (bdbm_mutex_t));
+			rf->rr[i].done = bdbm_malloc (sizeof (bdbm_sema_t));
 
-			bdbm_mutex_init (rf->rr[i].done); /* start with unlock */
+			bdbm_sema_init (rf->rr[i].done); /* start with unlock */
 			atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_IDLE); /* start with unused */
 		}
 	}
@@ -291,7 +291,7 @@ static void __dm_intr_handler (
 
 	/* free mutex & free punit */
 	atomic_set (&rf->punit_status[r->phyaddr.punit_id], FLASH_RAW_PUNIT_IDLE); 
-	bdbm_mutex_unlock (r->done);
+	bdbm_sema_unlock (r->done);
 }
 
 static int __bdbm_raw_flash_fill_phyaddr (
@@ -353,7 +353,7 @@ int __bdbm_raw_flash_rwe_async (
 		return 2; /* failed to get an empty bdgm_llm_req_t */
 
 	/* see if llm_req is busy or not */
-	if (bdbm_mutex_try_lock (r->done) == 0) {
+	if (bdbm_sema_try_lock (r->done) == 0) {
 		/* oops! r is being used by other threads. The client should wait for
 		 * the on-going request to finish */
 		return 3; /* busy */
@@ -406,7 +406,7 @@ int __bdbm_raw_flash_rwe_async (
 	
 		/* free mutex & free the punit */
 		atomic_set (&rf->punit_status[i], FLASH_RAW_PUNIT_IDLE); 
-		bdbm_mutex_unlock (r->done);
+		bdbm_sema_unlock (r->done);
 	}
 
 	return ret;
@@ -479,7 +479,7 @@ int bdbm_raw_flash_wait (
 #ifdef DEBUG_FLASH_RAW
 	bdbm_msg ("[%s] wait - punit_id = %llu", __FUNCTION__, punit_id);
 #endif
-	bdbm_mutex_lock (r->done);
+	bdbm_sema_lock (r->done);
 
 	/* do something */
 	bdbm_bug_on (atomic_read (&rf->punit_status[punit_id]) != FLASH_RAW_PUNIT_IDLE);
@@ -489,7 +489,7 @@ int bdbm_raw_flash_wait (
 	bdbm_msg ("[%s] done - punit_id = %llu", __FUNCTION__, punit_id);
 #endif
 	/* we got it; unlock it again for future use */
-	bdbm_mutex_unlock (r->done);
+	bdbm_sema_unlock (r->done);
 
 	return 0;
 }

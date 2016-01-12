@@ -46,7 +46,7 @@ bdbm_host_inf_t _userio_inf = {
 
 typedef struct {
 	atomic_t nr_host_reqs;
-	bdbm_mutex_t host_lock;
+	bdbm_sema_t host_lock;
 	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
 } bdbm_userio_private_t;
 
@@ -64,7 +64,7 @@ uint32_t userio_open (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 	atomic_set (&p->nr_host_reqs, 0);
-	bdbm_mutex_init (&p->host_lock);
+	bdbm_sema_init (&p->host_lock);
 
 	/* create hlm_reqs pool */
 	if (bdi->parm_dev.nr_subpages_per_page == 1)
@@ -104,7 +104,7 @@ void userio_close (bdbm_drv_info_t* bdi)
 		bdbm_hlm_reqs_pool_destroy (p->hlm_reqs_pool);
 	}
 
-	bdbm_mutex_free (&p->host_lock);
+	bdbm_sema_free (&p->host_lock);
 
 	/* free private */
 	bdbm_free_atomic (p);
@@ -133,7 +133,7 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);
 
-	bdbm_mutex_lock (&p->host_lock);
+	bdbm_sema_lock (&p->host_lock);
 
 	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
 	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
@@ -145,7 +145,7 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 		atomic_dec (&p->nr_host_reqs);
 		bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
 	}
-	bdbm_mutex_unlock (&p->host_lock);
+	bdbm_sema_unlock (&p->host_lock);
 }
 
 void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)

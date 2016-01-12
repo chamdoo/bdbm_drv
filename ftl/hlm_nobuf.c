@@ -168,9 +168,18 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 
 	/* (3) send llm_req to llm */
-	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
-			bdbm_error ("oops! make_req () failed");
+	if (bdi->ptr_llm_inf->make_reqs == NULL) {
+		/* send individual llm-reqs to llm */
+		bdbm_hlm_for_each_llm_req (lr, hr, i) {
+			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
+				bdbm_error ("oops! make_req () failed");
+				bdbm_bug_on (1);
+			}
+		}
+	} else {
+		/* send a bulk of llm-reqs to llm if make_reqs is supported */
+		if (bdi->ptr_llm_inf->make_reqs (bdi, hr) != 0) {
+			bdbm_error ("oops! make_reqs () failed");
 			bdbm_bug_on (1);
 		}
 	}
@@ -275,9 +284,8 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lr->req_type |= REQTYPE_DONE;
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
-		/*bdbm_msg ("[HLM-DONE] %x", hr->req_type);*/
 		/* finish the host request */
-		bdbm_mutex_unlock (&hr->done);
+		bdbm_sema_unlock (&hr->done);
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
 }
@@ -290,7 +298,7 @@ void __hlm_nobuf_end_gcio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lr->req_type |= REQTYPE_DONE;
 
 	if (atomic64_read (&hr_gc->nr_llm_reqs_done) == hr_gc->nr_llm_reqs) {
-		bdbm_mutex_unlock (&hr_gc->done);
+		bdbm_sema_unlock (&hr_gc->done);
 	}
 }
 

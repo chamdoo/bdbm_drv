@@ -54,20 +54,29 @@ THE SOFTWARE.
 #define	bdbm_reinit_completion(a) reinit_completion(&a)
 #endif
 
-/* mutex */
+/* synchronization (semaphore) */
 #include <linux/semaphore.h>
-#define bdbm_mutex_t struct semaphore
-#define bdbm_mutex_init(a) sema_init (a, 1)
-#define bdbm_mutex_lock(a) down (a)
-#define bdbm_mutex_lock_interruptible(a) down_interruptible(a)
-#define bdbm_mutex_unlock(a) up (a)
-#define bdbm_mutex_try_lock(a) ({ \
+#define bdbm_sema_t struct semaphore
+#define bdbm_sema_init(a) sema_init (a, 1)
+#define bdbm_sema_lock(a) down (a)
+#define bdbm_sema_lock_interruptible(a) down_interruptible(a)
+#define bdbm_sema_unlock(a) up (a)
+#define bdbm_sema_try_lock(a) ({  /* 0: busy, 1: idle */ \
 	int z = down_trylock(a); int ret; \
 	if (z == 0) ret = 1; \
 	else ret = 0; \
 	ret; })
-#define bdbm_mutex_free(a)
+#define bdbm_sema_free(a)
 
+/* synchronization (mutex) 
+ * NOTE: simply reuse semaphore; it should be replaced with kernel mutex later */
+#define bdbm_mutex_t bdbm_sema_t
+#define bdbm_mutex_init(a) bdbm_sema_init(a)
+#define bdbm_mutex_lock(a) bdbm_sema_lock(a)
+#define bdbm_mutex_lock_interruptible(a) bdbm_sema_lock_interruptible(a)
+#define bdbm_mutex_unlock(a) bdbm_sema_unlock(a)
+#define bdbm_mutex_try_lock(a) bdbm_sema_try_lock(a)
+#define bdbm_mutex_free(a) bdbm_sema_free(a)
 
 /* spinlock */
 #define bdbm_spinlock_t spinlock_t
@@ -117,23 +126,32 @@ THE SOFTWARE.
 #define bdbm_memcpy(dst,src,size) memcpy(dst,src,size)
 #define bdbm_memset(addr,val,size) memset(addr,val,size)
 
-/* synchronization */
+/* synchronization (semaphore) */
+#include <semaphore.h>  /* Semaphore */
+#define bdbm_sema_t sem_t 
+#define bdbm_sema_init(a) sem_init(a, 0, 1)
+#define bdbm_sema_lock(a) sem_wait(a)
+#define bdbm_sema_lock_interruptible(a) sem_wait(a)
+#define bdbm_sema_unlock(a) sem_post(a)
+#define bdbm_sema_try_lock(a) ({ /* 0: busy, 1: idle */ \
+	int z = sem_trywait(a); int ret; \
+	if (z == 0) ret = 1; \
+	else ret = 0; \
+	ret; })
+#define bdbm_sema_free(a) sem_destroy(a)
+
+/* synchronization (mutex) */
 #define bdbm_mutex_t pthread_mutex_t 
 #define bdbm_mutex_init(a) pthread_mutex_init(a, NULL)
 #define bdbm_mutex_lock(a) pthread_mutex_lock(a)
 #define bdbm_mutex_lock_interruptible(a) pthread_mutex_lock(a)
 #define bdbm_mutex_unlock(a) pthread_mutex_unlock(a)
-/* NOTE: Linux kernel's mutex_trylock returns '1' when it accquires a lock,
- * while pthread's mutex_try_lock return '0' when it gets a lock.
- * For a compatibility purpuse, bdbm_mutex_try_lock always returns '1' 
- * when a lock is accquired by a thread. Otherwise, it returns 0. */
-#define bdbm_mutex_try_lock(a) ({ \
+#define bdbm_mutex_try_lock(a) ({ /* 0: busy, 1: idle */ \
 	int z = pthread_mutex_trylock(a); int ret; \
 	if (z == 0) ret = 1; \
 	else ret = 0; \
 	ret; })
 #define bdbm_mutex_free(a) pthread_mutex_destroy(a)
-
 
 #else
 /* ERROR CASE */

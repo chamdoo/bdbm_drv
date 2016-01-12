@@ -87,7 +87,7 @@ bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 			goto fail;
 		}
 		list_add_tail (&item->list, &pool->free_list);
-		bdbm_mutex_init (&item->done);
+		bdbm_sema_init (&item->done);
 	}
 
 	return pool;
@@ -172,6 +172,7 @@ again:
 				goto fail;
 			}
 			list_add_tail (&item->list, &pool->free_list);
+			bdbm_sema_init (&item->done);
 		}
 		/* increase the size of the pool */
 		pool->pool_size += DEFAULT_POOL_INC_SIZE;
@@ -329,7 +330,7 @@ static int __hlm_reqs_pool_create_write_req (
 	bdbm_stopwatch_start (&hr->sw);
 	hr->nr_llm_reqs = nr_llm_reqs;
 	atomic64_set (&hr->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&hr->done);
+	bdbm_sema_lock (&hr->done);
 	hr->blkio_req = (void*)br;
 	hr->ret = 0;
 
@@ -384,7 +385,7 @@ static int __hlm_reqs_pool_create_read_req (
 	bdbm_stopwatch_start (&hr->sw);
 	hr->nr_llm_reqs = nr_llm_reqs;
 	atomic64_set (&hr->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&hr->done);
+	bdbm_sema_lock (&hr->done);
 	hr->blkio_req = (void*)br;
 	hr->ret = 0;
 

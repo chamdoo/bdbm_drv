@@ -36,25 +36,25 @@ THE SOFTWARE.
 
 
 bdbm_drv_info_t* _bdi = NULL;
-bdbm_mutex_t exit_signal;
+bdbm_sema_t exit_signal;
 
 void signal_callback (int signum)
 {
-	bdbm_mutex_unlock (&exit_signal);
+	bdbm_sema_unlock (&exit_signal);
 }
 
 void wait ()
 {
 	/* wait for interrupts */
-	bdbm_mutex_lock (&exit_signal);
+	bdbm_sema_lock (&exit_signal);
 }
 
 int main (int argc, char** argv)
 {
 	int loop_thread;
 
-	bdbm_mutex_init (&exit_signal);
-	bdbm_mutex_lock (&exit_signal);
+	bdbm_sema_init (&exit_signal);
+	bdbm_sema_lock (&exit_signal);
 	signal (SIGINT, signal_callback);
 
 	/* create bdi with default parameters */

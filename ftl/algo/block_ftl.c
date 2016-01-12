@@ -224,7 +224,7 @@ uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
-	bdbm_mutex_init (&p->gc_hlm.done);
+	bdbm_sema_init (&p->gc_hlm.done);
 
 	bdbm_msg ("nr_segs = %llu, nr_blks_per_seg = %llu, nr_pgs_per_seg = %llu",
 		p->nr_segs, p->nr_blks_per_seg, p->nr_pgs_per_seg);
@@ -620,15 +620,15 @@ uint32_t __bdbm_block_ftl_erase_block (bdbm_drv_info_t* bdi, uint64_t seg_no)
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_llm_reqs = j;
 	atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&hlm_gc->done);
+	bdbm_sema_lock (&hlm_gc->done);
 	for (i = 0; i < j; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-	bdbm_mutex_lock (&hlm_gc->done);
-	bdbm_mutex_unlock (&hlm_gc->done);
+	bdbm_sema_lock (&hlm_gc->done);
+	bdbm_sema_unlock (&hlm_gc->done);
 
 	for (i = 0; i < j; i++) {
 		uint8_t is_bad = 0;
@@ -742,15 +742,15 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 		hlm_gc->req_type = REQTYPE_GC_READ;
 		hlm_gc->nr_llm_reqs = nr_valid_pgs;
 		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
-		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
 		for (j = 0; j < nr_valid_pgs; j++) {
 			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[j])) != 0) {
 				bdbm_error ("llm_make_req failed");
 				bdbm_bug_on (1);
 			}
 		}
-		bdbm_mutex_lock (&hlm_gc->done);
-		bdbm_mutex_unlock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
+		bdbm_sema_unlock (&hlm_gc->done);
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -776,13 +776,13 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 		hlm_gc->req_type = REQTYPE_GC_ERASE;
 		hlm_gc->nr_llm_reqs = 1;
 		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
-		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
 		if ((bdi->ptr_llm_inf->make_req (bdi, r)) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
-		bdbm_mutex_lock (&hlm_gc->done);
-		bdbm_mutex_unlock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
+		bdbm_sema_unlock (&hlm_gc->done);
 
 		if (r->ret != 0)
 			is_bad = 1; /* bad block */
@@ -827,15 +827,15 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 		hlm_gc->req_type = REQTYPE_GC_WRITE;
 		hlm_gc->nr_llm_reqs = nr_valid_pgs;
 		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
-		bdbm_mutex_lock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
 		for (j = 0; j < nr_valid_pgs; j++) {
 			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[j])) != 0) {
 				bdbm_error ("llm_make_req failed");
 				bdbm_bug_on (1);
 			}
 		}
-		bdbm_mutex_lock (&hlm_gc->done);
-		bdbm_mutex_unlock (&hlm_gc->done);
+		bdbm_sema_lock (&hlm_gc->done);
+		bdbm_sema_unlock (&hlm_gc->done);
 	}
 
 	bdbm_msg ("[MERGE-END] valid: %llu invalid: %llu", nr_valid_pgs, nr_trim_pgs);
@@ -937,15 +937,15 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t bl
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_llm_reqs = p->nr_blks_per_seg;
 	atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
-	bdbm_mutex_lock (&hlm_gc->done);
+	bdbm_sema_lock (&hlm_gc->done);
 	for (i = 0; i < p->nr_blks_per_seg; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-	bdbm_mutex_lock (&hlm_gc->done);
-	bdbm_mutex_unlock (&hlm_gc->done);
+	bdbm_sema_lock (&hlm_gc->done);
+	bdbm_sema_unlock (&hlm_gc->done);
 
 	for (i = 0; i < p->nr_blks_per_seg; i++) {
 		uint8_t is_bad = 0;

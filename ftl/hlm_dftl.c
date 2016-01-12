@@ -66,7 +66,7 @@ typedef struct {
 	bdbm_queue_t* q;
 #ifdef USE_THREAD
 	bdbm_thread_t* hlm_thread;
-	bdbm_mutex_t ftl_lock;
+	bdbm_sema_t ftl_lock;
 #endif
 } bdbm_hlm_dftl_private_t;
 
@@ -139,12 +139,12 @@ int __fetch_me_and_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 				continue;
 
 			/* send read requets to llm */
-			bdbm_mutex_lock (rr[i]->done);
+			bdbm_sema_lock (rr[i]->done);
 			bdi->ptr_llm_inf->make_req (bdi, rr[i]);
 		}
 		for (i = 0; i < nr_missed_dir; i++) {
 			if (rr[i]) {
-				bdbm_mutex_lock (rr[i]->done);
+				bdbm_sema_lock (rr[i]->done);
 				p->ftl->finish_mapblk_load (bdi, rr[i]);
 			}
 		}
@@ -175,14 +175,14 @@ int __fetch_me_and_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
 			/* send a req to llm */
 			ds = (directory_slot_t*)rr[i]->ds;
 			if (ds->status != DFTL_DIR_CLEAN) {
-				bdbm_mutex_lock (rr[i]->done);
+				bdbm_sema_lock (rr[i]->done);
 				bdi->ptr_llm_inf->make_req (bdi, rr[i]);
 			}
 		}
 
 		for (i = 0; i < nr_missed_dir; i++) {
 			if (rr[i]) {
-				bdbm_mutex_lock (rr[i]->done);
+				bdbm_sema_lock (rr[i]->done);
 				p->ftl->finish_mapblk_eviction (bdi, rr[i]);
 			}
 		}
@@ -221,7 +221,7 @@ uint32_t hlm_dftl_create (bdbm_drv_info_t* bdi)
 	bdi->ptr_hlm_inf->ptr_private = (void*)p;
 
 #ifdef USE_THREAD
-	bdbm_mutex_init (&p->ftl_lock);
+	bdbm_sema_init (&p->ftl_lock);
 
 	/* create & run a thread */
 	if ((p->hlm_thread = bdbm_thread_create (
@@ -246,7 +246,7 @@ void hlm_dftl_destroy (bdbm_drv_info_t* bdi)
 	}
 
 #ifdef USE_THREAD
-	bdbm_mutex_free (&p->ftl_lock);
+	bdbm_sema_free (&p->ftl_lock);
 
 	/* kill kthread */
 	bdbm_thread_stop (p->hlm_thread);
@@ -280,7 +280,7 @@ uint32_t hlm_dftl_make_req (
 
 	/* see if mapping entries for hlm_req are available */
 #ifdef USE_THREAD
-	bdbm_mutex_lock (&p->ftl_lock);
+	bdbm_sema_lock (&p->ftl_lock);
 #endif
 
 	/* see if foreground GC is needed or not */
@@ -331,7 +331,7 @@ uint32_t hlm_dftl_make_req (
 	}
 
 #ifdef USE_THREAD
-	bdbm_mutex_unlock (&p->ftl_lock);
+	bdbm_sema_unlock (&p->ftl_lock);
 
 	/* wake up thread if it sleeps */
 	bdbm_thread_wakeup (p->hlm_thread);
@@ -349,7 +349,7 @@ void hlm_dftl_end_req (
 {
 	if (r->done && r->ds) {
 		/* FIXME: r->done is set to not NULL for mapblk */
-		bdbm_mutex_unlock (r->done);
+		bdbm_sema_unlock (r->done);
 		return;
 	}
 	hlm_nobuf_end_req (bdi, r);

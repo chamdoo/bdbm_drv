@@ -51,7 +51,7 @@ bdbm_host_inf_t _blkio_inf = {
 };
 
 typedef struct {
-	bdbm_mutex_t host_lock;
+	bdbm_sema_t host_lock;
 	atomic_t nr_host_reqs;
 	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
 } bdbm_blkio_private_t;
@@ -134,7 +134,7 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi)
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
-	bdbm_mutex_init (&p->host_lock);
+	bdbm_sema_init (&p->host_lock);
 	atomic_set (&p->nr_host_reqs, 0);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
@@ -209,7 +209,7 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	}
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
-	bdbm_mutex_lock (&p->host_lock);
+	bdbm_sema_lock (&p->host_lock);
 
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);
@@ -225,7 +225,7 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	}
 
 	/* ulock a global mutex */
-	bdbm_mutex_unlock (&p->host_lock);
+	bdbm_sema_unlock (&p->host_lock);
 
 	return;
 
@@ -271,7 +271,7 @@ bdbm_host_inf_t _blkio_inf = {
 };
 
 typedef struct {
-	bdbm_mutex_t host_lock;
+	bdbm_sema_t host_lock;
 	atomic64_t nr_reqs;
 } bdbm_blkio_private_t;
 
@@ -567,7 +567,7 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi)
 		bdbm_error ("bdbm_malloc_atomic failed");
 		return 1;
 	}
-	bdbm_mutex_init (&p->host_lock);
+	bdbm_sema_init (&p->host_lock);
 	atomic64_set (&p->nr_reqs, 0);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
@@ -611,11 +611,11 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* req)
 	struct bio* bio = (struct bio*)req;
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
-	bdbm_mutex_lock (&p->host_lock);
+	bdbm_sema_lock (&p->host_lock);
 
 	/* see if the address range of bio is beyond storage space */
 	if (bio->bi_sector + bio_sectors (bio) > np->device_capacity_in_byte / KERNEL_SECTOR_SIZE) {
-		bdbm_mutex_unlock (&p->host_lock);
+		bdbm_sema_unlock (&p->host_lock);
 		bdbm_error ("bio is beyond storage space (%lu > %llu)",
 			bio->bi_sector + bio_sectors (bio),
 			np->device_capacity_in_byte / KERNEL_SECTOR_SIZE);
@@ -625,7 +625,7 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* req)
 
 	/* create a hlm_req using a bio */
 	if ((hlm_req = __blkio_create_hlm_req (bdi, bio)) == NULL) {
-		bdbm_mutex_unlock (&p->host_lock);
+		bdbm_sema_unlock (&p->host_lock);
 		bdbm_error ("the creation of hlm_req failed");
 		bio_io_error (bio);
 		return;
@@ -655,7 +655,7 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* req)
 		bio_io_error (bio);
 	}
 
-	bdbm_mutex_unlock (&p->host_lock);
+	bdbm_sema_unlock (&p->host_lock);
 }
 
 void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
@@ -666,7 +666,7 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hlm_req)
 
 	/* unlock hlm_req's lock if it is available */
 	if (hlm_req->done)
-		bdbm_mutex_unlock (hlm_req->done);
+		bdbm_sema_unlock (hlm_req->done);
 
 	/* get a bio from hlm_req */
 	bio = (struct bio*)hlm_req->ptr_host_req;

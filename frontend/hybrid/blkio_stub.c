@@ -58,7 +58,7 @@ typedef struct {
 	bdbm_blkio_proxy_req_t* mmap_reqs;
 	bdbm_thread_t* host_stub_thread; /* polling the blockio proxy */
 	atomic_t nr_host_reqs;
-	bdbm_mutex_t host_lock;
+	bdbm_sema_t host_lock;
 	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
 } bdbm_blkio_stub_private_t;
 
@@ -142,7 +142,7 @@ uint32_t blkio_stub_open (bdbm_drv_info_t* bdi)
 	p->stop = 0;
 	p->mmap_reqs = NULL;
 	atomic_set (&p->nr_host_reqs, 0);
-	bdbm_mutex_init (&p->host_lock);
+	bdbm_sema_init (&p->host_lock);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
 	/* connect to blkio_proxy */

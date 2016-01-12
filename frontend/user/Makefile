@@ -63,6 +63,8 @@ SRCS := \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/llm_mq.c \
+	$(FTL)/llm_noq.c \
+	$(FTL)/llm_noq_lock.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/page_ftl.c \
 	$(FTL)/algo/block_ftl.c \
@@ -81,7 +83,6 @@ SRCS2 := \
 	main.c \
 
 libftl: $(SRCS) $(DMLIB)
-	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
 
 clean:

@@ -68,7 +68,7 @@ typedef struct {
 
 	wait_queue_head_t pollwq;
 	bdbm_spinlock_t lock;
-	bdbm_mutex_t mutex;
+	bdbm_sema_t mutex;
 	struct semaphore sem;
 
 	/* for mmap management */
@@ -262,7 +262,7 @@ uint32_t blkio_proxy_open (bdbm_drv_info_t* bdi)
 	/* initialize some variables */
 	init_waitqueue_head (&p->pollwq);
 	bdbm_spin_lock_init (&p->lock);
-	bdbm_mutex_init (&p->mutex);
+	bdbm_sema_init (&p->mutex);
 	atomic_set (&p->nr_out_reqs, 0);
 	atomic_set (&p->ref_cnt, 0);
 	p->mmap_nr_reqs = BDBM_PROXY_MAX_REQS;	/* just large enough number */
@@ -330,7 +330,7 @@ fail:
 		bdbm_free (p->works);
 	if (p->wq) 
 		destroy_workqueue (p->wq);
-	bdbm_mutex_free (&p->mutex);
+	bdbm_sema_free (&p->mutex);
 	bdbm_spin_lock_destory (&p->lock);
 	init_waitqueue_head (&p->pollwq);
 	bdbm_free (p);
@@ -349,11 +349,11 @@ void blkio_proxy_close (bdbm_drv_info_t* bdi)
 	if (!(p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi)))
 		return;
 
-	bdbm_mutex_lock (&p->mutex);
+	bdbm_sema_lock (&p->mutex);
 
 	/* is there the user-level FTL which is attached to the kernel? */
 	if (atomic_read (&p->ref_cnt) > 0) {
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return;
 	}
 	_bdi = NULL;
@@ -394,8 +394,8 @@ void blkio_proxy_close (bdbm_drv_info_t* bdi)
 	bdbm_spin_lock_destory (&p->lock);
 	init_waitqueue_head (&p->pollwq);
 
-	bdbm_mutex_unlock (&p->mutex);
-	bdbm_mutex_free (&p->mutex);
+	bdbm_sema_unlock (&p->mutex);
+	bdbm_sema_free (&p->mutex);
 	bdbm_free (p);
 }
 
@@ -405,12 +405,12 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 	bdbm_blkio_proxy_req_t* proxy_req = NULL;
 
-	bdbm_mutex_lock (&p->mutex);
+	bdbm_sema_lock (&p->mutex);
 
 	/* blkio_proxy was closed */
 	if (!_bdi) {
 		bio_endio (bio, -EIO);
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return;
 	}
 
@@ -418,7 +418,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	if (__is_client_ready (p) != 0) {
 		/*bdbm_warning ("oops! the user-level FTL is not ready");*/
 		bio_endio (bio, -EIO);
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return;
 	}
 
@@ -426,7 +426,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	if (down_timeout (&p->sem, msecs_to_jiffies (5000)) != 0) {
 		bdbm_warning ("oops! the user-level FTL is not responding...");
 		bio_endio (bio, -EIO);
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return;
 	}
 
@@ -435,7 +435,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	if ((proxy_req = __get_blkio_proxy_req (p)) == NULL) {
 		bdbm_warning ("oops! mmap_reqs is full");
 		bio_endio (bio, -EIO);
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		up (&p->sem);
 		return;
 	}
@@ -443,7 +443,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	/* (2) encode it to mapped-memory */
 	if (__encode_bio_to_proxy_req (bio, proxy_req) != 0) {
 		__free_block_io_proxy_req (p, proxy_req);
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		up (&p->sem);
 		return;
 	}
@@ -461,7 +461,7 @@ void blkio_proxy_make_req (bdbm_drv_info_t* bdi, void* req)
 	/* trigger a poller */
 	wake_up_interruptible (&(p->pollwq));
 
-	bdbm_mutex_unlock (&p->mutex);
+	bdbm_sema_unlock (&p->mutex);
 }
 
 void blkio_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
@@ -634,18 +634,18 @@ static int blkio_proxy_fops_release (struct inode *inode, struct file *filp)
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)filp->private_data;
 	bdbm_blkio_proxy_t* p = (bdbm_blkio_proxy_t*)BDBM_HOST_PRIV (bdi);
 
-	bdbm_mutex_lock (&p->mutex);
+	bdbm_sema_lock (&p->mutex);
 
 	/* bdbm_blkio_proxy_ioctl is not open before */
 	if (p == NULL) {
 		bdbm_warning ("oops! attempt to close blkio_proxy which was closed or not opened before");
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return 0;
 	}
 
 	if (atomic_read (&p->ref_cnt) == 0) {
 		bdbm_warning ("oops! ref_cnt is 0");
-		bdbm_mutex_unlock (&p->mutex);
+		bdbm_sema_unlock (&p->mutex);
 		return 0;
 	}
 		
@@ -656,7 +656,7 @@ static int blkio_proxy_fops_release (struct inode *inode, struct file *filp)
 
 	atomic_dec (&p->ref_cnt);
 
-	bdbm_mutex_unlock (&p->mutex);
+	bdbm_sema_unlock (&p->mutex);
 
 	return 0;
 }

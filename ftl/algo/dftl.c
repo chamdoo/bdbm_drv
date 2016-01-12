@@ -89,7 +89,7 @@ typedef struct {
 	bdbm_hlm_req_gc_t gc_hlm;
 
 	/* for bad-block scanning */
-	bdbm_mutex_t badblk;
+	bdbm_sema_t badblk;
 } bdbm_dftl_private_t;
 
 
@@ -224,7 +224,7 @@ uint32_t bdbm_dftl_create (bdbm_drv_info_t* bdi)
 		r->ptr_oob = (uint8_t*)bdbm_malloc_atomic (sizeof (uint8_t) * np->page_oob_size);
 		i++;
 	}
-	bdbm_mutex_init (&p->gc_hlm.gc_done);
+	bdbm_sema_init (&p->gc_hlm.gc_done);
 
 	return 0;
 }
@@ -603,15 +603,15 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 	hlm_gc->req_type = REQTYPE_GC_READ;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_llm_reqs;
-	bdbm_mutex_lock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
 	for (i = 0; i < nr_llm_reqs; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-	bdbm_mutex_lock (&hlm_gc->gc_done);
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
+	bdbm_sema_unlock (&hlm_gc->gc_done);
 
 	/* load mapping entries that do existing in DRAM */
 	{
@@ -640,12 +640,12 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 				continue;
 
 			/* send reqs to llm */
-			bdbm_mutex_lock (rr[i]->done);
+			bdbm_sema_lock (rr[i]->done);
 			bdi->ptr_llm_inf->make_req (bdi, rr[i]);
 		}
 		for (i = 0; i < nr_llm_reqs; i++) {
 			if (rr[i]) {
-				bdbm_mutex_lock (rr[i]->done);
+				bdbm_sema_lock (rr[i]->done);
 				bdbm_dftl_finish_mapblk_load (bdi, rr[i]);
 			}
 		}
@@ -689,7 +689,7 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 	hlm_gc->req_type = REQTYPE_GC_WRITE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_llm_reqs;
-	bdbm_mutex_lock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
 		if ((int64_t)r->lpa >= np->nr_pages_per_ssd || (int64_t)r->lpa < 0) {
@@ -703,8 +703,8 @@ uint32_t bdbm_dftl_do_gc (bdbm_drv_info_t* bdi)
 		}
 	}
 	/*bdbm_msg ("gc-3");*/
-	bdbm_mutex_lock (&hlm_gc->gc_done);
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
+	bdbm_sema_unlock (&hlm_gc->gc_done);
 
 	/* erase blocks */
 erase_blks:
@@ -727,7 +727,7 @@ erase_blks:
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = nr_gc_blks;
-	bdbm_mutex_lock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
 	for (i = 0; i < nr_gc_blks; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
@@ -735,8 +735,8 @@ erase_blks:
 		}
 	}
 	/*bdbm_msg ("gc-5");*/
-	bdbm_mutex_lock (&hlm_gc->gc_done);
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
+	bdbm_sema_unlock (&hlm_gc->gc_done);
 
 	/* FIXME: what happens if block erasure fails */
 	for (i = 0; i < nr_gc_blks; i++) {
@@ -804,15 +804,15 @@ static void __bdbm_dftl_badblock_scan_eraseblks (
 	hlm_gc->req_type = REQTYPE_GC_ERASE;
 	hlm_gc->nr_done_reqs = 0;
 	hlm_gc->nr_reqs = p->nr_punits;
-	bdbm_mutex_lock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
 	for (i = 0; i < p->nr_punits; i++) {
 		if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
 			bdbm_error ("llm_make_req failed");
 			bdbm_bug_on (1);
 		}
 	}
-	bdbm_mutex_lock (&hlm_gc->gc_done);
-	bdbm_mutex_unlock (&hlm_gc->gc_done);
+	bdbm_sema_lock (&hlm_gc->gc_done);
+	bdbm_sema_unlock (&hlm_gc->gc_done);
 
 	for (i = 0; i < p->nr_punits; i++) {
 		uint8_t ret = 0;
@@ -991,8 +991,8 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load (
 	r->ptr_oob = (uint8_t*)bdbm_malloc(sizeof (uint8_t) * np->page_oob_size);
 
 	r->done = NULL;
-	r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));
-	bdbm_mutex_init (r->done);
+	r->done = (bdbm_sema_t*)bdbm_malloc(sizeof (bdbm_sema_t));
+	bdbm_sema_init (r->done);
 
 #ifdef DFTL_DEBUG
 	bdbm_msg ("[dftl] [Fetch] lpa: %llu dir: %llu (phyaddr: %llu %lld %lld %lld %lld)", 
@@ -1099,8 +1099,8 @@ bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction (
 	((int64_t*)r->ptr_oob)[1] = ds->id; /* ds ID */
 
 	r->done = NULL;
-	r->done = (bdbm_mutex_t*)bdbm_malloc(sizeof (bdbm_mutex_t));
-	bdbm_mutex_init (r->done);
+	r->done = (bdbm_sema_t*)bdbm_malloc(sizeof (bdbm_sema_t));
+	bdbm_sema_init (r->done);
 
 #ifdef DFTL_DEBUG
 	if (ds->status != DFTL_DIR_CLEAN) {

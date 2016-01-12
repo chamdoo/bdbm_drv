@@ -170,7 +170,7 @@ typedef struct {
 	uint8_t ret;	/* old for GC */
 	void* ptr_hlm_req;
 	void* ptr_qitem;
-	bdbm_mutex_t* done;	/* maybe used by applications that require direct notifications from an interrupt handler */
+	bdbm_sema_t* done;	/* maybe used by applications that require direct notifications from an interrupt handler */
 
 	/* logical / physical info */
 	bdbm_logaddr_t logaddr;
@@ -193,7 +193,7 @@ typedef struct {
 			uint64_t nr_llm_reqs;
 			atomic64_t nr_llm_reqs_done;
 			bdbm_llm_req_t llm_reqs[BDBM_BLKIO_MAX_VECS];
-			bdbm_mutex_t done;
+			bdbm_sema_t done;
 		};
 		/* for trim ops */
 		struct {
@@ -221,7 +221,7 @@ typedef struct {
 	uint64_t nr_llm_reqs;
 	atomic64_t nr_llm_reqs_done;
 	bdbm_llm_req_t* llm_reqs;
-	bdbm_mutex_t done;
+	bdbm_sema_t done;
 } bdbm_hlm_req_gc_t;
 
 /* a generic host interface */
@@ -248,6 +248,7 @@ typedef struct {
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*flush) (bdbm_drv_info_t* bdi);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 } bdbm_llm_inf_t;
@@ -259,6 +260,7 @@ typedef struct {
 	uint32_t (*open) (bdbm_drv_info_t* bdi);
 	void (*close) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
 	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);

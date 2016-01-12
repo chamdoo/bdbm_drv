@@ -34,6 +34,7 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* param);
 uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi);
 void dm_ramdrive_close (bdbm_drv_info_t* bdi);
 uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req);
 void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
 
 uint32_t dm_ramdrive_load (bdbm_drv_info_t* bdi, const char* fn);

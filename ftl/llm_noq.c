@@ -39,6 +39,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "bdbm_drv.h"
 #include "llm_noq.h"
+#include "pmu.h"
 
 
 /* llm interface */
@@ -47,13 +48,13 @@ bdbm_llm_inf_t _llm_noq_inf = {
 	.create = llm_noq_create,
 	.destroy = llm_noq_destroy,
 	.make_req = llm_noq_make_req,
+	.make_reqs = llm_noq_make_reqs,
 	.flush = llm_noq_flush,
 	.end_req = llm_noq_end_req,
 };
 
 struct bdbm_llm_noq_private {
-	uint64_t nr_punits;
-	bdbm_mutex_t* punit_locks;
+	uint32_t dummy;
 };
 
 uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
@@ -62,27 +63,14 @@ uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 	uint64_t loop;
 
 	/* create a private info for llm_nt */
-	if ((p = (struct bdbm_llm_noq_private*)bdbm_malloc_atomic
+	if ((p = (struct bdbm_llm_noq_private*)bdbm_malloc
 			(sizeof (struct bdbm_llm_noq_private))) == NULL) {
-		bdbm_error ("bdbm_malloc_atomic failed");
+		bdbm_error ("bdbm_malloc failed");
 		return -1;
 	}
 
-	/* get the total number of parallel units */
-	p->nr_punits = BDBM_GET_NR_PUNITS (bdi->parm_dev);
-
-	/* create completion locks for parallel units */
-	if ((p->punit_locks = (bdbm_mutex_t*)bdbm_malloc_atomic
-			(sizeof (bdbm_mutex_t) * p->nr_punits)) == NULL) {
-		bdbm_error ("bdbm_malloc_atomic failed");
-		bdbm_free_atomic (p);
-		return -1;
-	}
-
-	/* initialize completion locks */
-	for (loop = 0; loop < p->nr_punits; loop++) {
-		bdbm_mutex_init (&p->punit_locks[loop]);
-	}
+	/* setup dummy */
+	p->dummy = 0;
 
 	/* keep the private structures for llm_nt */
 	bdi->ptr_llm_inf->ptr_private = (void*)p;
@@ -100,40 +88,39 @@ void llm_noq_destroy (bdbm_drv_info_t* bdi)
 
 	p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
 
-	/* complete all the completion locks */
-	for (loop = 0; loop < p->nr_punits; loop++) {
-		bdbm_mutex_lock (&p->punit_locks[loop]);
-	}
-
-	/* release all the relevant data structures */
-	bdbm_free_atomic (p->punit_locks);
-	bdbm_free_atomic (p);
+	bdbm_free (p);
 }
 
 uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
-	uint64_t punit_id;
-	struct bdbm_llm_noq_private* p;
+	static uint64_t cnt = 0;
 
-	p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
+	/* just for display */
+	if (cnt % 50000 == 0) bdbm_msg ("llm_noq_make_req: %llu", cnt);
+	cnt++;
 
-	/* get a parallel unit ID */
-	punit_id = llm_req->phyaddr->channel_no * 
-		BDBM_GET_DEVICE_PARAMS (bdi)->nr_chips_per_channel +
-		llm_req->phyaddr->chip_no;
-
-	/* wait until a parallel unit becomes idle */
-	bdbm_mutex_lock (&p->punit_locks[punit_id]);
+	/* update pmu */
+	pmu_update_sw (bdi, llm_req);
+	pmu_update_q (bdi, llm_req);
 
 	/* send a request to a device manager */
-	ret = bdi->ptr_dm_inf->make_req (bdi, llm_req);
-
-	/* handle error cases */
-	if (ret != 0) {
-		/* complete a lock */
-		bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+	if ((ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
+		/* handle error cases */
 		bdbm_error ("llm_make_req failed");
+	}
+
+	return ret;
+}
+
+uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
+{
+	uint32_t ret;
+
+	/* send a request to a device manager */
+	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
+		/* handle error cases */
+		bdbm_error ("llm_noq_make_reqs failed");
 	}
 
 	return ret;
@@ -141,30 +128,14 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 void llm_noq_flush (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_llm_noq_private* p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
-	uint64_t loop;
-
-	for (loop = 0; loop < p->nr_punits; loop++) {
-		/* FIXME: it is wired.. */
-		bdbm_mutex_lock (&p->punit_locks[loop]);
-		bdbm_mutex_unlock (&p->punit_locks[loop]);
-	}
+	//struct bdbm_llm_noq_private* p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
 }
 
 void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
-	struct bdbm_llm_noq_private* p;
-	uint64_t punit_id;
-
-	p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
-
-	/* get a parallel unit ID */
-	punit_id = llm_req->phyaddr->channel_no * 
-		BDBM_GET_DEVICE_PARAMS (bdi)->nr_chips_per_channel +
-		llm_req->phyaddr->chip_no;
-
-	/* complete a lock */
-	bdbm_mutex_unlock (&p->punit_locks[punit_id]);
+	/* update pmu */
+	pmu_update_tot (bdi, llm_req);
+	pmu_inc (bdi, llm_req);
 
 	/* finish a request */
 	bdi->ptr_hlm_inf->end_req (bdi, llm_req);
