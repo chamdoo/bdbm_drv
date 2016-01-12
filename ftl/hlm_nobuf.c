@@ -285,7 +285,6 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
-		bdbm_sema_unlock (&hr->done);
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
 }

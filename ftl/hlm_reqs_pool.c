@@ -201,6 +201,8 @@ void bdbm_hlm_reqs_pool_free_item (
 	bdbm_hlm_reqs_pool_t* pool, 
 	bdbm_hlm_req_t* item)
 {
+	bdbm_sema_unlock (&item->done);
+
 	bdbm_spin_lock (&pool->lock);
 	list_del (&item->list);
 	list_add_tail (&item->list, &pool->free_list);

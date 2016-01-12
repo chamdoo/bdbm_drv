@@ -158,5 +158,4 @@ THE SOFTWARE.
 #error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
-
 #endif /* _BLUEDBM_PLATFORM_H */ 
