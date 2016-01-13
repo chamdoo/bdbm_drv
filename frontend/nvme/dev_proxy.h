@@ -26,6 +26,7 @@ uint32_t dm_proxy_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
 uint32_t dm_proxy_open (bdbm_drv_info_t* bdi);
 void dm_proxy_close (bdbm_drv_info_t* bdi);
 uint32_t dm_proxy_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+uint32_t dm_proxy_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r);
 void dm_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 uint32_t dm_proxy_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t dm_proxy_store (bdbm_drv_info_t* bdi, const char* fn);

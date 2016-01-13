@@ -178,12 +178,12 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 		dm = bdi->ptr_dm_inf;
 
 		/* get the device information */
-		if (dm->probe (bdi, &bdi->parm_dev) != 0) {
+		if (dm->probe == NULL || dm->probe (bdi, &bdi->parm_dev) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to probe a flash device");
 			goto fail;
 		}
 		/* open a flash device */
-		if (dm->open (bdi) != 0) {
+		if (dm->open == NULL || dm->open (bdi) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to open a flash device");
 			goto fail;
 		}
@@ -201,7 +201,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	/* create a low-level memory manager */
 	if (bdi->ptr_llm_inf) {
 		llm = bdi->ptr_llm_inf;
-		if (llm->create (bdi) != 0) {
+		if (llm->create == NULL || llm->create (bdi) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to create llm");
 			goto fail;
 		}
@@ -210,7 +210,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	/* create a logical-to-physical mapping manager */
 	if (bdi->ptr_ftl_inf) {
 		ftl = bdi->ptr_ftl_inf;
-		if (ftl->create (bdi) != 0) {
+		if (ftl->create == NULL || ftl->create (bdi) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to create ftl");
 			goto fail;
 		}
@@ -225,7 +225,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	/* create a high-level memory manager */
 	if (bdi->ptr_hlm_inf) {
 		hlm = bdi->ptr_hlm_inf;
-		if (hlm->create (bdi) != 0) {
+		if (hlm->create == NULL || hlm->create (bdi) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to create hlm");
 			goto fail;
 		}
@@ -234,7 +234,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	/* create a host interface */
 	if (bdi->ptr_host_inf) {
 		host = bdi->ptr_host_inf;
-		if (host->open (bdi) != 0) {
+		if (host->open == NULL || host->open (bdi) != 0) {
 			bdbm_error ("[bdbm_drv_main] failed to open a host interface");
 			goto fail;
 		}
@@ -252,17 +252,17 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	return 0;
 
 fail:
-	if (host != NULL)
+	if (host && host->close)
 		host->close (bdi);
-	if (hlm != NULL)
+	if (hlm && hlm->destroy)
 		hlm->destroy (bdi);
-	if (ftl != NULL)
+	if (ftl && ftl->destroy)
 		ftl->destroy (bdi);
-	if (llm != NULL)
+	if (llm && llm->destroy)
 		llm->destroy (bdi);
-	if (dm != NULL)
+	if (dm && dm->close)
 		dm->close (bdi);
-	if (bdi != NULL)
+	if (bdi)
 		bdbm_free (bdi);
 	
 	bdbm_error ("[bdbm_drv_main] bdbm_drv failed!");

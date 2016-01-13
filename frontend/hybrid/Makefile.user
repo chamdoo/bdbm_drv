@@ -79,6 +79,7 @@ SRCS := \
 	$(COMMON)/utils/ufile.c \
 	$(COMMON)/utils/uthread.c \
 	$(COMMON)/utils/upage.c \
+	$(COMMON)/utils/umemory.c \
 	$(COMMON)/3rd/uilog.c \
 	$(COMMON)/bdbm_main.c \
 	$(DMLIB) \

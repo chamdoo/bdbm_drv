@@ -21,7 +21,8 @@ EXTRA_CFLAGS +=	-D CONFIG_ENABLE_DEBUG
 module_main-y := \
 	kmain.o \
 	raw-flash.o \
-	$(COMMON)/utils/utime.o	# for bdbm_stopwatch
+	$(COMMON)/utils/utime.o \
+	$(COMMON)/utils/umemory.o
 
 obj-m := module_main.o
 

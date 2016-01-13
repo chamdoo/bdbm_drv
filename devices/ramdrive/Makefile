@@ -21,6 +21,7 @@ risa_dev_ramdrive-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/uthread.o \
+	$(COMMON)/utils/umemory.o \
 	$(DEV_COMMON)/dev_main.o \
 	$(DEV_COMMON)/dev_params.o \
 	$(DEV_COMMON)/dev_stub.o \

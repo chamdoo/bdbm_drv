@@ -37,6 +37,7 @@ EXTRA_CFLAGS += \
 
 risa_dev_bluedbm-y := \
 	dm_bluedbm.o \
+	$(COMMON)/utils/umemory.o \
 	$(DEV_COMMON)/dev_main.o \
 	$(DEV_COMMON)/dev_params.o \
 	$(DEV_COMMON)/dev_stub.o \

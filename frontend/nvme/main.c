@@ -32,6 +32,7 @@ THE SOFTWARE.
 #elif defined(USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #endif
@@ -67,7 +68,6 @@ bdbm_drv_info_t* _bdi = NULL;
 #define NUM_THREADS	1
 
 #include "bdbm_drv.h"
-#include "platform.h"
 #include "uatomic64.h"
 
 void nvme_cb_done (void* req)
@@ -100,7 +100,7 @@ void host_thread_fn_write (void *data)
 	int offset = 0; /* sector (512B) */
 	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < 2; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
@@ -132,7 +132,7 @@ void host_thread_fn_read (void *data)
 	int offset = 0; /* sector (512B) */
 	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < 2; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
@@ -170,17 +170,24 @@ int main (int argc, char** argv)
 
 	bdbm_msg ("[nvme-main] initialize bdbm_drv");
 	if ((_bdi = bdbm_drv_create ()) == NULL) {
-		bdbm_error ("[kmain] bdbm_drv_create () failed");
+		bdbm_error ("[main] bdbm_drv_create () failed");
 		return -1;
 	}
 
 	if (bdbm_dm_init (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_dm_init () failed");
+		bdbm_error ("[main] bdbm_dm_init () failed");
 		return -1;
 	}
 
-	bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi));
-	bdbm_drv_run (_bdi);
+	if (bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi)) != 0) {
+		bdbm_error ("[main] bdbm_drv_setup () failed");
+		return -1;
+	}
+
+	if (bdbm_drv_run (_bdi) != 0) {
+		bdbm_error ("[main] bdbm_drv_rin () failed");
+		return -1;
+	}
 
 	do {
 		bdbm_msg ("[main] start writes");

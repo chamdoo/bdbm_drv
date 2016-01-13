@@ -51,6 +51,7 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 	.open = dm_proxy_open,
 	.close = dm_proxy_close,
 	.make_req = dm_proxy_make_req,
+	.make_reqs = dm_proxy_make_reqs,
 	.end_req = dm_proxy_end_req,
 	.load = NULL,
 	.store = NULL,
@@ -124,6 +125,12 @@ uint32_t dm_proxy_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	}
 
 	return dm_df_make_req (bdi, r);
+}
+
+uint32_t dm_proxy_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* r)
+{
+	bdbm_msg ("dm_proxy_make_reqs ()");
+	return dm_df_make_reqs (bdi, r);
 }
 
 void dm_proxy_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)

@@ -71,6 +71,7 @@ SRCS := \
 	$(FTL)/queue/queue.c \
 	$(FTL)/queue/prior_queue.c \
 	$(FTL)/queue/rd_prior_queue.c \
+	$(COMMON)/utils/umemory.c \
 	$(COMMON)/utils/utime.c \
 	$(COMMON)/utils/ufile.c \
 	$(COMMON)/utils/uthread.c \

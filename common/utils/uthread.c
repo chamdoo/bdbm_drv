@@ -186,6 +186,7 @@ void bdbm_thread_yield ()
 
 #include <inttypes.h>
 #include <pthread.h>
+#include <string.h>
 
 void bdbm_thread_fn (void *data) 
 {

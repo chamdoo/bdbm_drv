@@ -66,6 +66,25 @@ uint32_t dm_df_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 	return 0;
 }
 
+uint32_t dm_df_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
+{
+#include "../../ftl/hlm_reqs_pool.h"
+
+	uint32_t i;
+	bdbm_llm_req_t* lr = NULL;
+
+	bdbm_msg ("dm_df_make_reqs is called");
+
+	/* TODO: do something for DF cards */
+
+	bdbm_hlm_for_each_llm_req (lr, hr, i) {
+		bdbm_msg ("%llu", i);
+		dm_df_end_req (bdi, lr);
+	}
+
+	return 0;
+}
+
 void dm_df_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	bdbm_msg ("dm_df_end_req is called");

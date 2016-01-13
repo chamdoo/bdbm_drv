@@ -29,11 +29,13 @@ DMLIB := ../../devices/dragonfire/libdf.a	# a device driver library for DragonFi
 SRCS := \
 	userio.c \
 	main.c \
-	$(FTL)/hlm_reqs_pool.c \
-	$(FTL)/ftl_params.c \
+	df_umemory.c \
 	$(FTL)/pmu.c \
 	$(FTL)/hlm_nobuf.c \
 	$(FTL)/llm_mq.c \
+	$(FTL)/llm_noq.c \
+	$(FTL)/hlm_reqs_pool.c \
+	$(FTL)/ftl_params.c \
 	$(FTL)/algo/abm.c \
 	$(FTL)/algo/page_ftl.c \
 	$(FTL)/algo/block_ftl.c \

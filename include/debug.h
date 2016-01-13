@@ -33,7 +33,7 @@ THE SOFTWARE.
 		} while (0);
 	#define bdbm_track() \
 		do {	\
-			printk(KERN_INFO "bdbm: [%d:%s]\n", __LINE__, __FUNCTION__); \
+			printk(KERN_INFO "bdbm: [%s:%d]\n", __FUNCTION__, __LINE__); \
 		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
@@ -41,15 +41,18 @@ THE SOFTWARE.
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \
-		printk(KERN_ERR "bdbm-warning: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+		printk(KERN_ERR "bdbm-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 #define bdbm_error(fmt, ...)  \
 	do {    \
-		printk(KERN_ERR "bdbm-error: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+		printk(KERN_ERR "bdbm-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 
 
 #elif defined(USER_MODE) /* USER_MODE */
+
+#include <stdio.h>
+
 #ifdef CONFIG_ENABLE_MSG
 	#define bdbm_msg(fmt, ...)  \
 		do {    \
@@ -57,7 +60,7 @@ THE SOFTWARE.
 		} while (0);
 	#define bdbm_track() \
 		do {	\
-			printf("bdbm: [%d:%s]\n", __LINE__, __FUNCTION__); \
+			printf("bdbm: [%s:%d]\n", __FUNCTION__, __LINE__); \
 		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
@@ -65,11 +68,11 @@ THE SOFTWARE.
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \
-		printf("bdbm-warning: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+		printf("bdbm-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 #define bdbm_error(fmt, ...)  \
 	do {    \
-		printf("bdbm-error: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+		printf("bdbm-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 
 #define BUG_ON(a) 
@@ -77,8 +80,7 @@ THE SOFTWARE.
 
 #pragma GCC diagnostic ignored "-Wformat"
 
-
-#else
+#else	/* ERROR */
 	#error Invalid Platform (KERNEL_MODE or USER_MODE)
 #endif
 
@@ -100,7 +102,7 @@ THE SOFTWARE.
 		} while (0);
 	#define bdbm_dbg_msg(fmt, ...)  \
 		do {    \
-			printk(KERN_INFO "bdbm: " fmt " (%d@%s)\n", ##__VA_ARGS__, __LINE__, __FILE__);    \
+			printk(KERN_INFO "bdbm: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 		} while (0);
 #else
 	#define bdbm_bug_on(condition)

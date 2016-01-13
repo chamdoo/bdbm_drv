@@ -328,7 +328,7 @@ static uint8_t __ramssd_prog_page (
 			int64_t lpa = ((int64_t*)oob_data)[0];
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
-			memcpy (ptr_data_org+(loop*KPAGE_SIZE), kp_ptr[loop], KPAGE_SIZE);
+			bdbm_memcpy (ptr_data_org+(loop*KPAGE_SIZE), kp_ptr[loop], KPAGE_SIZE);
 		}
 	} else {
 		uint8_t* ptr_data_org = NULL;
@@ -337,7 +337,7 @@ static uint8_t __ramssd_prog_page (
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
 			if (kp_stt[loop] != KP_STT_DATA) continue;
 			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
-			memcpy (ptr_data_org, kp_ptr[loop], KPAGE_SIZE);
+			bdbm_memcpy (ptr_data_org, kp_ptr[loop], KPAGE_SIZE);
 		}
 	}
 #endif

@@ -32,6 +32,7 @@ THE SOFTWARE.
 #elif defined(USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #endif
@@ -107,7 +108,7 @@ void host_thread_fn_read (void *data)
 	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
 
 	for (i = 0; i < 10000; i++) {
-		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)malloc (sizeof (bdbm_blkio_req_t));
+		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
 		blkio_req->bi_rw = REQTYPE_READ;

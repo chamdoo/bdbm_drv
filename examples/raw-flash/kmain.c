@@ -32,6 +32,9 @@ THE SOFTWARE.
  * collection, and wear-leveling */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+
 #include "raw-flash.h"
 #include "utime.h"
 
