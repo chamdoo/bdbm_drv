@@ -205,6 +205,7 @@ void __bdbm_page_ftl_destroy_active_blocks (
 
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
+	uint32_t i = 0, j = 0;
 	bdbm_page_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
@@ -260,15 +261,20 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 		bdbm_page_ftl_destroy (bdi);
 		return 1;
 	}
-	/*
 	for (i = 0; i < p->nr_punits * np->nr_pages_per_block; i++) {
-		bdbm_llm_req_t* r = &p->gc_hlm.llm_reqs[i];
-		for (j = 0; j < 32; j++) {
-			r->fmain.kp_stt[j] = KP_STT_HOLE;
-			r->fmain.kp_ptr[j] = r->fmain.kp_pad[j];
-		}
+		bdbm_flash_page_main_t* fm = &p->gc_hlm.llm_reqs[i].fmain;
+		bdbm_flash_page_oob_t* fo = &p->gc_hlm.llm_reqs[i].foob;
+		for (j = 0; j < 32; j++)
+			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
 	}
-	*/
+	for (i = 0; i < p->nr_punits * np->nr_pages_per_block; i++) {
+		bdbm_flash_page_main_t* fm = &p->gc_hlm_w.llm_reqs[i].fmain;
+		bdbm_flash_page_oob_t* fo = &p->gc_hlm_w.llm_reqs[i].foob;
+		for (j = 0; j < 32; j++)
+			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
+	}
 	bdbm_sema_init (&p->gc_hlm.done);
 	bdbm_sema_init (&p->gc_hlm_w.done);
 
@@ -778,14 +784,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	/* TEMP */
 	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
 		hlm_reqs_pool_reset_fmain (&hlm_gc->llm_reqs[i].fmain);
-		/*bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];*/
-		/*for (j = 0; j < 32; j++) {*/
-		/*r->fmain.kp_stt[j] = KP_STT_HOLE;*/
-		/*r->fmain.kp_ptr[j] = r->fmain.kp_pad[j];*/
-		/*}*/
 	}
 	/* TEMP */
-
 
 	/* build hlm_req_gc for reads */
 	for (i = 0, nr_llm_reqs = 0; i < nr_gc_blks; i++) {

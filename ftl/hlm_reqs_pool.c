@@ -87,8 +87,12 @@ bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 			bdbm_error ("bdbm_malloc () failed");
 			goto fail;
 		}
+#if 0
 		list_add_tail (&item->list, &pool->free_list);
 		bdbm_sema_init (&item->done);
+#endif
+		hlm_reqs_pool_setup_hlm_req (item);
+		list_add_tail (&item->list, &pool->free_list);
 	}
 
 	return pool;
@@ -102,6 +106,7 @@ fail:
 		list_for_each_safe (next, temp, &pool->free_list) {
 			item = list_entry (next, bdbm_hlm_req_t, list);
 			list_del (&item->list);
+			hlm_reqs_pool_destroy_hlm_req (item);
 			bdbm_free (item);
 		}
 		bdbm_spin_lock_destory (&pool->lock);
@@ -125,6 +130,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	list_for_each_safe (next, temp, &pool->used_list) {
 		item = list_entry (next, bdbm_hlm_req_t, list);
 		list_del (&item->list);
+		hlm_reqs_pool_destroy_hlm_req (item);
 		bdbm_free (item);
 		count++;
 	}
@@ -133,6 +139,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	list_for_each_safe (next, temp, &pool->free_list) {
 		item = list_entry (next, bdbm_hlm_req_t, list);
 		list_del (&item->list);
+		hlm_reqs_pool_destroy_hlm_req (item);
 		bdbm_free (item);
 		count++;
 	}
@@ -172,8 +179,12 @@ again:
 				bdbm_error ("bdbm_malloc () failed");
 				goto fail;
 			}
+#if 0
 			list_add_tail (&item->list, &pool->free_list);
 			bdbm_sema_init (&item->done);
+#endif
+			hlm_reqs_pool_setup_hlm_req (item);
+			list_add_tail (&item->list, &pool->free_list);
 		}
 		/* increase the size of the pool */
 		pool->pool_size += DEFAULT_POOL_INC_SIZE;
@@ -236,6 +247,46 @@ static int __hlm_reqs_pool_create_trim_req  (
 
 	return 0;
 }
+
+/* NEW */
+void hlm_reqs_pool_setup_hlm_req (bdbm_hlm_req_t* item)
+{
+	int i = 0, j = 0;
+	bdbm_flash_page_main_t* fm = NULL;
+	bdbm_flash_page_oob_t* fo = NULL;
+
+	/* setup main page */
+	for (i = 0; i < BDBM_BLKIO_MAX_VECS; i++) {
+		fm = &item->llm_reqs[i].fmain;
+		fo = &item->llm_reqs[i].foob;
+		for (j = 0; j < 32; j++)
+			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
+	}
+
+	/* setup semaphore */
+	bdbm_sema_init (&item->done);
+}
+
+void hlm_reqs_pool_destroy_hlm_req (bdbm_hlm_req_t* item)
+{
+	int i = 0, j = 0;
+	bdbm_flash_page_main_t* fm = NULL;
+	bdbm_flash_page_oob_t* fo = NULL;
+
+	/* destroy semaphore */
+	bdbm_sema_free (&item->done);
+
+	/* setup main page */
+	for (i = 0; i < BDBM_BLKIO_MAX_VECS; i++) {
+		fm = &item->llm_reqs[i].fmain;
+		fo = &item->llm_reqs[i].foob;
+		for (j = 0; j < 32; j++)
+			bdbm_free_phy (fm->kp_pad[j]);
+		bdbm_free_phy (fo->data);
+	}
+}
+/* NEW */
 
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain)
 {

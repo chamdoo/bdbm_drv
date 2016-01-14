@@ -169,11 +169,17 @@ typedef struct {
 typedef struct {
 	kp_stt_t kp_stt[32];
 	uint8_t* kp_ptr[32];
+#if 0
 	uint8_t  kp_pad[32][KPAGE_SIZE];
+#endif
+	uint8_t*  kp_pad[32];
 } bdbm_flash_page_main_t;
 
 typedef struct {
+#if 0
 	uint8_t data[8*32];
+#endif
+	uint8_t* data;
 } bdbm_flash_page_oob_t;
 
 typedef struct {
@@ -198,6 +204,7 @@ typedef struct {
 	struct list_head list;	/* for hlm_reqs_pool */
 	uint32_t req_type; /* read, write, or trim */
 	bdbm_stopwatch_t sw;
+
 	union {
 		/* for rw ops */
 		struct {
@@ -215,6 +222,7 @@ typedef struct {
 		struct {
 		};
 	};
+
 	void* blkio_req;
 	uint8_t ret;
 } bdbm_hlm_req_t;
