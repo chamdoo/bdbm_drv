@@ -7,8 +7,8 @@ COMMON := ../../common
 DM_COMMON := ../../devices/common
 
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
@@ -74,6 +74,7 @@ bdbm_drv-y := \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
+	$(COMMON)/utils/umemory.o \
 	$(COMMON)/bdbm_main.o \
 
 
