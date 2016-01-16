@@ -51,7 +51,6 @@ THE SOFTWARE.
 /*** COMMON ***/
 #include "params.h"
 #include "utime.h"
-/*#include "platform.h"*/
 
 #include "usync.h"
 
@@ -133,6 +132,9 @@ typedef struct {
 	uint64_t page_no;
 } bdbm_phyaddr_t;
 
+/* max kernel pages per physical flash page */
+#define BDBM_MAX_PAGES 4
+
 /* a bluedbm blockio request */
 #define BDBM_BLKIO_MAX_VECS 128
 
@@ -162,23 +164,17 @@ typedef enum {
 } kp_stt_t;
 
 typedef struct {
-	int64_t lpa[32];
+	int64_t lpa[BDBM_MAX_PAGES];
 	int32_t ofs;	/* only used for reads */
 } bdbm_logaddr_t;
 
 typedef struct {
-	kp_stt_t kp_stt[32];
-	uint8_t* kp_ptr[32];
-#if 0
-	uint8_t  kp_pad[32][KPAGE_SIZE];
-#endif
-	uint8_t*  kp_pad[32];
+	kp_stt_t kp_stt[BDBM_MAX_PAGES];
+	uint8_t* kp_ptr[BDBM_MAX_PAGES];
+	uint8_t* kp_pad[BDBM_MAX_PAGES];
 } bdbm_flash_page_main_t;
 
 typedef struct {
-#if 0
-	uint8_t data[8*32];
-#endif
 	uint8_t* data;
 } bdbm_flash_page_oob_t;
 

@@ -33,6 +33,7 @@ bdbm_drv-y := \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
+	$(COMMON)/utils/umemory.o \
 	$(COMMON)/bdbm_main.o \
 	$(KERN)/blkdev.o \
 

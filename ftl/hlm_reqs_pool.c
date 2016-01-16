@@ -87,11 +87,8 @@ bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 			bdbm_error ("bdbm_malloc () failed");
 			goto fail;
 		}
-#if 0
-		list_add_tail (&item->list, &pool->free_list);
+		hlm_reqs_pool_allocate_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
 		bdbm_sema_init (&item->done);
-#endif
-		hlm_reqs_pool_setup_hlm_req (item);
 		list_add_tail (&item->list, &pool->free_list);
 	}
 
@@ -106,7 +103,8 @@ fail:
 		list_for_each_safe (next, temp, &pool->free_list) {
 			item = list_entry (next, bdbm_hlm_req_t, list);
 			list_del (&item->list);
-			hlm_reqs_pool_destroy_hlm_req (item);
+			hlm_reqs_pool_release_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
+			bdbm_sema_free (&item->done);
 			bdbm_free (item);
 		}
 		bdbm_spin_lock_destory (&pool->lock);
@@ -130,7 +128,8 @@ void bdbm_hlm_reqs_pool_destroy (
 	list_for_each_safe (next, temp, &pool->used_list) {
 		item = list_entry (next, bdbm_hlm_req_t, list);
 		list_del (&item->list);
-		hlm_reqs_pool_destroy_hlm_req (item);
+		hlm_reqs_pool_release_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
+		bdbm_sema_free (&item->done);
 		bdbm_free (item);
 		count++;
 	}
@@ -139,7 +138,8 @@ void bdbm_hlm_reqs_pool_destroy (
 	list_for_each_safe (next, temp, &pool->free_list) {
 		item = list_entry (next, bdbm_hlm_req_t, list);
 		list_del (&item->list);
-		hlm_reqs_pool_destroy_hlm_req (item);
+		hlm_reqs_pool_release_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
+		bdbm_sema_free (&item->done);
 		bdbm_free (item);
 		count++;
 	}
@@ -154,7 +154,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	bdbm_free (pool);
 }
 
-bdbm_hlm_req_t* bdbm_hlm_reqs_pool_alloc_item (
+bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (
 	bdbm_hlm_reqs_pool_t* pool)
 {
 	struct list_head* pos = NULL;
@@ -179,11 +179,8 @@ again:
 				bdbm_error ("bdbm_malloc () failed");
 				goto fail;
 			}
-#if 0
-			list_add_tail (&item->list, &pool->free_list);
+			hlm_reqs_pool_allocate_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
 			bdbm_sema_init (&item->done);
-#endif
-			hlm_reqs_pool_setup_hlm_req (item);
 			list_add_tail (&item->list, &pool->free_list);
 		}
 		/* increase the size of the pool */
@@ -248,50 +245,60 @@ static int __hlm_reqs_pool_create_trim_req  (
 	return 0;
 }
 
-/* NEW */
-void hlm_reqs_pool_setup_hlm_req (bdbm_hlm_req_t* item)
+void hlm_reqs_pool_allocate_llm_reqs (
+	bdbm_llm_req_t* llm_reqs, 
+	int32_t nr_llm_reqs,
+	bdbm_rp_mem flag)
 {
 	int i = 0, j = 0;
 	bdbm_flash_page_main_t* fm = NULL;
 	bdbm_flash_page_oob_t* fo = NULL;
 
 	/* setup main page */
-	for (i = 0; i < BDBM_BLKIO_MAX_VECS; i++) {
-		fm = &item->llm_reqs[i].fmain;
-		fo = &item->llm_reqs[i].foob;
-		for (j = 0; j < 32; j++)
-			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
-		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
+	for (i = 0; i < nr_llm_reqs; i++) {
+		fm = &llm_reqs[i].fmain;
+		fo = &llm_reqs[i].foob;
+		for (j = 0; j < BDBM_MAX_PAGES; j++)
+			if (flag == RP_MEM_PHY)
+				fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+			else 
+				fm->kp_pad[j] = (uint8_t*)bdbm_malloc (KPAGE_SIZE);
+		if (flag == RP_MEM_PHY)
+			fo->data = (uint8_t*)bdbm_malloc_phy (8*BDBM_MAX_PAGES);
+		else
+			fo->data = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
 	}
-
-	/* setup semaphore */
-	bdbm_sema_init (&item->done);
 }
 
-void hlm_reqs_pool_destroy_hlm_req (bdbm_hlm_req_t* item)
+void hlm_reqs_pool_release_llm_reqs (
+	bdbm_llm_req_t* llm_reqs, 
+	int32_t nr_llm_reqs,
+	bdbm_rp_mem flag)
 {
 	int i = 0, j = 0;
 	bdbm_flash_page_main_t* fm = NULL;
 	bdbm_flash_page_oob_t* fo = NULL;
 
-	/* destroy semaphore */
-	bdbm_sema_free (&item->done);
-
 	/* setup main page */
-	for (i = 0; i < BDBM_BLKIO_MAX_VECS; i++) {
-		fm = &item->llm_reqs[i].fmain;
-		fo = &item->llm_reqs[i].foob;
-		for (j = 0; j < 32; j++)
-			bdbm_free_phy (fm->kp_pad[j]);
-		bdbm_free_phy (fo->data);
+	for (i = 0; i < nr_llm_reqs; i++) {
+		fm = &llm_reqs[i].fmain;
+		fo = &llm_reqs[i].foob;
+		for (j = 0; j < BDBM_MAX_PAGES; j++)
+			if (flag == RP_MEM_PHY)
+				bdbm_free_phy (fm->kp_pad[j]);
+			else
+				bdbm_free (fm->kp_pad[j]);
+		if (flag == RP_MEM_PHY)
+			bdbm_free_phy (fo->data);
+		else
+			bdbm_free (fm->kp_pad[j]);
 	}
 }
-/* NEW */
 
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain)
 {
 	int i = 0;
-	while (i < 32) {
+	while (i < BDBM_MAX_PAGES) {
 		fmain->kp_stt[i] = KP_STT_HOLE;
 		fmain->kp_ptr[i] = fmain->kp_pad[i];
 		i++;
@@ -301,7 +308,7 @@ void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain)
 void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr)
 {
 	int i = 0;
-	while (i < 32) {
+	while (i < BDBM_MAX_PAGES) {
 		logaddr->lpa[i] = -1;
 		i++;
 	}

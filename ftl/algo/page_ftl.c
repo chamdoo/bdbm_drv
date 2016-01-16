@@ -86,6 +86,7 @@ typedef struct {
 	bdbm_page_mapping_entry_t* ptr_mapping_table;
 	bdbm_spinlock_t ftl_lock;
 	uint64_t nr_punits;
+	uint64_t nr_punits_pages;
 
 	/* for the management of active blocks */
 	uint64_t curr_puid;
@@ -218,6 +219,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	p->curr_puid = 0;
 	p->curr_page_ofs = 0;
 	p->nr_punits = np->nr_chips_per_channel * np->nr_channels;
+	p->nr_punits_pages = p->nr_punits * np->nr_pages_per_block;
 	bdbm_spin_lock_init (&p->ftl_lock);
 	_ftl_page_ftl.ptr_private = (void*)p;
 
@@ -249,34 +251,24 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 		bdbm_page_ftl_destroy (bdi);
 		return 1;
 	}
+
 	if ((p->gc_hlm.llm_reqs = (bdbm_llm_req_t*)bdbm_zmalloc
-			(sizeof (bdbm_llm_req_t) * p->nr_punits * np->nr_pages_per_block)) == NULL) {
+			(sizeof (bdbm_llm_req_t) * p->nr_punits_pages)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		bdbm_page_ftl_destroy (bdi);
 		return 1;
-	}
-	if ((p->gc_hlm_w.llm_reqs = (bdbm_llm_req_t*)bdbm_zmalloc
-			(sizeof (bdbm_llm_req_t) * p->nr_punits * np->nr_pages_per_block)) == NULL) {
-		bdbm_error ("bdbm_zmalloc failed");
-		bdbm_page_ftl_destroy (bdi);
-		return 1;
-	}
-	for (i = 0; i < p->nr_punits * np->nr_pages_per_block; i++) {
-		bdbm_flash_page_main_t* fm = &p->gc_hlm.llm_reqs[i].fmain;
-		bdbm_flash_page_oob_t* fo = &p->gc_hlm.llm_reqs[i].foob;
-		for (j = 0; j < 32; j++)
-			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
-		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
-	}
-	for (i = 0; i < p->nr_punits * np->nr_pages_per_block; i++) {
-		bdbm_flash_page_main_t* fm = &p->gc_hlm_w.llm_reqs[i].fmain;
-		bdbm_flash_page_oob_t* fo = &p->gc_hlm_w.llm_reqs[i].foob;
-		for (j = 0; j < 32; j++)
-			fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
-		fo->data = (uint8_t*)bdbm_malloc_phy (8*32);
 	}
 	bdbm_sema_init (&p->gc_hlm.done);
+	hlm_reqs_pool_allocate_llm_reqs (p->gc_hlm.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
+
+	if ((p->gc_hlm_w.llm_reqs = (bdbm_llm_req_t*)bdbm_zmalloc
+			(sizeof (bdbm_llm_req_t) * p->nr_punits_pages)) == NULL) {
+		bdbm_error ("bdbm_zmalloc failed");
+		bdbm_page_ftl_destroy (bdi);
+		return 1;
+	}
 	bdbm_sema_init (&p->gc_hlm_w.done);
+	hlm_reqs_pool_allocate_llm_reqs (p->gc_hlm_w.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
 
 	return 0;
 }
@@ -287,10 +279,16 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 
 	if (!p)
 		return;
-	if (p->gc_hlm_w.llm_reqs)
+	if (p->gc_hlm_w.llm_reqs) {
+		hlm_reqs_pool_release_llm_reqs (p->gc_hlm_w.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
+		bdbm_sema_free (&p->gc_hlm_w.done);
 		bdbm_free (p->gc_hlm_w.llm_reqs);
-	if (p->gc_hlm.llm_reqs)
+	}
+	if (p->gc_hlm.llm_reqs) {
+		hlm_reqs_pool_release_llm_reqs (p->gc_hlm.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
+		bdbm_sema_free (&p->gc_hlm.done);
 		bdbm_free (p->gc_hlm.llm_reqs);
+	}
 	if (p->gc_bab)
 		bdbm_free (p->gc_bab);
 	if (p->ac_bab)

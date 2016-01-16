@@ -36,11 +36,13 @@ void* bdbm_memcpy (void* dst, void* src, size_t size) { return memcpy (dst, src,
 void* bdbm_memset (void* addr, int c, size_t size) { return memset (addr, c, size); }
 
 void* bdbm_malloc_phy (size_t size) { 
-	bdbm_msg ("bdbm_malloc_phy () is called");
+	static int i = 0;
+	bdbm_msg ("bdbm_malloc_phy () is called: %d", i++);
 	return calloc (1, size); 
 }
 
 void bdbm_free_phy (void* addr) { 
-	bdbm_msg ("bdbm_free_phy () is called");
+	static int i = 0;
+	bdbm_msg ("bdbm_free_phy () is called: %d", i++);
 	free (addr); 
 }

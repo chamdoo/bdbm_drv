@@ -807,5 +807,5 @@ static int blkio_proxy_ioctl_exit (void)
 /*bdbm_host_inf_t _blkio_inf;*/
 
 bdbm_hlm_inf_t _hlm_nobuf_inf;
-bdbm_ftl_inf_t _ftl_page_ftl;
+bdbm_ftl_inf_t _ftl_page_ftl, _ftl_block_ftl;
 bdbm_llm_inf_t _llm_mq_inf;

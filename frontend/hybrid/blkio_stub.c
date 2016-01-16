@@ -265,8 +265,8 @@ void blkio_stub_make_req (bdbm_drv_info_t* bdi, void* bio)
 	//bdbm_msg ("make_req - [%llx] offset: %llu, size: %llu", br->bi_rw, br->bi_offset*512/4096, br->bi_size/8);
 
 	/* get a free hlm_req from the hlm_reqs_pool */
-	if ((hr = bdbm_hlm_reqs_pool_alloc_item (p->hlm_reqs_pool)) == NULL) {
-		bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
+	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
+		bdbm_error ("bdbm_hlm_reqs_pool_get_item () failed");
 		bdbm_bug_on (1);
 		return;
 	}

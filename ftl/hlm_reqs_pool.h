@@ -37,14 +37,18 @@ typedef struct {
 
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (int32_t mapping_unit_size, int32_t io_unit_size);
 void bdbm_hlm_reqs_pool_destroy (bdbm_hlm_reqs_pool_t* pool);
-bdbm_hlm_req_t* bdbm_hlm_reqs_pool_alloc_item (bdbm_hlm_reqs_pool_t* pool);
+bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (bdbm_hlm_reqs_pool_t* pool);
 void bdbm_hlm_reqs_pool_free_item (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* req);
 int bdbm_hlm_reqs_pool_build_req (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* hr, bdbm_blkio_req_t* br);
 
-/* NEW */
-void hlm_reqs_pool_setup_hlm_req (bdbm_hlm_req_t* item);
-void hlm_reqs_pool_destroy_hlm_req (bdbm_hlm_req_t* item);
-/* NEW */
+typedef enum {
+	RP_MEM_VIRT = 0,
+	RP_MEM_PHY = 1,
+} bdbm_rp_mem;
+
+void hlm_reqs_pool_allocate_llm_reqs (bdbm_llm_req_t* llm_reqs, int32_t nr_llm_reqs, bdbm_rp_mem flag);
+void hlm_reqs_pool_release_llm_reqs (bdbm_llm_req_t* llm_reqs, int32_t nr_llm_reqs, bdbm_rp_mem flag);
+
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain);
 void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr);
 void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs);

@@ -117,8 +117,8 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 	bdbm_hlm_req_t* hr = NULL;
 
 	/* get a free hlm_req from the hlm_reqs_pool */
-	if ((hr = bdbm_hlm_reqs_pool_alloc_item (p->hlm_reqs_pool)) == NULL) {
-		bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
+	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
+		bdbm_error ("bdbm_hlm_reqs_pool_get_item () failed");
 		bdbm_bug_on (1);
 		return;
 	}
@@ -145,6 +145,7 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 		atomic_dec (&p->nr_host_reqs);
 		bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
 	}
+
 	bdbm_sema_unlock (&p->host_lock);
 }
 

@@ -26,4 +26,4 @@ clean:
 	@cd ramdrive_timing; $(MAKE) clean
 	@cd libdummy; $(MAKE) clean
 	@cd libramdrive; $(MAKE) clean
-	#@cd ramdrive_dragonfire; $(MAKE) clean
+	@cd ramdrive_dragonfire; $(MAKE) clean
