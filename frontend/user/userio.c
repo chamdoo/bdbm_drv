@@ -201,6 +201,14 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
 
+	/* update io request completion status */
+	r->ret = req->ret;
+	if (r->ret != 0) {
+		bdbm_error ("%s failure code: %u\n", 
+				(bdbm_is_read (r->bi_rw)?"read":"write"),
+				r->ret);
+	}
+
 	/* remove blkio_req */
 	{
 		int i = 0;

@@ -160,6 +160,9 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	/* decreate # of reqs */
 	atomic_dec (&p->nr_host_reqs);
 
+	/* update io request completion status */
+	r->ret = req->ret;
+
 	/* call call-back function */
 	if (r->cb_done)
 		r->cb_done (r);

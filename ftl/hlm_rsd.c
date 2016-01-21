@@ -473,6 +473,10 @@ void __hlm_rsd_end_req (
 #endif
 		bdbm_free (ptr_llm_req->ptr_oob);
 	}
+
+	/* update return status of the io operation */
+	ptr_hlm_req->ret |= ptr_llm_req->ret;
+
 	bdbm_free (ptr_llm_req);
 
 	/* increase # of reqs finished */

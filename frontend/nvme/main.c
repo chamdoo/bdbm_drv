@@ -75,6 +75,12 @@ void nvme_cb_done (void* req)
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req;
 	int i = 0;
 
+	if (r->ret != 0) {
+		bdbm_error ("%s failure code: %u\n", 
+				(bdbm_is_read (r->bi_rw)?"read":"write"),
+				r->ret);
+	}
+
 	for (i = 0; i < r->bi_bvec_cnt; i++) {
 		if (bdbm_is_read (r->bi_rw)) {
 		if (r->bi_bvec_ptr[i][0] != 0x0A ||
