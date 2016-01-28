@@ -812,7 +812,7 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 			bdbm_bug_on (r->fmain.kp_stt[0] != KP_STT_DATA);
 
 			r->req_type = REQTYPE_GC_WRITE;	/* change to write */
-			r->logaddr.lpa[0] = ((uint64_t*)r->foob.data)[0];
+			r->logaddr.lpa[0] = ((uint64_t*)r->foob.vdata)[0];
 
 			if (bdbm_block_ftl_get_free_ppa (bdi, r->logaddr.lpa[0], &r->phyaddr) != 0) {
 				bdbm_error ("bdbm_page_ftl_get_free_ppa failed");

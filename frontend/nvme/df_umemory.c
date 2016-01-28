@@ -35,6 +35,19 @@ void bdbm_free_atomic (void* addr) { free (addr); }
 void* bdbm_memcpy (void* dst, void* src, size_t size) { return memcpy (dst, src, size); }
 void* bdbm_memset (void* addr, int c, size_t size) { return memset (addr, c, size); }
 
+void bdbm_malloc_pv (void** vaddr, void** paddr, size_t size) { 
+	static int i = 0;
+	bdbm_msg ("bdbm_malloc_pv () is called: %d", i++);
+	*vaddr = (void*)bdbm_malloc (size); 
+	*paddr = *vaddr; 
+}
+
+void bdbm_free_pv (void* vaddr, void* paddr) { 
+	static int i = 0;
+	bdbm_msg ("bdbm_free_pv () is called: %d", i++);
+	free (vaddr); 
+} 
+
 void* bdbm_malloc_phy (size_t size) { 
 	static int i = 0;
 	bdbm_msg ("bdbm_malloc_phy () is called: %d", i++);
@@ -46,3 +59,4 @@ void bdbm_free_phy (void* addr) {
 	bdbm_msg ("bdbm_free_phy () is called: %d", i++);
 	free (addr); 
 }
+

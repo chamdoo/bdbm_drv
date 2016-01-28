@@ -27,11 +27,15 @@ THE SOFTWARE.
 
 void* bdbm_malloc (size_t size);
 void* bdbm_malloc_phy (size_t size);
+void bdbm_malloc_pv (void** vaddr, void** paddr, size_t size);
 void* bdbm_malloc_atomic (size_t size);
 void* bdbm_zmalloc (size_t size);
+
 void bdbm_free (void* addr);
 void bdbm_free_phy (void* addr);
+void bdbm_free_pv (void* vaddr, void* paddr);
 void bdbm_free_atomic (void* addr);
+
 void* bdbm_memcpy (void* dst, void* src, int size);
 void* bdbm_memset (void* addr, int c, int size);
 

@@ -391,7 +391,7 @@ static uint32_t __ramssd_send_cmd (
 			ptr_req->phyaddr.page_no, 
 			ptr_req->fmain.kp_stt,
 			ptr_req->fmain.kp_ptr,
-			ptr_req->foob.data,
+			ptr_req->foob.vdata,
 			use_oob,
 			use_partial);
 		break;
@@ -408,7 +408,7 @@ static uint32_t __ramssd_send_cmd (
 			ptr_req->phyaddr.page_no,
 			ptr_req->fmain.kp_stt,
 			ptr_req->fmain.kp_ptr,
-			ptr_req->foob.data,
+			ptr_req->foob.vdata,
 			use_oob);
 		break;
 

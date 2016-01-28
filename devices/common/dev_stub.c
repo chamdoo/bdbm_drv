@@ -144,7 +144,7 @@ static bdbm_llm_req_t* __get_llm_req (
 		r->fmain.kp_ptr[loop] = s->punit_main_pages[punit_id] + (KERNEL_PAGE_SIZE * loop);
 	}
 	if (bdbm_is_write (r->req_type)) {
-		bdbm_memcpy (r->foob.data, s->punit_oob_pages[punit_id], np->page_oob_size);
+		bdbm_memcpy (r->foob.vdata, s->punit_oob_pages[punit_id], np->page_oob_size);
 	}
 
 	return r;
@@ -406,7 +406,7 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
 		if (ur != NULL && kr != NULL) {
 			/* copy oob; setup results; and destroy a kernel copy */
 			if (bdbm_is_read (kr->req_type))
-				bdbm_memcpy (s->punit_oob_pages[i], kr->foob.data, s->bdi->parm_dev.page_oob_size);
+				bdbm_memcpy (s->punit_oob_pages[i], kr->foob.vdata, s->bdi->parm_dev.page_oob_size);
 			__return_llm_req (s, ur, kr);
 			__free_llm_req (kr);
 

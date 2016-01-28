@@ -251,22 +251,22 @@ void hlm_reqs_pool_allocate_llm_reqs (
 	bdbm_rp_mem flag)
 {
 	int i = 0, j = 0;
-	bdbm_flash_page_main_t* fm = NULL;
-	bdbm_flash_page_oob_t* fo = NULL;
+	bdbm_flash_page_main_t* fmain = NULL;
+	bdbm_flash_page_oob_t* foob = NULL;
 
 	/* setup main page */
 	for (i = 0; i < nr_llm_reqs; i++) {
-		fm = &llm_reqs[i].fmain;
-		fo = &llm_reqs[i].foob;
+		fmain = &llm_reqs[i].fmain;
+		foob = &llm_reqs[i].foob;
 		for (j = 0; j < BDBM_MAX_PAGES; j++)
 			if (flag == RP_MEM_PHY)
-				fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+				fmain->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
 			else 
-				fm->kp_pad[j] = (uint8_t*)bdbm_malloc (KPAGE_SIZE);
+				fmain->kp_pad[j] = (uint8_t*)bdbm_malloc (KPAGE_SIZE);
 		if (flag == RP_MEM_PHY)
-			fo->data = (uint8_t*)bdbm_malloc_phy (8*BDBM_MAX_PAGES);
+			bdbm_malloc_pv ((void**)&foob->vdata, (void**)&foob->pdata, 8*BDBM_MAX_PAGES);
 		else
-			fo->data = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
+			foob->vdata = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
 	}
 }
 
@@ -276,22 +276,22 @@ void hlm_reqs_pool_release_llm_reqs (
 	bdbm_rp_mem flag)
 {
 	int i = 0, j = 0;
-	bdbm_flash_page_main_t* fm = NULL;
-	bdbm_flash_page_oob_t* fo = NULL;
+	bdbm_flash_page_main_t* fmain = NULL;
+	bdbm_flash_page_oob_t* foob = NULL;
 
 	/* setup main page */
 	for (i = 0; i < nr_llm_reqs; i++) {
-		fm = &llm_reqs[i].fmain;
-		fo = &llm_reqs[i].foob;
+		fmain = &llm_reqs[i].fmain;
+		foob = &llm_reqs[i].foob;
 		for (j = 0; j < BDBM_MAX_PAGES; j++)
 			if (flag == RP_MEM_PHY)
-				bdbm_free_phy (fm->kp_pad[j]);
+				bdbm_free_phy (fmain->kp_pad[j]);
 			else
-				bdbm_free (fm->kp_pad[j]);
+				bdbm_free (fmain->kp_pad[j]);
 		if (flag == RP_MEM_PHY)
-			bdbm_free_phy (fo->data);
+			bdbm_free_pv (foob->vdata, foob->pdata);
 		else
-			bdbm_free (fm->kp_pad[j]);
+			bdbm_free (foob->vdata);
 	}
 }
 
@@ -515,7 +515,7 @@ void hlm_reqs_pool_write_compaction (
 				dst_r->fmain.kp_stt[dst_kp] = src_r->fmain.kp_stt[src_kp];
 				dst_r->fmain.kp_ptr[dst_kp] = src_r->fmain.kp_ptr[src_kp];
 				dst_r->logaddr.lpa[dst_kp] = src_r->logaddr.lpa[src_kp];
-				((int64_t*)dst_r->foob.data)[dst_kp] = ((int64_t*)src_r->foob.data)[src_kp];
+				((int64_t*)dst_r->foob.vdata)[dst_kp] = ((int64_t*)src_r->foob.vdata)[src_kp];
 			} else {
 				/* otherwise, skip it */
 				continue;

@@ -672,9 +672,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
 			if (r->fmain.kp_stt[k] == KP_STT_DATA) {
-				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+				r->logaddr.lpa[k] = ((uint64_t*)r->foob.vdata)[k];
 			} else if (r->fmain.kp_stt[k] == KP_STT_HOLE) {
-				((uint64_t*)r->foob.data)[k] = -1;
+				((uint64_t*)r->foob.vdata)[k] = -1;
 				r->logaddr.lpa[k] = -1;
 			} else {
 				bdbm_bug_on (1);
@@ -859,9 +859,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
 			if (r->fmain.kp_stt[k] == KP_STT_DATA) {
-				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+				r->logaddr.lpa[k] = ((uint64_t*)r->foob.vdata)[k];
 			} else if (r->fmain.kp_stt[k] == KP_STT_HOLE) {
-				((uint64_t*)r->foob.data)[k] = -1;
+				((uint64_t*)r->foob.vdata)[k] = -1;
 				r->logaddr.lpa[k] = -1;
 			} else {
 				bdbm_bug_on (1);
@@ -908,9 +908,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
 			if (r->fmain.kp_stt[k] == KP_STT_DATA) {
-				r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+				r->logaddr.lpa[k] = ((uint64_t*)r->foob.vdata)[k];
 			} else if (r->fmain.kp_stt[k] == KP_STT_HOLE) {
-				((uint64_t*)r->foob.data)[k] = -1;
+				((uint64_t*)r->foob.vdata)[k] = -1;
 				r->logaddr.lpa[k] = -1;
 			} else {
 				bdbm_bug_on (1);

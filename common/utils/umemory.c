@@ -29,11 +29,15 @@ THE SOFTWARE.
 
 void* bdbm_malloc (size_t size) { return vzalloc (size); }
 void* bdbm_malloc_phy (size_t size) { return vzalloc (size); }	/* for compatibility */
+void bdbm_malloc_pv (void** vaddr, void** paddr, size_t size) { *vaddr = (void*)bdbm_malloc (size); *paddr = *vaddr; } /* for compatibility */
 void* bdbm_malloc_atomic (size_t size) { return kzalloc (size, GFP_ATOMIC); }
 void* bdbm_zmalloc (size_t size) { return vzalloc (size); }
+
 void bdbm_free (void* addr) { vfree (addr); }
 void bdbm_free_phy (void* addr) { vfree (addr); } /* for compatibility */
+void bdbm_free_pv (void* vaddr, void* paddr) { vfree (vaddr); }
 void bdbm_free_atomic (void* addr) { kfree (addr); }
+
 void* bdbm_memcpy (void* dst, void* src, size_t size) { return memcpy (dst, src, size); }
 void* bdbm_memset (void* addr, int c, size_t size) { return memset (addr, c, size); }
 
@@ -44,11 +48,15 @@ void* bdbm_memset (void* addr, int c, size_t size) { return memset (addr, c, siz
 
 void* bdbm_malloc (size_t size) { return calloc (1, size); }
 void* bdbm_malloc_phy (size_t size) { return calloc (1, size); }
+void bdbm_malloc_pv (void** vaddr, void** paddr, size_t size) { *vaddr = (void*)bdbm_malloc (size); *paddr = *vaddr; } /* for compatibility */
 void* bdbm_malloc_atomic (size_t size) { return calloc (1, size); }
 void* bdbm_zmalloc (size_t size) { return calloc (1, size); }
+
 void bdbm_free (void* addr) { free (addr); }
+void bdbm_free_pv (void* vaddr, void* paddr) { free (vaddr); } /* for compatibility */
 void bdbm_free_phy (void* addr) { free (addr); }
 void bdbm_free_atomic (void* addr) { free (addr); }
+
 void* bdbm_memcpy (void* dst, void* src, size_t size) { return memcpy (dst, src, size); }
 void* bdbm_memset (void* addr, int c, size_t size) { return memset (addr, c, size); }
 

@@ -164,7 +164,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 		/* (2) setup oob */
 		for (j = 0; j < np->nr_subpages_per_page; j++) {
-			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
+			((int64_t*)lr->foob.vdata)[j] = lr->logaddr.lpa[j];
 		}
 	}
 
