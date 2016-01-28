@@ -59,12 +59,12 @@ enum BDBM_ABM_BLK_STATUS {
 };
 
 typedef struct {
-	uint8_t status;	/* ABM_BLK_STATUS */
 	uint64_t channel_no;
 	uint64_t chip_no;
 	uint64_t block_no;
 	uint32_t erase_count;
-	uint32_t nr_invalid_subpages;
+	uint16_t nr_invalid_subpages;
+	uint8_t status;	/* ABM_BLK_STATUS */
 	babm_abm_subpage_t* pst;	/* a page status table; used when the FTL requires */
 
 	struct list_head list;	/* for list */
