@@ -90,9 +90,9 @@ typedef struct {
 bdbm_abm_info_t* bdbm_abm_create (bdbm_device_params_t* np, uint8_t use_pst);
 void bdbm_abm_destroy (bdbm_abm_info_t* bai);
 bdbm_abm_block_t* bdbm_abm_get_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
-//bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no);
+bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no);
 void bdbm_abm_get_free_block_rollback (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
-//void bdbm_abm_get_free_block_commit (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
+void bdbm_abm_get_free_block_commit (bdbm_abm_info_t* bai, bdbm_abm_block_t* blk);
 void bdbm_abm_erase_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint8_t is_bad);
 void bdbm_abm_invalidate_page (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no, uint64_t subpage_no);
 void bdbm_abm_set_to_dirty_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
