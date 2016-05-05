@@ -25,6 +25,7 @@ risa_dev_ramdrive-y := \
 	$(DEV_COMMON)/dev_main.o \
 	$(DEV_COMMON)/dev_params.o \
 	$(DEV_COMMON)/dev_stub.o \
+	$(DEV_COMMON)/abm.o \
 	dev_ramssd.o \
 	dm_ramdrive.o \
 

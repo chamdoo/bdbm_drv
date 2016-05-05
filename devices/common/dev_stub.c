@@ -660,13 +660,23 @@ static struct class *cl = NULL;
 static int FIRST_MINOR = 0;
 static int MINOR_CNT = 1;
 
+
+int _param_stub_dev_num;
+module_param(_param_stub_dev_num, int , 0000);
+MODULE_PARM_DESC(_param_stub_dev_num, "stub device ID");
+
+char blueDBM_IOCTL_NAME[32] = {0};
+
 /* register a bdbm_dm_stub driver */
 int bdbm_dm_stub_init (void)
 {
 	int ret = -1;
 	struct device *dev_ret = NULL;
 
-	if ((ret = alloc_chrdev_region (&devnum, FIRST_MINOR, MINOR_CNT, BDBM_DM_IOCTL_NAME)) != 0) {
+	sprintf(blueDBM_IOCTL_NAME, "bdbm_dm_stub%d", _param_stub_dev_num);
+
+	//if ((ret = alloc_chrdev_region (&devnum, FIRST_MINOR, MINOR_CNT, BDBM_DM_IOCTL_NAME)) != 0) {
+	if ((ret = alloc_chrdev_region (&devnum, FIRST_MINOR, MINOR_CNT, blueDBM_IOCTL_NAME)) != 0) {
 		bdbm_error ("bdbm_dm_stub registration failed: %d\n", ret);
 		return ret;
 	}
@@ -684,7 +694,8 @@ int bdbm_dm_stub_init (void)
 		return PTR_ERR (cl);
 	}
 
-	if (IS_ERR (dev_ret = device_create (cl, NULL, devnum, NULL, BDBM_DM_IOCTL_NAME))) {
+	//if (IS_ERR (dev_ret = device_create (cl, NULL, devnum, NULL, BDBM_DM_IOCTL_NAME))) {
+	if (IS_ERR (dev_ret = device_create (cl, NULL, devnum, NULL, blueDBM_IOCTL_NAME))) {
 		bdbm_error ("bdbm_dm_stub registration failed: %d\n", MAJOR(devnum));
 		class_destroy (cl);
 		cdev_del (&c_dev);

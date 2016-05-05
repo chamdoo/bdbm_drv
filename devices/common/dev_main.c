@@ -93,10 +93,29 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 	return &_bdbm_dm_inf;
 }
 
+int bdbm_aggr_init (bdbm_drv_info_t* bdi)
+{
+	return bdbm_dm_init(bdi);
+}
+
+void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
+{
+	bdbm_dm_exit(bdi);
+}
+
+bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
+{
+	return bdbm_dm_get_inf(bdi);
+}
+
+
 #if defined (KERNEL_MODE)
-EXPORT_SYMBOL (bdbm_dm_init);
-EXPORT_SYMBOL (bdbm_dm_exit);
-EXPORT_SYMBOL (bdbm_dm_get_inf);
+//EXPORT_SYMBOL (bdbm_dm_init);
+//EXPORT_SYMBOL (bdbm_dm_exit);
+//EXPORT_SYMBOL (bdbm_dm_get_inf);
+EXPORT_SYMBOL (bdbm_aggr_init);
+EXPORT_SYMBOL (bdbm_aggr_exit);
+EXPORT_SYMBOL (bdbm_aggr_get_inf);
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
 MODULE_DESCRIPTION ("RISA Device Wrapper");

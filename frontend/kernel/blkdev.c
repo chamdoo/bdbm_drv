@@ -55,6 +55,11 @@ extern bdbm_drv_info_t* _bdi;
 DECLARE_COMPLETION (task_completion);
 static struct task_struct *task = NULL;
 
+int _param_dev_num = 0;
+module_param(_param_dev_num, int, 0000);
+MODULE_PARM_DESC(_param_dev_num, "device ID of muliple disks");
+
+char blueDBM_devname[32] = {0};
 
 int badblock_scan_thread_fn (void* arg) 
 {
@@ -208,14 +213,17 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 		bdbm_msg ("TRIM is disabled");
 	}
 
+	sprintf(blueDBM_devname, "blueDBM%d", _param_dev_num);
 	/* register a blk device */
-	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
+	//if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
+	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, blueDBM_devname)) < 0) {
 		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
 		return bdbm_device_major_num;
 	}
 	if (!(bdbm_device.gd = alloc_disk (1))) {
 		bdbm_msg ("alloc_disk failed");
-		unregister_blkdev (bdbm_device_major_num, "blueDBM");
+		//unregister_blkdev (bdbm_device_major_num, "blueDBM");
+		unregister_blkdev (bdbm_device_major_num, blueDBM_devname);
 		return -ENOMEM;
 	}
 	bdbm_device.gd->major = bdbm_device_major_num;
@@ -223,7 +231,8 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	bdbm_device.gd->fops = &bdops;
 	bdbm_device.gd->queue = bdbm_device.queue;
 	bdbm_device.gd->private_data = NULL;
-	strcpy (bdbm_device.gd->disk_name, "blueDBM");
+	//strcpy (bdbm_device.gd->disk_name, "blueDBM");
+	strcpy (bdbm_device.gd->disk_name, blueDBM_devname);
 
 	{
 		uint64_t capacity;
@@ -242,7 +251,8 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 	/* unregister a BlueDBM device driver */
 	del_gendisk (bdbm_device.gd);
 	put_disk (bdbm_device.gd);
-	unregister_blkdev (bdbm_device_major_num, "blueDBM");
+	//unregister_blkdev (bdbm_device_major_num, "blueDBM");
+	unregister_blkdev (bdbm_device_major_num, blueDBM_devname);
 	blk_cleanup_queue (bdbm_device.queue);
 }
 
