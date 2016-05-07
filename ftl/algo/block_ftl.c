@@ -702,7 +702,7 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 	bdbm_block_mapping_entry_t* e = &p->mt[seg_no][blk_no];
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
-	uint64_t j, k, nr_valid_pgs = 0, nr_trim_pgs = 0;
+	uint64_t j, nr_valid_pgs = 0, nr_trim_pgs = 0;
 
 	if (e->status == BFTL_NOT_ALLOCATED)
 		return 0; /* if it is, ignore it */
@@ -966,7 +966,7 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t bl
 	/* measure gc elapsed time */
 }
 
-static void __bdbm_block_mark_it_dead (
+void __bdbm_block_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {

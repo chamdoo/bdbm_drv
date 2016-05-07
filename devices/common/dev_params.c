@@ -42,6 +42,7 @@ THE SOFTWARE.
 #include "umemory.h"
 #include "debug.h"
 
+//tjkim
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*BDBM_MAX_PAGES,
 	//NAND_PAGE_OOB_SIZE = 64, /* for bdbm hardware */
@@ -57,6 +58,7 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
+	NR_VOLUMES = 2,
 };
 
 int _param_nr_channels 				= NR_CHANNELS;
@@ -70,6 +72,7 @@ int _param_chip_bus_trans_time_us	= NAND_CHIP_BUS_TRANS_TIME_US;
 int _param_page_prog_time_us		= NAND_PAGE_PROG_TIME_US; 		
 int _param_page_read_time_us		= NAND_PAGE_READ_TIME_US;
 int _param_block_erase_time_us		= NAND_BLOCK_ERASE_TIME_US;
+int _param_nr_volumes 				= NR_VOLUMES;
 
 /* TODO: Hmm... there might be a more fancy way than this... */
 #if defined (CONFIG_DEVICE_TYPE_RAMDRIVE)
@@ -101,6 +104,7 @@ module_param (_param_page_prog_time_us, int, 0000);
 module_param (_param_page_read_time_us, int, 0000);
 module_param (_param_block_erase_time_us, int, 0000);
 module_param (_param_device_type, int, 0000);
+module_param (_param_nr_volumes, int, 0000);
 
 MODULE_PARM_DESC (_param_nr_channels, "# of channels");
 MODULE_PARM_DESC (_param_nr_chips_per_channel, "# of chips per channel");
@@ -115,6 +119,7 @@ MODULE_PARM_DESC (_param_page_prog_time_us, "page program time");
 MODULE_PARM_DESC (_param_page_read_time_us, "page read time");
 MODULE_PARM_DESC (_param_block_erase_time_us, "block erasure time");
 MODULE_PARM_DESC (_param_device_type, "device type"); /* it must be reset when implementing actual device modules */
+MODULE_PARM_DESC (_param_nr_volumes, "# of volumes"); 
 #endif
 
 bdbm_device_params_t get_default_device_params (void)
@@ -122,10 +127,10 @@ bdbm_device_params_t get_default_device_params (void)
 	bdbm_device_params_t p;
 
 	/* user-specified parameters */
-	p.nr_channels = _param_nr_channels;
- 	p.nr_chips_per_channel = _param_nr_chips_per_channel;
- 	p.nr_blocks_per_chip = _param_nr_blocks_per_chip;
- 	p.nr_pages_per_block = _param_nr_pages_per_block;
+	p.nr_channels = _param_nr_channels/_param_nr_volumes; if (p.nr_channels == 0) p.nr_channels++;
+ 	p.nr_chips_per_channel = _param_nr_chips_per_channel/_param_nr_volumes; if (p.nr_chips_per_channel == 0) p.nr_chips_per_channel++;
+ 	p.nr_blocks_per_chip = _param_nr_blocks_per_chip/_param_nr_volumes; if (p.nr_blocks_per_chip == 0) p.nr_blocks_per_chip++;
+ 	p.nr_pages_per_block = _param_nr_pages_per_block/_param_nr_volumes; if (p.nr_pages_per_block == 0) p.nr_pages_per_block++;
  	p.page_main_size = _param_page_main_size;
  	p.page_oob_size = _param_page_oob_size;
 	p.device_type = _param_device_type;
@@ -138,6 +143,7 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_chips_per_ssd = p.nr_channels * p.nr_chips_per_channel;
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
+	p.max_blocks_per_ssd = _param_nr_channels * _param_nr_chips_per_channel * _param_nr_blocks_per_chip;
 #if defined (USE_NEW_RMW)
 	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_bug_on (p.nr_subpages_per_page != BDBM_MAX_PAGES);

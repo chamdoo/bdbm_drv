@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "abm.h"
 #include "ufile.h"
 
-
+#if 0
 static inline 
 uint64_t __get_channel_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return (blk_idx / np->nr_blocks_per_channel);
@@ -63,6 +63,7 @@ uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_
 		chip_no * np->nr_blocks_per_chip + 
 		block_no;
 }
+#endif
 
 static inline
 void __bdbm_abm_check_status (bdbm_abm_info_t* bai)
@@ -115,6 +116,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 	uint64_t loop;
 	bdbm_abm_info_t* bai = NULL;
 
+	/* TODO: need to be implemented in other way, e.g., linked list, to support dynamically increased blocks */
 	/* create 'bdbm_abm_info' */
 	if ((bai = (bdbm_abm_info_t*)bdbm_zmalloc (sizeof (bdbm_abm_info_t))) == NULL) {
 		bdbm_error ("bdbm_zmalloc fbailed");
@@ -122,9 +124,10 @@ bdbm_abm_info_t* bdbm_abm_create (
 	}
 	bai->np = np;
 
+	// tjkim
 	/* create 'bdbm_abm_block' */
 	if ((bai->blocks = bdbm_zmalloc 
-			(sizeof (bdbm_abm_block_t) * np->nr_blocks_per_ssd)) == NULL) {
+			(sizeof (bdbm_abm_block_t) * np->max_blocks_per_ssd)) == NULL) {
 		goto fail;
 	}
 

@@ -30,6 +30,7 @@ THE SOFTWARE.
 #endif
 
 #include "bdbm_drv.h"
+#include "algo/abm.h"
 
 //int bdbm_dm_init (bdbm_drv_info_t* bdi);
 //bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi);
@@ -37,5 +38,4 @@ THE SOFTWARE.
 int bdbm_aggr_init (bdbm_drv_info_t* bdi);
 bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi);
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi);
-
 #endif

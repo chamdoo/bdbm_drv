@@ -130,6 +130,7 @@ typedef struct {
 	uint64_t nr_subpages_per_block;
 	uint64_t nr_subpages_per_page;
 	uint64_t nr_subpages_per_ssd; /* subpage size must be4 KB */
+	uint64_t max_blocks_per_ssd;
 } bdbm_device_params_t;
 
 #endif /* _BLUEDBM_PARAMS_H */

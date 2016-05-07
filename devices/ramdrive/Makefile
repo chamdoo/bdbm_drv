@@ -4,12 +4,14 @@
 INCLUDE = ../../include
 COMMON = ../../common
 DEV_COMMON = ../common
+FTL = ../../ftl
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(DEV_COMMON) \
+	-I$(PWD)/$(FTL)
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \

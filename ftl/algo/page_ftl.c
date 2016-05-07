@@ -138,6 +138,7 @@ void __bdbm_page_ftl_destroy_mapping_table (
 	bdbm_free (me);
 }
 
+int temp = 0;
 uint32_t __bdbm_page_ftl_get_active_blocks (
 	bdbm_device_params_t* np,
 	bdbm_abm_info_t* bai,
@@ -158,6 +159,12 @@ uint32_t __bdbm_page_ftl_get_active_blocks (
 				return 1;
 			}
 		}
+	}
+
+	temp++;
+	if(temp == 5) {
+		bdbm_inc_nr_blocks(bai, bab);
+		bdbm_error("bdbm_inc_nr_blocks is called");
 	}
 
 	return 0;
@@ -206,7 +213,6 @@ void __bdbm_page_ftl_destroy_active_blocks (
 
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
-	uint32_t i = 0, j = 0;
 	bdbm_page_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
@@ -1162,7 +1168,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 	/* measure gc elapsed time */
 }
 
-static void __bdbm_page_mark_it_dead (
+void __bdbm_page_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
