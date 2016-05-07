@@ -264,7 +264,6 @@ bdbm_abm_block_t* bdbm_abm_get_block (
 	return &bai->blocks[blk_idx];
 }
 
-#if 0
 /* get a free block using lists */
 bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 	bdbm_abm_info_t* bai,
@@ -300,7 +299,6 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 
 	return blk;
 }
-#endif
 
 void bdbm_abm_get_free_block_rollback (
 	bdbm_abm_info_t* bai,
@@ -320,7 +318,6 @@ void bdbm_abm_get_free_block_rollback (
 	bai->nr_free_blks++;
 }
 
-#if 0
 void bdbm_abm_get_free_block_commit (
 	bdbm_abm_info_t* bai,
 	bdbm_abm_block_t* blk)
@@ -343,7 +340,6 @@ void bdbm_abm_get_free_block_commit (
 	bai->nr_free_blks_prepared--;
 	bai->nr_clean_blks++;
 }
-#endif
 
 void bdbm_abm_erase_block (
 	bdbm_abm_info_t* bai,
