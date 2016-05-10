@@ -118,27 +118,4 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 
 #endif
 
-static inline 
-uint64_t __get_channel_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
-	return (blk_idx / np->nr_blocks_per_channel);
-}
-
-static inline 
-uint64_t __get_chip_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
-	return ((blk_idx % np->nr_blocks_per_channel) / np->nr_blocks_per_chip);
-}
-
-static inline 
-uint64_t __get_block_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
-	return (blk_idx % np->nr_blocks_per_chip);
-}
-
-static inline
-uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
-	return channel_no * np->nr_blocks_per_channel + 
-		chip_no * np->nr_blocks_per_chip + 
-		block_no;
-}
-
-void bdbm_inc_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab);
-void bdbm_dec_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab);
+uint32_t bdbm_aggr_allocate_blocks(bdbm_abm_info_t* bai, uint64_t block_no, uint32_t volume);

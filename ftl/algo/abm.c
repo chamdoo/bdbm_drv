@@ -41,7 +41,6 @@ THE SOFTWARE.
 #include "abm.h"
 #include "ufile.h"
 
-#if 0
 static inline 
 uint64_t __get_channel_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return (blk_idx / np->nr_blocks_per_channel);
@@ -63,7 +62,6 @@ uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_
 		chip_no * np->nr_blocks_per_chip + 
 		block_no;
 }
-#endif
 
 static inline
 void __bdbm_abm_check_status (bdbm_abm_info_t* bai)

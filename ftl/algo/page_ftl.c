@@ -138,7 +138,6 @@ void __bdbm_page_ftl_destroy_mapping_table (
 	bdbm_free (me);
 }
 
-int temp = 0;
 uint32_t __bdbm_page_ftl_get_active_blocks (
 	bdbm_device_params_t* np,
 	bdbm_abm_info_t* bai,
@@ -159,12 +158,6 @@ uint32_t __bdbm_page_ftl_get_active_blocks (
 				return 1;
 			}
 		}
-	}
-
-	temp++;
-	if(temp == 5) {
-		bdbm_inc_nr_blocks(bai, bab);
-		bdbm_error("bdbm_inc_nr_blocks is called");
 	}
 
 	return 0;

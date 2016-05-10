@@ -95,15 +95,61 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 	return &_bdbm_dm_inf;
 }
 
+uint64_t **bdbm_aggr_mapping = NULL;
+uint64_t cur_sblock;
+
+uint8_t *bdbm_aggr_pblock_status = NULL;
+enum BDBM_AGGR_PBLOCK_STATUS {
+	AGGR_PBLOCK_FREE = 0,
+	AGGR_PBLOCK_ALLOCATED;
+};
+
 int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 {
-	// TODO: make a variable to keep track of nr_blocks_in_use at the device level
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+
+	if(bdbm_aggr_mapping == NULL) {
+		// TODO: mapping table for blocks between volumes and physical device
+		if ((bdbm_aggr_mapping = (uint64_t**)bdbm_zmalloc(sizeof(uint64_t*) * np->nr_volumes)) == NULL) {
+			bdbm_error ("bdbm_zmalloc failed");
+			goto fail;
+		}
+	}
+
+	if(bdbm_aggr_pblock_status == NULL){
+		// TODO: flag for physical block to check if the block is allocated to a volume
+		if ((bdbm_aggr_pblock_status = (uint8_t*)bdbm_zmalloc(sizeof(uint8_t)) * np->max_blocks_per_ssd) == NULL) {
+			bdbm_error ("bdbm_zmalloc failed");
+			goto fail;
+		}
+	}
+
+
 	return bdbm_dm_init(bdi);
+
+fail: 
+	if(bdbm_aggr_mapping)
+		bdbm_free(bdbm_aggr_mapping);
+	if(bdbm_aggr_pblock_status)
+		bdbm_free(bdbm_aggr_pblock_status);
+	return NULL;
 }
 
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
+	uint32_t loop;
 	bdbm_dm_exit(bdi);
+
+	if(bdbm_aggr_mapping != NULL) {
+		for(loop = 0; loop < MAX_VOLUMES; loop++) {
+			if(bdbm_aggr_mapping[loop] != NULL)
+				bdbm_free(bdbm_aggr_mapping[loop]);
+		}
+		bdbm_free(bdbm_aggr_mapping);
+	}
+
+	if(bdbm_aggr_pblock_status != NULL)
+		bdbm_free(bdbm_aggr_pblock_status);
 }
 
 bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
@@ -111,6 +157,58 @@ bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
 	return bdbm_dm_get_inf(bdi);
 }
 
+// create mapping table in super block granularity, channel & chip numbers are shared each volumes
+uint32_t bdbm_aggr_create_mapping (bdbm_drv_info_t* bdi, uint32_t volume)
+{
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+
+	if((bdbm_aggr_mapping[volume] = (uint64_t*)bdbm_zmalloc
+				(sizeof(uint64_t) * np->max_blocks_per_chip)) == NULL) {
+		bdbm_error ("bdbm_zmalloc failed");
+		goto fail;
+	}
+
+fail:
+	if(bdbm_aggr_mapping[volume])
+		bdbm_free(bdbm_aggr_mapping[volume]);
+	return NULL;
+}
+
+uint32_t bdbm_aggr_allocate_blocks(bdbm_abm_info_t* bai, uint64_t block_no, uint32_t volume)
+{
+	uint32_t loop = 0;
+	bdbm_device_params_t *np = bai->np;
+	
+	if(block_no >= np->max_blocks_per_chip) {
+		bdbm_error ("block_no (%llu) is larger than # of blocks per chip", block_no);
+		return 1;
+	}
+
+	if(volume >= np->nr_volumes) {
+		bdbm_error ("volume (%d) is larger than # of volumes");
+	}
+
+	while (bdbm_aggr_pblock_status[cur_sblock] != AGGR_PBLOCK_FREE) {
+		loop++;
+		cur_sblock++;
+		if(cur_sblock == np->nr_blocks_per_chip) 
+			cur_sblock = 0;
+		// check for infinite loop
+		if(loop >= np->nr_blocks_per_chip) {
+			bdbm_error ("There is no free super block to allocate for volume %d", volume);
+			return 1;
+		}
+	}
+
+	bdbm_aggr_mapping[volume][block_no] = cur_sblock;
+	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
+	
+	np->nr_blocks_per_chip++;
+	np->nr_blocks_per_ssd = np->nr_channels * np->nr_chips_per_channel * np->nr_blocks_per_chip;
+
+	return 0;
+}
+#if 0
 void bdbm_inc_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
 {
 	int loop, block_unit, offset, ac_idx;
@@ -183,7 +281,7 @@ void bdbm_dec_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
 	np->nr_blocks_per_chip--;
 	np->nr_blocks_per_ssd = np->nr_channels * np->nr_chips_per_channel * np->nr_blocks_per_chip;
 }
-
+#endif
 
 #if defined (KERNEL_MODE)
 //EXPORT_SYMBOL (bdbm_dm_init);
@@ -192,8 +290,7 @@ void bdbm_dec_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
 EXPORT_SYMBOL (bdbm_aggr_init);
 EXPORT_SYMBOL (bdbm_aggr_exit);
 EXPORT_SYMBOL (bdbm_aggr_get_inf);
-EXPORT_SYMBOL (bdbm_inc_nr_blocks);
-EXPORT_SYMBOL (bdbm_dec_nr_blocks);
+EXPORT_SYMBOL (bdbm_aggr_allocate_blocks);
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
 MODULE_DESCRIPTION ("RISA Device Wrapper");
