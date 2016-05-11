@@ -84,7 +84,7 @@ uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	// translate block number
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		uint64_t org_block_no = lr->phyaddr.block_no;
-		lr->block_no = bdbm_aggr_mapping[volume][org_block_no];
+		lr->phyaddr.block_no = bdbm_aggr_mapping[volume][org_block_no];
 	}
 
 	return dm_ramdrive_make_reqs(bdi, hr);
