@@ -91,6 +91,7 @@ void llm_noq_destroy (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 }
 
+extern int _param_dev_num;
 uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
@@ -104,6 +105,7 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	pmu_update_sw (bdi, llm_req);
 	pmu_update_q (bdi, llm_req);
 
+	llm_req->volume = _param_dev_num;
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
 		/* handle error cases */
@@ -117,6 +119,7 @@ uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
 
+	hr->volume = _param_dev_num;
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
 		/* handle error cases */

@@ -57,6 +57,7 @@ int _param_llm_type					= LLM_MULTI_QUEUE;
 //int _param_llm_type					= LLM_NO_QUEUE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 
+
 bdbm_ftl_params get_default_ftl_params (void)
 {
 	bdbm_ftl_params p;
@@ -92,5 +93,4 @@ void display_ftl_params (bdbm_ftl_params* p)
 	bdbm_msg ("kernel sector = %d bytes", p->kernel_sector_size);
 	bdbm_msg ("");
 }
-
 

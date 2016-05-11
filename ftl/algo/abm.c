@@ -107,11 +107,13 @@ void __bdbm_abm_destory_pst (babm_abm_subpage_t* pst)
 		bdbm_free (pst);
 }
 
+extern int _param_dev_num;
+
 bdbm_abm_info_t* bdbm_abm_create (
 	bdbm_device_params_t* np,
 	uint8_t use_pst)
 {
-	uint64_t loop;
+	uint64_t loop, nr_blocks_per_chip_per_volume, channel_no, chip_no, blk_no, blk_idx;
 	bdbm_abm_info_t* bai = NULL;
 
 	/* TODO: need to be implemented in other way, e.g., linked list, to support dynamically increased blocks */
@@ -122,16 +124,15 @@ bdbm_abm_info_t* bdbm_abm_create (
 	}
 	bai->np = np;
 
-	// tjkim
 	/* create 'bdbm_abm_block' */
 	if ((bai->blocks = bdbm_zmalloc 
-			(sizeof (bdbm_abm_block_t) * np->max_blocks_per_ssd)) == NULL) {
+			(sizeof (bdbm_abm_block_t) * np->nr_blocks_per_ssd)) == NULL) {
 		goto fail;
 	}
 
 	/* initialize 'bdbm_abm_block' */
 	for (loop = 0; loop < np->nr_blocks_per_ssd; loop++) {
-		bai->blocks[loop].status = BDBM_ABM_BLK_FREE;
+		bai->blocks[loop].status = BDBM_ABM_BLK_UNALLOCATED;
 		bai->blocks[loop].channel_no = __get_channel_ofs (np, loop);
 		bai->blocks[loop].chip_no = __get_chip_ofs (np, loop);
 		bai->blocks[loop].block_no = __get_block_ofs (np, loop);
@@ -146,6 +147,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 			}
 		}
 	}
+
 
 	/* build linked-lists */
 	bai->list_head_free = (struct list_head**)bdbm_zmalloc (sizeof (struct list_head*) * np->nr_channels);
@@ -186,14 +188,37 @@ bdbm_abm_info_t* bdbm_abm_create (
 		}
 	}
 
+	/* allocate given blocks for this volume, change block status UNALLOCATED -> FREE */
+	nr_blocks_per_chip_per_volume = np->nr_blocks_per_chip / np->nr_volumes;
+
+	for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
+		for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
+			for (blk_no = 0; blk_no < nr_blocks_per_chip_per_volume; blk_no++) {
+				blk_idx = __get_block_idx(np, channel_no, chip_no, blk_no);
+				bai->blocks[blk_idx].status = BDBM_ABM_BLK_FREE;
+				list_add_tail (&(bai->blocks[blk_idx].list), 
+						&(bai->list_head_free[bai->blocks[blk_idx].channel_no][bai->blocks[blk_idx].chip_no]));
+
+				if(channel_no == 0 && chip_no == 0) {
+					if(bdbm_aggr_allocate_blocks(np, blk_no, _param_dev_num) != 0){
+						bdbm_error("block allocation at aggregate layer has failed");
+					}
+				}
+			}
+		}
+	}
+
+#if 0
 	/* add abm blocks into corresponding lists */
 	for (loop = 0; loop < np->nr_blocks_per_ssd; loop++) {
 		list_add_tail (&(bai->blocks[loop].list), 
 			&(bai->list_head_free[bai->blocks[loop].channel_no][bai->blocks[loop].chip_no]));
 	}
+#endif 
 
 	/* initialize # of blocks according to their types */
-	bai->nr_total_blks = np->nr_blocks_per_ssd;
+	//bai->nr_total_blks = np->nr_blocks_per_ssd;
+	bai->nr_total_blks = np->nr_allocated_blocks_per_ssd;
 	bai->nr_free_blks = bai->nr_total_blks;
 	bai->nr_free_blks_prepared = 0;
 	bai->nr_clean_blks = 0;
@@ -349,10 +374,12 @@ void bdbm_abm_erase_block (
 	uint64_t block_no,
 	uint8_t is_bad)
 {
+
 	bdbm_abm_block_t* blk = NULL;
 	uint64_t blk_idx = 
 		__get_block_idx (bai->np, channel_no, chip_no, block_no);
-
+	/* TODO: check status if UNALLOCATED, assert if ture */
+	 
 	/* see if blk_idx is correct or not */
 	if (blk_idx >= bai->np->nr_blocks_per_ssd) {
 		bdbm_msg ("%llu %llu %llu", channel_no, chip_no, block_no);

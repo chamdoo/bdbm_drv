@@ -35,13 +35,60 @@ THE SOFTWARE.
 #endif
 
 #include "bdbm_drv.h"
+#include "dm_ramdrive.h"
 #include "debug.h"
 #include "algo/abm.h"
 #include "umemory.h"
 
-extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
+//extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
 bdbm_drv_info_t* _bdi_dm = NULL; /* for Connectal & RAMSSD */
 
+uint32_t aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+
+bdbm_dm_inf_t _bdbm_aggr_inf = {
+	.ptr_private = NULL,
+	.probe = dm_ramdrive_probe,
+	.open = dm_ramdrive_open,
+	.close = dm_ramdrive_close,
+	.make_req = aggr_make_req,
+	.make_reqs = aggr_make_reqs,
+	.end_req = dm_ramdrive_end_req,
+	.load = dm_ramdrive_load,
+	.store = dm_ramdrive_store,
+};
+
+uint64_t **bdbm_aggr_mapping = NULL;
+uint64_t cur_sblock;
+
+uint8_t *bdbm_aggr_pblock_status = NULL;
+enum BDBM_AGGR_PBLOCK_STATUS {
+	AGGR_PBLOCK_FREE = 0,
+	AGGR_PBLOCK_ALLOCATED,
+};
+
+uint32_t aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
+	uint32_t volume = ptr_llm_req->volume;
+	uint64_t org_block_no = ptr_llm_req->phyaddr.block_no;
+
+	// translate block number
+	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[volume][org_block_no];
+	return dm_ramdrive_make_req(bdi, ptr_llm_req);
+}
+
+uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
+	uint32_t volume = hr->volume;
+	uint32_t i;
+	bdbm_llm_req_t* lr = NULL;
+
+	// translate block number
+	bdbm_hlm_for_each_llm_req (lr, hr, i) {
+		uint64_t org_block_no = lr->phyaddr.block_no;
+		lr->block_no = bdbm_aggr_mapping[volume][org_block_no];
+	}
+
+	return dm_ramdrive_make_reqs(bdi, hr);
+}
 
 #if defined (KERNEL_MODE)
 static int __init risa_dev_init (void)
@@ -92,17 +139,8 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 		return NULL;
 	}
 
-	return &_bdbm_dm_inf;
+	return &_bdbm_aggr_inf;
 }
-
-uint64_t **bdbm_aggr_mapping = NULL;
-uint64_t cur_sblock;
-
-uint8_t *bdbm_aggr_pblock_status = NULL;
-enum BDBM_AGGR_PBLOCK_STATUS {
-	AGGR_PBLOCK_FREE = 0,
-	AGGR_PBLOCK_ALLOCATED;
-};
 
 int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 {
@@ -118,7 +156,7 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 
 	if(bdbm_aggr_pblock_status == NULL){
 		// TODO: flag for physical block to check if the block is allocated to a volume
-		if ((bdbm_aggr_pblock_status = (uint8_t*)bdbm_zmalloc(sizeof(uint8_t)) * np->max_blocks_per_ssd) == NULL) {
+		if ((bdbm_aggr_pblock_status = (uint8_t*)bdbm_zmalloc(sizeof(uint8_t) * np->nr_blocks_per_ssd)) == NULL) {
 			bdbm_error ("bdbm_zmalloc failed");
 			goto fail;
 		}
@@ -132,16 +170,18 @@ fail:
 		bdbm_free(bdbm_aggr_mapping);
 	if(bdbm_aggr_pblock_status)
 		bdbm_free(bdbm_aggr_pblock_status);
-	return NULL;
+	return 1;
 }
 
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
 	uint32_t loop;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+
 	bdbm_dm_exit(bdi);
 
 	if(bdbm_aggr_mapping != NULL) {
-		for(loop = 0; loop < MAX_VOLUMES; loop++) {
+		for(loop = 0; loop < np->nr_volumes; loop++) {
 			if(bdbm_aggr_mapping[loop] != NULL)
 				bdbm_free(bdbm_aggr_mapping[loop]);
 		}
@@ -163,7 +203,7 @@ uint32_t bdbm_aggr_create_mapping (bdbm_drv_info_t* bdi, uint32_t volume)
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	if((bdbm_aggr_mapping[volume] = (uint64_t*)bdbm_zmalloc
-				(sizeof(uint64_t) * np->max_blocks_per_chip)) == NULL) {
+				(sizeof(uint64_t) * np->nr_blocks_per_chip)) == NULL) {
 		bdbm_error ("bdbm_zmalloc failed");
 		goto fail;
 	}
@@ -171,21 +211,20 @@ uint32_t bdbm_aggr_create_mapping (bdbm_drv_info_t* bdi, uint32_t volume)
 fail:
 	if(bdbm_aggr_mapping[volume])
 		bdbm_free(bdbm_aggr_mapping[volume]);
-	return NULL;
+	return 1;
 }
 
-uint32_t bdbm_aggr_allocate_blocks(bdbm_abm_info_t* bai, uint64_t block_no, uint32_t volume)
+uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume)
 {
-	uint32_t loop = 0;
-	bdbm_device_params_t *np = bai->np;
+	uint32_t loop = 0, nr_punit;
 	
-	if(block_no >= np->max_blocks_per_chip) {
+	if(block_no >= np->nr_blocks_per_chip) {
 		bdbm_error ("block_no (%llu) is larger than # of blocks per chip", block_no);
 		return 1;
 	}
 
 	if(volume >= np->nr_volumes) {
-		bdbm_error ("volume (%d) is larger than # of volumes");
+		bdbm_error ("volume (%d) is larger than # of volumes", volume);
 	}
 
 	while (bdbm_aggr_pblock_status[cur_sblock] != AGGR_PBLOCK_FREE) {
@@ -203,11 +242,14 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_abm_info_t* bai, uint64_t block_no, uint
 	bdbm_aggr_mapping[volume][block_no] = cur_sblock;
 	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
 	
-	np->nr_blocks_per_chip++;
-	np->nr_blocks_per_ssd = np->nr_channels * np->nr_chips_per_channel * np->nr_blocks_per_chip;
+	np->nr_allocated_blocks_per_chip++;
+	nr_punit = np->nr_channels * np->nr_chips_per_channel;
+	np->nr_allocated_blocks_per_ssd += nr_punit;
 
 	return 0;
 }
+
+
 #if 0
 void bdbm_inc_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
 {

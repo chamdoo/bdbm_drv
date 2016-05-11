@@ -50,7 +50,8 @@ enum BDBM_ABM_SUBPAGE_STATUS {
 typedef uint8_t babm_abm_subpage_t; /* BDBM_ABM_PAGE_STATUS */
 
 enum BDBM_ABM_BLK_STATUS {
-	BDBM_ABM_BLK_FREE = 0,
+	BDBM_ABM_BLK_UNALLOCATED = 0,
+	BDBM_ABM_BLK_FREE,
 	BDBM_ABM_BLK_FREE_PREPARE,
 	BDBM_ABM_BLK_CLEAN,
 	BDBM_ABM_BLK_DIRTY,
@@ -118,4 +119,4 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 
 #endif
 
-uint32_t bdbm_aggr_allocate_blocks(bdbm_abm_info_t* bai, uint64_t block_no, uint32_t volume);
+uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t* np, uint64_t block_no, uint32_t volume);

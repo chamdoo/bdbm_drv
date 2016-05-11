@@ -11,7 +11,8 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(DEV_COMMON) \
-	-I$(PWD)/$(FTL)
+	-I$(PWD)/$(FTL)\
+	-I$(PWD)
 
 EXTRA_CFLAGS += \
 	-D CONFIG_ENABLE_MSG \

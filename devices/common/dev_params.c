@@ -143,7 +143,10 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_chips_per_ssd = p.nr_channels * p.nr_chips_per_channel;
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
+
 	p.nr_volumes = _param_nr_volumes;
+	p.nr_allocated_blocks_per_chip = 0;
+	p.nr_allocated_blocks_per_ssd = 0;
 #if defined (USE_NEW_RMW)
 	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_bug_on (p.nr_subpages_per_page != BDBM_MAX_PAGES);

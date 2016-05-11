@@ -195,6 +195,8 @@ typedef struct {
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
+
+	uint8_t volume;
 } bdbm_llm_req_t;
 
 typedef struct {
@@ -222,6 +224,8 @@ typedef struct {
 
 	void* blkio_req;
 	uint8_t ret;
+
+	uint8_t volume;
 } bdbm_hlm_req_t;
 
 #define bdbm_hlm_for_each_llm_req(r, h, i) \
