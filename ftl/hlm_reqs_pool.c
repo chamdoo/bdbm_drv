@@ -342,6 +342,7 @@ static int __hlm_reqs_pool_create_write_req (
 	bdbm_msg("nr_llm_reqs: %llu, pool->io_unit: %d, NR_KPAGES_IN(pool->map_unit): %lu",
 		nr_llm_reqs, pool->io_unit, NR_KPAGES_IN(pool->map_unit));
 
+	bdbm_msg("1 - i: %llu, nr_llm_reqs: %llu", i, nr_llm_reqs);
 	ptr_lr = &hr->llm_reqs[0];
 	for (i = 0; i < nr_llm_reqs; i++) {
 		int fm_ofs = 0;
@@ -349,14 +350,18 @@ static int __hlm_reqs_pool_create_write_req (
 		ptr_fm = &ptr_lr->fmain;
 		hlm_reqs_pool_reset_fmain (ptr_fm);
 		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+		
 
 		/* build mapping-units */
+		bdbm_msg("2 - i: %llu, nr_llm_reqs: %llu", i, nr_llm_reqs);
 		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
 			/* build kernel-pages */
 			ptr_lr->logaddr.lpa[j] = sec_start / NR_KSECTORS_IN(pool->map_unit);
+			bdbm_msg("3 - i: %llu, nr_llm_reqs: %llu", i, nr_llm_reqs);
 			for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
 				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
 
+				bdbm_msg("4 - i: %llu, nr_llm_reqs: %llu", i, nr_llm_reqs);
 				if (pg_off >= pg_start && pg_off < pg_end) {
 					bdbm_msg("bvec_cnt: %llu, br->bi_bvec_cnt: %llu", bvec_cnt, br->bi_bvec_cnt);
 					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
@@ -388,6 +393,7 @@ static int __hlm_reqs_pool_create_write_req (
 		ptr_lr++;
 	}
 
+	bdbm_msg("5 - i: %llu, nr_llm_reqs: %llu", i, nr_llm_reqs);
 	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
 
 	/* intialize hlm_req */
