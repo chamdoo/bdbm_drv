@@ -113,7 +113,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 	bdbm_device_params_t* np,
 	uint8_t use_pst)
 {
-	uint64_t loop, nr_blocks_per_chip_per_volume, channel_no, chip_no, blk_no, blk_idx;
+	uint64_t loop, channel_no, chip_no, blk_no, blk_idx;
 	bdbm_abm_info_t* bai = NULL;
 
 	/* TODO: need to be implemented in other way, e.g., linked list, to support dynamically increased blocks */
@@ -188,12 +188,12 @@ bdbm_abm_info_t* bdbm_abm_create (
 		}
 	}
 
+	//bdbm_aggr_create_mapping(np, _param_dev_num);
 	/* allocate given blocks for this volume, change block status UNALLOCATED -> FREE */
-	nr_blocks_per_chip_per_volume = np->nr_blocks_per_chip / np->nr_volumes;
 
 	for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
 		for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
-			for (blk_no = 0; blk_no < nr_blocks_per_chip_per_volume; blk_no++) {
+			for (blk_no = 0; blk_no < np->nr_blocks_per_chip_per_volume; blk_no++) {
 				blk_idx = __get_block_idx(np, channel_no, chip_no, blk_no);
 				bai->blocks[blk_idx].status = BDBM_ABM_BLK_FREE;
 				list_add_tail (&(bai->blocks[blk_idx].list), 
@@ -218,7 +218,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 
 	/* initialize # of blocks according to their types */
 	//bai->nr_total_blks = np->nr_blocks_per_ssd;
-	bai->nr_total_blks = np->nr_allocated_blocks_per_ssd;
+	bai->nr_total_blks = np->nr_blocks_per_ssd_per_volume;
 	bai->nr_free_blks = bai->nr_total_blks;
 	bai->nr_free_blks_prepared = 0;
 	bai->nr_clean_blks = 0;
@@ -379,6 +379,7 @@ void bdbm_abm_erase_block (
 	uint64_t blk_idx = 
 		__get_block_idx (bai->np, channel_no, chip_no, block_no);
 	/* TODO: check status if UNALLOCATED, assert if ture */
+	bdbm_bug_on (bai->blocks[blk_idx].status == BDBM_ABM_BLK_UNALLOCATED);
 	 
 	/* see if blk_idx is correct or not */
 	if (blk_idx >= bai->np->nr_blocks_per_ssd) {
@@ -466,6 +467,8 @@ void bdbm_abm_set_to_dirty_block (
 	bdbm_abm_block_t* blk = NULL;
 	uint64_t blk_idx = 
 		__get_block_idx (bai->np, channel_no, chip_no, block_no);
+	/* TODO: check status if UNALLOCATED, assert if ture */
+	bdbm_bug_on (bai->blocks[blk_idx].status == BDBM_ABM_BLK_UNALLOCATED);
 
 	/* see if blk_idx is correct or not */
 	if (blk_idx >= bai->np->nr_blocks_per_ssd) {

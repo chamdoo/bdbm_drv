@@ -182,6 +182,7 @@ typedef struct {
 typedef struct {
 	uint32_t req_type; /* read, write, or trim */
 	uint8_t ret;	/* old for GC */
+	uint8_t volume;
 	void* ptr_hlm_req;
 	void* ptr_qitem;
 	bdbm_sema_t* done;	/* maybe used by applications that require direct notifications from an interrupt handler */
@@ -196,7 +197,6 @@ typedef struct {
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
 
-	uint8_t volume;
 } bdbm_llm_req_t;
 
 typedef struct {
@@ -379,6 +379,7 @@ struct _bdbm_drv_info_t {
 	void* private_data;
 	bdbm_ftl_params parm_ftl;
 	bdbm_device_params_t parm_dev;
+	bdbm_device_params_t parm_log_dev;
 	bdbm_host_inf_t* ptr_host_inf; 
 	bdbm_dm_inf_t* ptr_dm_inf;
 	bdbm_hlm_inf_t* ptr_hlm_inf;

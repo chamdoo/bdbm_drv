@@ -339,6 +339,9 @@ static int __hlm_reqs_pool_create_write_req (
 	nr_llm_reqs = BDBM_ALIGN_UP ((sec_end - sec_start), NR_KSECTORS_IN(pool->io_unit)) / NR_KSECTORS_IN(pool->io_unit);
 	bdbm_bug_on (nr_llm_reqs > BDBM_BLKIO_MAX_VECS);
 
+	bdbm_msg("nr_llm_reqs: %llu, pool->io_unit: %d, NR_KPAGES_IN(pool->map_unit): %lu",
+		nr_llm_reqs, pool->io_unit, NR_KPAGES_IN(pool->map_unit));
+
 	ptr_lr = &hr->llm_reqs[0];
 	for (i = 0; i < nr_llm_reqs; i++) {
 		int fm_ofs = 0;
@@ -355,6 +358,7 @@ static int __hlm_reqs_pool_create_write_req (
 				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
 
 				if (pg_off >= pg_start && pg_off < pg_end) {
+					bdbm_msg("bvec_cnt: %llu, br->bi_bvec_cnt: %llu", bvec_cnt, br->bi_bvec_cnt);
 					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
 					ptr_fm->kp_stt[fm_ofs] = KP_STT_DATA;
 					ptr_fm->kp_ptr[fm_ofs] = br->bi_bvec_ptr[bvec_cnt++]; /* assign actual data */

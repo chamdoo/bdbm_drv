@@ -236,6 +236,7 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 
 	{
 		uint64_t capacity;
+		// capacity should be re-calculated
 		capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
 		/*capacity = bdi->parm_dev.device_capacity_in_byte;*/
 		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;

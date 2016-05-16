@@ -120,3 +120,4 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 #endif
 
 uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t* np, uint64_t block_no, uint32_t volume);
+

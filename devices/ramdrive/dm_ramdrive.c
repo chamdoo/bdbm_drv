@@ -83,18 +83,15 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 
 	/* setup NAND parameters according to users' inputs */
 	__dm_setup_device_params (params);
-	bdbm_msg("test");
 
 	display_device_params (params);
 
-	bdbm_msg("test 0");
 	/* create a private structure for ramdrive */
 	if ((p = (dm_ramssd_private_t*)bdbm_malloc_atomic (sizeof (dm_ramssd_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc_atomic failed");
 		goto fail;
 	}
 
-	bdbm_msg("test 1");
 	/* create RAMSSD based on user-specified NAND parameters */
 	if ((p->ramssd = dev_ramssd_create (
 			params,	__dm_ramdrive_ih)) == NULL) {
@@ -103,7 +100,6 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		goto fail;
 	} 
 
-	bdbm_msg("test 2");
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;
 

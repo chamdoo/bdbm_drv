@@ -58,8 +58,8 @@ bdbm_dm_inf_t _bdbm_aggr_inf = {
 	.store = dm_ramdrive_store,
 };
 
-uint64_t **bdbm_aggr_mapping = NULL;
-uint64_t cur_sblock;
+uint64_t *bdbm_aggr_mapping = NULL;
+uint64_t cur_sblock = 0;
 
 uint8_t *bdbm_aggr_pblock_status = NULL;
 enum BDBM_AGGR_PBLOCK_STATUS {
@@ -67,12 +67,25 @@ enum BDBM_AGGR_PBLOCK_STATUS {
 	AGGR_PBLOCK_ALLOCATED,
 };
 
+uint64_t __get_aggr_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t blk_no) {
+	bdbm_bug_on (blk_no >= np->nr_blocks_per_chip);
+	bdbm_bug_on (vol >= np->nr_volumes);
+	return (np->nr_blocks_per_chip) * vol + blk_no;
+}
+
 uint32_t aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
 	uint32_t volume = ptr_llm_req->volume;
 	uint64_t org_block_no = ptr_llm_req->phyaddr.block_no;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
 
 	// translate block number
-	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[volume][org_block_no];
+	bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
+	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+	/*
+	bdbm_msg("aggr_make_req, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
+			ptr_llm_req->phyaddr.block_no);
+			*/
 	return dm_ramdrive_make_req(bdi, ptr_llm_req);
 }
 
@@ -80,11 +93,16 @@ uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	uint32_t volume = hr->volume;
 	uint32_t i;
 	bdbm_llm_req_t* lr = NULL;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	// translate block number
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		uint64_t org_block_no = lr->phyaddr.block_no;
-		lr->phyaddr.block_no = bdbm_aggr_mapping[volume][org_block_no];
+		uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
+		bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
+		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+		bdbm_msg("aggr_make_reqs, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
+			lr->phyaddr.block_no);
 	}
 
 	return dm_ramdrive_make_reqs(bdi, hr);
@@ -145,10 +163,11 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	uint64_t nr_virt_blocks = np->nr_blocks_per_chip * np->nr_volumes;
 
 	if(bdbm_aggr_mapping == NULL) {
 		// TODO: mapping table for blocks between volumes and physical device
-		if ((bdbm_aggr_mapping = (uint64_t**)bdbm_zmalloc(sizeof(uint64_t*) * np->nr_volumes)) == NULL) {
+		if ((bdbm_aggr_mapping = (uint64_t*)bdbm_zmalloc(sizeof(uint64_t) * nr_virt_blocks)) == NULL) {
 			bdbm_error ("bdbm_zmalloc failed");
 			goto fail;
 		}
@@ -175,18 +194,10 @@ fail:
 
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
-	uint32_t loop;
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-
 	bdbm_dm_exit(bdi);
 
-	if(bdbm_aggr_mapping != NULL) {
-		for(loop = 0; loop < np->nr_volumes; loop++) {
-			if(bdbm_aggr_mapping[loop] != NULL)
-				bdbm_free(bdbm_aggr_mapping[loop]);
-		}
+	if(bdbm_aggr_mapping != NULL) 
 		bdbm_free(bdbm_aggr_mapping);
-	}
 
 	if(bdbm_aggr_pblock_status != NULL)
 		bdbm_free(bdbm_aggr_pblock_status);
@@ -197,27 +208,22 @@ bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
 	return bdbm_dm_get_inf(bdi);
 }
 
-// create mapping table in super block granularity, channel & chip numbers are shared each volumes
-uint32_t bdbm_aggr_create_mapping (bdbm_drv_info_t* bdi, uint32_t volume)
-{
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-
-	if((bdbm_aggr_mapping[volume] = (uint64_t*)bdbm_zmalloc
-				(sizeof(uint64_t) * np->nr_blocks_per_chip)) == NULL) {
-		bdbm_error ("bdbm_zmalloc failed");
-		goto fail;
-	}
-
-fail:
-	if(bdbm_aggr_mapping[volume])
-		bdbm_free(bdbm_aggr_mapping[volume]);
-	return 1;
-}
-
 uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume)
 {
-	uint32_t loop = 0, nr_punit;
+	uint32_t loop = 0;
+	uint64_t aggr_idx;
+	//uint32_t nr_punit;
 	
+	if(bdbm_aggr_mapping == NULL) {
+		bdbm_error ("bdbm_aggr_mapping is NULL");
+		return 1;
+	}
+
+	if(bdbm_aggr_pblock_status == NULL) {
+		bdbm_error ("bdbm_aggr_pblock_status is NULL");
+		return 1;
+	}
+
 	if(block_no >= np->nr_blocks_per_chip) {
 		bdbm_error ("block_no (%llu) is larger than # of blocks per chip", block_no);
 		return 1;
@@ -225,6 +231,7 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, 
 
 	if(volume >= np->nr_volumes) {
 		bdbm_error ("volume (%d) is larger than # of volumes", volume);
+		return 1;
 	}
 
 	while (bdbm_aggr_pblock_status[cur_sblock] != AGGR_PBLOCK_FREE) {
@@ -239,12 +246,15 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, 
 		}
 	}
 
-	bdbm_aggr_mapping[volume][block_no] = cur_sblock;
+	aggr_idx = __get_aggr_idx(np, volume, block_no);
+	bdbm_aggr_mapping[aggr_idx] = cur_sblock;
 	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
 	
+	/*
 	np->nr_allocated_blocks_per_chip++;
 	nr_punit = np->nr_channels * np->nr_chips_per_channel;
 	np->nr_allocated_blocks_per_ssd += nr_punit;
+	*/
 
 	return 0;
 }

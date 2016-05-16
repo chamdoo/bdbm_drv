@@ -131,8 +131,10 @@ typedef struct {
 	uint64_t nr_subpages_per_page;
 	uint64_t nr_subpages_per_ssd; /* subpage size must be4 KB */
 	uint8_t  nr_volumes;
-	uint64_t nr_allocated_blocks_per_chip;
-	uint64_t nr_allocated_blocks_per_ssd;
+	uint64_t nr_blocks_per_chip_per_volume;
+	uint64_t nr_blocks_per_channel_per_volume;
+	uint64_t nr_blocks_per_ssd_per_volume;
+	uint64_t device_capacity_in_byte_per_volume;
 } bdbm_device_params_t;
 
 #endif /* _BLUEDBM_PARAMS_H */

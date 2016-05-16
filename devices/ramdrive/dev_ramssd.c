@@ -142,9 +142,16 @@ static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_np)
 	bdbm_msg ("RAM DISK INFO");
 	bdbm_msg ("=====================================================================");
 	bdbm_msg ("the SSD capacity: %llu (B), %llu (KB), %llu (MB)",
+		ssd_size_in_bytes,
+		BDBM_SIZE_KB(ssd_size_in_bytes),
+		BDBM_SIZE_MB(ssd_size_in_bytes));
+
+	/*
+	bdbm_msg ("the SSD capacity: %llu (B), %llu (KB), %llu (MB)",
 		ptr_np->device_capacity_in_byte,
 		BDBM_SIZE_KB(ptr_np->device_capacity_in_byte),
 		BDBM_SIZE_MB(ptr_np->device_capacity_in_byte));
+	*/
 
 	/* allocate the memory for the SSD */
 	if ((ptr_ramssd = (void*)bdbm_malloc
@@ -577,7 +584,6 @@ dev_ramssd_info_t* dev_ramssd_create (
 	uint64_t loop, nr_parallel_units;
 	dev_ramssd_info_t* ri = NULL;
 
-	bdbm_msg("dev_ramssd_create 0");
 	/* create a ramssd info */
 	if ((ri = (dev_ramssd_info_t*)
 			bdbm_malloc_atomic (sizeof (dev_ramssd_info_t))) == NULL) {
@@ -590,7 +596,6 @@ dev_ramssd_info_t* dev_ramssd_create (
 	ri->emul_mode = ptr_np->device_type;
 	ri->np = ptr_np;
 
-	bdbm_msg("dev_ramssd_create 1");
 	/* allocate ssdram space */
 	if ((ri->ptr_ssdram = 
 			__ramssd_alloc_ssdram (ri->np)) == NULL) {
@@ -598,7 +603,6 @@ dev_ramssd_info_t* dev_ramssd_create (
 		goto fail_ssdram;
 	}
 
-	bdbm_msg("dev_ramssd_create 2");
 	/* allocate ssdram space */
 	/* create parallel units */
 	nr_parallel_units = dev_ramssd_get_chips_per_ssd (ri);
@@ -609,19 +613,16 @@ dev_ramssd_info_t* dev_ramssd_create (
 		goto fail_punits;
 	}
 
-	bdbm_msg("dev_ramssd_create 3");
 	for (loop = 0; loop < nr_parallel_units; loop++) {
 		ri->ptr_punits[loop].ptr_req = NULL;
 	}
 
-	bdbm_msg("dev_ramssd_create 4");
 	/* create and register a tasklet */
 	if (__ramssd_timing_create (ri) != 0) {
 		bdbm_error ("__ramssd_timing_create () failed");
 		goto fail_timing;
 	}
 
-	bdbm_msg("dev_ramssd_create 5");
 	/* create spin_lock */
 	bdbm_spin_lock_init (&ri->ramssd_lock);
 

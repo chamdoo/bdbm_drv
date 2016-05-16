@@ -145,8 +145,6 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_pages_per_ssd = p.nr_pages_per_block * p.nr_blocks_per_ssd;
 
 	p.nr_volumes = _param_nr_volumes;
-	p.nr_allocated_blocks_per_chip = 0;
-	p.nr_allocated_blocks_per_ssd = 0;
 #if defined (USE_NEW_RMW)
 	p.nr_subpages_per_page = (p.page_main_size / KERNEL_PAGE_SIZE);
 	bdbm_bug_on (p.nr_subpages_per_page != BDBM_MAX_PAGES);
@@ -156,15 +154,28 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_subpages_per_block = (p.nr_subpages_per_page * p.nr_pages_per_block);
 	p.nr_subpages_per_ssd = (p.nr_subpages_per_page * p.nr_pages_per_ssd);	/* the size of the subpage must be the same as the kernel-page size (4KB) */
 
+	p.nr_blocks_per_chip_per_volume = _param_nr_blocks_per_chip / _param_nr_volumes;
+	p.nr_blocks_per_channel_per_volume = p.nr_blocks_per_chip_per_volume * p.nr_channels;
+	p.nr_blocks_per_ssd_per_volume = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip_per_volume; 
 	p.device_capacity_in_byte = 0;
 	p.device_capacity_in_byte += p.nr_channels;
 	p.device_capacity_in_byte *= p.nr_chips_per_channel;
-	p.device_capacity_in_byte *= p.nr_blocks_per_chip;
+	p.device_capacity_in_byte *= p.nr_blocks_per_chip_per_volume;
 	p.device_capacity_in_byte *= p.nr_pages_per_block;
 	p.device_capacity_in_byte *= p.page_main_size;
 
+	/*
+	p.device_capacity_in_byte_per_volume = 0;
+	p.device_capacity_in_byte_per_volume += p.nr_channels;
+	p.device_capacity_in_byte_per_volume *= p.nr_chips_per_channel;
+	p.device_capacity_in_byte_per_volume *= p.nr_blocks_per_chip_per_volume;
+	p.device_capacity_in_byte_per_volume *= p.nr_pages_per_block;
+	p.device_capacity_in_byte_per_volume *= p.page_main_size;
+	*/
+
 	return p;
 }
+
 
 void display_device_params (bdbm_device_params_t* p)
 {
