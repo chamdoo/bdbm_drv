@@ -185,7 +185,7 @@ int main (int argc, char** argv)
 	}
 
 	if (bdbm_drv_run (_bdi) != 0) {
-		bdbm_error ("[main] bdbm_drv_rin () failed");
+		bdbm_error ("[main] bdbm_drv_run () failed");
 		return -1;
 	}
 
