@@ -27,9 +27,9 @@ risa_dev_ramdrive-y := \
 	$(COMMON)/utils/umemory.o \
 	$(DEV_COMMON)/dev_main.o \
 	$(DEV_COMMON)/dev_params.o \
-	$(DEV_COMMON)/dev_stub.o \
 	dev_ramssd.o \
 	dm_ramdrive.o \
+	#$(DEV_COMMON)/dev_stub.o \
 
 obj-m := risa_dev_ramdrive.o
 

@@ -379,7 +379,6 @@ struct _bdbm_drv_info_t {
 	void* private_data;
 	bdbm_ftl_params parm_ftl;
 	bdbm_device_params_t parm_dev;
-	bdbm_device_params_t parm_log_dev;
 	bdbm_host_inf_t* ptr_host_inf; 
 	bdbm_dm_inf_t* ptr_dm_inf;
 	bdbm_hlm_inf_t* ptr_hlm_inf;
@@ -395,4 +394,6 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi);
 void bdbm_drv_close (bdbm_drv_info_t* bdi);
 void bdbm_drv_destroy (bdbm_drv_info_t* bdi);
 
+void bdbm_aggr_lock(void);
+void bdbm_aggr_unlock(void);
 #endif /* _BLUEDBM_DRV_H */

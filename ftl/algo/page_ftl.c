@@ -207,6 +207,7 @@ void __bdbm_page_ftl_destroy_active_blocks (
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
 	bdbm_page_ftl_private_t* p = NULL;
+	//bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
 	/* create a private data structure */
@@ -1207,7 +1208,8 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 
 	/* step2: erase all the blocks */
 	bdi->ptr_llm_inf->flush (bdi);
-	for (i = 0; i < np->nr_blocks_per_chip; i++) {
+	//for (i = 0; i < np->nr_blocks_per_chip; i++) {
+	for (i = 0; i < np->nr_blocks_per_chip_per_volume; i++) {
 		__bdbm_page_badblock_scan_eraseblks (bdi, i);
 	}
 

@@ -61,7 +61,7 @@ THE SOFTWARE.
 //bdbm_ftl_inf_t _ftl_block_ftl, _ftl_dftl, _ftl_no_ftl;
 bdbm_ftl_inf_t _ftl_dftl, _ftl_no_ftl;
 bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf;
-bdbm_llm_inf_t _llm_noq_inf;
+//bdbm_llm_inf_t _llm_noq_inf;
 /* TEMP */
 
 /* It creates bdi and setups bdi with default parameters.  Users changes the
@@ -97,7 +97,7 @@ int bdbm_drv_setup (
 	bdi->ptr_host_inf = host_inf;
 
 	/* setup device */
-	bdi->ptr_dm_inf = dm_inf;
+	//bdi->ptr_dm_inf = dm_inf;
 
 	/* setup ftl */
 	switch (bdi->parm_ftl.hlm_type) {
@@ -173,6 +173,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	bdbm_dm_inf_t* dm = NULL;
 	uint32_t load = 0;
 
+#if 0
 	/* run setup functions */
 	if (bdi->ptr_dm_inf) {
 		dm = bdi->ptr_dm_inf;
@@ -197,12 +198,14 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 				load = 1;
 		}
 	}
+#endif
 
 	/* create a low-level memory manager */
 	if (bdi->ptr_llm_inf) {
 		llm = bdi->ptr_llm_inf;
 		if (llm->create == NULL || llm->create (bdi) != 0) {
-			bdbm_error ("[bdbm_drv_main] failed to create llm");
+			bdbm_error ("[bdbm_drv_main] failed to create llm, llm->create: %p, llm->create(bdi): %d", 
+					llm->create, llm->create(bdi));
 			goto fail;
 		}
 	}

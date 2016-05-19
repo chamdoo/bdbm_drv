@@ -69,7 +69,10 @@ static void __dm_ramdrive_ih (void* arg)
 	bdbm_llm_req_t* ptr_llm_req = (bdbm_llm_req_t*)arg;
 	bdbm_drv_info_t* bdi = _bdi_dm;
 
-	bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
+	if(bdi->ptr_dm_inf->end_req) {
+		bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
+	}
+	else bdbm_error("end_req is not allocated");
 }
 
 static void __dm_setup_device_params (bdbm_device_params_t* params)
@@ -126,11 +129,15 @@ void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 {
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
 
-	bdbm_msg ("[dm_ramdrive_close] closed!");
 
-	dev_ramssd_destroy (p->ramssd);
+	if(p != NULL) {
+		if(p->ramssd != NULL) {
+			dev_ramssd_destroy (p->ramssd);
+		}
 
-	bdbm_free_atomic (p);
+		bdbm_free_atomic (p);
+		bdbm_msg ("[dm_ramdrive_close] closed!");
+	}
 }
 
 uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)

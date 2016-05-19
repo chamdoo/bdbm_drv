@@ -60,7 +60,7 @@ struct bdbm_llm_noq_private {
 uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_noq_private* p;
-	uint64_t loop;
+	//uint64_t loop;
 
 	/* create a private info for llm_nt */
 	if ((p = (struct bdbm_llm_noq_private*)bdbm_malloc
@@ -84,7 +84,7 @@ uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 void llm_noq_destroy (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_noq_private* p;
-	uint64_t loop;
+	//uint64_t loop;
 
 	p = (struct bdbm_llm_noq_private*)BDBM_LLM_PRIV(bdi);
 
@@ -107,10 +107,14 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 	llm_req->volume = _param_dev_num;
 	/* send a request to a device manager */
+
+	bdbm_aggr_lock();
+	// need a lock between volumes, global variable? or 
 	if ((ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
 		/* handle error cases */
 		bdbm_error ("llm_make_req failed");
 	}
+	bdbm_aggr_unlock();
 
 	return ret;
 }
@@ -120,11 +124,14 @@ uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint32_t ret;
 
 	hr->volume = _param_dev_num;
+
+	bdbm_aggr_lock();
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
 		/* handle error cases */
 		bdbm_error ("llm_noq_make_reqs failed");
 	}
+	bdbm_aggr_unlock();
 
 	return ret;
 }

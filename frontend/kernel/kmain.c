@@ -40,7 +40,7 @@ static int __init bdbm_drv_init (void)
 		return -ENXIO;
 	}
 
-	/* open the device */
+	/* open the device */ // only attachs the device related functions.
 	//if (bdbm_dm_init (_bdi) != 0) {
 	if (bdbm_aggr_init (_bdi) != 0) {
 		bdbm_error ("[kmain] bdbm_aggr_init () failed");

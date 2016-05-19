@@ -646,15 +646,17 @@ fail:
 
 void dev_ramssd_destroy (dev_ramssd_info_t* ri)
 {
-	/* kill tasklet */
-	__ramssd_timing_destory (ri);
+	if(ri) {
+		/* kill tasklet */
+		__ramssd_timing_destory (ri);
 
-	/* free ssdram */
-	__ramssd_free_ssdram (ri->ptr_ssdram);
+		/* free ssdram */
+		__ramssd_free_ssdram (ri->ptr_ssdram);
 
-	/* release other stuff */
-	bdbm_free_atomic (ri->ptr_punits);
-	bdbm_free_atomic (ri);
+		/* release other stuff */
+		if(ri->ptr_punits)	bdbm_free_atomic (ri->ptr_punits);
+		bdbm_free_atomic (ri);
+	}
 }
 
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)

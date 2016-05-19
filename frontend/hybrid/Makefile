@@ -14,6 +14,7 @@ EXTRA_CFLAGS := \
 	-I$(PWD)/$(FTL) \
 	-I$(PWD)/$(KERN) \
 	-I$(PWD)/$(DM_COMMON) \
+	-I$(PWD)/$(DM_COMMON)/../ramdrive \
 
 EXTRA_CFLAGS += -D HASH_BLOOM=20 	# for HASH (8KB)
 EXTRA_CFLAGS += -D CONFIG_ENABLE_MSG

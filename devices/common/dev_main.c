@@ -35,37 +35,44 @@ THE SOFTWARE.
 #endif
 
 #include "bdbm_drv.h"
-#include "dm_ramdrive.h"
+//#include "dm_ramdrive.h"
 #include "debug.h"
 #include "algo/abm.h"
 #include "umemory.h"
 
-//extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
+extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
 bdbm_drv_info_t* _bdi_dm = NULL; /* for Connectal & RAMSSD */
 
-uint32_t aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
-uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+uint32_t dm_aggr_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
+uint32_t dm_aggr_open (bdbm_drv_info_t* bdi);
+void dm_aggr_close (bdbm_drv_info_t* bdi);
+uint32_t dm_aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+void dm_aggr_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_aggr_load (bdbm_drv_info_t* bdi, const char* fn);
+uint32_t dm_aggr_store (bdbm_drv_info_t* bdi, const char* fn);
 
 bdbm_dm_inf_t _bdbm_aggr_inf = {
 	.ptr_private = NULL,
-	.probe = dm_ramdrive_probe,
-	.open = dm_ramdrive_open,
-	.close = dm_ramdrive_close,
-	.make_req = aggr_make_req,
-	.make_reqs = aggr_make_reqs,
-	.end_req = dm_ramdrive_end_req,
-	.load = dm_ramdrive_load,
-	.store = dm_ramdrive_store,
+	.probe = dm_aggr_probe,
+	.open = dm_aggr_open,
+	.close = dm_aggr_close,
+	.make_req = dm_aggr_make_req,
+	.make_reqs = dm_aggr_make_reqs,
+	.end_req = dm_aggr_end_req,
+	.load = dm_aggr_load,
+	.store = dm_aggr_store,
 };
 
 uint64_t *bdbm_aggr_mapping = NULL;
 uint64_t cur_sblock = 0;
-
 uint8_t *bdbm_aggr_pblock_status = NULL;
 enum BDBM_AGGR_PBLOCK_STATUS {
 	AGGR_PBLOCK_FREE = 0,
 	AGGR_PBLOCK_ALLOCATED,
 };
+
+bdbm_sema_t aggr_lock;
 
 uint64_t __get_aggr_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t blk_no) {
 	bdbm_bug_on (blk_no >= np->nr_blocks_per_chip);
@@ -73,53 +80,19 @@ uint64_t __get_aggr_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t blk_no
 	return (np->nr_blocks_per_chip) * vol + blk_no;
 }
 
-uint32_t aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
-	uint32_t volume = ptr_llm_req->volume;
-	uint64_t org_block_no = ptr_llm_req->phyaddr.block_no;
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
-
-	// translate block number
-	bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
-	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
-	/*
-	bdbm_msg("aggr_make_req, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
-			ptr_llm_req->phyaddr.block_no);
-			*/
-	return dm_ramdrive_make_req(bdi, ptr_llm_req);
-}
-
-uint32_t aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
-	uint32_t volume = hr->volume;
-	uint32_t i;
-	bdbm_llm_req_t* lr = NULL;
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-
-	// translate block number
-	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		uint64_t org_block_no = lr->phyaddr.block_no;
-		uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
-		bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
-		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
-		bdbm_msg("aggr_make_reqs, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
-			lr->phyaddr.block_no);
-	}
-
-	return dm_ramdrive_make_reqs(bdi, hr);
-}
 
 #if defined (KERNEL_MODE)
 static int __init risa_dev_init (void)
 {
 	/* initialize dm_stub_proxy for user-level apps */
-	bdbm_dm_stub_init ();
+	//bdbm_dm_stub_init ();
 	return 0;
 }
 
 static void __exit risa_dev_exit (void)
 {
 	/* initialize dm_stub_proxy for user-level apps */
-	bdbm_dm_stub_exit ();
+	//bdbm_dm_stub_exit ();
 }
 #endif
 
@@ -132,6 +105,7 @@ int bdbm_dm_init (bdbm_drv_info_t* bdi)
 	}
 
 	if (_bdi_dm != NULL) {
+		// need to check? what if it is already allocated.
 		bdbm_warning ("dm_stub is already used by other clients");
 		return 1;
 	}
@@ -157,7 +131,7 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 		return NULL;
 	}
 
-	return &_bdbm_aggr_inf;
+	return &_bdbm_dm_inf;
 }
 
 int bdbm_aggr_init (bdbm_drv_info_t* bdi)
@@ -181,8 +155,49 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 		}
 	}
 
+	/* see if bdi is valid or not */
+	if (bdi == NULL) {
+		bdbm_warning ("bid is NULL");
+		return 1;
+	}
 
-	return bdbm_dm_init(bdi);
+	bdbm_sema_init(&aggr_lock);
+	// attach device related interface, such as dm_probe, dm_open, to bdi
+	bdi->ptr_dm_inf = &_bdbm_aggr_inf;
+
+	if (_bdi_dm == NULL) {
+		/* initialize global variables */
+		_bdi_dm = bdi;
+
+		/* run device setup functions once */
+		if (bdi->ptr_dm_inf) {
+			uint32_t load;
+			bdbm_dm_inf_t* dm = bdi->ptr_dm_inf;
+
+			/* get the device information */
+			if (dm->probe == NULL || dm->probe (bdi, &bdi->parm_dev) != 0) {
+				bdbm_error ("[bdbm_drv_main] failed to probe a flash device");
+				goto fail;
+			}
+			/* open a flash device */
+			if (dm->open == NULL || dm->open (bdi) != 0) {
+				bdbm_error ("[bdbm_drv_main] failed to open a flash device");
+				goto fail;
+			}
+			/* do we need to read a snapshot? */
+			if (bdi->parm_ftl.snapshot == SNAPSHOT_ENABLE &&
+					dm->load != NULL) {
+				if (dm->load (bdi, "/usr/share/bdbm_drv/dm.dat") != 0) {
+					bdbm_msg ("[bdbm_drv_main] loading 'dm.dat' failed");
+					load = 0;
+				} else 
+					load = 1;
+			}
+		}
+
+	}
+	return 0;
+	//return bdbm_dm_init(bdi);
 
 fail: 
 	if(bdbm_aggr_mapping)
@@ -201,11 +216,15 @@ void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 
 	if(bdbm_aggr_pblock_status != NULL)
 		bdbm_free(bdbm_aggr_pblock_status);
+
+	bdbm_sema_free(&aggr_lock);
 }
 
 bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
 {
-	return bdbm_dm_get_inf(bdi);
+
+	return &_bdbm_aggr_inf;
+	//return	bdbm_dm_get_inf(bdi);
 }
 
 uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume)
@@ -335,6 +354,72 @@ void bdbm_dec_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
 }
 #endif
 
+
+uint32_t dm_aggr_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params) {
+	return _bdbm_dm_inf.probe(bdi, params);
+}
+
+uint32_t dm_aggr_open (bdbm_drv_info_t* bdi) {
+	return _bdbm_dm_inf.open(bdi);
+}
+
+void dm_aggr_close (bdbm_drv_info_t* bdi) {
+	return _bdbm_dm_inf.close(bdi);
+}
+
+uint32_t dm_aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
+	uint32_t volume = ptr_llm_req->volume;
+	uint64_t org_block_no = ptr_llm_req->phyaddr.block_no;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
+
+	// translate block number
+	bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
+	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+	/*
+	bdbm_msg("aggr_make_req, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
+			ptr_llm_req->phyaddr.block_no);
+			*/
+	return _bdbm_dm_inf.make_req(bdi, ptr_llm_req);
+}
+
+uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
+	uint32_t volume = hr->volume;
+	uint32_t i;
+	bdbm_llm_req_t* lr = NULL;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+
+	// translate block number
+	bdbm_hlm_for_each_llm_req (lr, hr, i) {
+		uint64_t org_block_no = lr->phyaddr.block_no;
+		uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
+		bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
+		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+	}
+
+	return _bdbm_dm_inf.make_reqs(bdi, hr);
+}
+void dm_aggr_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req) {
+	return _bdbm_dm_inf.end_req(bdi, ptr_llm_req);
+}
+
+uint32_t dm_aggr_load (bdbm_drv_info_t* bdi, const char* fn) {
+	return _bdbm_dm_inf.load(bdi, fn);
+}
+
+uint32_t dm_aggr_store (bdbm_drv_info_t* bdi, const char* fn) {
+	return _bdbm_dm_inf.store(bdi, fn);
+}
+
+
+void bdbm_aggr_lock(void) {
+	bdbm_sema_lock(&aggr_lock);
+}
+
+void bdbm_aggr_unlock(void) {
+	bdbm_sema_unlock(&aggr_lock);
+}
+
 #if defined (KERNEL_MODE)
 //EXPORT_SYMBOL (bdbm_dm_init);
 //EXPORT_SYMBOL (bdbm_dm_exit);
@@ -343,6 +428,8 @@ EXPORT_SYMBOL (bdbm_aggr_init);
 EXPORT_SYMBOL (bdbm_aggr_exit);
 EXPORT_SYMBOL (bdbm_aggr_get_inf);
 EXPORT_SYMBOL (bdbm_aggr_allocate_blocks);
+EXPORT_SYMBOL (bdbm_aggr_lock);
+EXPORT_SYMBOL (bdbm_aggr_unlock);
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
 MODULE_DESCRIPTION ("RISA Device Wrapper");

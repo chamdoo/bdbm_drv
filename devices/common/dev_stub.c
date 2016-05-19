@@ -425,6 +425,7 @@ static int dm_stub_end_req (bdbm_dm_stub_t* s)
 /*
  * For the interaction with user-level application
  */
+
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg);
 static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table);
 static void mmap_open (struct vm_area_struct *vma);
@@ -602,6 +603,7 @@ static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table)
 	/*bdbm_msg ("dm_fops_poll is finished");*/
 
 	return mask;
+	return 0;
 }
 
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
