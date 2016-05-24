@@ -31,7 +31,7 @@ THE SOFTWARE.
 #include "devices.h"
 
 bdbm_drv_info_t* _bdi = NULL;
-
+extern int _param_dev_num;
 static int __init bdbm_drv_init (void)
 {
 	/* create bdi with default parameters */
@@ -40,17 +40,17 @@ static int __init bdbm_drv_init (void)
 		return -ENXIO;
 	}
 
-	/* open the device */ // only attachs the device related functions.
-	//if (bdbm_dm_init (_bdi) != 0) {
-	if (bdbm_aggr_init (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_aggr_init () failed");
-		return -ENXIO;
-	}
-
 	/* attach the host & the device interface to the bdbm */
 	//if (bdbm_drv_setup (_bdi, &_blkio_inf, bdbm_dm_get_inf (_bdi)) != 0) {
 	if (bdbm_drv_setup (_bdi, &_blkio_inf, bdbm_aggr_get_inf (_bdi)) != 0) {
 		bdbm_error ("[kmain] bdbm_drv_setup () failed");
+		return -ENXIO;
+	}
+
+	/* open the device */ // only attachs the device related functions.
+	//if (bdbm_dm_init (_bdi) != 0) {
+	if (bdbm_aggr_init (_bdi, _param_dev_num) != 0) {
+		bdbm_error ("[kmain] bdbm_aggr_init () failed");
 		return -ENXIO;
 	}
 

@@ -42,17 +42,23 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
+#define TRUE 1
+#define FALSE 0
+uint8_t destroy_flag_dev = FALSE;
+
 #define DATA_CHECK
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
-static uint8_t* __get_ramssd_data_addr (dev_ramssd_info_t* ri, uint64_t lpa)
+static uint8_t* __get_ramssd_data_addr (dev_ramssd_info_t* ri, uint64_t lpa, uint8_t volume)
 {
 	uint64_t ramssd_addr = -1;
+	ramssd_addr = (ri->np->nr_blocks_per_ssd_per_volume * ri->np->nr_pages_per_block * ri->np->page_main_size) * volume;
 	if (ri->np->nr_subpages_per_page == 1)
-		ramssd_addr = ri->np->page_main_size * lpa;
+		ramssd_addr += (ri->np->page_main_size * lpa);
 	else
-		ramssd_addr = KPAGE_SIZE * lpa;
+		ramssd_addr += (KPAGE_SIZE * lpa);
+	bdbm_bug_on (ramssd_addr >= (ri->np->nr_pages_per_ssd * ri->np->page_main_size));
 	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
 }
 static void __display_hex_values (uint8_t* host, uint8_t* back)
@@ -181,10 +187,16 @@ static void __ramssd_free_ssdram (void* ptr_ramssd)
 {
 #if defined (DATA_CHECK)
 	if (__ptr_ramssd_data) {
+		bdbm_msg("free_ssdram: __ptr_ramssd_data: %p", __ptr_ramssd_data);
 		bdbm_free (__ptr_ramssd_data);
+		__ptr_ramssd_data = NULL;
 	}
 #endif
-	bdbm_free (ptr_ramssd);
+	if(ptr_ramssd) {
+		bdbm_msg("free_ssdram: ptr_ramssd: %p", ptr_ramssd);
+		bdbm_free (ptr_ramssd);
+		ptr_ramssd = NULL;
+	}
 }
 
 static uint8_t __ramssd_read_page (
@@ -197,12 +209,18 @@ static uint8_t __ramssd_read_page (
 	uint8_t** kp_ptr,
 	uint8_t* oob_data,
 	uint8_t oob,
-	uint8_t partial)
+	uint8_t partial,
+	uint8_t volume)
 {
 	uint8_t ret = 0;
 	uint8_t* ptr_ramssd_addr = NULL;
 	uint32_t nr_kpages, loop;
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t read_sw;
+
+	bdbm_stopwatch_start(&read_sw);
+#endif
 	/* get the memory address for the destined page */
 	if ((ptr_ramssd_addr = __ramssd_page_addr (ri, channel_no, chip_no, block_no, page_no)) == NULL) {
 		bdbm_error ("invalid ram_addr (%p)", ptr_ramssd_addr);
@@ -248,9 +266,12 @@ static uint8_t __ramssd_read_page (
  			int64_t lpa = ((uint64_t*)oob_data)[0];
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
 			if (partial == 1 && kp_stt[loop] == KP_STT_DATA)	continue;
-			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+
+			bdbm_bug_on(volume >= ri->np->nr_volumes);
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa, volume);
 			if (memcmp (kp_ptr[loop], ptr_data_org+(loop*KPAGE_SIZE), KPAGE_SIZE) != 0) {
-				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u", lpa, loop);
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u, volume: %d, addr: %p", 
+						lpa, loop, volume, ptr_data_org+(loop*KPAGE_SIZE));
 				__display_hex_values (kp_ptr[loop], ptr_data_org+(loop*KPAGE_SIZE));
 			}
 		}
@@ -261,15 +282,20 @@ static uint8_t __ramssd_read_page (
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
 			if (partial == 1 && kp_stt[loop] == KP_STT_DATA) continue;
 			if (partial == 0 && kp_stt[loop] != KP_STT_DATA) continue;
-			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+			bdbm_bug_on(volume >= ri->np->nr_volumes);
+
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa, volume);
 			if (memcmp (kp_ptr[loop], ptr_data_org, KPAGE_SIZE) != 0) {
-				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u", lpa, loop);
+				bdbm_msg ("[DATA CORRUPTION] lpa=%llu offset=%u, volume: %d", lpa, loop, volume);
 				__display_hex_values (kp_ptr[loop], ptr_data_org);
 			}
 		}
 	}
 #endif
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("read elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&read_sw));
+#endif
 fail:
 	return ret;
 }
@@ -283,12 +309,17 @@ static uint8_t __ramssd_prog_page (
 	kp_stt_t* kp_stt,
 	uint8_t** kp_ptr,
 	uint8_t* oob_data,
-	uint8_t oob)
+	uint8_t oob,
+	uint8_t volume)
 {
 	uint8_t ret = 0;
 	uint8_t* ptr_ramssd_addr = NULL;
 	uint32_t nr_kpages, loop;
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t prog_sw;
+	bdbm_stopwatch_start(&prog_sw);
+#endif
 	/* get the memory address for the destined page */
 	if ((ptr_ramssd_addr = __ramssd_page_addr (ri, channel_no, chip_no, block_no, page_no)) == NULL) {
 		bdbm_error ("invalid ram addr (%p)", ptr_ramssd_addr);
@@ -334,7 +365,9 @@ static uint8_t __ramssd_prog_page (
 		for (loop = 0; loop < nr_kpages; loop++) {
 			int64_t lpa = ((int64_t*)oob_data)[0];
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
-			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+
+			bdbm_bug_on(volume >= ri->np->nr_volumes);
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa, volume);
 			bdbm_memcpy (ptr_data_org+(loop*KPAGE_SIZE), kp_ptr[loop], KPAGE_SIZE);
 		}
 	} else {
@@ -343,10 +376,16 @@ static uint8_t __ramssd_prog_page (
 			int64_t lpa = ((int64_t*)oob_data)[loop];
 			if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
 			if (kp_stt[loop] != KP_STT_DATA) continue;
-			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa);
+
+			bdbm_bug_on(volume >= ri->np->nr_volumes);
+			ptr_data_org = (uint8_t*)__get_ramssd_data_addr (ri, lpa, volume);
 			bdbm_memcpy (ptr_data_org, kp_ptr[loop], KPAGE_SIZE);
 		}
 	}
+#endif
+
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("prog elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&prog_sw));
 #endif
 
 fail:
@@ -400,7 +439,8 @@ static uint32_t __ramssd_send_cmd (
 			ptr_req->fmain.kp_ptr,
 			ptr_req->foob.data,
 			use_oob,
-			use_partial);
+			use_partial,
+			ptr_req->volume);
 		break;
 
 	case REQTYPE_RMW_WRITE:
@@ -416,7 +456,8 @@ static uint32_t __ramssd_send_cmd (
 			ptr_req->fmain.kp_stt,
 			ptr_req->fmain.kp_ptr,
 			ptr_req->foob.data,
-			use_oob);
+			use_oob,
+			ptr_req->volume);
 		break;
 
 	case REQTYPE_GC_ERASE:
@@ -452,6 +493,10 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 {
 	uint64_t loop, nr_parallel_units;
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t cmd_done_sw;
+	bdbm_stopwatch_start(&cmd_done_sw);
+#endif
 	nr_parallel_units = dev_ramssd_get_chips_per_ssd (ri);
 
 	for (loop = 0; loop < nr_parallel_units; loop++) {
@@ -477,6 +522,10 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 			bdbm_spin_unlock (&ri->ramssd_lock);
 		}
 	}
+	
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("cmd_done elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&cmd_done_sw));
+#endif
 }
 
 
@@ -646,22 +695,39 @@ fail:
 
 void dev_ramssd_destroy (dev_ramssd_info_t* ri)
 {
-	if(ri) {
-		/* kill tasklet */
-		__ramssd_timing_destory (ri);
+	if(destroy_flag_dev == FALSE) {
+		destroy_flag_dev = TRUE;
+		if(ri) {
+			bdbm_msg("test 0");
+			/* kill tasklet */
+			__ramssd_timing_destory (ri);
 
-		/* free ssdram */
-		__ramssd_free_ssdram (ri->ptr_ssdram);
+			bdbm_msg("test 1");
+			/* kill tasklet */
+			/* free ssdram */
+			if(ri->ptr_ssdram != NULL) {
+				bdbm_msg("ramssd_destroy, ri->ptr_ssdram: %p", ri->ptr_ssdram);
+				__ramssd_free_ssdram (ri->ptr_ssdram);
+				ri->ptr_ssdram = NULL;
+			}
 
-		/* release other stuff */
-		if(ri->ptr_punits)	bdbm_free_atomic (ri->ptr_punits);
-		bdbm_free_atomic (ri);
+			bdbm_msg("test 2");
+			/* release other stuff */
+			if(ri->ptr_punits)	bdbm_free_atomic (ri->ptr_punits);
+			bdbm_free_atomic (ri);
+		}
+		ri = NULL;
 	}
 }
 
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
+
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t ramssd_sw;
+	bdbm_stopwatch_start(&ramssd_sw);
+#endif
 
 	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
 		int64_t target_elapsed_time_us = 0;
@@ -717,8 +783,12 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 
 		/* register reqs for callback */
 		__ramssd_timing_register_schedule (ri);
+
 	}
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("ramssd elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&ramssd_sw));
+#endif
 fail:
 	return ret;
 }

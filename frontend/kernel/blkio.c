@@ -41,6 +41,8 @@ THE SOFTWARE.
 /*#define ENABLE_DISPLAY*/
 
 extern bdbm_drv_info_t* _bdi;
+extern int _param_dev_num;
+
 
 bdbm_host_inf_t _blkio_inf = {
 	.ptr_private = NULL,
@@ -122,7 +124,6 @@ static void __host_blkio_make_request_fn (
 	blkio_make_req (_bdi, (void*)bio);
 }
 
-
 uint32_t blkio_open (bdbm_drv_info_t* bdi)
 {
 	uint32_t ret;
@@ -184,24 +185,28 @@ void blkio_close (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 }
 
+extern int _param_dev_num;
 void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 {
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = NULL;
 	bdbm_hlm_req_t* hr = NULL;
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t blkio_sw;
+
+	bdbm_stopwatch_start(&blkio_sw);
+#endif
 	/* get blkio */
 	if ((br = __get_blkio_req ((struct bio*)bio)) == NULL) {
 		bdbm_error ("__get_blkio_req () failed");
 		goto fail;
 	}
-
 	/* get a free hlm_req from the hlm_reqs_pool */
 	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
 		bdbm_error ("bdbm_hlm_reqs_pool_get_item () failed");
 		goto fail;
 	}
-
 	/* build hlm_req with bio */
 	if (bdbm_hlm_reqs_pool_build_req (p->hlm_reqs_pool, hr, br) != 0) {
 		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
@@ -227,6 +232,9 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	/* ulock a global mutex */
 	bdbm_sema_unlock (&p->host_lock);
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("volume: %d, make_req elapsed time: %llu", _param_dev_num, bdbm_stopwatch_get_elapsed_time_us(&blkio_sw));
+#endif
 	return;
 
 fail:

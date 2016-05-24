@@ -40,6 +40,7 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "llm_noq.h"
 #include "pmu.h"
+#include "utime.h"
 
 
 /* llm interface */
@@ -56,6 +57,10 @@ bdbm_llm_inf_t _llm_noq_inf = {
 struct bdbm_llm_noq_private {
 	uint32_t dummy;
 };
+#ifdef TIMELINE_DEBUG_TJKIM
+bdbm_stopwatch_t inter_req;
+bdbm_stopwatch_t intra_req;
+#endif
 
 uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 {
@@ -74,6 +79,9 @@ uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 
 	/* keep the private structures for llm_nt */
 	bdi->ptr_llm_inf->ptr_private = (void*)p;
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_start(&inter_req);
+#endif
 
 	return 0;
 }
@@ -119,19 +127,33 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	return ret;
 }
 
+
 uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
 
 	hr->volume = _param_dev_num;
+#ifdef TIMELINE_DEBUG_TJKIM
+	// get time
+	bdbm_msg(" volume: %d, inter request time: %llu", _param_dev_num, bdbm_stopwatch_get_elapsed_time_us (&inter_req));
+	bdbm_stopwatch_start(&intra_req);
+#endif
 
 	bdbm_aggr_lock();
+
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
 		/* handle error cases */
 		bdbm_error ("llm_noq_make_reqs failed");
 	}
 	bdbm_aggr_unlock();
+
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg(" make_reqs aggr unlock, volume: %d, type: %d, lba: %llu, num_req: %llu", 
+			_param_dev_num, hr->req_type, hr->llm_reqs[0].logaddr.lpa[0], hr->nr_llm_reqs)
+	bdbm_msg(" volume: %d, intra request time: %llu", _param_dev_num, bdbm_stopwatch_get_elapsed_time_us (&intra_req));
+	bdbm_stopwatch_start(&inter_req);
+#endif
 
 	return ret;
 }

@@ -40,8 +40,9 @@ THE SOFTWARE.
 #include "algo/abm.h"
 #include "umemory.h"
 
+#define NR_VOLUMES 4
 extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
-bdbm_drv_info_t* _bdi_dm = NULL; /* for Connectal & RAMSSD */
+bdbm_drv_info_t* _bdi_dm[NR_VOLUMES] = {NULL, NULL, NULL, NULL}; /* for Connectal & RAMSSD */
 
 uint32_t dm_aggr_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
 uint32_t dm_aggr_open (bdbm_drv_info_t* bdi);
@@ -63,6 +64,10 @@ bdbm_dm_inf_t _bdbm_aggr_inf = {
 	.load = dm_aggr_load,
 	.store = dm_aggr_store,
 };
+#define FALSE 0
+#define TRUE 1
+uint8_t run_flag = FALSE;
+uint8_t destroy_flag = FALSE;
 
 uint64_t *bdbm_aggr_mapping = NULL;
 uint64_t cur_sblock = 0;
@@ -96,6 +101,7 @@ static void __exit risa_dev_exit (void)
 }
 #endif
 
+#if 0
 int bdbm_dm_init (bdbm_drv_info_t* bdi)
 {
 	/* see if bdi is valid or not */
@@ -133,11 +139,12 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 
 	return &_bdbm_dm_inf;
 }
+#endif
 
-int bdbm_aggr_init (bdbm_drv_info_t* bdi)
+int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	uint64_t nr_virt_blocks = np->nr_blocks_per_chip * np->nr_volumes;
+	uint64_t nr_virt_blocks = np->nr_blocks_per_chip;
 
 	if(bdbm_aggr_mapping == NULL) {
 		// TODO: mapping table for blocks between volumes and physical device
@@ -161,13 +168,14 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 
-	bdbm_sema_init(&aggr_lock);
 	// attach device related interface, such as dm_probe, dm_open, to bdi
 	bdi->ptr_dm_inf = &_bdbm_aggr_inf;
+	bdbm_bug_on(volume >= NR_VOLUMES);
+	_bdi_dm[volume] = bdi;
 
-	if (_bdi_dm == NULL) {
+	if (run_flag == FALSE) {
 		/* initialize global variables */
-		_bdi_dm = bdi;
+		run_flag = TRUE;
 
 		/* run device setup functions once */
 		if (bdi->ptr_dm_inf) {
@@ -195,7 +203,9 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi)
 			}
 		}
 
+		bdbm_sema_init(&aggr_lock);
 	}
+
 	return 0;
 	//return bdbm_dm_init(bdi);
 
@@ -209,22 +219,25 @@ fail:
 
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
-	bdbm_dm_exit(bdi);
+	if(destroy_flag == FALSE) {
+		uint32_t i;
+		destroy_flag = TRUE;
+		for(i = 0; i < NR_VOLUMES; i++)
+			_bdi_dm[i] = NULL;
 
-	if(bdbm_aggr_mapping != NULL) 
-		bdbm_free(bdbm_aggr_mapping);
+		if(bdbm_aggr_mapping != NULL) 
+			bdbm_free(bdbm_aggr_mapping);
 
-	if(bdbm_aggr_pblock_status != NULL)
-		bdbm_free(bdbm_aggr_pblock_status);
+		if(bdbm_aggr_pblock_status != NULL)
+			bdbm_free(bdbm_aggr_pblock_status);
 
-	bdbm_sema_free(&aggr_lock);
+		bdbm_sema_free(&aggr_lock);
+	}
 }
 
 bdbm_dm_inf_t* bdbm_aggr_get_inf (bdbm_drv_info_t* bdi)
 {
-
 	return &_bdbm_aggr_inf;
-	//return	bdbm_dm_get_inf(bdi);
 }
 
 uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume)
@@ -388,7 +401,11 @@ uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	uint32_t i;
 	bdbm_llm_req_t* lr = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t aggr_sw;
 
+	bdbm_stopwatch_start(&aggr_sw);
+#endif
 	// translate block number
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		uint64_t org_block_no = lr->phyaddr.block_no;
@@ -397,10 +414,14 @@ uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
 	}
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("volume: %d, aggr elapsed time: %llu", volume, bdbm_stopwatch_get_elapsed_time_us(&aggr_sw));
+#endif
 	return _bdbm_dm_inf.make_reqs(bdi, hr);
 }
 void dm_aggr_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req) {
-	return _bdbm_dm_inf.end_req(bdi, ptr_llm_req);
+	bdi->ptr_llm_inf->end_req(bdi, ptr_llm_req);
+	//return _bdbm_dm_inf.end_req(bdi, ptr_llm_req);
 }
 
 uint32_t dm_aggr_load (bdbm_drv_info_t* bdi, const char* fn) {

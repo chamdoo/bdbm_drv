@@ -63,6 +63,7 @@ typedef struct {
 	bdbm_hlm_req_t tmp_hr;
 } bdbm_hlm_nobuf_private_t;
 
+extern int _param_dev_num;
 
 /* functions for hlm_nobuf */
 uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
@@ -108,9 +109,15 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
 	uint64_t i = 0, j = 0, sp_ofs;
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t hlm_rw_sw;
+
+	bdbm_stopwatch_start(&hlm_rw_sw);
+#endif
 
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
+		lr->volume = _param_dev_num;
 		/* (1) get the physical locations through the FTL */
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
@@ -166,6 +173,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		for (j = 0; j < np->nr_subpages_per_page; j++) {
 			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
 		}
+		//tjkim
+		if(bdbm_is_read(lr->req_type)){
+			bdbm_msg("hlm_rq read vol: %d, lpa: %llu", lr->volume, lr->logaddr.lpa[0]);
+		}
+		else if (bdbm_is_write(lr->req_type)) {
+			bdbm_msg("hlm_rq write vol: %d, lpa: %llu", lr->volume, lr->logaddr.lpa[0]);
+		}
 	}
 
 	/* (3) send llm_req to llm */
@@ -185,6 +199,10 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 	}
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("volume: %d, hlm make_req elapsed time: %llu", 
+			_param_dev_num, bdbm_stopwatch_get_elapsed_time_us(&hlm_rw_sw));
+#endif
 	bdbm_bug_on (hr->nr_llm_reqs != i);
 
 	return 0;
@@ -235,8 +253,10 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
+#ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
+#endif
 
 	/* is req_type correct? */
 	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
@@ -272,7 +292,9 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	} else {
 		ret = __hlm_nobuf_make_rw_req (bdi, hr);
 	} 
-
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("volume: %d, hlm req elapsed time: %llu", _param_dev_num, bdbm_stopwatch_get_elapsed_time_us(&sw));
+#endif
 	return ret;
 }
 

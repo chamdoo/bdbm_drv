@@ -61,13 +61,18 @@ typedef struct {
 } dm_ramssd_private_t;
 
 /* global data structure */
-extern bdbm_drv_info_t* _bdi_dm;
+#define NR_VOLUMES 4
+extern bdbm_drv_info_t* _bdi_dm[NR_VOLUMES];
 
 /* interrupt handler */
 static void __dm_ramdrive_ih (void* arg)
 {
 	bdbm_llm_req_t* ptr_llm_req = (bdbm_llm_req_t*)arg;
-	bdbm_drv_info_t* bdi = _bdi_dm;
+	uint8_t volume = ptr_llm_req->volume;
+	bdbm_drv_info_t* bdi = _bdi_dm[volume];
+
+	bdbm_bug_on(bdi == NULL);
+	bdbm_bug_on(volume >= NR_VOLUMES);
 
 	if(bdi->ptr_dm_inf->end_req) {
 		bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
@@ -160,7 +165,11 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint32_t i, ret = 1;
 	bdbm_llm_req_t* lr = NULL;
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_stopwatch_t dm_sw;
 
+	bdbm_stopwatch_start(&dm_sw);
+#endif
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		if ((ret = dev_ramssd_send_cmd (p->ramssd, lr)) != 0) {
 			bdbm_error ("dev_ramssd_send_cmd failed");
@@ -168,13 +177,16 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 	}
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("dm elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&dm_sw));
+#endif
 	return ret;
 }
 
 void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	bdbm_bug_on (ptr_llm_req == NULL);
-
+	bdbm_msg("oops! tjkim, dm_ramdrive_end_req is called");
 	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }
 

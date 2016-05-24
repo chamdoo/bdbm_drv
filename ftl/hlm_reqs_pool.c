@@ -90,6 +90,7 @@ bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 		hlm_reqs_pool_allocate_llm_reqs (item->llm_reqs, BDBM_BLKIO_MAX_VECS, RP_MEM_VIRT);
 		bdbm_sema_init (&item->done);
 		list_add_tail (&item->list, &pool->free_list);
+
 	}
 
 	return pool;
@@ -154,6 +155,7 @@ void bdbm_hlm_reqs_pool_destroy (
 	bdbm_free (pool);
 }
 
+extern int _param_dev_num;
 bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (
 	bdbm_hlm_reqs_pool_t* pool)
 {

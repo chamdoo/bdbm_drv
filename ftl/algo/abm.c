@@ -188,9 +188,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 		}
 	}
 
-	//bdbm_aggr_create_mapping(np, _param_dev_num);
 	/* allocate given blocks for this volume, change block status UNALLOCATED -> FREE */
-
 	for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
 		for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
 			for (blk_no = 0; blk_no < np->nr_blocks_per_chip_per_volume; blk_no++) {
@@ -317,6 +315,9 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 			bai->nr_free_blks_prepared++;
 			break;
 		}
+		else {
+			bdbm_msg("oops! block status in the free list: %d  is not free: ", blk->status);
+		}
 		/* ignore if the status of a block is 'BDBM_ABM_BLK_FREE_PREPARE' */
 		if (blk->status == BDBM_ABM_BLK_CLEAN) {
 			bdbm_msg ("oops! blk->status == BDBM_ABM_BLK_CLEAN");
@@ -378,7 +379,7 @@ void bdbm_abm_erase_block (
 	bdbm_abm_block_t* blk = NULL;
 	uint64_t blk_idx = 
 		__get_block_idx (bai->np, channel_no, chip_no, block_no);
-	/* TODO: check status if UNALLOCATED, assert if ture */
+	/* check status if UNALLOCATED, assert if ture */
 	bdbm_bug_on (bai->blocks[blk_idx].status == BDBM_ABM_BLK_UNALLOCATED);
 	 
 	/* see if blk_idx is correct or not */

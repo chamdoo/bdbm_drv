@@ -231,6 +231,7 @@ void llm_mq_destroy (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 }
 
+extern int _param_dev_num;
 uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
@@ -250,6 +251,7 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 
 	/* put a request into Q */
 	if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
+		r->volume = _param_dev_num;
 		/* step 1: put READ first */
 		r->phyaddr = r->phyaddr_src;
 		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr_src.punit_id, r->logaddr.lpa[0], (void*)r))) {
