@@ -82,7 +82,7 @@ bdbm_sema_t aggr_lock;
 uint64_t __get_aggr_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t blk_no) {
 	bdbm_bug_on (blk_no >= np->nr_blocks_per_chip);
 	bdbm_bug_on (vol >= np->nr_volumes);
-	return (np->nr_blocks_per_chip_per_volume) * vol + blk_no;
+	return np->nr_blocks_per_chip * vol + blk_no;
 }
 
 
@@ -144,7 +144,7 @@ bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
 int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	uint64_t nr_virt_blocks = np->nr_blocks_per_chip;
+	uint64_t nr_virt_blocks = np->nr_blocks_per_chip * np->nr_volumes;
 
 	if(bdbm_aggr_mapping == NULL) {
 		// TODO: mapping table for blocks between volumes and physical device
@@ -277,7 +277,7 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, 
 	}
 
 	aggr_idx = __get_aggr_idx(np, volume, block_no);
-	bdbm_bug_on(aggr_idx >= np->nr_blocks_per_chip);
+	bdbm_bug_on(aggr_idx >= (np->nr_blocks_per_chip * np->nr_volumes));
 	bdbm_aggr_mapping[aggr_idx] = cur_sblock;
 	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
 	
