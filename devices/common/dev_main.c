@@ -60,7 +60,7 @@ int bdbm_dm_init (bdbm_drv_info_t* bdi)
 {
 	/* see if bdi is valid or not */
 	if (bdi == NULL) {
-		bdbm_warning ("bid is NULL");
+		bdbm_warning ("bdi is NULL");
 		return 1;
 	}
 
