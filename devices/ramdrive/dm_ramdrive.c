@@ -61,7 +61,6 @@ typedef struct {
 } dm_ramssd_private_t;
 
 /* global data structure */
-#define NR_VOLUMES 4
 extern bdbm_drv_info_t* _bdi_dm[NR_VOLUMES];
 
 /* interrupt handler */

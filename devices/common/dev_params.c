@@ -41,6 +41,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "umemory.h"
 #include "debug.h"
+#include "dev_params.h"
 
 //tjkim
 enum BDBM_DEFAULT_NAND_PARAMS {
@@ -58,7 +59,6 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
-	NR_VOLUMES = 4,
 };
 
 int _param_nr_channels 				= NR_CHANNELS;

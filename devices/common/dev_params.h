@@ -42,4 +42,5 @@ extern int _param_ramdrv_timing_mode;
 bdbm_device_params_t get_default_device_params (void);
 void display_device_params (bdbm_device_params_t* p);
 
+#define NR_VOLUMES 6
 #endif

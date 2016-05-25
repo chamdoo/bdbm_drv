@@ -55,7 +55,7 @@ EXTRA_CFLAGS += -D USE_NEW_RMW
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/bdbm_main.o \
 
-bdbm_drv4-y := \
+bdbm_drv5-y := \
 	kmain.o \
 	blkdev.o \
 	blkio.o \
@@ -79,7 +79,7 @@ bdbm_drv4-y := \
 	$(COMMON)/bdbm_main.o \
 
 
-obj-m := bdbm_drv4.o
+obj-m := bdbm_drv5.o
 
 ccflags-y := -I$(src)
 

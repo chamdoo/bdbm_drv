@@ -39,10 +39,10 @@ THE SOFTWARE.
 #include "debug.h"
 #include "algo/abm.h"
 #include "umemory.h"
+#include "dev_params.h"
 
-#define NR_VOLUMES 4
 extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
-bdbm_drv_info_t* _bdi_dm[NR_VOLUMES] = {NULL, NULL, NULL, NULL}; /* for Connectal & RAMSSD */
+bdbm_drv_info_t* _bdi_dm[NR_VOLUMES]; /* for Connectal & RAMSSD */
 
 uint32_t dm_aggr_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params);
 uint32_t dm_aggr_open (bdbm_drv_info_t* bdi);
@@ -82,7 +82,7 @@ bdbm_sema_t aggr_lock;
 uint64_t __get_aggr_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t blk_no) {
 	bdbm_bug_on (blk_no >= np->nr_blocks_per_chip);
 	bdbm_bug_on (vol >= np->nr_volumes);
-	return (np->nr_blocks_per_chip) * vol + blk_no;
+	return (np->nr_blocks_per_chip_per_volume) * vol + blk_no;
 }
 
 
@@ -170,8 +170,6 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 
 	// attach device related interface, such as dm_probe, dm_open, to bdi
 	bdi->ptr_dm_inf = &_bdbm_aggr_inf;
-	bdbm_bug_on(volume >= NR_VOLUMES);
-	_bdi_dm[volume] = bdi;
 
 	if (run_flag == FALSE) {
 		/* initialize global variables */
@@ -204,7 +202,10 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 		}
 
 		bdbm_sema_init(&aggr_lock);
+		bdbm_memset(_bdi_dm, 0x00, sizeof(bdbm_drv_info_t*) * NR_VOLUMES);
 	}
+	bdbm_bug_on(volume >= NR_VOLUMES);
+	_bdi_dm[volume] = bdi;
 
 	return 0;
 	//return bdbm_dm_init(bdi);
@@ -220,10 +221,7 @@ fail:
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
 	if(destroy_flag == FALSE) {
-		uint32_t i;
 		destroy_flag = TRUE;
-		for(i = 0; i < NR_VOLUMES; i++)
-			_bdi_dm[i] = NULL;
 
 		if(bdbm_aggr_mapping != NULL) 
 			bdbm_free(bdbm_aggr_mapping);
@@ -279,6 +277,7 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, 
 	}
 
 	aggr_idx = __get_aggr_idx(np, volume, block_no);
+	bdbm_bug_on(aggr_idx >= np->nr_blocks_per_chip);
 	bdbm_aggr_mapping[aggr_idx] = cur_sblock;
 	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
 	

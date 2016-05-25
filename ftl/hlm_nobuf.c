@@ -173,13 +173,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		for (j = 0; j < np->nr_subpages_per_page; j++) {
 			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
 		}
-		//tjkim
-		if(bdbm_is_read(lr->req_type)){
-			bdbm_msg("hlm_rq read vol: %d, lpa: %llu", lr->volume, lr->logaddr.lpa[0]);
-		}
-		else if (bdbm_is_write(lr->req_type)) {
-			bdbm_msg("hlm_rq write vol: %d, lpa: %llu", lr->volume, lr->logaddr.lpa[0]);
-		}
 	}
 
 	/* (3) send llm_req to llm */
