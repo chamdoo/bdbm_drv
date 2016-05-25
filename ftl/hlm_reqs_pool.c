@@ -356,6 +356,9 @@ static int __hlm_reqs_pool_create_write_req (
 
 				if (pg_off >= pg_start && pg_off < pg_end) {
 					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
+					if (bvec_cnt >= br->bi_bvec_cnt) {
+						bdbm_msg ("%lld %lld", bvec_cnt, br->bi_bvec_cnt);
+					}
 					ptr_fm->kp_stt[fm_ofs] = KP_STT_DATA;
 					ptr_fm->kp_ptr[fm_ofs] = br->bi_bvec_ptr[bvec_cnt++]; /* assign actual data */
 				} else {

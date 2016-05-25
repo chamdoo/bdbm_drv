@@ -21,42 +21,16 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USER_MODE \
 		  -D USE_PMU \
-		  -D USE_NEW_RMW \
+	#	  -D USE_NEW_RMW \
 
-#DMLIB := ../../devices/libdummy/libdummy.a
 DMLIB := ../../devices/libramdrive/libramdrive.a
-#DMLIB := dev_proxy.c $(DM_COMMON)/dev_params.c
+LIBFTL := libftl.a
 
 SRCS := \
-	userio.c \
-	main.c \
-	$(FTL)/hlm_reqs_pool.c \
-	$(FTL)/ftl_params.c \
-	$(FTL)/pmu.c \
-	$(FTL)/hlm_nobuf.c \
-	$(FTL)/llm_mq.c \
-	$(FTL)/llm_noq.c \
-	$(FTL)/llm_noq_lock.c \
-	$(FTL)/algo/abm.c \
-	$(FTL)/algo/page_ftl.c \
-	$(FTL)/algo/block_ftl.c \
-	$(FTL)/queue/queue.c \
-	$(FTL)/queue/prior_queue.c \
-	$(FTL)/queue/rd_prior_queue.c \
-	$(COMMON)/utils/umemory.c \
-	$(COMMON)/utils/utime.c \
-	$(COMMON)/utils/ufile.c \
-	$(COMMON)/utils/uthread.c \
-	$(COMMON)/utils/upage.c \
-	$(COMMON)/3rd/uilog.c \
-	$(COMMON)/bdbm_main.c \
-	$(DMLIB) \
-
-SRCS2 := \
 	main.c \
 
-libftl: $(SRCS) $(DMLIB)
-	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) 
+libftl: $(SRCS) $(DMLIB) $(LIBFTL)
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRCS) $(LIBS) $(LIBFTL) $(DMLIB)
 
 clean:
 	@$(RM) *.o core *~ libftl 

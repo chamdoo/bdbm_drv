@@ -207,7 +207,7 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				ftl->is_gc_needed != NULL && 
 				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
-				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 				ftl->do_gc (bdi, 0);
 			} else
 				break;
@@ -222,7 +222,7 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				/* NOTE: segment-level ftl does not support fine-grain rmw */
 				if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
 					/* perform GC before sending requests */ 
-					bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+					//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 					ftl->do_gc (bdi, lr->logaddr.lpa[0]);
 				}
 			}
@@ -240,9 +240,6 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	/* is req_type correct? */
 	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
-
-	/* do we need to do garbage collection? */
-	__hlm_nobuf_check_ondemand_gc (bdi, hr);
 
 #if 0
 	/* trigger gc if necessary */
@@ -270,6 +267,9 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			/* hr is now NULL */
 		}
 	} else {
+		/* do we need to do garbage collection? */
+		__hlm_nobuf_check_ondemand_gc (bdi, hr);
+
 		ret = __hlm_nobuf_make_rw_req (bdi, hr);
 	} 
 

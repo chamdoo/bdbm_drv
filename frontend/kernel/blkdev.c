@@ -227,9 +227,9 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 
 	{
 		uint64_t capacity;
-		capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
+		//capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
 		/*capacity = bdi->parm_dev.device_capacity_in_byte;*/
-		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+	//	capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 	}
 	add_disk (bdbm_device.gd);

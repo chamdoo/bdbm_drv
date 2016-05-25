@@ -86,7 +86,7 @@ typedef struct {
 	uint64_t channel_no;
 	uint64_t chip_no;
 	uint64_t block_no;
-	uint64_t rw_pg_ofs; /* recently-written page offset */
+	int64_t rw_pg_ofs; /* recently-written page offset */
 	uint8_t* pst;	/* status of pages in a block */
 } bdbm_block_mapping_entry_t;
 
@@ -318,6 +318,170 @@ uint32_t bdbm_block_ftl_get_ppa (
 	return 0;
 }
 
+/* allocate a block one by one */
+static uint64_t problem_seg_no = -1;
+
+uint32_t __bdbm_block_ftl_is_allocated (
+	bdbm_drv_info_t* bdi, 
+	int64_t segment_no)
+{
+	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_mapping_entry_t* e = NULL;
+	uint32_t nr_alloc_blks = 0;
+	uint32_t i;
+
+	for (i = 0; i < p->nr_blks_per_seg; i++) {
+		e = &p->mt[segment_no][i];
+		if (e->status == BFTL_ALLOCATED) {
+			nr_alloc_blks++;
+		}
+	}
+
+	if (nr_alloc_blks != 0 &&
+		nr_alloc_blks != p->nr_blks_per_seg) {
+		bdbm_msg ("oops! # of allocated blocks per segment must be 0 or %d (%d)", 
+			p->nr_blks_per_seg, nr_alloc_blks);
+		bdbm_bug_on (1);
+	}
+
+	return nr_alloc_blks;
+}
+
+int32_t __bdbm_block_ftl_allocate_segment (
+	bdbm_drv_info_t* bdi, 
+	int64_t segment_no)
+{
+	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	uint32_t i;
+
+	for (i = 0; i < p->nr_blks_per_seg; i++) {
+		uint64_t channel_no = i % np->nr_channels;
+		uint64_t chip_no = i / np->nr_channels;
+		bdbm_block_mapping_entry_t* e = &p->mt[segment_no][i];
+		bdbm_abm_block_t* b = NULL;
+
+		bdbm_bug_on (e->status != BFTL_NOT_ALLOCATED);
+	
+		if ((b = bdbm_abm_get_free_block_prepare (p->abm, channel_no, chip_no)) != NULL) {
+			bdbm_abm_get_free_block_commit (p->abm, b);
+			e->status = BFTL_ALLOCATED;
+			e->channel_no = b->channel_no;
+			e->chip_no = b->chip_no;
+			e->block_no = b->block_no;
+			e->rw_pg_ofs = -1;
+		} else {
+			bdbm_error ("oops! bdbm_abm_get_free_block_prepare failed (%llu %llu)", channel_no, chip_no);
+			goto error;
+		}
+	}
+
+	return 0;
+
+error:
+	return -1;
+}
+
+uint32_t bdbm_block_ftl_get_free_ppa (
+	bdbm_drv_info_t* bdi, 
+	int64_t lpa,
+	bdbm_phyaddr_t* ppa)
+{
+	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_mapping_entry_t* e = NULL;
+	uint64_t segment_no;
+	uint64_t block_no;
+	int64_t page_ofs;
+	uint32_t ret = 1;
+
+	segment_no = __bdbm_block_ftl_get_segment_no (p, lpa);
+
+	/* [STEP1] see if the desired segment is empty or full */
+	if (__bdbm_block_ftl_is_allocated (bdi, segment_no) == 0) {
+		if (__bdbm_block_ftl_allocate_segment (bdi, segment_no) == -1) {
+			bdbm_error ("oops! __bdbm_block_ftl_allocate_segment failed");
+			bdbm_bug_on (1);
+		}
+	}
+
+	/* [STEP2] see if it is dead? */
+	if (p->nr_trim_pgs[segment_no] == p->nr_pgs_per_seg) {
+		/* perform gc for the segment */
+		__bdbm_block_ftl_do_gc_segment (bdi, segment_no);
+#ifdef ENABLE_LOG
+		bdbm_msg ("E: [%llu] erase", segment_no);
+#endif
+	}
+
+	/* [STEP3] get the information for the desired block in the segment */
+	block_no = __bdbm_block_ftl_get_block_no (p, lpa);
+	page_ofs = __bdbm_block_ftl_get_page_ofs (p, lpa);
+	e = &p->mt[segment_no][block_no];
+
+#ifdef ENABLE_LOG
+	bdbm_msg ("W: [%llu] lpa: %llu ofs: %lld # of used pages: %d", segment_no, lpa, page_ofs, p->nr_valid_pgs[segment_no]);
+#endif
+
+	bdbm_bug_on (e == NULL);
+
+	/* [STEP4] is it already mapped? */
+	if (e->status == BFTL_ALLOCATED) {
+		/* if so, see if the target block is writable or not */
+		if (e->rw_pg_ofs < page_ofs) {
+			/* [CASE 1] it is a writable block */
+			ppa->channel_no = e->channel_no;
+			ppa->chip_no = e->chip_no;
+			ppa->block_no = e->block_no;
+			ppa->page_no = page_ofs;
+			ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
+			ret = 0;
+
+			if ((e->rw_pg_ofs + 1) != page_ofs) {
+				bdbm_msg ("INFO: seg: %llu, %llu %lld", segment_no, (e->rw_pg_ofs + 1), page_ofs);
+			}
+
+			/*
+			bdbm_msg ("INFO: seg: %llu, lpa: %llu, rw_pg_ofs: %llu, page_ofs: %llu",
+				segment_no, lpa, e->rw_pg_ofs, page_ofs);
+			*/
+		} else {
+			/* [CASE 2] it is a not-writable block */
+#ifdef DBG_ALLOW_INPLACE_UPDATE
+			/* TODO: it will be an error case in our final implementation,
+			 * but we temporarly allows this case */
+			ppa->channel_no = e->channel_no;
+			ppa->chip_no = e->chip_no;
+			ppa->block_no = e->block_no;
+			ppa->page_no = page_ofs;
+			ppa->punit_id = BDBM_GET_PUNIT_ID (bdi, ppa);
+			ret = 0;
+
+			problem_seg_no = segment_no;
+
+			/*#else*/
+		
+			bdbm_msg("[%llu] [OVERWRITE] %llu %llu", 
+				segment_no,	p->nr_trim_pgs[segment_no], p->nr_valid_pgs[segment_no]);
+
+			bdbm_msg ("[%llu] [OVERWRITE] this should not occur (rw_pg_ofs:%d page_ofs:%llu)", 
+				segment_no, e->rw_pg_ofs, page_ofs);
+
+			bdbm_msg ("[%llu] [# of trimmed pages = %llu, lpa = %llu",
+				segment_no, p->nr_trim_pgs[segment_no], lpa);
+			/*bdbm_bug_on (1);*/
+#endif
+		}
+	} else {
+		bdbm_error ("'e->status' is not valid (%u)", e->status);
+		bdbm_bug_on (1);
+	}
+
+	return ret;
+}
+
+
+#if 0 
+/* allocate a block one by one */
 static uint64_t problem_seg_no = -1;
 
 uint32_t bdbm_block_ftl_get_free_ppa (
@@ -429,6 +593,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 
 	return ret;
 }
+#endif
 
 uint32_t bdbm_block_ftl_map_lpa_to_ppa (
 	bdbm_drv_info_t* bdi, 
@@ -465,6 +630,8 @@ uint32_t bdbm_block_ftl_map_lpa_to_ppa (
 		goto done;
 	}
 
+	bdbm_bug_on (1);
+
 	/* mapping lpa to ppa */
 	e->status = BFTL_ALLOCATED;
 	e->channel_no = ppa->channel_no;
@@ -500,8 +667,15 @@ uint32_t bdbm_block_ftl_invalidate_lpa (
 	e = &p->mt[segment_no][block_no];
 
 	/* ignore trim requests for a free segment */
-	if (e->status == BFTL_NOT_ALLOCATED)
+#if 0 /* FIXME: it could incur problems later... */
+	if (e->status == BFTL_NOT_ALLOCATED) {
+#ifdef ENABLE_LOG
+		bdbm_msg ("T: [%llu] lpa: %llu (# of trimmed pages: %llu, # of used pages: %d)", 
+			segment_no, lpa, p->nr_trim_pgs[segment_no], p->nr_valid_pgs[segment_no]);
+#endif
 		return 0;
+	}
+#endif
 
 	/* ignore trim requests if it is already invalid */
 #if 0
@@ -570,7 +744,7 @@ uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 					bdbm_error ("[%llu] OOPS!!! # of valid pages: %llu, # of trimmed pages: %llu",
 						segment_no,	p->nr_valid_pgs[segment_no], p->nr_trim_pgs[segment_no]);
 				}
-				ret = 1; /* t */
+				ret = 1;
 			}
 		}
 	}
@@ -594,6 +768,12 @@ uint32_t __bdbm_block_ftl_erase_block (bdbm_drv_info_t* bdi, uint64_t seg_no)
 
 		if (e->status == BFTL_NOT_ALLOCATED)
 			continue;
+
+		/* FIXME: this block has not been used -- it must be more general */
+		if (e->rw_pg_ofs == -1) {
+			bdbm_abm_erase_block (p->abm, e->channel_no, e->chip_no, e->block_no, 0);
+			continue;
+		}
 
 		if ((b = bdbm_abm_get_block (p->abm, e->channel_no, e->chip_no, e->block_no)) == NULL) {
 			bdbm_error ("oops! bdbm_abm_get_block failed (%llu %llu %llu)", 
