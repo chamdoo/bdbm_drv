@@ -154,7 +154,7 @@ bdbm_device_params_t get_default_device_params (void)
 	p.nr_subpages_per_block = (p.nr_subpages_per_page * p.nr_pages_per_block);
 	p.nr_subpages_per_ssd = (p.nr_subpages_per_page * p.nr_pages_per_ssd);	/* the size of the subpage must be the same as the kernel-page size (4KB) */
 
-	p.nr_blocks_per_chip_per_volume = _param_nr_blocks_per_chip / _param_nr_volumes;
+	p.nr_blocks_per_chip_per_volume = (_param_nr_blocks_per_chip / _param_nr_volumes) - 1;
 	p.nr_blocks_per_channel_per_volume = p.nr_blocks_per_chip_per_volume * p.nr_channels;
 	p.nr_blocks_per_ssd_per_volume = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip_per_volume; 
 	p.device_capacity_in_byte = 0;

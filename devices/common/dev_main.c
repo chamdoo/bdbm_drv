@@ -152,6 +152,7 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 			bdbm_error ("bdbm_zmalloc failed");
 			goto fail;
 		}
+		memset(bdbm_aggr_mapping, 0x00, sizeof(uint64_t) * nr_virt_blocks);
 	}
 
 	if(bdbm_aggr_pblock_status == NULL){
@@ -278,18 +279,47 @@ uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t *np, uint64_t block_no, 
 
 	aggr_idx = __get_aggr_idx(np, volume, block_no);
 	bdbm_bug_on(aggr_idx >= (np->nr_blocks_per_chip * np->nr_volumes));
+	bdbm_bug_on(bdbm_aggr_mapping[aggr_idx] != 0);
 	bdbm_aggr_mapping[aggr_idx] = cur_sblock;
 	bdbm_aggr_pblock_status[cur_sblock] = AGGR_PBLOCK_ALLOCATED;
 	
-	/*
-	np->nr_allocated_blocks_per_chip++;
-	nr_punit = np->nr_channels * np->nr_chips_per_channel;
-	np->nr_allocated_blocks_per_ssd += nr_punit;
-	*/
-
+	//bdbm_msg("aggr allocation volume: %d, pblock: %llu", volume, cur_sblock);
 	return 0;
 }
 
+uint32_t bdbm_aggr_return_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume) {
+	uint64_t aggr_idx, tblk_num;
+
+	if(bdbm_aggr_mapping == NULL) {
+		bdbm_error ("bdbm_aggr_mapping is NULL");
+		return 1;
+	}
+
+	if(bdbm_aggr_pblock_status == NULL) {
+		bdbm_error ("bdbm_aggr_pblock_status is NULL");
+		return 1;
+	}
+
+	if(block_no >= np->nr_blocks_per_chip) {
+		bdbm_error ("block_no (%llu) is larger than # of blocks per chip", block_no);
+		return 1;
+	}
+
+	if(volume >= np->nr_volumes) {
+		bdbm_error ("volume (%d) is larger than # of volumes", volume);
+		return 1;
+	}
+
+	aggr_idx = __get_aggr_idx(np, volume, block_no);
+	bdbm_bug_on(aggr_idx >= (np->nr_blocks_per_chip * np->nr_volumes));
+	tblk_num = bdbm_aggr_mapping[aggr_idx];
+	bdbm_aggr_mapping[aggr_idx] = 0;
+	bdbm_bug_on(tblk_num >= np->nr_blocks_per_chip);
+	bdbm_bug_on(bdbm_aggr_pblock_status[tblk_num] != AGGR_PBLOCK_ALLOCATED);
+	bdbm_aggr_pblock_status[tblk_num] = AGGR_PBLOCK_FREE;
+
+	return 0;
+}
 
 #if 0
 void bdbm_inc_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
@@ -388,10 +418,10 @@ uint32_t dm_aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
 	// translate block number
 	bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
 	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
-	/*
-	bdbm_msg("aggr_make_req, volume: %d, org_block_no: %llu, trans_block_no: %llu", volume, org_block_no,
-			ptr_llm_req->phyaddr.block_no);
-			*/
+/*
+	bdbm_msg("aggr make_req, volume: %d, vblock: %llu, pblock: %llu", 
+			volume, org_block_no, bdbm_aggr_mapping[aggr_idx]);
+*/
 	return _bdbm_dm_inf.make_req(bdi, ptr_llm_req);
 }
 
@@ -405,12 +435,19 @@ uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 
 	bdbm_stopwatch_start(&aggr_sw);
 #endif
+
 	// translate block number
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		uint64_t org_block_no = lr->phyaddr.block_no;
 		uint64_t aggr_idx = __get_aggr_idx(np, volume, org_block_no);
 		bdbm_bug_on (bdbm_aggr_pblock_status[bdbm_aggr_mapping[aggr_idx]] == AGGR_PBLOCK_FREE);
 		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+		/*
+		if(i == 0) {
+			bdbm_msg("aggr make_reqs, volume: %d, vblock: %llu, pblock: %llu", 
+					volume, org_block_no, bdbm_aggr_mapping[aggr_idx]);
+		}
+		*/
 	}
 
 #ifdef TIMELINE_DEBUG_TJKIM
@@ -448,6 +485,7 @@ EXPORT_SYMBOL (bdbm_aggr_init);
 EXPORT_SYMBOL (bdbm_aggr_exit);
 EXPORT_SYMBOL (bdbm_aggr_get_inf);
 EXPORT_SYMBOL (bdbm_aggr_allocate_blocks);
+EXPORT_SYMBOL (bdbm_aggr_return_blocks);
 EXPORT_SYMBOL (bdbm_aggr_lock);
 EXPORT_SYMBOL (bdbm_aggr_unlock);
 

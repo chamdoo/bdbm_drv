@@ -103,11 +103,12 @@ extern int _param_dev_num;
 uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 {
 	uint32_t ret;
-	static uint64_t cnt = 0;
 
-	/* just for display */
+	/*
+	//static uint64_t cnt = 0;
 	if (cnt % 50000 == 0) bdbm_msg ("llm_noq_make_req: %llu", cnt);
 	cnt++;
+	*/
 
 	/* update pmu */
 	pmu_update_sw (bdi, llm_req);

@@ -218,7 +218,6 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				ftl->is_gc_needed != NULL && 
 				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
-				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 				ftl->do_gc (bdi, 0);
 			} else
 				break;
@@ -233,7 +232,6 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				/* NOTE: segment-level ftl does not support fine-grain rmw */
 				if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
 					/* perform GC before sending requests */ 
-					bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 					ftl->do_gc (bdi, lr->logaddr.lpa[0]);
 				}
 			}

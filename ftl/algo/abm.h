@@ -86,6 +86,8 @@ typedef struct {
 	uint64_t nr_clean_blks;
 	uint64_t nr_dirty_blks;
 	uint64_t nr_bad_blks;
+
+	struct list_head list_available_block_number;
 } bdbm_abm_info_t;
 
 bdbm_abm_info_t* bdbm_abm_create (bdbm_device_params_t* np, uint8_t use_pst);
@@ -120,4 +122,13 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 #endif
 
 uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t* np, uint64_t block_no, uint32_t volume);
+uint32_t bdbm_aggr_return_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume);
+int64_t get_available_vblock_num(bdbm_device_params_t* np);
+void return_vblock_num(bdbm_device_params_t* np, uint64_t blk_no);
 
+static inline
+uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
+	return channel_no * np->nr_blocks_per_channel + 
+		chip_no * np->nr_blocks_per_chip + 
+		block_no;
+}

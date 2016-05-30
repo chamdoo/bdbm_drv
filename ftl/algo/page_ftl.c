@@ -747,6 +747,9 @@ erase_blks:
 }
 #endif
 
+//tjkim
+uint32_t gc_cnt = 0;
+extern int _param_dev_num;
 uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
@@ -980,6 +983,101 @@ erase_blks:
 			ret = 1;	/* bad block */
 		bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
 	}
+
+	// tjkim
+	// need to set virtual block number, regarding returned blocks
+	if(gc_cnt % 2 == 0) {
+		uint64_t channel_no, chip_no, blk_no;
+		bdbm_abm_info_t* bai = p->bai;
+
+		if((blk_no = get_available_vblock_num(np)) < 0) {
+			bdbm_error("vblock get error");
+			return 1;
+		}
+		bdbm_aggr_lock();
+		if(bdbm_aggr_allocate_blocks(np, blk_no, _param_dev_num) != 0) {
+			bdbm_error("block allocate at aggregate layer has failed");
+			return 1;
+		}
+		bdbm_aggr_unlock();
+		bdbm_msg("volume %d dynamically allocated a block: %llu", _param_dev_num, blk_no);
+		// insert allocated blocks to free list & set its status to BLK_FREE
+		
+		for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
+			for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
+				uint64_t blk_idx = __get_block_idx(np, channel_no, chip_no, blk_no);
+				bdbm_bug_on(bai->blocks[blk_idx].status != BDBM_ABM_BLK_UNALLOCATED);
+				bai->blocks[blk_idx].status = BDBM_ABM_BLK_FREE;
+				list_add_tail (&(bai->blocks[blk_idx].list), 
+						&(bai->list_head_free[bai->blocks[blk_idx].channel_no][bai->blocks[blk_idx].chip_no]));
+
+			}
+		}
+		bai->nr_total_blks += (np->nr_channels * np->nr_chips_per_channel);
+		//bdbm_bug_on(bai->nr_total_blks >= np->nr_blocks_per_chip);
+		bai->nr_free_blks += (np->nr_channels * np->nr_chips_per_channel);
+		//bdbm_bug_on(bai->nr_free_blks >= np->nr_blocks_per_chip);
+	}
+
+	if(gc_cnt % 2 == 0) {
+		uint64_t channel_no, chip_no = 0, blk_no, cnt = 0;
+		bdbm_abm_info_t* bai = p->bai;
+		bdbm_abm_block_t* blk = NULL;
+		struct list_head* pos = NULL;
+
+		// find free block to be returned (blk_no)
+
+		list_for_each(pos, &(bai->list_head_free[0][0])) {
+			blk = list_entry(pos, bdbm_abm_block_t, list);
+			if(blk->status == BDBM_ABM_BLK_FREE) {
+				blk_no = blk->block_no;
+				for(channel_no = 0; channel_no < np->nr_channels; channel_no++) {
+					for(chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
+						uint64_t blk_idx = __get_block_idx(np, channel_no, chip_no, blk_no);
+						if(bai->blocks[blk_idx].status != BDBM_ABM_BLK_FREE)
+							goto next_blk;
+					}
+				}
+next_blk:
+				if(channel_no == np->nr_channels && chip_no == np->nr_chips_per_channel)
+					break;
+			}
+			else {
+				bdbm_msg("oops! block status in the free list: %d is not free: ", blk->status);
+				return 1;
+			}
+			if(cnt >= np->nr_blocks_per_chip) {
+				// TODO: may trigger GC 
+				bdbm_msg("oops! there is no free block ");
+				return 1;
+			}
+			cnt++;
+		}
+		blk_no = blk->block_no;
+		return_vblock_num(np, blk_no);
+
+		bdbm_msg("volume %d dynamically returned a block: %llu", _param_dev_num, blk_no);
+
+		bdbm_aggr_lock();
+		if(bdbm_aggr_return_blocks(np, blk_no, _param_dev_num) != 0) {
+			bdbm_error("block return at aggregate layer has failed");
+			return 1;
+		}
+		bdbm_aggr_unlock();
+		for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
+			for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
+				uint64_t blk_idx = __get_block_idx(np, channel_no, chip_no, blk_no);
+				bdbm_bug_on(bai->blocks[blk_idx].status != BDBM_ABM_BLK_FREE);
+				bai->blocks[blk_idx].status = BDBM_ABM_BLK_UNALLOCATED;
+				list_del(&(bai->blocks[blk_idx].list));
+			}
+		}
+		bai->nr_total_blks -= (np->nr_channels * np->nr_chips_per_channel);
+		bdbm_bug_on(bai->nr_total_blks <= 0);
+		bai->nr_free_blks -= (np->nr_channels * np->nr_chips_per_channel);
+		bdbm_bug_on(bai->nr_free_blks <= 0);
+	}
+	gc_cnt++;
 
 	return 0;
 }

@@ -55,13 +55,14 @@ static inline
 uint64_t __get_block_ofs (bdbm_device_params_t* np, uint64_t blk_idx) {
 	return (blk_idx % np->nr_blocks_per_chip);
 }
-
+/*
 static inline
 uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
 	return channel_no * np->nr_blocks_per_channel + 
 		chip_no * np->nr_blocks_per_chip + 
 		block_no;
 }
+*/
 
 static inline
 void __bdbm_abm_check_status (bdbm_abm_info_t* bai)
@@ -108,6 +109,52 @@ void __bdbm_abm_destory_pst (babm_abm_subpage_t* pst)
 }
 
 extern int _param_dev_num;
+
+enum BDBM_VBLOCK_STATUS {
+	VBLOCK_FREE = 0,
+	VBLOCK_ALLOCATED,
+};
+
+uint8_t* virtual_block_status;
+uint64_t cur_vblock = 0;
+
+uint32_t init_vblock(bdbm_device_params_t* np) {
+	if((virtual_block_status = (uint8_t*)bdbm_zmalloc(sizeof(uint8_t*)*np->nr_blocks_per_chip)) == NULL) {
+		bdbm_error ("bdbm_zmalloc failed");
+		return 1;
+	}
+	return 0;
+}
+
+void destroy_vblock(void) {
+	if(virtual_block_status != NULL)
+		bdbm_free(virtual_block_status);
+}
+
+int64_t get_available_vblock_num(bdbm_device_params_t* np) {
+	uint64_t loop = 0;
+	while(virtual_block_status[cur_vblock] != VBLOCK_FREE) {
+		cur_vblock++;
+		if(cur_vblock == np->nr_blocks_per_chip) cur_vblock = 0;
+		loop++;
+		if(loop >= np->nr_blocks_per_chip) {
+			bdbm_error ("There is no free virtual block for volume: %d", _param_dev_num);
+			return -1;
+		}
+	}
+
+	virtual_block_status[cur_vblock] = VBLOCK_ALLOCATED;
+	//bdbm_msg("available block - volume: %d, vblock: %llu", _param_dev_num, cur_vblock);
+
+	return cur_vblock;
+}
+
+void return_vblock_num(bdbm_device_params_t* np, uint64_t blk_no) {
+	bdbm_bug_on(blk_no >= np->nr_blocks_per_chip);
+	bdbm_bug_on(virtual_block_status[blk_no] == VBLOCK_FREE);
+
+	virtual_block_status[blk_no] = VBLOCK_FREE;
+}
 
 bdbm_abm_info_t* bdbm_abm_create (
 	bdbm_device_params_t* np,
@@ -188,6 +235,11 @@ bdbm_abm_info_t* bdbm_abm_create (
 		}
 	}
 
+	if(init_vblock(np) != 0) {
+		bdbm_error("virtual block initialization failed");
+		goto fail;
+	}
+
 	/* allocate given blocks for this volume, change block status UNALLOCATED -> FREE */
 	for (channel_no = 0; channel_no < np->nr_channels; channel_no++) {
 		for (chip_no = 0; chip_no < np->nr_chips_per_channel; chip_no++) {
@@ -198,9 +250,12 @@ bdbm_abm_info_t* bdbm_abm_create (
 						&(bai->list_head_free[bai->blocks[blk_idx].channel_no][bai->blocks[blk_idx].chip_no]));
 
 				if(channel_no == 0 && chip_no == 0) {
-					if(bdbm_aggr_allocate_blocks(np, blk_no, _param_dev_num) != 0){
+					uint64_t blk_idx = get_available_vblock_num(np);
+					bdbm_aggr_lock();
+					if(bdbm_aggr_allocate_blocks(np, blk_idx, _param_dev_num) != 0){
 						bdbm_error("block allocation at aggregate layer has failed");
 					}
+					bdbm_aggr_unlock();
 				}
 			}
 		}
@@ -264,6 +319,9 @@ void bdbm_abm_destroy (bdbm_abm_info_t* bai)
 			__bdbm_abm_destory_pst (bai->blocks[loop].pst);
 		bdbm_free (bai->blocks);
 	}
+
+	destroy_vblock();
+
 	bdbm_free (bai);
 }
 
