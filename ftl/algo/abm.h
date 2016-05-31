@@ -121,10 +121,10 @@ uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 
 #endif
 
-uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t* np, uint64_t block_no, uint32_t volume);
-uint32_t bdbm_aggr_return_blocks(bdbm_device_params_t *np, uint64_t block_no, uint32_t volume);
-int64_t get_available_vblock_num(bdbm_device_params_t* np);
-void return_vblock_num(bdbm_device_params_t* np, uint64_t blk_no);
+uint32_t bdbm_aggr_allocate_blocks(bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint32_t volume);
+uint32_t bdbm_aggr_return_blocks(bdbm_device_params_t *np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint32_t volume);
+int64_t get_available_vblock_num(bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no);
+void return_vblock_num(bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t blk_no);
 
 static inline
 uint64_t __get_block_idx (bdbm_device_params_t* np, uint64_t channel_no, uint64_t chip_no, uint64_t block_no) {
