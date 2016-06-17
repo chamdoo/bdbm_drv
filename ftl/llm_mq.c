@@ -77,6 +77,8 @@ struct bdbm_llm_mq_private {
 	bdbm_thread_t* llm_thread;
 };
 
+extern int _param_dev_num;
+
 int __llm_mq_thread (void* arg)
 {
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
@@ -122,10 +124,7 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, r);
 
-			if (cnt % 50000 == 0) {
-				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
-			}
-
+			bdbm_aggr_lock();
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_sema_unlock (&p->punit_locks[loop]);
 
@@ -133,8 +132,8 @@ int __llm_mq_thread (void* arg)
 				bdi->ptr_llm_inf->end_req (bdi, r);
 				bdbm_warning ("oops! make_req failed");
 			}
+			bdbm_aggr_unlock();
 
-			cnt++;
 		}
 	}
 

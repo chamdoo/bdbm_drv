@@ -21,9 +21,6 @@ EXTRA_CFLAGS += \
 	-D CONFIG_DEVICE_TYPE_RAMDRIVE_TIMING
 	#-D CONFIG_DEVICE_TYPE_RAMDRIVE 
 
-EXTRA_CFLAGS += \
-	-D TIMELINE_DEBUG_TJKIM
-
 risa_dev_ramdrive-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/utime.o \

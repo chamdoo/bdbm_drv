@@ -53,8 +53,8 @@ int _param_snapshot					= SNAPSHOT_DISABLE;
 int _param_mapping_type				= MAPPING_POLICY_PAGE;
 /*int _param_mapping_type				= MAPPING_POLICY_RSD;*/
 /*int _param_mapping_type				= MAPPING_POLICY_RSD;*/
-//int _param_llm_type					= LLM_MULTI_QUEUE;
-int _param_llm_type					= LLM_NO_QUEUE;
+int _param_llm_type					= LLM_MULTI_QUEUE;
+//int _param_llm_type					= LLM_NO_QUEUE;
 int _param_hlm_type					= HLM_NO_BUFFER;
 
 

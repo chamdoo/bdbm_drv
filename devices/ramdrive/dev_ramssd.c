@@ -494,8 +494,8 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 	uint64_t loop, nr_parallel_units;
 
 #ifdef TIMELINE_DEBUG_TJKIM
-	//bdbm_stopwatch_t cmd_done_sw;
-	//bdbm_stopwatch_start(&cmd_done_sw);
+	bdbm_stopwatch_t cmd_done_sw;
+	bdbm_stopwatch_start(&cmd_done_sw);
 #endif
 	nr_parallel_units = dev_ramssd_get_chips_per_ssd (ri);
 
@@ -504,25 +504,13 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 		if (ri->ptr_punits[loop].ptr_req != NULL) {
 			dev_ramssd_punit_t* punit;
 			int64_t elapsed_time_in_us;
-			//tjkim
-			bdbm_llm_req_t* r;
-
 			punit = &ri->ptr_punits[loop];
 			elapsed_time_in_us = bdbm_stopwatch_get_elapsed_time_us (&punit->sw);
-
-			//tjkim
-			r = (bdbm_llm_req_t*)(punit->ptr_req);
-			bdbm_msg("cmd_done v: %d, t: %d, lpa: %llu, punit: %llu, b: %llu, p: %llu, time: %llu, target: %llu", 
-					r->volume, r->req_type, r->logaddr.lpa[0], loop, r->phyaddr.block_no, r->phyaddr.page_no,
-					elapsed_time_in_us, punit->target_elapsed_time_us);
 
 			if (elapsed_time_in_us >= punit->target_elapsed_time_us) {
 				void* ptr_req = punit->ptr_req;
 				punit->ptr_req = NULL;
 				bdbm_spin_unlock (&ri->ramssd_lock);
-
-				//tjkim
-				bdbm_msg("cmd_done done");
 
 				/* call the interrupt handler */
 				ri->intr_handler (ptr_req);
@@ -535,7 +523,7 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 	}
 	
 #ifdef TIMELINE_DEBUG_TJKIM
-	//bdbm_msg("cmd_done elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&cmd_done_sw));
+	bdbm_msg("cmd_done elapsed time: %llu", bdbm_stopwatch_get_elapsed_time_us(&cmd_done_sw));
 #endif
 }
 
@@ -739,16 +727,10 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 	bdbm_stopwatch_t ramssd_sw;
 	bdbm_stopwatch_start(&ramssd_sw);
 #endif
-	// tjkim
-	bdbm_msg("send_cmd v: %d, lpa: %llu, punit: %llu, b: %llu, p: %llu", 
-			r->volume, r->logaddr.lpa[0], r->phyaddr.punit_id, r->phyaddr.block_no, r->phyaddr.page_no);
 
 	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
 		int64_t target_elapsed_time_us = 0;
 		uint64_t punit_id = r->phyaddr.punit_id;
-
-		//tjkim
-		bdbm_msg("send_cmd complete");
 
 		/* get the target elapsed time depending on the type of req */
 		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_TIMING) {
