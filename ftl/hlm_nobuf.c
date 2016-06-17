@@ -317,6 +317,9 @@ void __hlm_nobuf_end_gcio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("hlm_nobuf_end_req");
+#endif
 	if (bdbm_is_gc (lr->req_type)) {
 		__hlm_nobuf_end_gcio_req (bdi, lr);
 	} else {

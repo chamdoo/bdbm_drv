@@ -249,6 +249,9 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)hr->blkio_req;
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("blkio_end_req");
+#endif
 	/* end bio */
 	if (hr->ret == 0)
 		bio_endio ((struct bio*)br->bio, 0);

@@ -170,6 +170,9 @@ void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	pmu_update_tot (bdi, llm_req);
 	pmu_inc (bdi, llm_req);
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("llm_noq_end_req");
+#endif
 	/* finish a request */
 	bdi->ptr_hlm_inf->end_req (bdi, llm_req);
 }

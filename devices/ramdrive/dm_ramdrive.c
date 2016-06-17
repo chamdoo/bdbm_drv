@@ -73,6 +73,9 @@ static void __dm_ramdrive_ih (void* arg)
 	bdbm_bug_on(bdi == NULL);
 	bdbm_bug_on(volume >= NR_VOLUMES);
 
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("__dm_ramdrive_ih is called");
+#endif
 	if(bdi->ptr_dm_inf->end_req) {
 		bdi->ptr_dm_inf->end_req (bdi, ptr_llm_req);
 	}

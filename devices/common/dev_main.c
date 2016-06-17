@@ -487,6 +487,9 @@ uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	return _bdbm_dm_inf.make_reqs(bdi, hr);
 }
 void dm_aggr_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req) {
+#ifdef TIMELINE_DEBUG_TJKIM
+	bdbm_msg("dm_aggr_end_req");
+#endif
 	bdi->ptr_llm_inf->end_req(bdi, ptr_llm_req);
 	//return _bdbm_dm_inf.end_req(bdi, ptr_llm_req);
 }
