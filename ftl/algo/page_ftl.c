@@ -206,7 +206,6 @@ void __bdbm_page_ftl_destroy_active_blocks (
 
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
-	uint32_t i = 0, j = 0;
 	bdbm_page_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
