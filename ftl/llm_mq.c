@@ -1,5 +1,4 @@
-/*
-The MIT License (MIT)
+/* The MIT License (MIT)
 
 Copyright (c) 2014-2015 CSAIL, MIT
 
@@ -84,8 +83,6 @@ int __llm_mq_thread (void* arg)
 	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
 	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 	uint64_t loop;
-	uint64_t cnt = 0;
-
 	if (p == NULL || p->q == NULL || p->llm_thread == NULL) {
 		bdbm_msg ("invalid parameters (p=%p, p->q=%p, p->llm_thread=%p",
 			p, p->q, p->llm_thread);
@@ -114,11 +111,14 @@ int __llm_mq_thread (void* arg)
 			/* if pu is busy, then go to the next pnit */
 			if (!bdbm_sema_try_lock (&p->punit_locks[loop]))
 				continue;
-			
+
 			if ((r = (bdbm_llm_req_t*)bdbm_prior_queue_dequeue (p->q, loop, &qitem)) == NULL) {
 				bdbm_sema_unlock (&p->punit_locks[loop]);
 				continue;
 			}
+
+			//tjkim
+			bdbm_msg("llm_deque v: %d, lba: %llu, punit: %llu", _param_dev_num, r->logaddr.lpa[0], r->phyaddr.punit_id);
 
 			r->ptr_qitem = qitem;
 
@@ -253,6 +253,7 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		r->volume = _param_dev_num;
 		/* step 1: put READ first */
 		r->phyaddr = r->phyaddr_src;
+
 		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr_src.punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
@@ -263,6 +264,10 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	} else if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
 		bdbm_bug_on (1);
 	} else {
+		//tjkim
+		bdbm_msg("llm_make_req v: %d, lba: %llu, punit: %llu", _param_dev_num, r->logaddr.lpa[0], r->phyaddr.punit_id);
+		r->volume = _param_dev_num;
+
 		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, r->logaddr.lpa[0], (void*)r))) {
 			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
@@ -292,6 +297,7 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	if (bdbm_is_rmw (r->req_type) && bdbm_is_read(r->req_type)) {
 		/* get a parallel unit ID */
 		/*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
+		
 		bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
 		/*bdbm_msg ("LLM Done: lpa=%llu", r->logaddr.lpa[0]);*/
@@ -313,6 +319,10 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 
 		/* complete a lock */
 		/*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
+
+		//tjkim
+		bdbm_msg("llm_end_req v: %d, lba: %llu, punit: %llu", _param_dev_num, r->logaddr.lpa[0], r->phyaddr.punit_id);
+
 		bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
 		/* update the elapsed time taken by NAND devices */

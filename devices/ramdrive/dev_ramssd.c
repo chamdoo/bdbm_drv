@@ -509,8 +509,19 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 
 			if (elapsed_time_in_us >= punit->target_elapsed_time_us) {
 				void* ptr_req = punit->ptr_req;
+
+				//tjkim
+				//bdbm_llm_req_t* r = ptr_req;
+
 				punit->ptr_req = NULL;
+				
+				//tjkim
+				/*
+				bdbm_msg("cmd_done punit: %llu, v: %d, lpa: %llu,  etime: %llu", 
+						r->phyaddr.punit_id, r->volume, r->logaddr.lpa[0], elapsed_time_in_us);
+				*/
 				bdbm_spin_unlock (&ri->ramssd_lock);
+
 
 				/* call the interrupt handler */
 				ri->intr_handler (ptr_req);
@@ -767,6 +778,8 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 
 		/* register reqs */
 		bdbm_spin_lock (&ri->ramssd_lock);
+		//tjkim
+		//bdbm_msg("send_cmd punit: %llu, v: %d, lpa: %llu, tgt_time: %llu", r->phyaddr.punit_id, r->volume, r->logaddr.lpa[0], target_elapsed_time_us);
 		if (ri->ptr_punits[punit_id].ptr_req == NULL) {
 			ri->ptr_punits[punit_id].ptr_req = (void*)r;
 			bdbm_stopwatch_start (&ri->ptr_punits[punit_id].sw);

@@ -244,6 +244,13 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
+
+	/*
+	//tjkim
+	bdbm_llm_req_t* lr = NULL;
+	uint64_t i = 0;
+	*/
+
 #ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
@@ -254,6 +261,16 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	/* do we need to do garbage collection? */
 	__hlm_nobuf_check_ondemand_gc (bdi, hr);
+
+	/*
+	//tjkim
+	if(bdbm_is_write(hr->req_type) || bdbm_is_read(hr->req_type)) {
+		bdbm_hlm_for_each_llm_req (lr, hr, i) {
+			if(lr->logaddr.lpa != NULL) 
+				bdbm_msg ("           hlm nr: %llu, cnt: %llu, lpa: %llu", hr->nr_llm_reqs, i, lr->logaddr.lpa[0]);
+		}
+	}
+	*/
 
 #if 0
 	/* trigger gc if necessary */
@@ -272,7 +289,7 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 	}
 #endif
-
+	
 	/* perform i/o */
 	if (bdbm_is_trim (hr->req_type)) {
 		if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {

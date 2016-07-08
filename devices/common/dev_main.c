@@ -35,11 +35,14 @@ THE SOFTWARE.
 #endif
 
 #include "bdbm_drv.h"
-//#include "dm_ramdrive.h"
 #include "debug.h"
 #include "algo/abm.h"
 #include "umemory.h"
+#include "uthread.h"
+
 #include "dev_params.h"
+#include "queue/prior_queue.h"
+#include "queue/queue.h"
 
 extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
 bdbm_drv_info_t* _bdi_dm[NR_VOLUMES]; /* for Connectal & RAMSSD */
@@ -59,7 +62,7 @@ bdbm_dm_inf_t _bdbm_aggr_inf = {
 	.open = dm_aggr_open,
 	.close = dm_aggr_close,
 	.make_req = dm_aggr_make_req,
-	.make_reqs = dm_aggr_make_reqs,
+	//.make_reqs = dm_aggr_make_reqs,
 	.end_req = dm_aggr_end_req,
 	.load = dm_aggr_load,
 	.store = dm_aggr_store,
@@ -78,6 +81,27 @@ enum BDBM_AGGR_PBLOCK_STATUS {
 };
 
 bdbm_sema_t aggr_lock;
+bdbm_sema_t* bdbm_aggr_punit_locks = NULL;
+
+bdbm_queue_t* aggr_rq = NULL;
+//bdbm_prior_queue_t* aggr_rq = NULL;
+bdbm_thread_t* aggr_thread = NULL;
+
+//#define ENABLE_SEQ_DBG
+
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_t dbg_seq;
+#endif	
+
+#define PRIORITY_Q
+
+
+uint64_t __convert_to_unique_lpa (uint64_t lpa, uint32_t vol) {
+	uint64_t temp = (uint64_t)vol;
+	uint64_t converted_lpa = lpa | (temp << 60);
+	//bdbm_msg("lpa: %llx, v: %d, conv_lpa: %llx", lpa, vol, converted_lpa);
+	return converted_lpa;
+}
 
 uint64_t __get_aggr_vblock_idx (bdbm_device_params_t* np, uint32_t vol, uint64_t channel_no, uint64_t chip_no, uint64_t blk_no) {
 	bdbm_bug_on (blk_no >= np->nr_blocks_per_chip);
@@ -96,7 +120,6 @@ uint64_t __get_aggr_pblock_idx (bdbm_device_params_t* np, uint64_t channel_no, u
 
 }
 
-
 #if defined (KERNEL_MODE)
 static int __init risa_dev_init (void)
 {
@@ -112,50 +135,79 @@ static void __exit risa_dev_exit (void)
 }
 #endif
 
-#if 0
-int bdbm_dm_init (bdbm_drv_info_t* bdi)
+int __aggr_mq_thread (void* arg)
 {
-	/* see if bdi is valid or not */
-	if (bdi == NULL) {
-		bdbm_warning ("bid is NULL");
-		return 1;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
+	uint64_t nr_punits = BDBM_GET_NR_PUNITS (bdi->parm_dev);
+	uint64_t loop;
+
+	if (aggr_rq == NULL || aggr_thread == NULL) {
+		bdbm_msg ("invalid parameters (aggr_rq=%p, aggr_thread=%p",
+			aggr_rq, aggr_thread);
+		return 0;
 	}
 
-	if (_bdi_dm != NULL) {
-		// need to check? what if it is already allocated.
-		bdbm_warning ("dm_stub is already used by other clients");
-		return 1;
-	}
+	for (;;) {
+		/* give a chance to other processes if Q is empty */
+		//if (bdbm_prior_queue_is_all_empty (aggr_rq)) {
+		if (bdbm_queue_is_all_empty (aggr_rq)) {
+			bdbm_thread_schedule_setup (aggr_thread);
+			if (bdbm_queue_is_all_empty (aggr_rq)) {
+			//if (bdbm_prior_queue_is_all_empty (aggr_rq)) {
+				/* ok... go to sleep */
+				if (bdbm_thread_schedule_sleep (aggr_thread) == SIGKILL)
+					break;
+			} else {
+				/* there are items in Q; wake up */
+				bdbm_thread_schedule_cancel (aggr_thread);
+			}
+		}
 
-	/* initialize global variables */
-	_bdi_dm = bdi;
+		//bdbm_sema_lock(&aggr_lock);
+		/* send reqs until Q becomes empty */
+		for (loop = 0; loop < nr_punits; loop++) {
+			//bdbm_prior_queue_item_t* qitem = NULL;
+			bdbm_llm_req_t* r = NULL;
+
+			/* if pu is busy, then go to the next pnit */
+			if (!bdbm_sema_try_lock (&bdbm_aggr_punit_locks[loop]))
+				continue;
+
+			//if ((r = (bdbm_llm_req_t*)bdbm_prior_queue_dequeue (aggr_rq, loop, &qitem)) == NULL) {
+			if ((r = (bdbm_llm_req_t*)bdbm_queue_dequeue (aggr_rq, loop)) == NULL) {
+				bdbm_sema_unlock (&bdbm_aggr_punit_locks[loop]);
+				continue;
+			}
+
+
+			//tjkim
+			//bdbm_msg("ag_deque punit: %llu, v: %d, lpa: %llu", r->phyaddr.punit_id, r->volume, r->logaddr.lpa[0]);
+
+			//r->ptr_qitem = qitem;
+
+			if (_bdbm_dm_inf.make_req(bdi, r)) {
+				bdbm_sema_unlock (&bdbm_aggr_punit_locks[loop]);
+
+				/* TODO: I do not check whether it works well or not */
+				bdi->ptr_dm_inf->end_req (bdi, r);
+				bdbm_warning ("oops! make_req failed");
+			}
+		}
+
+		//bdbm_sema_unlock(&aggr_lock);
+	}
 
 	return 0;
 }
 
-void bdbm_dm_exit (bdbm_drv_info_t* bdi)
-{
-	_bdi_dm = NULL;
-}
-
-/* NOTE: Export dm_inf to kernel or user applications.
- * This is only supported when both the FTL and the device manager (dm) are compiled 
- * in the same mode (i.e., both KERNEL_MODE or USER_MODE) */
-bdbm_dm_inf_t* bdbm_dm_get_inf (bdbm_drv_info_t* bdi)
-{
-	if (_bdi_dm == NULL) {
-		bdbm_warning ("_bdi_dm is not initialized yet");
-		return NULL;
-	}
-
-	return &_bdbm_dm_inf;
-}
-#endif
 
 int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t nr_virt_blocks = np->nr_blocks_per_ssd * np->nr_volumes;
+	uint64_t nr_punits = BDBM_GET_NR_PUNITS (bdi->parm_dev);
+	uint64_t loop;
+
 
 	if(bdbm_aggr_mapping == NULL) {
 		// TODO: mapping table for blocks between volumes and physical device
@@ -192,6 +244,7 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 	bdi->ptr_dm_inf = &_bdbm_aggr_inf;
 
 	if (run_flag == FALSE) {
+		// works should be done once
 		/* initialize global variables */
 		run_flag = TRUE;
 
@@ -219,11 +272,40 @@ int bdbm_aggr_init (bdbm_drv_info_t* bdi, uint8_t volume)
 				} else 
 					load = 1;
 			}
+
+			/* create queue */
+			//if ((aggr_rq = bdbm_prior_queue_create (nr_punits, INFINITE_QUEUE)) == NULL) {
+			if ((aggr_rq = bdbm_queue_create (nr_punits, INFINITE_QUEUE)) == NULL) {
+				bdbm_error ("bdbm_prior_queue_create failed");
+				goto fail;
+			}
+
+			/* create completion locks for parallel units */
+			if((bdbm_aggr_punit_locks = (bdbm_sema_t*)bdbm_malloc_atomic(sizeof(bdbm_sema_t) * nr_punits)) == NULL) {
+				bdbm_error("bdbm_malloc_atomic failed");
+				goto fail;
+			}
+			for (loop = 0; loop < nr_punits; loop++) {
+				bdbm_sema_init (&bdbm_aggr_punit_locks[loop]);
+			}
+
+			/* create & run a thread */
+			if ((aggr_thread = bdbm_thread_create (
+							__aggr_mq_thread, bdi, "__aggr_mq_thread")) == NULL) {
+				bdbm_error ("kthread_create failed");
+				goto fail;
+			}
+			bdbm_thread_run (aggr_thread);
 		}
 
 		bdbm_sema_init(&aggr_lock);
+#if defined(ENABLE_SEQ_DBG)
+		bdbm_sema_init (dbg_seq);
+#endif
+
 		bdbm_memset(_bdi_dm, 0x00, sizeof(bdbm_drv_info_t*) * NR_VOLUMES);
 	}
+
 	bdbm_bug_on(volume >= NR_VOLUMES);
 	_bdi_dm[volume] = bdi;
 
@@ -235,11 +317,19 @@ fail:
 		bdbm_free(bdbm_aggr_mapping);
 	if(bdbm_aggr_pblock_status)
 		bdbm_free(bdbm_aggr_pblock_status);
+	if (bdbm_aggr_punit_locks)
+		bdbm_free_atomic (bdbm_aggr_punit_locks);
+	if (aggr_rq)
+		bdbm_queue_destroy (aggr_rq);
+		//bdbm_prior_queue_destroy (aggr_rq);
+
 	return 1;
 }
 
 void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 {
+	uint64_t loop;
+	uint64_t nr_punits = BDBM_GET_NR_PUNITS (bdi->parm_dev);
 	if(destroy_flag == FALSE) {
 		destroy_flag = TRUE;
 
@@ -250,6 +340,30 @@ void bdbm_aggr_exit (bdbm_drv_info_t* bdi)
 			bdbm_free(bdbm_aggr_pblock_status);
 
 		bdbm_sema_free(&aggr_lock);
+
+		/* wait until Q becomes empty */
+		//while (!bdbm_prior_queue_is_all_empty (aggr_rq)) {
+		while (!bdbm_queue_is_all_empty (aggr_rq)) {
+			//bdbm_msg ("llm items = %llu", bdbm_prior_queue_get_nr_items (aggr_rq));
+			bdbm_msg ("llm items = %llu", bdbm_queue_get_nr_items (aggr_rq));
+			bdbm_thread_msleep (1);
+		}
+
+		/* kill kthread */
+		bdbm_thread_stop (aggr_thread);
+
+		for (loop = 0; loop < nr_punits; loop++) {
+			bdbm_sema_lock (&bdbm_aggr_punit_locks[loop]);
+		}
+
+		/* release all the relevant data structures */
+		if (aggr_rq)
+			//bdbm_prior_queue_destroy (aggr_rq);
+			bdbm_queue_destroy (aggr_rq);
+
+		if(bdbm_aggr_punit_locks != NULL)
+			bdbm_free_atomic(bdbm_aggr_punit_locks);
+
 	}
 }
 
@@ -348,82 +462,6 @@ uint32_t bdbm_aggr_return_blocks(bdbm_device_params_t *np, uint64_t channel_no, 
 	return 0;
 }
 
-#if 0
-void bdbm_inc_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
-{
-	int loop, block_unit, offset, ac_idx;
-	int *old_ac_blks = NULL;
-	int channel_no, chip_no;
-	bdbm_device_params_t *np = bai->np;
-	bdbm_abm_block_t *bab;
-
-	/* TODO: check if low level device have blocks to give */
-	 
-
-	block_unit = np->nr_channels * np->nr_chips_per_channel;
-
-	if ((old_ac_blks = (int*)bdbm_zmalloc(sizeof(int) * block_unit)) == NULL) {
-		bdbm_error("bdbm_malloc failed");
-	}
-
-	// store old location of active blocks
-	for (loop = 0; loop < block_unit; loop++){
-		bab = ac_bab[loop];
-		channel_no = bab->channel_no;
-		chip_no = bab->chip_no;
-		old_ac_blks[loop] = channel_no * np->nr_chips_per_channel + chip_no;
-	}
-	ac_idx = block_unit-1;
-
-	// re-ordering for new layout 
-	for (loop = np->nr_blocks_per_ssd-1; loop > 0; loop--) {
-		offset = loop / block_unit;
-		memcpy(&(bai->blocks[loop+offset]), &(bai->blocks[loop]), sizeof(bdbm_abm_block_t));
-
-		// TODO: need to check if moving the location of a block affects other parts, e.g. pointer to active block
-		if(old_ac_blks[ac_idx] == loop) {
-			if(ac_idx < 0) { bdbm_error("ac_idx at old_ac_blks is lower than 0"); continue;}
-			ac_bab[ac_idx] = &(bai->blocks[loop+offset]);
-			ac_idx--;
-		}
-	}
-	if(ac_idx != -1) bdbm_error("ac_idx at old_ac_blks is not -1 at the end");		
-	
-	np->nr_blocks_per_chip++;
-	np->nr_blocks_per_ssd = np->nr_channels * np->nr_chips_per_channel * np->nr_blocks_per_chip;
-
-	for (loop = block_unit; loop < np->nr_blocks_per_ssd; loop += np->nr_blocks_per_chip) {
-		// initialization for new blocks
-		bai->blocks[loop].status = BDBM_ABM_BLK_FREE;
-		bai->blocks[loop].channel_no = __get_channel_ofs (np, loop);
-		bai->blocks[loop].chip_no = __get_chip_ofs (np, loop);
-		bai->blocks[loop].block_no = __get_block_ofs (np, loop);
-		bai->blocks[loop].erase_count = 0;
-		bai->blocks[loop].pst = NULL;
-		bai->blocks[loop].nr_invalid_subpages = 0;
-
-		// add the new blocks to free list
-		list_add_tail (&(bai->blocks[loop].list), 
-				&(bai->list_head_free[bai->blocks[loop].channel_no][bai->blocks[loop].chip_no]));
-	}
-	bai->nr_total_blks = np->nr_blocks_per_ssd;
-	bai->nr_free_blks += block_unit;
-
-	bdbm_free(old_ac_blks);
-}
-
-void bdbm_dec_nr_blocks(bdbm_abm_info_t* bai, bdbm_abm_block_t** ac_bab)
-{
-	bdbm_device_params_t *np = bai->np;
-
-	/* TODO: check if high level view have blocks to return */ 
-
-	np->nr_blocks_per_chip--;
-	np->nr_blocks_per_ssd = np->nr_channels * np->nr_chips_per_channel * np->nr_blocks_per_chip;
-}
-#endif
-
-
 uint32_t dm_aggr_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params) {
 	return _bdbm_dm_inf.probe(bdi, params);
 }
@@ -443,27 +481,72 @@ uint32_t dm_aggr_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req){
 	uint64_t org_block_no = ptr_llm_req->phyaddr.block_no;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	uint64_t aggr_idx = __get_aggr_vblock_idx(np, volume, channel_no, chip_no, org_block_no);
+	uint32_t ret;
+
+	//while (bdbm_prior_queue_get_nr_items (aggr_rq) >= 96) {
+	while (bdbm_queue_get_nr_items (aggr_rq) >= 96) {
+		bdbm_thread_yield ();
+	}
+
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_lock (&dbg_seq);
+#endif
 
 	// translate block number
 	bdbm_bug_on (aggr_idx >= np->nr_blocks_per_ssd * np->nr_volumes);
 	ptr_llm_req->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+
+	//bdbm_msg("   enque punit: %llu, v: %d, lpa: %llu", ptr_llm_req->phyaddr.punit_id, volume, ptr_llm_req->logaddr.lpa[0]);
+	/* put a request into Q */
+	/*
+	if ((ret = bdbm_prior_queue_enqueue (aggr_rq, ptr_llm_req->phyaddr.punit_id, 
+					__convert_to_unique_lpa(ptr_llm_req->logaddr.lpa[0], volume), (void*)ptr_llm_req))) {
+					//ptr_llm_req->logaddr.lpa[0], (void*)ptr_llm_req))) {
+		bdbm_msg ("bdbm_prior_queue_enqueue failed");
+	}
+	*/
+
+					
+	if ((ret = bdbm_queue_enqueue (aggr_rq, ptr_llm_req->phyaddr.punit_id, (void*)ptr_llm_req))) {
+		bdbm_msg ("bdbm_queue_enqueue failed");
+	}
+
+	/* wake up thread if it sleeps */
+	bdbm_thread_wakeup (aggr_thread);
+
 /*
 	bdbm_msg("aggr make_req, volume: %d, vblock: %llu, pblock: %llu", 
 			volume, org_block_no, bdbm_aggr_mapping[aggr_idx]);
 */
-	return _bdbm_dm_inf.make_req(bdi, ptr_llm_req);
+	//return _bdbm_dm_inf.make_req(bdi, ptr_llm_req);
+	return 0;
 }
 
 uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	uint32_t volume = hr->volume;
-	uint32_t i;
+	uint32_t i, ret;
 	bdbm_llm_req_t* lr = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 #ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_stopwatch_t aggr_sw;
-
 	bdbm_stopwatch_start(&aggr_sw);
 #endif
+
+	if(aggr_rq == NULL) {
+		bdbm_msg("aggr_rq is NULL");
+		return 1;
+	}
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_lock (&dbg_seq);
+#endif
+
+	/* wait until there are enough free slots in Q */
+	/*
+	while (bdbm_prior_queue_get_nr_items (aggr_rq) >= 96) {
+	//while (bdbm_queue_get_nr_items (aggr_rq) >= 96) {
+		bdbm_thread_yield ();
+	}
+	*/
 
 	// translate block number
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
@@ -473,25 +556,66 @@ uint32_t dm_aggr_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 		uint64_t aggr_idx = __get_aggr_vblock_idx(np, volume, channel_no, chip_no, org_block_no);
 		bdbm_bug_on (aggr_idx >= np->nr_blocks_per_ssd * np->nr_volumes);
 		lr->phyaddr.block_no = bdbm_aggr_mapping[aggr_idx];
+
+		//bdbm_msg("  enques punit: %llu, v: %d, lpa: %llu", lr->phyaddr.punit_id, volume, lr->logaddr.lpa[0]);
+
+		/* put a request into Q */
 		/*
-		if(i == 0) {
-			bdbm_msg("aggr make_reqs, volume: %d, vblock: %llu, pblock: %llu", 
-					volume, org_block_no, bdbm_aggr_mapping[aggr_idx]);
+		if ((ret = bdbm_prior_queue_enqueue (aggr_rq, lr->phyaddr.punit_id, 
+						__convert_to_unique_lpa(lr->logaddr.lpa[0], volume), (void*)lr))) {
+			//lr->logaddr.lpa[0], (void*)lr))) {
+			bdbm_msg ("bdbm_prior_queue_enqueue failed");
 		}
 		*/
+
+		if ((ret = bdbm_queue_enqueue (aggr_rq, lr->phyaddr.punit_id, (void*)lr))){
+			bdbm_msg ("bdbm_queue_enqueue failed");
+		}
+
+		/* wake up thread if it sleeps */
+		if(aggr_thread == NULL) {
+			bdbm_msg("aggr_thread is NULL");
+			return 1;
+		}
+		bdbm_thread_wakeup (aggr_thread);
 	}
 
 #ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_msg("volume: %d, aggr elapsed time: %llu", volume, bdbm_stopwatch_get_elapsed_time_us(&aggr_sw));
 #endif
-	return _bdbm_dm_inf.make_reqs(bdi, hr);
+	//return _bdbm_dm_inf.make_reqs(bdi, hr);
+	return 0;
 }
+
 void dm_aggr_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req) {
+	//bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)ptr_llm_req->ptr_qitem;
+
+	//bdbm_sema_lock(&aggr_lock);
+
 #ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_msg("dm_aggr_end_req");
 #endif
+
+	//bdbm_prior_queue_remove (aggr_rq, qitem);
+
+	/*
+	bdbm_msg(" end_req punit: %llu, v: %d,  lpa: %llu",
+			ptr_llm_req->phyaddr.punit_id, ptr_llm_req->volume, ptr_llm_req->logaddr.lpa[0]);
+	*/
+
+	/* complete a lock */
+	bdbm_sema_unlock (&bdbm_aggr_punit_locks[ptr_llm_req->phyaddr.punit_id]);
+
+	//bdbm_sema_unlock(&aggr_lock);
+	/* update the elapsed time taken by NAND devices */
+
 	bdi->ptr_llm_inf->end_req(bdi, ptr_llm_req);
 	//return _bdbm_dm_inf.end_req(bdi, ptr_llm_req);
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_unlock (&dbg_seq);
+#endif
+
+
 }
 
 uint32_t dm_aggr_load (bdbm_drv_info_t* bdi, const char* fn) {
@@ -511,6 +635,11 @@ void bdbm_aggr_unlock(void) {
 	bdbm_sema_unlock(&aggr_lock);
 }
 
+uint64_t bdbm_aggr_get_nr_queue_items(void) {
+	//return bdbm_prior_queue_get_nr_items(aggr_rq);
+	return bdbm_queue_get_nr_items(aggr_rq);
+}
+
 #if defined (KERNEL_MODE)
 //EXPORT_SYMBOL (bdbm_dm_init);
 //EXPORT_SYMBOL (bdbm_dm_exit);
@@ -522,6 +651,7 @@ EXPORT_SYMBOL (bdbm_aggr_allocate_blocks);
 EXPORT_SYMBOL (bdbm_aggr_return_blocks);
 EXPORT_SYMBOL (bdbm_aggr_lock);
 EXPORT_SYMBOL (bdbm_aggr_unlock);
+EXPORT_SYMBOL (bdbm_aggr_get_nr_queue_items);
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
 MODULE_DESCRIPTION ("RISA Device Wrapper");

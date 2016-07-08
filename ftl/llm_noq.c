@@ -39,6 +39,7 @@ THE SOFTWARE.
 #include "params.h"
 #include "bdbm_drv.h"
 #include "llm_noq.h"
+#include "uthread.h"
 #include "pmu.h"
 #include "utime.h"
 
@@ -49,7 +50,7 @@ bdbm_llm_inf_t _llm_noq_inf = {
 	.create = llm_noq_create,
 	.destroy = llm_noq_destroy,
 	.make_req = llm_noq_make_req,
-	.make_reqs = llm_noq_make_reqs,
+	//.make_reqs = llm_noq_make_reqs,
 	.flush = llm_noq_flush,
 	.end_req = llm_noq_end_req,
 };
@@ -110,6 +111,12 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	cnt++;
 	*/
 
+	/*
+	while (bdbm_aggr_get_nr_queue_items() >= 96) {
+		bdbm_thread_yield ();
+	}
+	*/
+
 	/* update pmu */
 	pmu_update_sw (bdi, llm_req);
 	pmu_update_q (bdi, llm_req);
@@ -117,13 +124,14 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 	llm_req->volume = _param_dev_num;
 	/* send a request to a device manager */
 
-	bdbm_aggr_lock();
+
+	//bdbm_aggr_lock();
 	// need a lock between volumes, global variable? or 
 	if ((ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
 		/* handle error cases */
 		bdbm_error ("llm_make_req failed");
 	}
-	bdbm_aggr_unlock();
+	//bdbm_aggr_unlock();
 
 	return ret;
 }
@@ -140,8 +148,13 @@ uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_stopwatch_start(&intra_req);
 #endif
 
-	bdbm_aggr_lock();
+	/*
+	while (bdbm_aggr_get_nr_queue_items() >= 96) {
+		bdbm_thread_yield ();
+	}
+	*/
 
+	bdbm_aggr_lock();
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
 		/* handle error cases */

@@ -396,4 +396,5 @@ void bdbm_drv_destroy (bdbm_drv_info_t* bdi);
 
 void bdbm_aggr_lock(void);
 void bdbm_aggr_unlock(void);
+uint64_t bdbm_aggr_get_nr_queue_items(void);
 #endif /* _BLUEDBM_DRV_H */

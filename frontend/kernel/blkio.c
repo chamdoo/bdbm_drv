@@ -192,16 +192,29 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	bdbm_blkio_req_t* br = NULL;
 	bdbm_hlm_req_t* hr = NULL;
 
+	/*
+	//tjkim
+	bdbm_llm_req_t* lr = NULL;
+	uint64_t i = 0;
+	*/
+
 #ifdef TIMELINE_DEBUG_TJKIM
 	bdbm_stopwatch_t blkio_sw;
 
 	bdbm_stopwatch_start(&blkio_sw);
 #endif
+
 	/* get blkio */
 	if ((br = __get_blkio_req ((struct bio*)bio)) == NULL) {
 		bdbm_error ("__get_blkio_req () failed");
 		goto fail;
 	}
+
+	/*
+	//tjkim
+	bdbm_msg ("           bio type: %llu, size: %llu, offset: %llu", br->bi_rw, br->bi_size, br->bi_offset);
+	*/
+
 	/* get a free hlm_req from the hlm_reqs_pool */
 	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
 		bdbm_error ("bdbm_hlm_reqs_pool_get_item () failed");
@@ -212,6 +225,17 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
 		goto fail;
 	}
+
+	/*
+	//tjkim
+	if(bdbm_is_write(hr->req_type) || bdbm_is_read(hr->req_type)) {
+		bdbm_hlm_for_each_llm_req (lr, hr, i) {
+			if(lr->logaddr.lpa != NULL) 
+				bdbm_msg ("           blkio nr: %llu, cnt: %llu, lpa: %llu", hr->nr_llm_reqs, i, lr->logaddr.lpa[0]);
+		}
+	}
+	*/
+
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
 	bdbm_sema_lock (&p->host_lock);
