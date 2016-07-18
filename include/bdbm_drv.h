@@ -133,7 +133,8 @@ typedef struct {
 } bdbm_phyaddr_t;
 
 /* max kernel pages per physical flash page */
-#define BDBM_MAX_PAGES 1
+/*#define BDBM_MAX_PAGES 1*/
+#define BDBM_MAX_PAGES 32
 
 /* a bluedbm blockio request */
 #define BDBM_BLKIO_MAX_VECS 512
@@ -380,6 +381,12 @@ struct _bdbm_drv_info_t {
 	bdbm_llm_inf_t* ptr_llm_inf;
 	bdbm_ftl_inf_t* ptr_ftl_inf;
 	bdbm_perf_monitor_t pm;
+
+	/* for nvme */
+	struct request_queue* q;
+	struct gendisk *gd;
+	char disk_name[256];
+	/* end */
 };
 
 /* functions for bdi creation, setup, run, and remove */

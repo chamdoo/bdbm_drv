@@ -43,7 +43,10 @@ THE SOFTWARE.
 
 
 /* llm interface */
+#if 0
 bdbm_llm_inf_t _llm_noq_lock_inf = {
+#endif
+bdbm_llm_inf_t _llm_noq_inf = {
 	.ptr_private = NULL,
 	.create = llm_noq_lock_create,
 	.destroy = llm_noq_lock_destroy,

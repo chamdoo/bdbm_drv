@@ -186,11 +186,20 @@ int bdbm_blk_ioctl (
 
 uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 {
+	uint64_t capacity = 0;
+
 	/* create a blk queue */
-	if (!(bdbm_device.queue = blk_alloc_queue (GFP_KERNEL))) {
+	if (bdi->q == NULL) {
+		bdbm_device.queue = blk_alloc_queue (GFP_KERNEL);
+	} else {
+		bdbm_device.queue = blk_alloc_queue_node (GFP_KERNEL, bdi->q->node);
+		bdbm_msg ("host_blkdev_register_device -> blk_alloc_queue_node");
+	}
+	if (!bdbm_device.queue) {
 		bdbm_error ("blk_alloc_queue failed");
 		return -ENOMEM;
 	}
+
 	blk_queue_make_request (bdbm_device.queue, fn);
 	blk_queue_logical_block_size (bdbm_device.queue, bdi->parm_ftl.kernel_sector_size);
 	blk_queue_io_min (bdbm_device.queue, bdi->parm_dev.page_main_size);
@@ -208,30 +217,40 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 		bdbm_msg ("TRIM is disabled");
 	}
 
-	/* register a blk device */
-	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
-		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
-		return bdbm_device_major_num;
+	/* alloc & register a blk device */
+	if (bdi->q == NULL) {
+		if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, bdi->disk_name)) < 0) {
+			bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
+			return bdbm_device_major_num;
+		}
+		if (!(bdbm_device.gd = alloc_disk (1))) {
+			bdbm_msg ("alloc_disk failed");
+			unregister_blkdev (bdbm_device_major_num, bdi->disk_name);
+			return -ENOMEM;
+		}
+	} else {
+		bdbm_msg ("host_blkdev_register_device -> alloc_disk");
+		if (!(bdbm_device.gd = alloc_disk (0))) {
+			bdbm_msg ("alloc_disk failed");
+			return -ENOMEM;
+		}
+		bdbm_device.gd->flags = GENHD_FL_EXT_DEVT;
 	}
-	if (!(bdbm_device.gd = alloc_disk (1))) {
-		bdbm_msg ("alloc_disk failed");
-		unregister_blkdev (bdbm_device_major_num, "blueDBM");
-		return -ENOMEM;
-	}
+
+	bdi->gd = bdbm_device.gd;
+
 	bdbm_device.gd->major = bdbm_device_major_num;
 	bdbm_device.gd->first_minor = 0;
 	bdbm_device.gd->fops = &bdops;
 	bdbm_device.gd->queue = bdbm_device.queue;
 	bdbm_device.gd->private_data = NULL;
-	strcpy (bdbm_device.gd->disk_name, "blueDBM");
+	strcpy (bdbm_device.gd->disk_name, bdi->disk_name);
 
-	{
-		uint64_t capacity;
-		//capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
-		capacity = bdi->parm_dev.device_capacity_in_byte;
-		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
-		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
-	}
+	/* setup disk capacity */
+	capacity = (bdi->parm_dev.device_capacity_in_byte / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+	set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
+
+	/* add disk */
 	add_disk (bdbm_device.gd);
 
 	return 0;
@@ -241,8 +260,13 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 {
 	/* unregister a BlueDBM device driver */
 	del_gendisk (bdbm_device.gd);
-	put_disk (bdbm_device.gd);
-	unregister_blkdev (bdbm_device_major_num, "blueDBM");
 	blk_cleanup_queue (bdbm_device.queue);
+	put_disk (bdbm_device.gd);
+	if (bdi->q == NULL)
+		unregister_blkdev (bdbm_device_major_num, bdi->disk_name);
+
+	/* clean up */
+	bdbm_device.queue = NULL;
+	bdbm_device.gd = NULL;
 }
 

@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "umemory.h"
 
 
-#define DEFAULT_POOL_SIZE		128
+#define DEFAULT_POOL_SIZE		16
 #define DEFAULT_POOL_INC_SIZE	DEFAULT_POOL_SIZE / 5
 
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (

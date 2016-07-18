@@ -63,6 +63,7 @@ bdbm_drv-y := \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/llm_mq.o \
+	$(FTL)/llm_noq_lock.o \
 	$(FTL)/algo/abm.o \
 	$(FTL)/algo/page_ftl.o \
 	$(FTL)/algo/block_ftl.o \
