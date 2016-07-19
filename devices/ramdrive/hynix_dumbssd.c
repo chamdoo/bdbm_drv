@@ -22,31 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/blkdev.h>
-#include <linux/miscdevice.h>
-#include <linux/vmalloc.h>
+#if defined (KERNEL_MODE)
 #include <linux/slab.h>
+#include <linux/interrupt.h>
 
-#include "bdbm_drv.h"
-#include "debug.h"
-#include "blkio.h"
-#include "devices.h"
-#include "umemory.h"
+#include <linux/workqueue.h> /* workqueue */
 
-bdbm_drv_info_t* _bdi = NULL;
+#else
+#error Invalid Platform (KERNEL_MODE or USER_MODE)
+#endif
 
-/*int ridx = 0;*/
-/*int widx = 0;*/
+#include <linux/nvme.h>
+#include <linux/blk-mq.h>
+#include "hynix_dumbssd.h"
+
 
 #define BITS_PER_SLICE 	6
 #define BITS_PER_WU 	7
 #define BITS_PER_DIE	6
 
-
-#include <linux/nvme.h>
-#include <linux/blk-mq.h>
 
 struct request *nvme_alloc_request(struct request_queue *q,
 		struct nvme_command *cmd, unsigned int flags)
@@ -70,7 +64,13 @@ struct request *nvme_alloc_request(struct request_queue *q,
 	return req;
 }
 
-int simple_read (bdbm_drv_info_t* bdi, int die, int block, int wu)
+int simple_read (
+	bdbm_drv_info_t* bdi, 
+	int die, 
+	int block, 
+	int wu,
+	kp_stt_t* kp_stt,
+	uint8_t** kp_ptr)
 {
 	int ret;
 	struct request *rq;
@@ -82,9 +82,6 @@ int simple_read (bdbm_drv_info_t* bdi, int die, int block, int wu)
 	int req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  wu << (BITS_PER_SLICE);
-
-	if (_bdi == NULL)
-		return 0;
 
 	rq = blk_mq_alloc_request(bdi->q, 0, 0);
 	if (IS_ERR(rq))
@@ -130,7 +127,13 @@ out:
 	return 0;
 }
 
-int simple_write (bdbm_drv_info_t* bdi, int die, int block, int wu)
+int simple_write (
+	bdbm_drv_info_t* bdi, 
+	int die, 
+	int block, 
+	int wu,
+	kp_stt_t* kp_stt,
+	uint8_t** kp_ptr)
 {
 	int ret;
 	struct request *rq;
@@ -143,9 +146,6 @@ int simple_write (bdbm_drv_info_t* bdi, int die, int block, int wu)
 	int req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  wu << (BITS_PER_SLICE);
-
-	if (_bdi == NULL)
-		return 0;
 
 	ubuffer_char[0] = die+1;
 	ubuffer_char[1] = block+1;
@@ -208,16 +208,13 @@ int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
 	__u32 req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  die << (BITS_PER_WU + BITS_PER_SLICE);
 
-	if (_bdi == NULL)
-		return 0;
-
 	ubuffer_char[0] = 
 		(req_ofs >> 24 & 0x000000FF) | 
 		(req_ofs >>  8 & 0x0000FF00) | 
 		(req_ofs <<  8 & 0x00FF0000) |  
 		(req_ofs << 24 & 0xFF000000) ;
 
-	bdbm_msg ("%x %x", ubuffer_char[0], req_ofs);
+	/*bdbm_msg ("%x %x", ubuffer_char[0], req_ofs);*/
 
 	rq = blk_mq_alloc_request(bdi->q, 1, 0);
 	if (IS_ERR(rq))
@@ -242,7 +239,6 @@ int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
 	cmd.common.cdw10[4] = 0;
 	cmd.common.cdw10[5] = 0;
 
-
 	rq->cmd = (unsigned char *)&cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
 	rq->special = (void *)0;
@@ -254,170 +250,58 @@ int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
 	if (ret != 0)
 		bdbm_msg ("ret = %u", ret);
 
-	/*{*/
-	/*char* tmp = (char*)ubuffer;*/
-	/*bdbm_msg ("data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);*/
-	/*}*/
-
 out:
 	kfree (ubuffer);
 	blk_mq_free_request(rq);
 
 	return 0;
-
 }
 
-int bdbm_register (struct request_queue* q, char* disk_name)
+uint32_t hynix_dumbssd_send_cmd (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r)
 {
-	bdbm_msg ("bdbm_register (%s)", disk_name);
+	uint32_t ret = -1;
 
-	/* create bdi with default parameters */
-	if ((_bdi = bdbm_drv_create ()) == NULL) {
-		bdbm_error ("[kmain] bdbm_drv_create () failed");
-		return -ENXIO;
-	}
-
-	/* open the device */
-	if (bdbm_dm_init (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_dm_init () failed");
-		return -ENXIO;
-	}
-
-	/* attach the host & the device interface to the bdbm */
-	if (bdbm_drv_setup (_bdi, &_blkio_inf, bdbm_dm_get_inf (_bdi)) != 0) {
-		bdbm_error ("[kmain] bdbm_drv_setup () failed");
-		return -ENXIO;
-	}
-
-	/* for nvme */
-	_bdi->q = q;
-	if (disk_name)
-		strcpy (_bdi->disk_name, disk_name);
-	else
-		strcpy (_bdi->disk_name, "blueDBM");
-	/* end */
-
-	/* run it */
-	if (bdbm_drv_run (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_drv_run () failed");
-		return -ENXIO;
-	}
-
-#if 0
-	/* send simple read request */
-	bdbm_msg ("begin - simple_read\n");
-	{
-		int i = 0;
-		for (i = 0; i < 1000; i++) {
-			simple_read (_bdi);
-		}
-	}
-	bdbm_msg ("done - simple_read\n");
-	/* end */
-#endif
-
-	return 0;
-}
-EXPORT_SYMBOL(bdbm_register);
-
-void bdbm_unregister (char* disk_name)
-{
-	/* stop running layers */
-	bdbm_drv_close (_bdi);
-
-	/* close the device */
-	bdbm_dm_exit (_bdi);
-
-	/* remove bdbm_drv */
-	bdbm_drv_destroy (_bdi);
-
-	_bdi = NULL;
-
-	bdbm_msg ("bdbm_register (%s)", disk_name);
-}
-EXPORT_SYMBOL(bdbm_unregister);
-
-
-struct user_cmd {
-	int die;
-	int block;
-	int wu;
-};
-
-#define TEST_IOCTL_READ _IO('N', 0x01)
-#define TEST_IOCTL_WRITE _IO('N', 0x02)
-#define TEST_IOCTL_ERASE _IO('N', 0x03)
-
-static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
-{
-	struct user_cmd c;
-
-	if (_bdi == NULL) {
-		return 0;
-	}
-
-	switch (cmd) {
-	case TEST_IOCTL_READ:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_read: %d %d %d", c.die, c.block, c.wu);
-		simple_read (_bdi, c.die, c.block, c.wu);
+	switch (r->req_type) {
+	case REQTYPE_READ_DUMMY:
+		/* do nothing */
 		break;
-	case TEST_IOCTL_WRITE:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_write: %d %d %d", c.die, c.block, c.wu);
-		simple_write (_bdi, c.die, c.block, c.wu);
+	case REQTYPE_WRITE:
+	case REQTYPE_GC_WRITE:
+	case REQTYPE_RMW_WRITE:
+	case REQTYPE_META_WRITE:
+		ret = simple_write (bdi, 
+			r->phyaddr.channel_no, 
+			r->phyaddr.block_no,
+			r->phyaddr.page_no,
+			r->fmain.kp_stt,
+			r->fmain.kp_ptr);
 		break;
-	case TEST_IOCTL_ERASE:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_erase: %d %d", c.die, c.block);
-		simple_erase (_bdi, c.die, c.block);
+
+	case REQTYPE_READ:
+	case REQTYPE_GC_READ:
+	case REQTYPE_RMW_READ:
+	case REQTYPE_META_READ:
+		ret = simple_read (bdi, 
+			r->phyaddr.channel_no, 
+			r->phyaddr.block_no,
+			r->phyaddr.page_no,
+			r->fmain.kp_stt,
+			r->fmain.kp_ptr);
 		break;
+
+	case REQTYPE_GC_ERASE:
+		ret = simple_erase (bdi,
+			r->phyaddr.channel_no, 
+			r->phyaddr.block_no);
+		break;
+
 	default:
-		bdbm_msg ("default");
+		bdbm_error ("invalid REQTYPE (%u)", r->req_type);
+		bdbm_bug_on (1);
 		break;
 	}
-
 	return 0;
 }
 
-static const struct file_operations _ctl_fops = {
-	.open = nonseekable_open,
-	.unlocked_ioctl = nvm_ctl_ioctl,
-	.owner = THIS_MODULE,
-};
-
-static struct miscdevice _nvm_misc = {
-	.minor		= MISC_DYNAMIC_MINOR,
-	.name		= "kernel_nvme",
-	.nodename	= "kernel_nvme/control",
-	.fops		= &_ctl_fops,
-};
-
-MODULE_ALIAS_MISCDEV(MISC_DYNAMIC_MINOR);
-
-static int __init bdbm_drv_init (void)
-{
-	int ret;
-
-	ret = misc_register(&_nvm_misc);
-	if (ret)
-		pr_err("nvm: misc_register failed for control device");
-
-	bdbm_register (NULL, NULL);
-
-	return 0;
-}
-
-static void __exit bdbm_drv_exit(void)
-{
-	misc_deregister(&_nvm_misc);
-
-	bdbm_unregister(NULL);
-}
-
-MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");
-MODULE_DESCRIPTION ("BlueDBM Device Driver");
-MODULE_LICENSE ("GPL");
-
-module_init (bdbm_drv_init);
-module_exit (bdbm_drv_exit);

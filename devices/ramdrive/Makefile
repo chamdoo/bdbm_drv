@@ -27,6 +27,7 @@ risa_dev_ramdrive-y := \
 	$(DEV_COMMON)/dev_stub.o \
 	dev_ramssd.o \
 	dm_ramdrive.o \
+	hynix_dumbssd.o \
 
 obj-m := risa_dev_ramdrive.o
 
