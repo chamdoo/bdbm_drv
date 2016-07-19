@@ -161,9 +161,10 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			break;
 		}
 	}
-	*/
 
 	return ret;
+	*/
+	return 0;
 }
 
 void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)

@@ -28,17 +28,54 @@ THE SOFTWARE.
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdint.h>
 
+struct user_cmd {
+	int die;
+	int block;
+	int wu;
+};
+
+#define TEST_IOCTL_READ _IO('N', 0x01)
+#define TEST_IOCTL_WRITE _IO('N', 0x02)
+#define TEST_IOCTL_ERASE _IO('N', 0x03)
+
+
+void test_read (int32_t dev_h, int die, int block, int wu)
+{
+	struct user_cmd c;
+	c.die = die;
+	c.block = block;
+	c.wu = wu;
+	ioctl (dev_h, TEST_IOCTL_READ, &c);
+}
+
+void test_write (int32_t dev_h, int die, int block, int wu)
+{
+	struct user_cmd c;
+	c.die = die;
+	c.block = block;
+	c.wu = wu;
+	ioctl (dev_h, TEST_IOCTL_WRITE, &c);
+}
+
+void test_erase (int32_t dev_h, int die, int block)
+{
+	struct user_cmd c;
+	c.die = die;
+	c.block = block;
+	ioctl (dev_h, TEST_IOCTL_ERASE, &c);
+}
+
 int main (int argc, char** argv)
 {
 	int32_t dev_h = -1;
 	char* dev_name = "/dev/kernel_nvme/control";
-	int i = 0;
 
 	fprintf (stderr, "BlueDBM format tools (Ver 0.1)\n\n");
 
@@ -51,10 +88,25 @@ int main (int argc, char** argv)
 
 	/* Send a BDBM format command using IOCTL 
 	 * Everything will be done by bdbm_drv.ko */
-	for (i = 0; i < 500; i++) {
-		ioctl (dev_h, 1, 0);
-		ioctl (dev_h, 0, 0);
-	}
+
+	test_erase (dev_h, 0, 0);
+	test_read (dev_h, 0, 0, 0);
+	test_write (dev_h, 0, 0, 0);
+	test_read (dev_h, 1, 1, 0);
+	printf ("\n");
+
+
+	test_erase (dev_h, 1, 1);
+	test_write (dev_h, 1, 1, 0);
+	test_read (dev_h, 1, 1, 0);
+	test_erase (dev_h, 1, 1);
+	test_read (dev_h, 1, 1, 0);
+	printf ("\n");
+
+	test_read (dev_h, 0, 0, 0);
+	printf ("\n");
+
+
 
 	/* close the device */
 	if (dev_h != -1) {
