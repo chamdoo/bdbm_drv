@@ -28,6 +28,10 @@ THE SOFTWARE.
 #include "bdbm_drv.h"
 #include "debug.h"
 
-uint32_t hynix_dumbssd_send_cmd (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+uint32_t hynix_dumbssd_send_cmd (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* r,
+	void (*intr_handler)(void*)
+	);
 
 #endif

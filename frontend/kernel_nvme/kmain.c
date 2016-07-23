@@ -120,7 +120,7 @@ int simple_read (bdbm_drv_info_t* bdi, int die, int block, int wu)
 
 	{
 		char* tmp = (char*)ubuffer;
-		bdbm_msg ("data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);
+		bdbm_msg ("  => data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);
 	}
 
 out:
@@ -203,7 +203,8 @@ int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
 	unsigned bufflen = 64 * 4096;
 	struct nvme_command cmd;
 	void* ubuffer = kzalloc (bufflen, GFP_KERNEL);
-	__le32* ubuffer_char = (__le32*)ubuffer;
+	__le64* ubuffer_64 = (__le64*)ubuffer;
+	/*__le32* ubuffer_32 = (__le32*)ubuffer;*/
 
 	__u32 req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  die << (BITS_PER_WU + BITS_PER_SLICE);
@@ -211,13 +212,9 @@ int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
 	if (_bdi == NULL)
 		return 0;
 
-	ubuffer_char[0] = 
-		(req_ofs >> 24 & 0x000000FF) | 
-		(req_ofs >>  8 & 0x0000FF00) | 
-		(req_ofs <<  8 & 0x00FF0000) |  
-		(req_ofs << 24 & 0xFF000000) ;
+	ubuffer_64[1] = req_ofs;
 
-	bdbm_msg ("%x %x", ubuffer_char[0], req_ofs);
+	/*bdbm_msg ("%x %x %llx", ubuffer_32[0], ubuffer_32[1], ubuffer_64[1]);*/
 
 	rq = blk_mq_alloc_request(bdi->q, 1, 0);
 	if (IS_ERR(rq))
@@ -403,7 +400,7 @@ static int __init bdbm_drv_init (void)
 	if (ret)
 		pr_err("nvm: misc_register failed for control device");
 
-	bdbm_register (NULL, NULL);
+	/*bdbm_register (NULL, NULL);*/
 
 	return 0;
 }
@@ -412,7 +409,7 @@ static void __exit bdbm_drv_exit(void)
 {
 	misc_deregister(&_nvm_misc);
 
-	bdbm_unregister(NULL);
+	/*bdbm_unregister(NULL);*/
 }
 
 MODULE_AUTHOR ("Sungjin Lee <chamdoo@csail.mit.edu>");

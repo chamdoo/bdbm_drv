@@ -79,6 +79,7 @@ exit:
 
 int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 {
+#if 0
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (_bdi);
 	int nr_sectors = np->device_capacity_in_byte >> 9;
 
@@ -92,8 +93,13 @@ int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 			geo->cylinders, 
 			geo->sectors,
 			nr_sectors);
-		return 1;
+		return 0;
 	}
+#else
+	geo->heads = 16;
+	geo->cylinders = 1024;
+	geo->sectors = 256;
+#endif
 	return 0;
 }
 
@@ -247,7 +253,9 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	strcpy (bdbm_device.gd->disk_name, bdi->disk_name);
 
 	/* setup disk capacity */
+	blk_queue_max_hw_sectors (bdbm_device.queue, 8);
 	capacity = (bdi->parm_dev.device_capacity_in_byte / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+	capacity = (capacity) - capacity/10;
 	set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 
 	/* add disk */

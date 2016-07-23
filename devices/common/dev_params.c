@@ -42,11 +42,12 @@ THE SOFTWARE.
 #include "umemory.h"
 #include "debug.h"
 
+#if 0
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*BDBM_MAX_PAGES,
 	NAND_PAGE_OOB_SIZE = 0, /* P2L mapping is not supported yet */
-	NR_PAGES_PER_BLOCK = 128, /* 7-bit (BITS_FOR_WU) */
-	NR_BLOCKS_PER_CHIP = 64, /* 8-bit (BITS_FOR_VBLK) */
+	NR_PAGES_PER_BLOCK = 64, /* 7-bit (BITS_FOR_WU) */
+	NR_BLOCKS_PER_CHIP = 128, /* 8-bit (BITS_FOR_VBLK) */
 	NR_CHIPS_PER_CHANNEL = 1, /* set to 1 by default */
 	NR_CHANNELS = 64, /* 6-bit (BITS_FOR_DIE)  */
 	NAND_HOST_BUS_TRANS_TIME_US = 0,	/* assume to be 0 */
@@ -55,22 +56,21 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
 };
+#endif
 
-#if 0
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*BDBM_MAX_PAGES,
 	NAND_PAGE_OOB_SIZE = 8*BDBM_MAX_PAGES,
-	NR_PAGES_PER_BLOCK = 128,
-	NR_BLOCKS_PER_CHIP = 192/BDBM_MAX_PAGES,
-	NR_CHIPS_PER_CHANNEL = 4,
-	NR_CHANNELS = 8,
+	NR_PAGES_PER_BLOCK = 64,
+	NR_BLOCKS_PER_CHIP = 128,
+	NR_CHIPS_PER_CHANNEL = 1,
+	NR_CHANNELS = 64,
 	NAND_HOST_BUS_TRANS_TIME_US = 0,	/* assume to be 0 */
 	NAND_CHIP_BUS_TRANS_TIME_US = 100,	/* 100us */
 	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
 };
-#endif
 
 int _param_nr_channels 				= NR_CHANNELS;
 int _param_nr_chips_per_channel		= NR_CHIPS_PER_CHANNEL;

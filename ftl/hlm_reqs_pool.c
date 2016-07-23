@@ -419,6 +419,7 @@ static int __hlm_reqs_pool_create_read_req (
 
 	ptr_lr = &hr->llm_reqs[0];
 	for (i = 0; i < nr_llm_reqs; i++) {
+	/*for (i = 0; i < br->bi_bvec_cnt; i++) {*/
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 
 		if (pool->in_place_rmw == 0) 
@@ -442,7 +443,11 @@ static int __hlm_reqs_pool_create_read_req (
 		ptr_lr++;
 	}
 
-	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
+	//bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
+	if (bvec_cnt != br->bi_bvec_cnt) {
+		bdbm_msg ("bvec_cnt: %llu, br->bi_bvec_cnt: %llu", 
+			bvec_cnt, br->bi_bvec_cnt);
+	}
 
 	/* intialize hlm_req */
 	hr->req_type = br->bi_rw;

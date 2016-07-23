@@ -90,11 +90,11 @@ int main (int argc, char** argv)
 	 * Everything will be done by bdbm_drv.ko */
 
 	test_erase (dev_h, 0, 0);
-	test_read (dev_h, 0, 0, 0);
 	test_write (dev_h, 0, 0, 0);
-	test_read (dev_h, 1, 1, 0);
+	test_read (dev_h, 0, 0, 0);
+	test_erase (dev_h, 0, 0);
+	test_read (dev_h, 0, 0, 0);
 	printf ("\n");
-
 
 	test_erase (dev_h, 1, 1);
 	test_write (dev_h, 1, 1, 0);
@@ -102,11 +102,6 @@ int main (int argc, char** argv)
 	test_erase (dev_h, 1, 1);
 	test_read (dev_h, 1, 1, 0);
 	printf ("\n");
-
-	test_read (dev_h, 0, 0, 0);
-	printf ("\n");
-
-
 
 	/* close the device */
 	if (dev_h != -1) {
