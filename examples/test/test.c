@@ -89,19 +89,50 @@ int main (int argc, char** argv)
 	/* Send a BDBM format command using IOCTL 
 	 * Everything will be done by bdbm_drv.ko */
 
-	test_erase (dev_h, 0, 0);
-	test_write (dev_h, 0, 0, 0);
-	test_read (dev_h, 0, 0, 0);
-	test_erase (dev_h, 0, 0);
-	test_read (dev_h, 0, 0, 0);
+	/*
+	test_erase (dev_h, 8, 8);
+	sleep (1);
+	test_write (dev_h, 8, 8, 0);
+	sleep (1);
+	test_read (dev_h, 8, 8, 0);
+	sleep (1);
+	test_erase (dev_h, 8, 8);
+	sleep (1);
+	test_read (dev_h, 8, 8, 0);
 	printf ("\n");
 
+	sleep (1);
 	test_erase (dev_h, 1, 1);
+	sleep (1);
 	test_write (dev_h, 1, 1, 0);
+	sleep (1);
 	test_read (dev_h, 1, 1, 0);
+	sleep (1);
 	test_erase (dev_h, 1, 1);
+	sleep (1);
 	test_read (dev_h, 1, 1, 0);
 	printf ("\n");
+	*/
+	{
+		int die = 0, block = 0, wu = 0;
+
+		printf ("erase...");
+		for (block = 0; block < 10; block++)
+			for (die = 0; die < 64; die++)
+				test_erase (dev_h, die, block);
+
+		printf ("write...");
+		for (block = 0; block < 10; block++)
+			for (wu = 0; wu < 64; wu++) 
+				for (die = 0; die < 64; die++)
+					test_write (dev_h, die, block, wu);
+
+		printf ("read...");
+		for (block = 0; block < 10; block++)
+			for (wu = 0; wu < 64; wu++) 
+				for (die = 0; die < 64; die++)
+					test_read (dev_h, die, block, wu);
+	}
 
 	/* close the device */
 	if (dev_h != -1) {

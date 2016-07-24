@@ -141,7 +141,7 @@ uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req
 
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
 
-#if 0
+#if 1
 	if ((ret = hynix_dumbssd_send_cmd (bdi, ptr_llm_req, __dm_ramdrive_ih)) != 0) {
 		bdbm_error ("hynix_dumbssd_send_cmd");
 	}

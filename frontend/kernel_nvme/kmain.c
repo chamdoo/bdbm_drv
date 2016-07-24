@@ -35,18 +35,59 @@ THE SOFTWARE.
 #include "devices.h"
 #include "umemory.h"
 
-bdbm_drv_info_t* _bdi = NULL;
-
-/*int ridx = 0;*/
-/*int widx = 0;*/
+#include <linux/nvme.h>
+#include <linux/blk-mq.h>
 
 #define BITS_PER_SLICE 	6
 #define BITS_PER_WU 	7
 #define BITS_PER_DIE	6
 
+#define USE_ASYNC
 
-#include <linux/nvme.h>
-#include <linux/blk-mq.h>
+bdbm_drv_info_t* _bdi = NULL;
+
+struct hd_req {
+	bdbm_drv_info_t* bdi;
+	bdbm_llm_req_t* r;
+	int rw;
+	uint64_t die;
+	uint64_t block;
+	uint64_t wu;
+	uint8_t* kp_ptr;
+	void (*intr_handler)(void*);
+};
+
+void print_bio (struct bio* bio) 
+{
+	/*
+	bdbm_msg ("bio->bi_iter.bi_sector = %d", (int)bio->bi_iter.bi_sector);
+	bdbm_msg ("bio->bi_iter.bi_size = %d", (int)bio->bi_iter.bi_size);
+	bdbm_msg ("bio->bi_rw = %d", (int)bio->bi_rw);
+	bdbm_msg ("bio->bi_private = %p", bio->bi_private);
+	bdbm_msg ("bio->bi_end_io = %p", bio->bi_end_io);
+	*/
+}
+
+static void nvme_nvm_end_io (struct request *rq, int error)
+{
+	struct hd_req* hdr = rq->end_io_data;
+
+	if (hdr->rw == READ) {
+		bdbm_msg (" ==> %u %u %u %u", hdr->kp_ptr[0], hdr->kp_ptr[1], hdr->kp_ptr[2], hdr->kp_ptr[3]);
+	}
+
+	if (rq->bio && rq->bio->bi_end_io) {
+		rq->bio->bi_end_io (rq->bio);
+	}
+	if (rq->cmd)
+		kfree (rq->cmd);
+	if (hdr)
+		kfree (hdr);
+	if (hdr->kp_ptr)
+		kfree (hdr->kp_ptr);
+	if (rq)
+		blk_mq_free_request(rq);
+}
 
 struct request *nvme_alloc_request(struct request_queue *q,
 		struct nvme_command *cmd, unsigned int flags)
@@ -70,198 +111,202 @@ struct request *nvme_alloc_request(struct request_queue *q,
 	return req;
 }
 
-int simple_read (bdbm_drv_info_t* bdi, int die, int block, int wu)
+int simple_read (
+	bdbm_drv_info_t* bdi, 
+	struct hd_req* hdr)
 {
-	int ret;
+	struct bio* bio = NULL;
 	struct request *rq;
-	unsigned bufflen = 64 * 4096;
-	struct nvme_command cmd;
-	void* ubuffer = kzalloc (bufflen, GFP_KERNEL);
+	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
+	int req_ofs = hdr->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE) |
+				  hdr->wu << (BITS_PER_SLICE);
 
-	int req_len = 63;
-	int req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
-				  die << (BITS_PER_WU + BITS_PER_SLICE) |
-				  wu << (BITS_PER_SLICE);
+	bdbm_msg ("READ: %llu %llu %llu => %u (%x)", 
+		hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);
 
-	if (_bdi == NULL)
-		return 0;
+	/* [STEP1] setup bio */
+	/*bio = bio_map_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO);*/
+	bio = bio_copy_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO, 1);
+	bio->bi_rw = READ;
+	print_bio (bio);
 
+	/* [STEP2] alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 0, 0);
-	if (IS_ERR(rq))
+	if (IS_ERR(rq)) {
+		bdbm_error ("blk_mq_alloc_request");
+		bdbm_bug_on (1);
 		return -ENOMEM;
-
+	}
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->ioprio = bio_prio(bio);
 
-	ret = blk_rq_map_kern (bdi->q, rq, ubuffer, bufflen, GFP_KERNEL);
-	if (ret)
-		goto out;
+	if (bio_has_data(bio)) {
+		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
+	}
+	rq->__data_len = bio->bi_iter.bi_size;
+	rq->bio = rq->biotail = bio;
 
-	cmd.rw.opcode = 0x02; /* 0x02: READ, 0x01: WRITE */
-	cmd.rw.flags = 0;
-	cmd.rw.nsid = 1;
-	cmd.rw.slba = req_ofs; /* it must be the unit of 255 */
-	cmd.rw.length = req_len; /* it must be the unit of 255 */
-	cmd.rw.control = 0;
-	cmd.rw.dsmgmt = 0;
-	cmd.rw.reftag = 0;
-	cmd.rw.apptag = 0;
-	cmd.rw.appmask = 0;
-
-	rq->cmd = (unsigned char *)&cmd;
+	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
 	rq->special = (void *)0;
-	rq->end_io_data = NULL;
+	rq->end_io_data = hdr;
 
+	/* [STEP3] setup cmd */
+	cmd->rw.opcode = 0x02; /* 0x02: READ, 0x01: WRITE */
+	cmd->rw.flags = 0;
+	cmd->rw.nsid = 1;
+	cmd->rw.slba = req_ofs; /* it must be the unit of 255 */
+	cmd->rw.length = 63; /* it must be the unit of 255 */
+	cmd->rw.control = 0;
+	cmd->rw.dsmgmt = 0;
+	cmd->rw.reftag = 0;
+	cmd->rw.apptag = 0;
+	cmd->rw.appmask = 0;
+
+#ifdef USE_ASYNC
+	blk_execute_rq_nowait (bdi->q, bdi->gd, rq, 0, nvme_nvm_end_io);
+#else
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
+	bdbm_msg (" ==> %u %u %u %u", hdr->kp_ptr[0], hdr->kp_ptr[1], hdr->kp_ptr[2], hdr->kp_ptr[3]);
+	bio->bi_end_io (bio);
+	rq->end_io_data = hdr;
+	nvme_nvm_end_io (rq, 0);
+#endif
 
-	ret = rq->errors;
-	if (ret != 0)
-		bdbm_msg ("ret = %u", ret);
+	return 0;
+}
 
-	{
-		char* tmp = (char*)ubuffer;
-		bdbm_msg ("  => data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);
+int simple_write (
+	bdbm_drv_info_t* bdi, 
+	struct hd_req* hdr)
+{
+	struct bio* bio = NULL;
+	struct request *rq;
+	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
+	int req_ofs = hdr->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE) |
+				  hdr->wu << (BITS_PER_SLICE);
+
+	hdr->kp_ptr[0] = hdr->block;
+	hdr->kp_ptr[1] = hdr->die;
+	hdr->kp_ptr[2] = hdr->wu;
+	bdbm_msg ("WRITE: %llu %llu %llu => %u (%x)", hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);
+
+	/* setup bio */
+	/*bio = bio_map_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO);*/
+	bio = bio_copy_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO, 0);
+	bio->bi_rw = WRITE;
+	print_bio (bio);
+
+	/* allocate request */
+	rq = blk_mq_alloc_request (bdi->q, 1, 0);
+	if (IS_ERR(rq)) {
+		bdbm_error ("blk_mq_alloc_request");
+		bdbm_bug_on (1);
+		return -ENOMEM;
 	}
 
-out:
-	kfree (ubuffer);
-	blk_mq_free_request(rq);
-
-	return 0;
-}
-
-int simple_write (bdbm_drv_info_t* bdi, int die, int block, int wu)
-{
-	int ret;
-	struct request *rq;
-	unsigned bufflen = 64 * 4096;
-	struct nvme_command cmd;
-	void* ubuffer = kzalloc (bufflen, GFP_KERNEL);
-	char* ubuffer_char = (char*)ubuffer;
-
-	int req_len = 63;
-	int req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
-				  die << (BITS_PER_WU + BITS_PER_SLICE) |
-				  wu << (BITS_PER_SLICE);
-
-	if (_bdi == NULL)
-		return 0;
-
-	ubuffer_char[0] = die+1;
-	ubuffer_char[1] = block+1;
-	ubuffer_char[2] = wu+1;
-	ubuffer_char[3] = 0;
-
-	rq = blk_mq_alloc_request(bdi->q, 1, 0);
-	if (IS_ERR(rq))
-		return -ENOMEM;
-
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->ioprio = bio_prio(bio);
+	if (bio_has_data(bio))
+		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
+	rq->__data_len = bio->bi_iter.bi_size;
+	rq->bio = rq->biotail = bio;
 
-	ret = blk_rq_map_kern (bdi->q, rq, ubuffer, bufflen, GFP_KERNEL);
-	if (ret)
-		goto out;
-
-	cmd.rw.opcode = 0x01; /* 0x02: READ, 0x01: WRITE */
-	cmd.rw.flags = 0;
-	cmd.rw.nsid = 1;
-	cmd.rw.slba = req_ofs; /* it must be the unit of 255 */
-	cmd.rw.length = req_len; /* it must be the unit of 255 */
-	cmd.rw.control = 0;
-	cmd.rw.dsmgmt = 0;
-	cmd.rw.reftag = 0;
-	cmd.rw.apptag = 0;
-	cmd.rw.appmask = 0;
-
-	rq->cmd = (unsigned char *)&cmd;
+	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
 	rq->special = (void *)0;
-	rq->end_io_data = NULL;
+	rq->end_io_data = hdr;
 
+	/* setup cmd */
+	cmd->rw.opcode = 0x01; /* 0x02: READ, 0x01: WRITE */
+	cmd->rw.flags = 0;
+	cmd->rw.nsid = 1;
+	cmd->rw.slba = req_ofs; /* it must be the unit of 255 */
+	cmd->rw.length = 63; /* it must be the unit of 255 */
+	cmd->rw.control = 0;
+	cmd->rw.dsmgmt = 0;
+	cmd->rw.reftag = 0;
+	cmd->rw.apptag = 0;
+	cmd->rw.appmask = 0;
+
+#ifdef USE_ASYNC
+	blk_execute_rq_nowait (bdi->q, bdi->gd, rq, 0, nvme_nvm_end_io);
+#else
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
-
-	ret = rq->errors;
-	if (ret != 0)
-		bdbm_msg ("ret = %u", ret);
-
-	/*{*/
-	/*char* tmp = (char*)ubuffer;*/
-	/*bdbm_msg ("data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);*/
-	/*}*/
-
-out:
-	kfree (ubuffer);
-	blk_mq_free_request(rq);
+	bio->bi_end_io (bio);
+	rq->end_io_data = hdr;
+	nvme_nvm_end_io (rq, 0);
+#endif
 
 	return 0;
 }
 
-int simple_erase (bdbm_drv_info_t* bdi, int die, int block)
+int simple_erase (
+	bdbm_drv_info_t* bdi, 
+	struct hd_req* hdr)
 {
-	int ret;
 	struct request *rq;
-	unsigned bufflen = 64 * 4096;
-	struct nvme_command cmd;
-	void* ubuffer = kzalloc (bufflen, GFP_KERNEL);
-	__le64* ubuffer_64 = (__le64*)ubuffer;
-	/*__le32* ubuffer_32 = (__le32*)ubuffer;*/
-
-	__u32 req_ofs = block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
-				  die << (BITS_PER_WU + BITS_PER_SLICE);
-
-	if (_bdi == NULL)
-		return 0;
+	struct bio* bio = NULL;
+	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
+	__u32 req_ofs = hdr->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE);
+	__le64* ubuffer_64 = (__le64*)hdr->kp_ptr;
+	
+	bdbm_msg ("ERASE: %llu %llu => %u (%x)", hdr->block, hdr->die, req_ofs, req_ofs);
 
 	ubuffer_64[1] = req_ofs;
 
-	/*bdbm_msg ("%x %x %llx", ubuffer_32[0], ubuffer_32[1], ubuffer_64[1]);*/
+	/* setup bio */
+	/*bio = bio_map_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO);*/
+	bio = bio_copy_kern (bdi->q, hdr->kp_ptr, 64*4096, GFP_NOIO, 0);
+	bio->bi_rw = WRITE;
+	print_bio (bio);
 
+	/* alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 1, 0);
-	if (IS_ERR(rq))
+	if (IS_ERR(rq)) {
+		bdbm_error ("blk_mq_alloc_request");
+		bdbm_bug_on (1);
 		return -ENOMEM;
+	}
 
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->ioprio = bio_prio(bio);
+	if (bio_has_data(bio))
+		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
+	rq->__data_len = bio->bi_iter.bi_size;
+	rq->bio = rq->biotail = bio;
 
-	ret = blk_rq_map_kern (bdi->q, rq, ubuffer, bufflen, GFP_KERNEL);
-	if (ret)
-		goto out;
-
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.common.opcode = 9;
-	cmd.common.flags = 0;
-	cmd.common.nsid = 1;
-	cmd.common.cdw2[0] = 0;
-	cmd.common.cdw2[1] = 0;
-	cmd.common.cdw10[0] = 0;
-	cmd.common.cdw10[1] = 4;
-	cmd.common.cdw10[2] = 0;
-	cmd.common.cdw10[3] = 0;
-	cmd.common.cdw10[4] = 0;
-	cmd.common.cdw10[5] = 0;
-
-
-	rq->cmd = (unsigned char *)&cmd;
+	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
 	rq->special = (void *)0;
-	rq->end_io_data = NULL;
+	rq->end_io_data = hdr;
 
+	/* setup cmd */
+	cmd->common.opcode = 9;
+	cmd->common.flags = 0;
+	cmd->common.nsid = 1;
+	cmd->common.cdw2[0] = 0;
+	cmd->common.cdw2[1] = 0;
+	cmd->common.cdw10[0] = 0;
+	cmd->common.cdw10[1] = 4;
+	cmd->common.cdw10[2] = 0;
+	cmd->common.cdw10[3] = 0;
+	cmd->common.cdw10[4] = 0;
+	cmd->common.cdw10[5] = 0;
+
+#ifdef USE_ASYNC
+	blk_execute_rq_nowait (bdi->q, bdi->gd, rq, 0, nvme_nvm_end_io);
+#else 
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
-
-	ret = rq->errors;
-	if (ret != 0)
-		bdbm_msg ("ret = %u", ret);
-
-	/*{*/
-	/*char* tmp = (char*)ubuffer;*/
-	/*bdbm_msg ("data: %x %x %x %x", tmp[0], tmp[1], tmp[2], tmp[3]);*/
-	/*}*/
-
-out:
-	kfree (ubuffer);
-	blk_mq_free_request(rq);
+	bio->bi_end_io (bio);
+	rq->end_io_data = hdr;
+	nvme_nvm_end_io (rq, 0);
+#endif
 
 	return 0;
-
 }
 
 int bdbm_register (struct request_queue* q, char* disk_name)
@@ -348,26 +393,33 @@ struct user_cmd {
 static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
 {
 	struct user_cmd c;
+	struct hd_req* hc = kzalloc (sizeof (struct hd_req), GFP_KERNEL);
 
-	if (_bdi == NULL) {
+	if (_bdi == NULL)
 		return 0;
-	}
+
+	copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
+	
+	hc->bdi = _bdi;
+	hc->r = NULL;
+	hc->die = c.die;
+	hc->block = c.block;
+	hc->wu = c.wu;
+	hc->kp_ptr = kzalloc (4096*64, GFP_KERNEL);
+	hc->intr_handler = NULL;
 
 	switch (cmd) {
 	case TEST_IOCTL_READ:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_read: %d %d %d", c.die, c.block, c.wu);
-		simple_read (_bdi, c.die, c.block, c.wu);
+		hc->rw = READ;
+		simple_read (_bdi, hc);
 		break;
 	case TEST_IOCTL_WRITE:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_write: %d %d %d", c.die, c.block, c.wu);
-		simple_write (_bdi, c.die, c.block, c.wu);
+		hc->rw = WRITE;
+		simple_write (_bdi, hc);
 		break;
 	case TEST_IOCTL_ERASE:
-		copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
-		bdbm_msg ("simple_erase: %d %d", c.die, c.block);
-		simple_erase (_bdi, c.die, c.block);
+		hc->rw = 0xff;
+		simple_erase (_bdi, hc);
 		break;
 	default:
 		bdbm_msg ("default");

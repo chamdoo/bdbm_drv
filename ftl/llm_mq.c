@@ -49,7 +49,7 @@ THE SOFTWARE.
 
 /* NOTE: This serializes all of the requests from the host file system; 
  * it is useful for debugging */
-/*#define ENABLE_SEQ_DBG*/
+#define ENABLE_SEQ_DBG
 
 
 /* llm interface */
@@ -248,7 +248,7 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	pmu_update_sw (bdi, r);
 
 	/* wait until there are enough free slots in Q */
-	while (bdbm_prior_queue_get_nr_items (p->q) > 1) {
+	while (bdbm_prior_queue_get_nr_items (p->q) > 96) {
 		bdbm_thread_yield ();
 	}
 
