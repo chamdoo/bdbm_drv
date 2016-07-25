@@ -49,7 +49,7 @@ THE SOFTWARE.
 
 /* NOTE: This serializes all of the requests from the host file system; 
  * it is useful for debugging */
-#define ENABLE_SEQ_DBG
+/*#define ENABLE_SEQ_DBG*/
 
 
 /* llm interface */

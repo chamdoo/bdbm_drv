@@ -390,6 +390,7 @@ struct user_cmd {
 #define TEST_IOCTL_WRITE _IO('N', 0x02)
 #define TEST_IOCTL_ERASE _IO('N', 0x03)
 
+#if 0
 static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
 {
 	struct user_cmd c;
@@ -428,6 +429,52 @@ static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
 
 	return 0;
 }
+#endif
+
+static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
+{
+	struct user_cmd c;
+	struct hd_req* hc = NULL;
+	int die = 0;
+
+	if (_bdi == NULL)
+		return 0;
+
+	copy_from_user (&c, (struct user_cmd __user*)arg, sizeof(struct user_cmd));
+
+	for (die = 0; die < 64; die++) {
+		struct hd_req* hc = kzalloc (sizeof (struct hd_req), GFP_KERNEL);
+
+		hc->bdi = _bdi;
+		hc->r = NULL;
+		hc->die = die;
+		hc->block = c.block;
+		hc->wu = c.wu;
+		hc->kp_ptr = kzalloc (4096*64, GFP_KERNEL);
+		hc->intr_handler = NULL;
+
+		switch (cmd) {
+		case TEST_IOCTL_READ:
+			hc->rw = READ;
+			simple_read (_bdi, hc);
+			break;
+		case TEST_IOCTL_WRITE:
+			hc->rw = WRITE;
+			simple_write (_bdi, hc);
+			break;
+		case TEST_IOCTL_ERASE:
+			hc->rw = 0xff;
+			simple_erase (_bdi, hc);
+			break;
+		default:
+			bdbm_msg ("default");
+			break;
+		}
+	}
+
+	return 0;
+}
+
 
 static const struct file_operations _ctl_fops = {
 	.open = nonseekable_open,

@@ -136,12 +136,8 @@ uint32_t llm_noq_lock_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 
 	pmu_update_sw (bdi, llm_req);
 
-	bdbm_msg ("test");
-
 	/* send a request to a device manager */
 	ret = bdi->ptr_dm_inf->make_req (bdi, llm_req);
-
-	bdbm_msg ("test-done");
 
 	/* handle error cases */
 	if (ret != 0) {

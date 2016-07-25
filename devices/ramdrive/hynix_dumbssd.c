@@ -64,33 +64,50 @@ void print_bio (struct bio* bio)
 	bdbm_msg ("bio->bi_end_io = %p", bio->bi_end_io);
 }
 
+bdbm_sema_t dbg_seq;
+
 static void nvme_nvm_end_io (struct request *rq, int error)
 {
 	struct hd_req* hdr = rq->end_io_data;
+	bdbm_llm_req_t* r = hdr->r;
+	void (*fn) (void*);
 
-	/*
-	if (hdr->rw == READ) {
-		bdbm_msg (" ==> %u %u %u %u", hdr->kp_ptr[0], hdr->kp_ptr[1], hdr->kp_ptr[2], hdr->kp_ptr[3]);
+	/*bdbm_msg ("nvme_nvm_end_io -- callback");*/
+
+	static int init = 0, parallel = 0;;
+	if (init == 0) {
+		bdbm_sema_init (&dbg_seq);
+		init = 1;
 	}
-	*/
 
-	bdbm_msg ("nvme_nvm_end_io -- callback");
+	bdbm_sema_lock (&dbg_seq);
 
+	if (parallel > 1) 
+		bdbm_msg ("what???");
+	parallel++;
+
+	fn = hdr->intr_handler;
+
+	if (rq->bio && rq->bio->bi_end_io)
+		rq->bio->bi_end_io (rq->bio);
 	if (hdr->rw == READ)
 		memcpy (hdr->kp_ptr, hdr->buffer, 4096);
-
-	hdr->intr_handler (hdr->r);
-
-	if (rq->bio)
-		bio_put (rq->bio);
 	if (rq->cmd)
 		kfree (rq->cmd);
-	if (hdr->buffer)
-		kfree(hdr->buffer);
 	if (hdr)
 		kfree (hdr);
+	if (hdr->buffer)
+		kfree(hdr->buffer);
 	if (rq)
 		blk_mq_free_request(rq);
+
+	fn (r);
+
+	parallel--;
+
+	bdbm_sema_unlock (&dbg_seq);
+
+	/*bdbm_msg ("nvme_nvm_end_io -- callback - done");*/
 }
 
 int simple_read (
@@ -104,15 +121,14 @@ int simple_read (
 				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  hdr->wu << (BITS_PER_SLICE);
 
-	bdbm_msg ("READ: %llu %llu %llu => %u (%x)", 
-			hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);
+	bdbm_bug_on (cmd == NULL);
+
+	/*bdbm_msg ("READ: %llu %llu %llu => %u (%x)", hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);*/
 
 	/* [STEP1] setup bio */
 	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL);*/
-	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL, 1);
-	/*bio_get (bio);*/
+	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 1);
 	bio->bi_rw = READ;
-	/*print_bio (bio);*/
 
 	/* [STEP2] alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 0, 0);
@@ -122,6 +138,7 @@ int simple_read (
 		return -ENOMEM;
 	}
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
 	rq->ioprio = bio_prio(bio);
 
 	if (bio_has_data(bio)) {
@@ -149,10 +166,9 @@ int simple_read (
 
 #ifdef USE_ASYNC
 	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*nvme_nvm_end_io (rq, 0);*/
 #else
-	blk_execute_rq (bdi->q, NULL, rq, 0);
-	/*bdbm_msg (" ==> %u %u %u %u", hdr->kp_ptr[0], hdr->kp_ptr[1], hdr->kp_ptr[2], hdr->kp_ptr[3]);*/
-	/*bio->bi_end_io (bio);*/
+	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
 	rq->end_io_data = hdr;
 	nvme_nvm_end_io (rq, 0);
 #endif
@@ -171,14 +187,16 @@ int simple_write (
 				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  hdr->wu << (BITS_PER_SLICE);
 
-	bdbm_msg ("WRITE: %llu %llu %llu => %u (%x)", hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);
+	bdbm_bug_on (cmd == NULL);
+
+	/*bdbm_msg ("WRITE: %llu %llu %llu => %u (%x)", hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);*/
 
 	/* setup bio */
 	memcpy (hdr->buffer, hdr->kp_ptr, 4096);
-	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL);*/
+	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO);*/
 	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 0);
+	bdbm_bug_on (bio == NULL);
 	bio->bi_rw = WRITE;
-	/*print_bio (bio);*/
 
 	/* allocate request */
 	rq = blk_mq_alloc_request (bdi->q, 1, 0);
@@ -189,6 +207,7 @@ int simple_write (
 	}
 
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
 	rq->ioprio = bio_prio(bio);
 	if (bio_has_data(bio))
 		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
@@ -214,9 +233,9 @@ int simple_write (
 
 #ifdef USE_ASYNC
 	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*nvme_nvm_end_io (rq, 0);*/
 #else
-	blk_execute_rq (bdi->q, NULL, rq, 0);
-	/*bio->bi_end_io (bio);*/
+	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
 	rq->end_io_data = hdr;
 	nvme_nvm_end_io (rq, 0);
 #endif
@@ -234,17 +253,17 @@ int simple_erase (
 	__u32 req_ofs = hdr->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE);
 	__le64* ubuffer_64 = (__le64*)hdr->buffer;
+
+	bdbm_bug_on (cmd == NULL);
 	
-	bdbm_msg ("ERASE: %llu %llu => %u (%x)", hdr->block, hdr->die, req_ofs, req_ofs);
+	/*bdbm_msg ("ERASE: %llu %llu => %u (%x)", hdr->block, hdr->die, req_ofs, req_ofs);*/
 
 	ubuffer_64[1] = req_ofs;
 
 	/* setup bio */
 	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL);*/
-	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL, 0);
-	/*bio_get (bio);*/
+	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 0);
 	bio->bi_rw = WRITE;
-	/*print_bio (bio);*/
 
 	/* alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 1, 0);
@@ -255,6 +274,7 @@ int simple_erase (
 	}
 
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
+	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
 	rq->ioprio = bio_prio(bio);
 	if (bio_has_data(bio))
 		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
@@ -281,9 +301,9 @@ int simple_erase (
 
 #ifdef USE_ASYNC
 	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*nvme_nvm_end_io (rq, 0);*/
 #else 
-	blk_execute_rq (bdi->q, NULL, rq, 0);
-	/*bio->bi_end_io (bio);*/
+	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
 	rq->end_io_data = hdr;
 	nvme_nvm_end_io (rq, 0);
 #endif
@@ -299,6 +319,8 @@ uint32_t hynix_dumbssd_send_cmd (
 	uint32_t ret = -1;
 	struct hd_req* hdr = kzalloc (sizeof (struct hd_req), GFP_KERNEL);
 
+	bdbm_bug_on (hdr == NULL);
+
 	hdr->bdi = bdi;
 	hdr->r = r;
 	hdr->die = r->phyaddr.channel_no;
@@ -307,6 +329,8 @@ uint32_t hynix_dumbssd_send_cmd (
 	hdr->intr_handler = intr_handler;
 	hdr->buffer = kzalloc (4096*64, GFP_KERNEL);
 	hdr->kp_ptr = r->fmain.kp_ptr[0];
+
+	bdbm_bug_on (hdr->buffer == NULL);
 
 	switch (r->req_type) {
 	case REQTYPE_READ_DUMMY:
@@ -343,5 +367,6 @@ uint32_t hynix_dumbssd_send_cmd (
 
 	return 0;
 }
+EXPORT_SYMBOL (hynix_dumbssd_send_cmd);
 
 

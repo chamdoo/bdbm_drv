@@ -241,6 +241,7 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 			return -ENOMEM;
 		}
 		bdbm_device.gd->flags = GENHD_FL_EXT_DEVT;
+		bdbm_msg ("host_blkdev_register_device -> alloc_disk - done");
 	}
 
 	bdi->gd = bdbm_device.gd;
@@ -253,13 +254,15 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	strcpy (bdbm_device.gd->disk_name, bdi->disk_name);
 
 	/* setup disk capacity */
-	blk_queue_max_hw_sectors (bdbm_device.queue, 8);
+	/*blk_queue_max_hw_sectors (bdbm_device.queue, 8);*/
 	capacity = (bdi->parm_dev.device_capacity_in_byte / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
 	capacity = (capacity) - capacity/10;
 	set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 
 	/* add disk */
+	bdbm_msg ("add_disk");
 	add_disk (bdbm_device.gd);
+	bdbm_msg ("add_disk - done");
 
 	return 0;
 }

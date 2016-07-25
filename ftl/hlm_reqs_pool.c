@@ -267,6 +267,7 @@ void hlm_reqs_pool_allocate_llm_reqs (
 			fo->data = (uint8_t*)bdbm_malloc_phy (8*BDBM_MAX_PAGES);
 		else
 			fo->data = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
+		bdbm_sema_init (&llm_reqs[i].done);
 	}
 }
 

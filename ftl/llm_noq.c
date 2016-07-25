@@ -41,6 +41,7 @@ THE SOFTWARE.
 #include "llm_noq.h"
 #include "pmu.h"
 
+/*#define ENABLE_SEQ_DBG*/
 
 /* llm interface */
 bdbm_llm_inf_t _llm_noq_inf = {
@@ -48,13 +49,17 @@ bdbm_llm_inf_t _llm_noq_inf = {
 	.create = llm_noq_create,
 	.destroy = llm_noq_destroy,
 	.make_req = llm_noq_make_req,
-	.make_reqs = llm_noq_make_reqs,
+	/*.make_reqs = llm_noq_make_reqs,*/
+	.make_reqs = NULL,
 	.flush = llm_noq_flush,
 	.end_req = llm_noq_end_req,
 };
 
 struct bdbm_llm_noq_private {
 	uint32_t dummy;
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_t dbg_seq;
+#endif	
 };
 
 uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
@@ -74,6 +79,10 @@ uint32_t llm_noq_create (bdbm_drv_info_t* bdi)
 
 	/* keep the private structures for llm_nt */
 	bdi->ptr_llm_inf->ptr_private = (void*)p;
+
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_init (&p->dbg_seq);
+#endif
 
 	return 0;
 }
@@ -96,19 +105,28 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	uint32_t ret;
 	static uint64_t cnt = 0;
 
+#if defined(ENABLE_SEQ_DBG)
+	struct bdbm_llm_noq_private* p = BDBM_LLM_PRIV(bdi);
+	bdbm_sema_lock (&p->dbg_seq);
+#endif
+
 	/* just for display */
 	if (cnt % 50000 == 0) bdbm_msg ("llm_noq_make_req: %llu", cnt);
 	cnt++;
 
 	/* update pmu */
-	pmu_update_sw (bdi, r);
-	pmu_update_q (bdi, r);
+	/*pmu_update_sw (bdi, r);*/
+	/*pmu_update_q (bdi, r);*/
+
+	bdbm_msg ("llm_noq_make_req");
 
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_req (bdi, r)) != 0) {
 		/* handle error cases */
 		bdbm_error ("llm_make_req failed");
 	}
+
+	bdbm_msg ("llm_noq_make_req - done");
 
 	return ret;
 }
@@ -134,8 +152,13 @@ void llm_noq_flush (bdbm_drv_info_t* bdi)
 void llm_noq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	/* update pmu */
-	pmu_update_tot (bdi, r);
-	pmu_inc (bdi, r);
+	/*pmu_update_tot (bdi, r);*/
+	/*pmu_inc (bdi, r);*/
+
+#if defined(ENABLE_SEQ_DBG)
+	struct bdbm_llm_noq_private* p = BDBM_LLM_PRIV(bdi);
+	bdbm_sema_unlock (&p->dbg_seq);
+#endif
 
 	/* finish a request */
 	bdi->ptr_hlm_inf->end_req (bdi, r);

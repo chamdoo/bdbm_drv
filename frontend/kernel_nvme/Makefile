@@ -6,7 +6,8 @@ INCLUDE := ../../include
 COMMON := ../../common
 DM_COMMON := ../../devices/common
 
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
@@ -63,7 +64,7 @@ bdbm_drv-y := \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/llm_mq.o \
-	$(FTL)/llm_noq_lock.o \
+	$(FTL)/llm_noq.o \
 	$(FTL)/algo/abm.o \
 	$(FTL)/algo/page_ftl.o \
 	$(FTL)/algo/block_ftl.o \
