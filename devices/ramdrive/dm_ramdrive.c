@@ -41,6 +41,8 @@ THE SOFTWARE.
 #include "utime.h"
 #include "umemory.h"
 
+#include "hynix_dumbssd.h"
+
 
 /* interface for dm */
 bdbm_dm_inf_t _bdbm_dm_inf = {
@@ -55,9 +57,14 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 	.store = dm_ramdrive_store,
 };
 
+#define ENABLE_SEQ_DBG
+
 /* private data structure for dm */
 typedef struct {
 	dev_ramssd_info_t *ramssd;
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_t dbg_seq;
+#endif
 } dm_ramssd_private_t;
 
 /* global data structure */
@@ -100,6 +107,10 @@ uint32_t dm_ramdrive_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		goto fail;
 	} 
 
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_init (&p->dbg_seq);
+#endif
+
 	/* OK! keep private info */
 	bdi->ptr_dm_inf->ptr_private = (void*)p;
 
@@ -136,12 +147,36 @@ void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	uint32_t ret;
+
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
 
+#if 1
+	/*if ((ret = dev_ramssd_send_cmd (p->ramssd, ptr_llm_req)) != 0) {*/
+	/*bdbm_error ("dev_ramssd_send_cmd failed");*/
+	/*}*/
+
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_lock (&p->dbg_seq);
+#endif
+
+	if ((ret = hynix_dumbssd_send_cmd (bdi, ptr_llm_req, __dm_ramdrive_ih)) != 0) {
+		bdbm_error ("hynix_dumbssd_send_cmd");
+	}
+
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_unlock (&p->dbg_seq);
+#endif
+
+#else
+	bdbm_msg ("hynix_dumbssd_send_cmd");
 	if ((ret = dev_ramssd_send_cmd (p->ramssd, ptr_llm_req)) != 0) {
 		bdbm_error ("dev_ramssd_send_cmd failed");
-		/* there is nothing to do */
 	}
+
+	/*if ((ret = hynix_dumbssd_send_cmd (bdi, ptr_llm_req, __dm_ramdrive_ih)) != 0) {*/
+	/*bdbm_error ("hynix_dumbssd_send_cmd");*/
+	/*}*/
+#endif
 
 	return ret;
 }
@@ -150,6 +185,7 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 #include "../../ftl/hlm_reqs_pool.h"
 
+	/*
 	uint32_t i, ret = 1;
 	bdbm_llm_req_t* lr = NULL;
 	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
@@ -162,6 +198,9 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 
 	return ret;
+	*/
+
+	return 0;
 }
 
 void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
