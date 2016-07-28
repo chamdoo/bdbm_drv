@@ -69,11 +69,9 @@ THE SOFTWARE.
 #define bdbm_spinlock_t spinlock_t
 #define bdbm_spin_lock_init(a) spin_lock_init(a)
 #define bdbm_spin_lock(a) spin_lock(a)
-/*#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)*/
-#define bdbm_spin_lock_irqsave(a,flag) spin_lock(a)
+#define bdbm_spin_lock_irqsave(a,flag) spin_lock_irqsave(a,flag)
 #define bdbm_spin_unlock(a) spin_unlock(a)
-/*#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)*/
-#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock(a)
+#define bdbm_spin_unlock_irqrestore(a,flag) spin_unlock_irqrestore(a,flag)
 #define bdbm_spin_lock_destory(a)
 
 

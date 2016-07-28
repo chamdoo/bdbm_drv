@@ -28,7 +28,6 @@ risa_dev_ramdrive_timing-y := \
 	$(DEV_COMMON)/dev_stub.o \
 	../ramdrive/dev_ramssd.o \
 	../ramdrive/dm_ramdrive.o \
-	../ramdrive/hynix_dumbssd.o \
 
 obj-m := risa_dev_ramdrive_timing.o
 

@@ -202,11 +202,11 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
 
 	/* remove blkio_req */
+	/*
 	{
 		int i = 0;
 		for (i = 0; i < r->bi_bvec_cnt; i++) {
 			if (bdbm_is_read (r->bi_rw)) {
-			/*
 			if (r->bi_bvec_ptr[i][0] != 0x0A ||
 				r->bi_bvec_ptr[i][1] != 0x0B ||
 				r->bi_bvec_ptr[i][2] != 0x0C) {
@@ -216,12 +216,12 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 					r->bi_bvec_ptr[i][1],
 					r->bi_bvec_ptr[i][2]);
 			}
-			*/
 			}
 			bdbm_free (r->bi_bvec_ptr[i]);
 		}
 		bdbm_free (r);
 	}
+	*/
 
 	/* destroy hlm_req */
 	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, req);

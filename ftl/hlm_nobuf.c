@@ -61,10 +61,8 @@ bdbm_hlm_inf_t _hlm_nobuf_inf = {
 /* data structures for hlm_nobuf */
 typedef struct {
 	bdbm_hlm_req_t tmp_hr;
-	bdbm_sema_t die_lock[64];
 } bdbm_hlm_nobuf_private_t;
 
-extern bdbm_drv_info_t* _bdi;
 
 /* functions for hlm_nobuf */
 uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
@@ -80,16 +78,6 @@ uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 
 	/* keep the private structure */
 	bdi->ptr_hlm_inf->ptr_private = (void*)p;
-
-
-	{
-		int i = 0;
-		for (i = 0; i < 64; i++) {
-			bdbm_sema_init (&p->die_lock[i]);
-		}
-	}
-
-	_bdi = bdi;
 
 	return 0;
 }
@@ -114,19 +102,8 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 	return 0;
 }
 
-uint32_t hynix_dumbssd_send_cmd (
-	bdbm_drv_info_t* bdi, 
-	bdbm_llm_req_t* r,
-	void (*intr_handler)(void*));
-
-void intr_handler(void* arg)
-{
-	_bdi->ptr_hlm_inf->end_req (_bdi, arg);
-}
-
 uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
-	bdbm_hlm_nobuf_private_t* p = BDBM_HLM_PRIV(bdi);
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS(bdi);
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
@@ -192,28 +169,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 
 	/* (3) send llm_req to llm */
-#if 1
 	if (bdi->ptr_llm_inf->make_reqs == NULL) {
 		/* send individual llm-reqs to llm */
 		bdbm_hlm_for_each_llm_req (lr, hr, i) {
-#if 0
 			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
 				bdbm_error ("oops! make_req () failed");
 				bdbm_bug_on (1);
 			}
-#else
-			/*bdbm_sema_lock (&lr->done);*/
-			bdbm_sema_lock (&p->die_lock[lr->phyaddr.channel_no]);
-			bdbm_msg ("submit to %llu (%llu %llu %llu %llu)", 
-					lr->phyaddr.channel_no,
-					lr->phyaddr.channel_no,
-					lr->phyaddr.chip_no,
-					lr->phyaddr.block_no,
-					lr->phyaddr.page_no);
-			hynix_dumbssd_send_cmd (bdi, lr, intr_handler);
-			/*bdbm_sema_lock (&lr->done);*/
-			/*bdbm_sema_unlock (&lr->done);*/
-#endif
 		}
 	} else {
 		/* send a bulk of llm-reqs to llm if make_reqs is supported */
@@ -222,26 +184,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 			bdbm_bug_on (1);
 		}
 	}
-#else
-	/* This is just for a test with Dumb NVME devices */
-	/* send a bulk of llm-reqs to llm if make_reqs is supported */
-	/*
-	if (bdi->ptr_llm_inf->make_reqs (bdi, hr) != 0) {
-		bdbm_error ("oops! make_reqs () failed");
-		bdbm_bug_on (1);
-	}
-	*/
-
-	if (bdi->ptr_llm_inf->make_reqs == NULL) {
-		/* send individual llm-reqs to llm */
-		bdbm_hlm_for_each_llm_req (lr, hr, i) {
-			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
-				bdbm_error ("oops! make_req () failed");
-				bdbm_bug_on (1);
-			}
-		}
-	}
-#endif
 
 	bdbm_bug_on (hr->nr_llm_reqs != i);
 
@@ -340,10 +282,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
-
 	lr->req_type |= REQTYPE_DONE;
-
-	/*bdbm_msg (" -- %ld/%llu", atomic64_read (&hr->nr_llm_reqs_done), hr->nr_llm_reqs);*/
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
@@ -368,16 +307,7 @@ void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	if (bdbm_is_gc (lr->req_type)) {
 		__hlm_nobuf_end_gcio_req (bdi, lr);
 	} else {
-		bdbm_hlm_nobuf_private_t* p = BDBM_HLM_PRIV(bdi);
-		/*bdbm_sema_unlock (&lr->done);*/
-		bdbm_msg ("done - 1: %llu (%llu %llu %llu %llu)", 
-			lr->phyaddr.channel_no,
-			lr->phyaddr.channel_no,
-			lr->phyaddr.chip_no,
-			lr->phyaddr.block_no,
-			lr->phyaddr.page_no);
 		__hlm_nobuf_end_blkio_req (bdi, lr);
-		bdbm_sema_unlock (&p->die_lock[lr->phyaddr.channel_no]);
 	}
 }
 
