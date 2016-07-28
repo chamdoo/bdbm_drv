@@ -1,4 +1,7 @@
 sudo umount /media/blueDBM
+sleep 1
 sudo rmmod bdbm_drv
-sudo rmmod risa_dev_*
-sudo rmmod f2fs
+sleep 5
+sudo rmmod nvme
+sleep 1 
+sudo rmmod dumbssd

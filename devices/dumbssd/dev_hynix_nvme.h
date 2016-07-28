@@ -35,14 +35,14 @@ typedef struct {
 
 typedef struct {
 	dumb_ssd_dev_t* dev;
-	bdbm_llm_req_t* r;
+	bdbm_llm_req_t* req;
 	int rw;
 	uint64_t die;
 	uint64_t block;
 	uint64_t wu;
 	uint8_t* kp_ptr;
 	uint8_t* buffer;
-	void (*intr_handler)(void*);
+	void (*done)(void*);
 } hd_req_t;
 
 uint32_t dev_hynix_nvme_submit_io (dumb_ssd_dev_t* dev, bdbm_llm_req_t* r, void (*intr_handler)(void*));

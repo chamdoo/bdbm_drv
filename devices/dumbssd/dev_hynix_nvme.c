@@ -43,17 +43,13 @@ THE SOFTWARE.
 
 #define USE_ASYNC
 
-bdbm_sema_t dbg_seq;
-
-static void nvme_nvm_end_io (struct request *rq, int error)
+static void submit_io_done (struct request *rq, int error)
 {
 	hd_req_t* hc = rq->end_io_data;
-	void (*fn) (void*) = hc->intr_handler;
+	void (*done)(void*) = hc->done;
 
-	if (hc->rw == READ) {
-		bdbm_msg (" ==> %x %x %x ...", hc->buffer[0], hc->buffer[1], hc->buffer[2]);
-		/*memcpy (hc->kp_ptr, hc->buffer, 4096);*/
-	}
+	if (hc->rw == READ && hc->kp_ptr)
+		memcpy (hc->kp_ptr, hc->buffer, 4096);
 
 	if (rq->cmd)
 		kfree (rq->cmd);
@@ -61,8 +57,12 @@ static void nvme_nvm_end_io (struct request *rq, int error)
 		kfree (hc->buffer);
 	if (rq)
 		blk_mq_free_request (rq);
-	if (fn)
-		fn (hc);
+	if (done && hc->req == NULL) /* for user I-O */
+		done (hc);
+	if (done && hc->req) { /* for block I-O */
+		done (hc->req);
+		kfree (hc);
+	}
 }
 
 int simple_read (dumb_ssd_dev_t* dev, hd_req_t* hc)
@@ -106,11 +106,11 @@ int simple_read (dumb_ssd_dev_t* dev, hd_req_t* hc)
 	}
 
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (dev->q, NULL, rq, 1, nvme_nvm_end_io);
+	blk_execute_rq_nowait (dev->q, NULL, rq, 0, submit_io_done);
 #else
 	blk_execute_rq (dev->q, dev->gd, rq, 0);
 	rq->end_io_data = hc;
-	nvme_nvm_end_io (rq, 0);
+	submit_io_done (rq, 0);
 #endif
 
 	return 0;
@@ -127,7 +127,8 @@ int simple_write (dumb_ssd_dev_t* dev, hd_req_t* hc)
 	bdbm_bug_on (cmd == NULL);
 
 	/* setup bio */
-	/*memcpy (hc->buffer, hc->kp_ptr, 4096);*/
+	if (hc->kp_ptr)
+		memcpy (hc->buffer, hc->kp_ptr, 4096);
 
 	/* allocate request */
 	rq = blk_mq_alloc_request (dev->q, 1, 0);
@@ -161,11 +162,11 @@ int simple_write (dumb_ssd_dev_t* dev, hd_req_t* hc)
 	}
 
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (dev->q, NULL, rq, 1, nvme_nvm_end_io);
+	blk_execute_rq_nowait (dev->q, NULL, rq, 0, submit_io_done);
 #else
 	blk_execute_rq (dev->q, dev->gd, rq, 0);
 	rq->end_io_data = hc;
-	nvme_nvm_end_io (rq, 0);
+	submit_io_done (rq, 0);
 #endif
 
 	return 0;
@@ -209,23 +210,27 @@ int simple_erase (dumb_ssd_dev_t* dev, hd_req_t* hc)
 	cmd->common.cdw10[4] = 0;
 	cmd->common.cdw10[5] = 0;
 
+	/*if (blk_rq_map_kern (dev->q, rq, hc->buffer, 64*4096, GFP_KERNEL)) {*/
 	if (blk_rq_map_kern (dev->q, rq, hc->buffer, 64*4096, GFP_KERNEL)) {
 		bdbm_msg ("blk_rq_map_kern() failed");
 		bdbm_bug_on (1);
 	}
 
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (dev->q, NULL, rq, 1, nvme_nvm_end_io);
+	blk_execute_rq_nowait (dev->q, NULL, rq, 0, submit_io_done);
 #else 
 	blk_execute_rq (dev->q, dev->gd, rq, 0);
 	rq->end_io_data = hc;
-	nvme_nvm_end_io (rq, 0);
+	submit_io_done (rq, 0);
 #endif
 
 	return 0;
 }
 
-uint32_t dev_hynix_nvme_submit_io (dumb_ssd_dev_t* dev, bdbm_llm_req_t* r, void (*done)(void*))
+uint32_t dev_hynix_nvme_submit_io (
+	dumb_ssd_dev_t* dev, 
+	bdbm_llm_req_t* r, 
+	void (*done)(void*))
 {
 	uint32_t ret = -1;
 	hd_req_t* hc = kzalloc (sizeof (hd_req_t), GFP_KERNEL);
@@ -233,18 +238,22 @@ uint32_t dev_hynix_nvme_submit_io (dumb_ssd_dev_t* dev, bdbm_llm_req_t* r, void 
 	bdbm_bug_on (hc == NULL);
 
 	hc->dev = dev;
-	hc->r = r;
+	hc->req = r;
 	hc->die = r->phyaddr.channel_no;
 	hc->block = r->phyaddr.block_no;
 	hc->wu = r->phyaddr.page_no;
-	hc->intr_handler = done;
+	hc->done = done;
 	hc->buffer = kmalloc (4096*64, GFP_KERNEL);
-	/*hc->kp_ptr = r->fmain.kp_ptr[0];*/
+	if (r)
+		hc->kp_ptr = r->fmain.kp_ptr[0];
+	else
+		hc->kp_ptr = NULL;
 
 	bdbm_bug_on (hc->buffer == NULL);
 
 	switch (r->req_type) {
 	case REQTYPE_READ_DUMMY:
+		kfree (hc->buffer);
 		kfree (hc);
 		done (r);
 		break;

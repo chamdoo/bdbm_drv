@@ -80,7 +80,6 @@ static void io_done (void* arg)
 {
 	bdbm_llm_req_t* r = (bdbm_llm_req_t*)arg;
 	bdbm_drv_info_t* bdi = _bdi_dm;
-
 	bdi->ptr_dm_inf->end_req (bdi, r);
 }
 
@@ -137,9 +136,8 @@ uint32_t dm_dumbssd_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
 
-	dm_dumbssd_private_t* p = BDBM_DM_PRIV (bdi);
-
 #if defined(ENABLE_SEQ_DBG)
+	dm_dumbssd_private_t* p = BDBM_DM_PRIV (bdi);
 	bdbm_sema_lock (&p->dbg_seq);
 #endif
 
@@ -221,13 +219,13 @@ static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
 	bdbm_bug_on (_dumb_dev.gd == NULL);
 	
 	hc->dev = &_dumb_dev;
-	hc->r = NULL;
+	hc->req = NULL;
 	hc->die = c.die;
 	hc->block = c.block;
 	hc->wu = c.wu;
 	hc->buffer = kzalloc (4096*64, GFP_KERNEL);
 	hc->kp_ptr = NULL;
-	hc->intr_handler = ioctl_io_done;
+	hc->done = ioctl_io_done;
 
 	switch (cmd) {
 	case TEST_IOCTL_READ:
