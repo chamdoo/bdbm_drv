@@ -17,18 +17,17 @@ EXTRA_CFLAGS += \
 	-D CONFIG_DEVICE_TYPE_RAMDRIVE \
 	-D KERNEL_MODE
 
-risa_dev_ramdrive-y := \
+dumbssd-y := \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/utils/umemory.o \
-	$(DEV_COMMON)/dev_main.o \
 	$(DEV_COMMON)/dev_params.o \
-	$(DEV_COMMON)/dev_stub.o \
-	dev_ramssd.o \
-	dm_ramdrive.o \
+	dev_hynix_nvme.o \
+	dm_dumbssd.o \
+	#$(DEV_COMMON)/dev_main.o \
 
-obj-m := risa_dev_ramdrive.o
+obj-m := dumbssd.o
 
 export KROOT=/lib/modules/$(shell uname -r)/build
 
@@ -38,7 +37,7 @@ default: modules
 .PHONY: modules
 modules:
 	@$(MAKE) -C $(KROOT) M=$(PWD) modules
-	@chmod +x risa_dev_ramdrive.ko
+	@chmod +x dumbssd.ko
 
 .PHONY: modules_check
 modules_check:

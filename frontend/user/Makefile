@@ -23,8 +23,7 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_PMU \
 	#	  -D USE_NEW_RMW \
 
-#DMLIB := ../../devices/libramdrive/libramdrive.a
-DMLIB := ../../devices/libdummy/libdummy.a
+DMLIB := ../../devices/libramdrive/libramdrive.a
 LIBFTL := libftl.a
 
 SRCS := \

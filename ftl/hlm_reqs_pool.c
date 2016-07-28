@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "umemory.h"
 
 
-#define DEFAULT_POOL_SIZE		16
+#define DEFAULT_POOL_SIZE		128
 #define DEFAULT_POOL_INC_SIZE	DEFAULT_POOL_SIZE / 5
 
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
@@ -160,7 +160,6 @@ bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (
 	struct list_head* pos = NULL;
 	bdbm_hlm_req_t* item = NULL;
 
-	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - start");
 	bdbm_spin_lock (&pool->lock);
 
 again:
@@ -199,14 +198,11 @@ again:
 	list_add_tail (&item->list, &pool->used_list);
 
 	bdbm_spin_unlock (&pool->lock);
-	
-	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - end");
 	return item;
 
 fail:
 
 	bdbm_spin_unlock (&pool->lock);
-	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - end (fail)");
 	return NULL;
 }
 
@@ -271,7 +267,6 @@ void hlm_reqs_pool_allocate_llm_reqs (
 			fo->data = (uint8_t*)bdbm_malloc_phy (8*BDBM_MAX_PAGES);
 		else
 			fo->data = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
-		bdbm_sema_init (&llm_reqs[i].done);
 	}
 }
 
@@ -424,7 +419,6 @@ static int __hlm_reqs_pool_create_read_req (
 
 	ptr_lr = &hr->llm_reqs[0];
 	for (i = 0; i < nr_llm_reqs; i++) {
-	/*for (i = 0; i < br->bi_bvec_cnt; i++) {*/
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 
 		if (pool->in_place_rmw == 0) 
@@ -448,11 +442,7 @@ static int __hlm_reqs_pool_create_read_req (
 		ptr_lr++;
 	}
 
-	//bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
-	if (bvec_cnt != br->bi_bvec_cnt) {
-		bdbm_msg ("bvec_cnt: %llu, br->bi_bvec_cnt: %llu", 
-			bvec_cnt, br->bi_bvec_cnt);
-	}
+	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
 
 	/* intialize hlm_req */
 	hr->req_type = br->bi_rw;

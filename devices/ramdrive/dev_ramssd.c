@@ -462,10 +462,7 @@ void __ramssd_cmd_done (dev_ramssd_info_t* ri)
 				bdbm_spin_unlock (&ri->ramssd_lock);
 
 				/* call the interrupt handler */
-#if 1
-				bdbm_msg ("ramdrive -- callback");
 				ri->intr_handler (ptr_req);
-#endif
 			} else {
 				bdbm_spin_unlock (&ri->ramssd_lock);
 			}
