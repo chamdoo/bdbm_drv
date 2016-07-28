@@ -35,6 +35,9 @@ THE SOFTWARE.
 #include <unistd.h>
 #include <stdint.h>
 
+#include "../../devices/dumbssd/dm_dumbssd.h"
+
+/*
 struct user_cmd {
 	int die;
 	int block;
@@ -44,11 +47,13 @@ struct user_cmd {
 #define TEST_IOCTL_READ _IO('N', 0x01)
 #define TEST_IOCTL_WRITE _IO('N', 0x02)
 #define TEST_IOCTL_ERASE _IO('N', 0x03)
+*/
+
 
 
 void test_read (int32_t dev_h, int die, int block, int wu)
 {
-	struct user_cmd c;
+	dumbssd_user_cmd_t c;
 	c.die = die;
 	c.block = block;
 	c.wu = wu;
@@ -57,7 +62,7 @@ void test_read (int32_t dev_h, int die, int block, int wu)
 
 void test_write (int32_t dev_h, int die, int block, int wu)
 {
-	struct user_cmd c;
+	dumbssd_user_cmd_t c;
 	c.die = die;
 	c.block = block;
 	c.wu = wu;
@@ -66,7 +71,7 @@ void test_write (int32_t dev_h, int die, int block, int wu)
 
 void test_erase (int32_t dev_h, int die, int block)
 {
-	struct user_cmd c;
+	dumbssd_user_cmd_t c;
 	c.die = die;
 	c.block = block;
 	ioctl (dev_h, TEST_IOCTL_ERASE, &c);
@@ -89,7 +94,7 @@ int main (int argc, char** argv)
 	/* Send a BDBM format command using IOCTL 
 	 * Everything will be done by bdbm_drv.ko */
 
-	/*
+#if 0
 	test_erase (dev_h, 8, 8);
 	sleep (1);
 	test_write (dev_h, 8, 8, 0);
@@ -112,25 +117,25 @@ int main (int argc, char** argv)
 	sleep (1);
 	test_read (dev_h, 1, 1, 0);
 	printf ("\n");
-	*/
+#endif
 	{
 		int die = 0, block = 0, wu = 0;
 
-		printf ("erase...");
+		printf ("erase...\n");
 		for (block = 0; block < 20; block++)
-			for (die = 0; die < 1; die++)
+			for (die = 0; die < 64; die++)
 				test_erase (dev_h, die, block);
 
-		printf ("write...");
+		printf ("write...\n");
 		for (block = 0; block < 10; block++)
 			for (wu = 0; wu < 64; wu++) 
-				for (die = 0; die < 1; die++)
+				for (die = 0; die < 64; die++)
 					test_write (dev_h, die, block, wu);
 
-		printf ("read...");
+		printf ("read...\n");
 		for (block = 0; block < 10; block++)
 			for (wu = 0; wu < 64; wu++) 
-				for (die = 0; die < 1; die++)
+				for (die = 0; die < 64; die++)
 					test_read (dev_h, die, block, wu);
 	}
 

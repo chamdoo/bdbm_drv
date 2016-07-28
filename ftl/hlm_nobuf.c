@@ -196,14 +196,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	if (bdi->ptr_llm_inf->make_reqs == NULL) {
 		/* send individual llm-reqs to llm */
 		bdbm_hlm_for_each_llm_req (lr, hr, i) {
-
 #if 0
 			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
 				bdbm_error ("oops! make_req () failed");
 				bdbm_bug_on (1);
 			}
 #else
-
 			/*bdbm_sema_lock (&lr->done);*/
 			bdbm_sema_lock (&p->die_lock[lr->phyaddr.channel_no]);
 			bdbm_msg ("submit to %llu (%llu %llu %llu %llu)", 
@@ -342,6 +340,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
+
 	lr->req_type |= REQTYPE_DONE;
 
 	/*bdbm_msg (" -- %ld/%llu", atomic64_read (&hr->nr_llm_reqs_done), hr->nr_llm_reqs);*/
@@ -371,18 +370,14 @@ void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	} else {
 		bdbm_hlm_nobuf_private_t* p = BDBM_HLM_PRIV(bdi);
 		/*bdbm_sema_unlock (&lr->done);*/
-		/*
 		bdbm_msg ("done - 1: %llu (%llu %llu %llu %llu)", 
 			lr->phyaddr.channel_no,
 			lr->phyaddr.channel_no,
 			lr->phyaddr.chip_no,
 			lr->phyaddr.block_no,
 			lr->phyaddr.page_no);
-			*/
-		bdbm_sema_unlock (&p->die_lock[lr->phyaddr.channel_no]);
-		/*bdbm_msg ("done - 2:");*/
 		__hlm_nobuf_end_blkio_req (bdi, lr);
-		/*bdbm_msg ("done - 3:");*/
+		bdbm_sema_unlock (&p->die_lock[lr->phyaddr.channel_no]);
 	}
 }
 

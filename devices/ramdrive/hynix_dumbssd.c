@@ -66,13 +66,12 @@ void print_bio (struct bio* bio)
 
 bdbm_sema_t dbg_seq;
 
+
 static void nvme_nvm_end_io (struct request *rq, int error)
 {
 	struct hd_req* hdr = rq->end_io_data;
 	bdbm_llm_req_t* r = hdr->r;
 	void (*fn) (void*);
-
-	/*bdbm_msg ("nvme_nvm_end_io -- callback");*/
 
 	static int init = 0, parallel = 0;;
 	if (init == 0) {
@@ -88,32 +87,49 @@ static void nvme_nvm_end_io (struct request *rq, int error)
 
 	fn = hdr->intr_handler;
 
-	if (rq->bio && rq->bio->bi_end_io)
-		rq->bio->bi_end_io (rq->bio);
-	if (hdr->rw == READ)
-		memcpy (hdr->kp_ptr, hdr->buffer, 4096);
-	if (rq->cmd)
-		kfree (rq->cmd);
-	if (hdr)
-		kfree (hdr);
-	if (hdr->buffer)
-		kfree(hdr->buffer);
+	/*bio_put (rq->bio);*/
+
+	/*if (rq->bio && rq->bio->bi_end_io)*/
+	/*rq->bio->bi_end_io (rq->bio);*/
+	/*if (hdr->rw == READ)*/
+	/*memcpy (hdr->kp_ptr, hdr->buffer, 4096);*/
+	/*if (rq->cmd)*/
+	/*kfree (rq->cmd);*/
+	/*if (hdr->buffer)*/
+	/*kfree (hdr->buffer);*/
+	/*if (hdr)*/
+	/*kfree (hdr);*/
 	if (rq)
-		blk_mq_free_request(rq);
+		blk_mq_free_request (rq);
 
 	fn (r);
 
 	parallel--;
+
+	bdbm_msg ("done from %llu (%llu %llu %llu %llu)", 
+		r->phyaddr.channel_no,
+		r->phyaddr.channel_no,
+		r->phyaddr.chip_no,
+		r->phyaddr.block_no,
+		r->phyaddr.page_no);
 
 	bdbm_sema_unlock (&dbg_seq);
 
 	/*bdbm_msg ("nvme_nvm_end_io -- callback - done");*/
 }
 
+static void blk_end_sync_rq (struct request* rq, int error)
+{
+	struct completion* waiting = rq->end_io_data;
+	rq->end_io_data = NULL;
+	complete (waiting);
+}
+
 int simple_read (
 	bdbm_drv_info_t* bdi, 
 	struct hd_req* hdr)
 {
+	DECLARE_COMPLETION_ONSTACK(wait);
 	struct bio* bio = NULL;
 	struct request *rq;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
@@ -125,10 +141,14 @@ int simple_read (
 
 	/*bdbm_msg ("READ: %llu %llu %llu => %u (%x)", hdr->block, hdr->die, hdr->wu, req_ofs, req_ofs);*/
 
+#if 0
 	/* [STEP1] setup bio */
 	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL);*/
 	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 1);
+	bdbm_bug_on (bio == NULL);
 	bio->bi_rw = READ;
+	bio_get (bio);
+#endif
 
 	/* [STEP2] alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 0, 0);
@@ -137,15 +157,15 @@ int simple_read (
 		bdbm_bug_on (1);
 		return -ENOMEM;
 	}
-	rq->cmd_type = REQ_TYPE_DRV_PRIV;
-	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
-	rq->ioprio = bio_prio(bio);
 
-	if (bio_has_data(bio)) {
-		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
-	}
-	rq->__data_len = bio->bi_iter.bi_size;
-	rq->bio = rq->biotail = bio;
+	/*rq->cmd_type = REQ_TYPE_DRV_PRIV;*/
+	/*rq->cmd_flags |= REQ_FAILFAST_DRIVER;*/
+	/*rq->ioprio = bio_prio(bio);*/
+	/*if (bio_has_data(bio)) {*/
+	/*rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);*/
+	/*}*/
+	/*rq->__data_len = bio->bi_iter.bi_size;*/
+	/*rq->bio = rq->biotail = bio;*/
 
 	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
@@ -164,8 +184,17 @@ int simple_read (
 	cmd->rw.apptag = 0;
 	cmd->rw.appmask = 0;
 
+	if (blk_rq_map_kern (bdi->q, rq, hdr->buffer, 64*4096, GFP_KERNEL)) {
+		bdbm_msg ("blk_rq_map_kern() failed");
+		bdbm_bug_on (1);
+	}
+
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*rq->end_io_data = &wait;*/
+	blk_execute_rq_nowait (bdi->q, NULL, rq, 1, nvme_nvm_end_io);
+	/*blk_execute_rq_nowait (bdi->q, NULL, rq, 1, blk_end_sync_rq);*/
+	/*wait_for_completion_io(&wait);*/
+	/*rq->end_io_data = hdr;*/
 	/*nvme_nvm_end_io (rq, 0);*/
 #else
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
@@ -180,6 +209,7 @@ int simple_write (
 	bdbm_drv_info_t* bdi, 
 	struct hd_req* hdr)
 {
+	DECLARE_COMPLETION_ONSTACK(wait);
 	struct bio* bio = NULL;
 	struct request *rq;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
@@ -193,10 +223,13 @@ int simple_write (
 
 	/* setup bio */
 	memcpy (hdr->buffer, hdr->kp_ptr, 4096);
+#if 0
 	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO);*/
 	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 0);
 	bdbm_bug_on (bio == NULL);
 	bio->bi_rw = WRITE;
+	bio_get (bio);
+#endif
 
 	/* allocate request */
 	rq = blk_mq_alloc_request (bdi->q, 1, 0);
@@ -207,12 +240,12 @@ int simple_write (
 	}
 
 	rq->cmd_type = REQ_TYPE_DRV_PRIV;
-	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
-	rq->ioprio = bio_prio(bio);
-	if (bio_has_data(bio))
-		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
-	rq->__data_len = bio->bi_iter.bi_size;
-	rq->bio = rq->biotail = bio;
+	/*rq->cmd_flags |= REQ_FAILFAST_DRIVER;*/
+	/*rq->ioprio = bio_prio(bio);*/
+	/*if (bio_has_data(bio))*/
+	/*rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);*/
+	/*rq->__data_len = bio->bi_iter.bi_size;*/
+	/*rq->bio = rq->biotail = bio;*/
 
 	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
@@ -231,8 +264,17 @@ int simple_write (
 	cmd->rw.apptag = 0;
 	cmd->rw.appmask = 0;
 
+	if (blk_rq_map_kern (bdi->q, rq, hdr->buffer, 64*4096, GFP_KERNEL)) {
+		bdbm_msg ("blk_rq_map_kern() failed");
+		bdbm_bug_on (1);
+	}
+
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*rq->end_io_data = &wait;*/
+	blk_execute_rq_nowait (bdi->q, NULL, rq, 1, nvme_nvm_end_io);
+	/*blk_execute_rq_nowait (bdi->q, NULL, rq, 1, blk_end_sync_rq);*/
+	/*wait_for_completion_io(&wait);*/
+	/*rq->end_io_data = hdr;*/
 	/*nvme_nvm_end_io (rq, 0);*/
 #else
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
@@ -247,11 +289,12 @@ int simple_erase (
 	bdbm_drv_info_t* bdi, 
 	struct hd_req* hdr)
 {
+	DECLARE_COMPLETION_ONSTACK(wait);
 	struct request *rq;
 	struct bio* bio = NULL;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
 	__u32 req_ofs = hdr->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
-				  hdr->die << (BITS_PER_WU + BITS_PER_SLICE);
+					hdr->die << (BITS_PER_WU + BITS_PER_SLICE);
 	__le64* ubuffer_64 = (__le64*)hdr->buffer;
 
 	bdbm_bug_on (cmd == NULL);
@@ -261,9 +304,13 @@ int simple_erase (
 	ubuffer_64[1] = req_ofs;
 
 	/* setup bio */
+#if 0
 	/*bio = bio_map_kern (bdi->q, hdr->buffer, 64*4096, GFP_KERNEL);*/
 	bio = bio_copy_kern (bdi->q, hdr->buffer, 64*4096, GFP_NOIO, 0);
+	bdbm_bug_on (bio == NULL);
 	bio->bi_rw = WRITE;
+	bio_get (bio);
+#endif
 
 	/* alloc request */
 	rq = blk_mq_alloc_request(bdi->q, 1, 0);
@@ -273,13 +320,13 @@ int simple_erase (
 		return -ENOMEM;
 	}
 
-	rq->cmd_type = REQ_TYPE_DRV_PRIV;
-	rq->cmd_flags |= REQ_FAILFAST_DRIVER;
-	rq->ioprio = bio_prio(bio);
-	if (bio_has_data(bio))
-		rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);
-	rq->__data_len = bio->bi_iter.bi_size;
-	rq->bio = rq->biotail = bio;
+	/*rq->cmd_type = REQ_TYPE_DRV_PRIV;*/
+	/*rq->cmd_flags |= REQ_FAILFAST_DRIVER;*/
+	/*rq->ioprio = bio_prio(bio);*/
+	/*if (bio_has_data(bio))*/
+	/*rq->nr_phys_segments = bio_phys_segments(bdi->q, bio);*/
+	/*rq->__data_len = bio->bi_iter.bi_size;*/
+	/*rq->bio = rq->biotail = bio;*/
 
 	rq->cmd = (unsigned char *)cmd;
 	rq->cmd_len = sizeof(struct nvme_command);
@@ -299,8 +346,18 @@ int simple_erase (
 	cmd->common.cdw10[4] = 0;
 	cmd->common.cdw10[5] = 0;
 
+	/*if (blk_rq_map_kern (bdi->q, rq, hdr->buffer, 64*4096, GFP_KERNEL)) {*/
+	if (blk_rq_map_kern (bdi->q, rq, hdr->buffer, 64*4096, GFP_KERNEL)) {
+		bdbm_msg ("blk_rq_map_kern() failed");
+		bdbm_bug_on (1);
+	}
+
 #ifdef USE_ASYNC
-	blk_execute_rq_nowait (bdi->q, NULL, rq, 0, nvme_nvm_end_io);
+	/*rq->end_io_data = &wait;*/
+	blk_execute_rq_nowait (bdi->q, NULL, rq, 1, nvme_nvm_end_io);
+	/*blk_execute_rq_nowait (bdi->q, NULL, rq, 1, blk_end_sync_rq);*/
+	/*wait_for_completion_io(&wait);*/
+	/*rq->end_io_data = hdr;*/
 	/*nvme_nvm_end_io (rq, 0);*/
 #else 
 	blk_execute_rq (bdi->q, bdi->gd, rq, 0);
@@ -327,7 +384,7 @@ uint32_t hynix_dumbssd_send_cmd (
 	hdr->block = r->phyaddr.block_no;
 	hdr->wu = r->phyaddr.page_no;
 	hdr->intr_handler = intr_handler;
-	hdr->buffer = kzalloc (4096*64, GFP_KERNEL);
+	hdr->buffer = kmalloc (4096*64, GFP_KERNEL);
 	hdr->kp_ptr = r->fmain.kp_ptr[0];
 
 	bdbm_bug_on (hdr->buffer == NULL);
@@ -368,5 +425,3 @@ uint32_t hynix_dumbssd_send_cmd (
 	return 0;
 }
 EXPORT_SYMBOL (hynix_dumbssd_send_cmd);
-
-

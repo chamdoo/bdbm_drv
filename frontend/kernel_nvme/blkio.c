@@ -192,6 +192,11 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	bdbm_blkio_req_t* br = NULL;
 	bdbm_hlm_req_t* hr = NULL;
 
+	bdbm_msg ("blkio_make_req WHAT!!!! (%s)", bdi->gd->disk_name);
+
+	/* lock a global mutex -- this function must be finished as soon as possible */
+	bdbm_sema_lock (&p->host_lock);
+
 	/* get blkio */
 	if ((br = __get_blkio_req ((struct bio*)bio)) == NULL) {
 		bdbm_error ("__get_blkio_req () failed");
@@ -209,9 +214,6 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
 		goto fail;
 	}
-
-	/* lock a global mutex -- this function must be finished as soon as possible */
-	bdbm_sema_lock (&p->host_lock);
 
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);

@@ -160,6 +160,7 @@ bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (
 	struct list_head* pos = NULL;
 	bdbm_hlm_req_t* item = NULL;
 
+	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - start");
 	bdbm_spin_lock (&pool->lock);
 
 again:
@@ -198,11 +199,14 @@ again:
 	list_add_tail (&item->list, &pool->used_list);
 
 	bdbm_spin_unlock (&pool->lock);
+	
+	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - end");
 	return item;
 
 fail:
 
 	bdbm_spin_unlock (&pool->lock);
+	bdbm_msg ("bdbm_hlm_reqs_pool_get_item - end (fail)");
 	return NULL;
 }
 
