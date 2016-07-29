@@ -228,8 +228,9 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	{
 		uint64_t capacity;
 		//capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
-		/*capacity = bdi->parm_dev.device_capacity_in_byte;*/
-	//	capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		capacity = bdi->parm_dev.device_capacity_in_byte;
+		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		capacity = capacity - capacity / 10;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 	}
 	add_disk (bdbm_device.gd);
@@ -241,8 +242,8 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 {
 	/* unregister a BlueDBM device driver */
 	del_gendisk (bdbm_device.gd);
+	blk_cleanup_queue (bdbm_device.gd->queue);
 	put_disk (bdbm_device.gd);
 	unregister_blkdev (bdbm_device_major_num, "blueDBM");
-	blk_cleanup_queue (bdbm_device.queue);
 }
 

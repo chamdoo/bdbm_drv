@@ -60,8 +60,8 @@ typedef struct {
 /* This is a call-back function invoked by a block-device layer */
 static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 {
-	uint32_t loop = 0;
-	struct bio_vec *bvec = NULL;
+	struct bio_vec bvec;
+	struct bvec_iter iter;
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bdbm_malloc_atomic (sizeof (bdbm_blkio_req_t));
 
 	/* check the pointer */
@@ -81,21 +81,21 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 	}
 
 	/* get the offset and the length of the bio */
-	br->bi_offset = bio->bi_sector;
+	br->bi_offset = bio->bi_iter.bi_sector;
 	br->bi_size = bio_sectors (bio);
 	br->bi_bvec_cnt = 0;
 	br->bio = (void*)bio;
 
 	/* get the data from the bio */
 	if (br->bi_rw != REQTYPE_TRIM) {
-		bio_for_each_segment (bvec, bio, loop) {
-			br->bi_bvec_ptr[br->bi_bvec_cnt] = (uint8_t*)page_address (bvec->bv_page);
+		bio_for_each_segment (bvec, bio, iter) {
+			br->bi_bvec_ptr[br->bi_bvec_cnt] = (uint8_t*)page_address (bvec.bv_page);
 			br->bi_bvec_cnt++;
 
 			if (br->bi_bvec_cnt >= BDBM_BLKIO_MAX_VECS) {
 				/* NOTE: this is an impossible case unless kernel parameters are changed */
-				bdbm_error ("oops! # of vectors in bio is larger than %u", 
-					BDBM_BLKIO_MAX_VECS);
+				bdbm_error ("oops! # of vectors in bio is larger than %u %llu", 
+					BDBM_BLKIO_MAX_VECS, br->bi_bvec_cnt);
 				goto fail;
 			}
 		}
@@ -115,11 +115,13 @@ static void __free_blkio_req (bdbm_blkio_req_t* br)
 		bdbm_free_atomic (br);
 }
 
-static void __host_blkio_make_request_fn (
+//static void __host_blkio_make_request_fn (
+static blk_qc_t __host_blkio_make_request_fn (
 	struct request_queue *q, 
 	struct bio *bio)
 {
 	blkio_make_req (_bdi, (void*)bio);
+	return BLK_QC_T_NONE; /* for no polling */
 }
 
 
@@ -243,10 +245,10 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	/* end bio */
 	if (hr->ret == 0)
-		bio_endio ((struct bio*)br->bio, 0);
+		bio_endio ((struct bio*)br->bio);
 	else {
 		bdbm_warning ("oops! make_req () failed with %d", hr->ret);
-		bio_endio ((struct bio*)br->bio, -EIO);
+		bio_io_error ((struct bio*)br->bio);
 	}
 
 	/* free blkio_req */
