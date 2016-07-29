@@ -6,8 +6,7 @@ obj-m := nvme.o
 
 ccflags-y := -I$(src)
 
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../bdbm_drv/frontend/kernel_nvme/Module.symvers
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../bdbm_drv/devices/dumbssd/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/dumbssd/Module.symvers
 
 export KROOT=/lib/modules/$(shell uname -r)/build
 

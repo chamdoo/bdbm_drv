@@ -243,7 +243,7 @@ static long nvm_ctl_ioctl(struct file *file, uint cmd, unsigned long arg)
 		break;
 	case TEST_IOCTL_ERASE:
 		hc->rw = 0xff;
-		bdbm_msg ("IOCTL_ERASE: %d %d %d", c.die, c.block, c.wu);
+		bdbm_msg ("IOCTL_ERASE: %d %d", c.die, c.block);
 		simple_erase (&_dumb_dev, hc);
 		break;
 	default:

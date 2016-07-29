@@ -122,18 +122,18 @@ int main (int argc, char** argv)
 		int die = 0, block = 0, wu = 0;
 
 		printf ("erase...\n");
-		for (block = 0; block < 20; block++)
+		for (block = 0; block < 2; block++)
 			for (die = 0; die < 64; die++)
 				test_erase (dev_h, die, block);
 
 		printf ("write...\n");
-		for (block = 0; block < 10; block++)
+		for (block = 0; block < 2; block++)
 			for (wu = 0; wu < 64; wu++) 
 				for (die = 0; die < 64; die++)
 					test_write (dev_h, die, block, wu);
 
 		printf ("read...\n");
-		for (block = 0; block < 10; block++)
+		for (block = 0; block < 2; block++)
 			for (wu = 0; wu < 64; wu++) 
 				for (die = 0; die < 64; die++)
 					test_read (dev_h, die, block, wu);
@@ -143,6 +143,8 @@ int main (int argc, char** argv)
 	if (dev_h != -1) {
 		close (dev_h);
 	}
+
+	printf ("done!");
 
 	return 0;
 }
