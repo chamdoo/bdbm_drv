@@ -262,6 +262,9 @@ uint32_t dev_hynix_nvme_submit_io (
 	case REQTYPE_GC_WRITE:
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_META_WRITE:
+		bdbm_msg ("WRITE: %llu => %llu, %llu, %llu", 
+			r->logaddr.lpa[0],
+			hc->die, hc->block, hc->wu);
 		hc->rw = WRITE;
 		ret = simple_write (dev, hc);
 		break;
@@ -270,11 +273,16 @@ uint32_t dev_hynix_nvme_submit_io (
 	case REQTYPE_GC_READ:
 	case REQTYPE_RMW_READ:
 	case REQTYPE_META_READ:
+		bdbm_msg ("READ: %llu => %llu, %llu, %llu", 
+			r->logaddr.lpa[0],
+			hc->die, hc->block, hc->wu);
 		hc->rw = READ;
 		ret = simple_read (dev, hc);
 		break;
 
 	case REQTYPE_GC_ERASE:
+		bdbm_msg ("ERASE: %llu, %llu", 
+			hc->die, hc->block);
 		hc->rw = 0xFF;
 		ret = simple_erase (dev, hc);
 		break;
