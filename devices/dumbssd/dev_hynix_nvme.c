@@ -69,9 +69,11 @@ int simple_read (dumb_ssd_dev_t* dev, hd_req_t* hc)
 {
 	struct request *rq;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
-	int req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+	__le64 req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  hc->die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  hc->wu << (BITS_PER_SLICE);
+
+	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
 
 	bdbm_bug_on (cmd == NULL);
 
@@ -120,11 +122,13 @@ int simple_write (dumb_ssd_dev_t* dev, hd_req_t* hc)
 {
 	struct request *rq;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
-	int req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+	__le64 req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 				  hc->die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  hc->wu << (BITS_PER_SLICE);
 
 	bdbm_bug_on (cmd == NULL);
+
+	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
 
 	/* setup bio */
 	if (hc->kp_ptr)
@@ -176,11 +180,13 @@ int simple_erase (dumb_ssd_dev_t* dev, hd_req_t* hc)
 {
 	struct request *rq;
 	struct nvme_command* cmd = kzalloc (sizeof (struct nvme_command), GFP_KERNEL);
-	__u32 req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
+	__le64 req_ofs = hc->block << (BITS_PER_DIE + BITS_PER_WU + BITS_PER_SLICE) |
 					hc->die << (BITS_PER_WU + BITS_PER_SLICE);
 	__le64* ubuffer_64 = (__le64*)hc->buffer;
 
 	bdbm_bug_on (cmd == NULL);
+
+	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
 
 	ubuffer_64[1] = req_ofs;
 
