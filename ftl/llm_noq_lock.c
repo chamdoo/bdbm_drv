@@ -48,6 +48,7 @@ bdbm_llm_inf_t _llm_noq_lock_inf = {
 	.create = llm_noq_lock_create,
 	.destroy = llm_noq_lock_destroy,
 	.make_req = llm_noq_lock_make_req,
+	.make_reqs = NULL,
 	.flush = llm_noq_lock_flush,
 	.end_req = llm_noq_lock_end_req,
 };

@@ -1,14 +1,14 @@
 # Makefile for a RISA Device Driver
 #
 
-CC = gcc
+CC = g++
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
 DM_COMMON := ../../devices/common
 OUT = libftl.a
 
-CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE 
+CFLAGS := -Wall -g -D_LARGEFILE64_SOURCE -D_GNU_SOURCE -Wsign-compare -Wwrite-strings
 LIBS += -lm -lpthread -lrt
 
 INCLUDES = -I$(PWD)/$(INCLUDE) \

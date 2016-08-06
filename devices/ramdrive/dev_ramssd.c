@@ -31,6 +31,7 @@ THE SOFTWARE.
 #elif defined (USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #else
 #error Invalid Platform (KERNEL_MODE or USER_MODE)

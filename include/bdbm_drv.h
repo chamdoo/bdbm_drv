@@ -147,6 +147,7 @@ typedef struct {
 	uint8_t ret; /* a return value will be kept here */
 	void* bio; /* reserved for kernel's bio requests */
 	void* user; /* keep user's data structure */
+	void* user2; /* keep user's data structure */
 	void (*cb_done) (void* req); /* call-back function which is called when a request is done */
 } bdbm_blkio_req_t;
 

@@ -49,7 +49,7 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 	.open = dm_ramdrive_open,
 	.close = dm_ramdrive_close,
 	.make_req = dm_ramdrive_make_req,
-	.make_reqs = dm_ramdrive_make_reqs,
+	.make_reqs = NULL,
 	.end_req = dm_ramdrive_end_req,
 	.load = dm_ramdrive_load,
 	.store = dm_ramdrive_store,
@@ -113,7 +113,7 @@ fail:
 
 uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi)
 {
-	dm_ramssd_private_t * p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 
 	/*p = (dm_ramssd_private_t*)bdi->ptr_dm_inf->ptr_private;*/
 
@@ -124,7 +124,7 @@ uint32_t dm_ramdrive_open (bdbm_drv_info_t* bdi)
 
 void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 {
-	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 
 	bdbm_msg ("[dm_ramdrive_close] closed!");
 
@@ -136,7 +136,7 @@ void dm_ramdrive_close (bdbm_drv_info_t* bdi)
 uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
 	uint32_t ret;
-	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 
 	if ((ret = dev_ramssd_send_cmd (p->ramssd, ptr_llm_req)) != 0) {
 		bdbm_error ("dev_ramssd_send_cmd failed");
@@ -146,13 +146,14 @@ uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req
 	return ret;
 }
 
+#if 0
 uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 #include "../../ftl/hlm_reqs_pool.h"
 
 	uint32_t i, ret = 1;
 	bdbm_llm_req_t* lr = NULL;
-	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		if ((ret = dev_ramssd_send_cmd (p->ramssd, lr)) != 0) {
@@ -163,6 +164,7 @@ uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	return ret;
 }
+#endif
 
 void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
@@ -174,14 +176,14 @@ void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 /* for snapshot */
 uint32_t dm_ramdrive_load (bdbm_drv_info_t* bdi, const char* fn)
 {	
-	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 	bdbm_msg ("loading a DRAM snapshot...");
 	return dev_ramssd_load (p->ramssd, fn);
 }
 
 uint32_t dm_ramdrive_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-	dm_ramssd_private_t* p = BDBM_DM_PRIV (bdi);
+	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
 	bdbm_msg ("storing a DRAM snapshot...");
 	return dev_ramssd_store (p->ramssd, fn);
 }

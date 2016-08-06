@@ -66,7 +66,8 @@ bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 	}
 
 	/* create a pool structure */
-	if ((pool = bdbm_malloc (sizeof (bdbm_hlm_reqs_pool_t))) == NULL) {
+	if ((pool = (bdbm_hlm_reqs_pool_t* )bdbm_malloc 
+			(sizeof (bdbm_hlm_reqs_pool_t))) == NULL) {
 		bdbm_error ("bdbm_malloc () failed");
 		return NULL;
 	}
@@ -352,11 +353,11 @@ static int __hlm_reqs_pool_create_write_req (
 			/* build kernel-pages */
 			ptr_lr->logaddr.lpa[j] = sec_start / NR_KSECTORS_IN(pool->map_unit);
 			for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
-				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
+				int64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
 
 				if (pg_off >= pg_start && pg_off < pg_end) {
-					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
-					if (bvec_cnt >= br->bi_bvec_cnt) {
+					bdbm_bug_on ((uint64_t)bvec_cnt >= br->bi_bvec_cnt);
+					if ((uint64_t)bvec_cnt >= br->bi_bvec_cnt) {
 						bdbm_msg ("%lld %lld", bvec_cnt, br->bi_bvec_cnt);
 					}
 					ptr_fm->kp_stt[fm_ofs] = KP_STT_DATA;
@@ -387,7 +388,7 @@ static int __hlm_reqs_pool_create_write_req (
 		ptr_lr++;
 	}
 
-	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
+	bdbm_bug_on ((uint64_t)bvec_cnt != br->bi_bvec_cnt);
 
 	/* intialize hlm_req */
 	hr->req_type = br->bi_rw;
@@ -442,7 +443,7 @@ static int __hlm_reqs_pool_create_read_req (
 		ptr_lr++;
 	}
 
-	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
+	bdbm_bug_on ((uint64_t)bvec_cnt != br->bi_bvec_cnt);
 
 	/* intialize hlm_req */
 	hr->req_type = br->bi_rw;
@@ -483,7 +484,7 @@ int bdbm_hlm_reqs_pool_build_req (
 
 void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs)
 {
-	if (new_sp_ofs != lr->logaddr.ofs) {
+	if ((int64_t)new_sp_ofs != lr->logaddr.ofs) {
 		lr->fmain.kp_stt[new_sp_ofs] = KP_STT_DATA;
 		lr->fmain.kp_ptr[new_sp_ofs] = lr->fmain.kp_ptr[lr->logaddr.ofs];
 		lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_HOLE;

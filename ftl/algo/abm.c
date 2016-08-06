@@ -96,7 +96,7 @@ babm_abm_subpage_t* __bdbm_abm_create_pst (bdbm_device_params_t* np)
 	/* NOTE: pst is managed in the unit of subpage to support fine-grain
 	 * mapping FTLs that are often used to avoid expensive read-modify-writes
 	 * */
-	pst = bdbm_malloc (sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
+	pst = (babm_abm_subpage_t*)bdbm_malloc (sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
 	bdbm_memset (pst, BABM_ABM_SUBPAGE_NOT_INVALID, sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
 
 	return pst;
@@ -123,7 +123,7 @@ bdbm_abm_info_t* bdbm_abm_create (
 	bai->np = np;
 
 	/* create 'bdbm_abm_block' */
-	if ((bai->blocks = bdbm_zmalloc 
+	if ((bai->blocks = (bdbm_abm_block_t*)bdbm_zmalloc 
 			(sizeof (bdbm_abm_block_t) * np->nr_blocks_per_ssd)) == NULL) {
 		goto fail;
 	}

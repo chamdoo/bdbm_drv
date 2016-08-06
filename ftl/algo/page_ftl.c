@@ -275,7 +275,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 
 void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 
 	if (!p)
 		return;
@@ -305,7 +305,7 @@ uint32_t bdbm_page_ftl_get_free_ppa (
 	int64_t lpa,
 	bdbm_phyaddr_t* ppa)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
@@ -358,9 +358,9 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_phyaddr_t* phyaddr)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
-	int k;
+	uint64_t k;
 
 	/* is it a valid logical address */
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
@@ -377,7 +377,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 			continue;
 		}
 
-		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
+		if (logaddr->lpa[k] >= (int64_t)np->nr_subpages_per_ssd) {
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
 			return 1;
 		}
@@ -415,12 +415,12 @@ uint32_t bdbm_page_ftl_get_ppa (
 	uint64_t* sp_off)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
 	uint32_t ret;
 
 	/* is it a valid logical address */
-	if (lpa >= np->nr_subpages_per_ssd) {
+	if (lpa >= (int64_t)np->nr_subpages_per_ssd) {
 		bdbm_error ("A given lpa is beyond logical space (%llu)", lpa);
 		return 1;
 	}
@@ -458,7 +458,7 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 	uint64_t len)
 {	
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
 	uint64_t loop;
 
@@ -490,7 +490,7 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 
 uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
@@ -517,7 +517,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -541,7 +541,7 @@ bdbm_abm_block_t* __bdbm_page_ftl_victim_selection_greedy (
 	uint64_t channel_no,
 	uint64_t chip_no)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_abm_block_t* a = NULL;
 	bdbm_abm_block_t* b = NULL;
@@ -749,7 +749,7 @@ erase_blks:
 
 uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	bdbm_hlm_req_gc_t* hlm_gc_w = &p->gc_hlm_w;
@@ -988,7 +988,7 @@ erase_blks:
 /* for snapshot */
 uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_mapping_entry_t* me;
 	bdbm_file_t fp = 0;
@@ -1033,7 +1033,7 @@ uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
 
 uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_mapping_entry_t* me;
 	bdbm_abm_block_t* b = NULL;
@@ -1102,13 +1102,13 @@ void __bdbm_page_badblock_scan_eraseblks (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
 	/* setup blocks to erase */
-	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * p->nr_punits);
+	bdbm_memset ((void*)p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * p->nr_punits);
 	for (i = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
 			bdbm_abm_block_t* b = NULL;
@@ -1166,9 +1166,9 @@ static void __bdbm_page_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	int i, j;
+	uint64_t i, j;
 
 	for (i = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
@@ -1186,7 +1186,7 @@ static void __bdbm_page_mark_it_dead (
 
 uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 {
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_ftl_private_t* p = (bdbm_page_ftl_private_t*)_ftl_page_ftl.ptr_private;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_mapping_entry_t* me = NULL;
 	uint64_t i = 0;

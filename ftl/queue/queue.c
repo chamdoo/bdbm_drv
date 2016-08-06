@@ -41,7 +41,7 @@ THE SOFTWARE.
 #include "queue.h"
 
 
-static uint64_t max_queue_items = 0;
+static int64_t max_queue_items = 0;
 
 bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 {
@@ -49,7 +49,7 @@ bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 	uint64_t loop;
 
 	/* create a private structure */
-	if ((mq = bdbm_malloc_atomic (sizeof (bdbm_queue_t))) == NULL) {
+	if ((mq = (bdbm_queue_t*)bdbm_malloc_atomic (sizeof (bdbm_queue_t))) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		return NULL;
 	}
@@ -59,7 +59,7 @@ bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 	bdbm_spin_lock_init (&mq->lock);
 
 	/* create linked-lists */
-	if ((mq->qlh = bdbm_malloc_atomic (sizeof (struct list_head) * mq->nr_queues)) == NULL) {
+	if ((mq->qlh = (struct list_head*)bdbm_malloc_atomic (sizeof (struct list_head) * mq->nr_queues)) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		bdbm_free_atomic (mq);
 		return NULL;

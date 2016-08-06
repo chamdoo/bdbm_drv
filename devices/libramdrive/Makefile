@@ -1,6 +1,6 @@
 # Makefile for a RISA Device Driver
 #
-CC = gcc 
+CC = g++
 OUT = libramdrive.a
 INCLUDE = ../../include
 COMMON = ../../common

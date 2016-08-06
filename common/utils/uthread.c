@@ -58,7 +58,7 @@ int bdbm_thread_fn (void *data)
 bdbm_thread_t* bdbm_thread_create (
 	int (*user_threadfn)(void *data), 
 	void* user_data, 
-	char* name)
+	const char* name)
 {
 	bdbm_thread_t* k = NULL;
 
@@ -188,7 +188,7 @@ void bdbm_thread_yield ()
 #include <pthread.h>
 #include <string.h>
 
-void bdbm_thread_fn (void *data) 
+void* bdbm_thread_fn (void *data) 
 {
 	bdbm_thread_t* k = (bdbm_thread_t*)data;
 
@@ -202,12 +202,13 @@ void bdbm_thread_fn (void *data)
 	bdbm_mutex_unlock (&k->thread_done);
 
 	pthread_exit (0);
+	return NULL;
 };
 
 bdbm_thread_t* bdbm_thread_create (
 	int (*user_threadfn)(void *data), 
 	void* user_data, 
-	char* name)
+	const char* name)
 {
 	bdbm_thread_t* k = NULL;
 
@@ -232,7 +233,7 @@ bdbm_thread_t* bdbm_thread_create (
 
 int bdbm_thread_run (bdbm_thread_t* k)
 {
-	return pthread_create (&k->thread, NULL, (void*)&bdbm_thread_fn, (void*)k);
+	return pthread_create (&k->thread, NULL, bdbm_thread_fn, (void*)k);
 }
 
 int bdbm_thread_schedule (bdbm_thread_t* k)

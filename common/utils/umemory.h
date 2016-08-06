@@ -32,7 +32,7 @@ void* bdbm_zmalloc (size_t size);
 void bdbm_free (void* addr);
 void bdbm_free_phy (void* addr);
 void bdbm_free_atomic (void* addr);
-void* bdbm_memcpy (void* dst, void* src, int size);
-void* bdbm_memset (void* addr, int c, int size);
+void* bdbm_memcpy (void* dst, void* src, size_t size);
+void* bdbm_memset (void* addr, int c, size_t size);
 
 #endif /* _BLUEDBM_MEMORY_H */ 

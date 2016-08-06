@@ -85,13 +85,13 @@ void pmu_create (bdbm_drv_info_t* bdi)
 
 	/* channel / chip utilization */
 	punit = np->nr_chips_per_channel * np->nr_channels;
-	bdi->pm.util_r = bdbm_malloc_atomic (punit * sizeof (atomic64_t));
+	bdi->pm.util_r = (atomic64_t*)bdbm_malloc_atomic (punit * sizeof (atomic64_t));
 	if (bdi->pm.util_r)  {
 		for (i = 0; i < punit; i++) 
 			atomic64_set (&bdi->pm.util_r[i], 0);
 	}
 
-	bdi->pm.util_w = bdbm_malloc_atomic (punit * sizeof (atomic64_t));
+	bdi->pm.util_w = (atomic64_t*)bdbm_malloc_atomic (punit * sizeof (atomic64_t));
 	if (bdi->pm.util_w) {
 		for (i = 0; i < punit; i++) 
 			atomic64_set (&bdi->pm.util_w[i], 0);

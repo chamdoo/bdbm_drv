@@ -51,13 +51,13 @@ THE SOFTWARE.
  * it is useful for debugging */
 /*#define ENABLE_SEQ_DBG*/
 
-
 /* llm interface */
 bdbm_llm_inf_t _llm_mq_inf = {
 	.ptr_private = NULL,
 	.create = llm_mq_create,
 	.destroy = llm_mq_destroy,
 	.make_req = llm_mq_make_req,
+	.make_reqs = NULL,
 	.flush = llm_mq_flush,
 	.end_req = llm_mq_end_req,
 };
@@ -144,6 +144,7 @@ int __llm_mq_thread (void* arg)
 uint32_t llm_mq_create (bdbm_drv_info_t* bdi)
 {
 	struct bdbm_llm_mq_private* p;
+	const char* tname = "__llm_mq_thread";
 	uint64_t loop;
 
 	/* create a private info for llm_nt */
@@ -177,7 +178,7 @@ uint32_t llm_mq_create (bdbm_drv_info_t* bdi)
 
 	/* create & run a thread */
 	if ((p->llm_thread = bdbm_thread_create (
-			__llm_mq_thread, bdi, "__llm_mq_thread")) == NULL) {
+			__llm_mq_thread, bdi, (char*)tname)) == NULL) {
 		bdbm_error ("kthread_create failed");
 		goto fail;
 	}

@@ -284,7 +284,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
 
-	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
+	if (atomic64_read (&hr->nr_llm_reqs_done) == (int64_t)hr->nr_llm_reqs) {
 		/* finish the host request */
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
@@ -297,7 +297,7 @@ void __hlm_nobuf_end_gcio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	atomic64_inc (&hr_gc->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
 
-	if (atomic64_read (&hr_gc->nr_llm_reqs_done) == hr_gc->nr_llm_reqs) {
+	if (atomic64_read (&hr_gc->nr_llm_reqs_done) == (int64_t)hr_gc->nr_llm_reqs) {
 		bdbm_sema_unlock (&hr_gc->done);
 	}
 }

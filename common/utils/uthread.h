@@ -74,7 +74,7 @@ typedef struct {
 
 #endif /* USER_MODE */
 
-bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, char* name);
+bdbm_thread_t* bdbm_thread_create (int (*threadfn)(void *data), void* data, const char* name);
 int bdbm_thread_run (bdbm_thread_t* k);
 int bdbm_thread_schedule (bdbm_thread_t* k);
 void bdbm_thread_wakeup (bdbm_thread_t* k);

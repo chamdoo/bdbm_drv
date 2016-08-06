@@ -107,7 +107,7 @@ bdbm_prior_queue_t* bdbm_prior_queue_create (
 	uint64_t loop;
 
 	/* create a private structure */
-	if ((mq = bdbm_malloc_atomic (sizeof (bdbm_prior_queue_t))) == NULL) {
+	if ((mq = (bdbm_prior_queue_t*)bdbm_malloc_atomic (sizeof (bdbm_prior_queue_t))) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		return NULL;
 	}
@@ -117,7 +117,7 @@ bdbm_prior_queue_t* bdbm_prior_queue_create (
 	bdbm_spin_lock_init (&mq->lock);
 
 	/* create linked-lists */
-	if ((mq->qlh = bdbm_malloc_atomic (sizeof (struct list_head) * mq->nr_queues)) == NULL) {
+	if ((mq->qlh = (struct list_head*)bdbm_malloc_atomic (sizeof (struct list_head) * mq->nr_queues)) == NULL) {
 		bdbm_msg ("bdbm_malloc_alloc failed");
 		bdbm_free_atomic (mq);
 		return NULL;
@@ -165,7 +165,7 @@ uint8_t bdbm_prior_queue_enqueue (
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
 	if (mq->max_size == INFINITE_PRIOR_QUEUE || mq->qic < mq->max_size) {
 		bdbm_prior_queue_item_t* q = NULL;
-		if ((q = bdbm_malloc_atomic (sizeof (bdbm_prior_queue_item_t))) == NULL) {
+		if ((q = (bdbm_prior_queue_item_t*)bdbm_malloc_atomic (sizeof (bdbm_prior_queue_item_t))) == NULL) {
 			bdbm_error ("bdbm_malloc_atomic failed");
 			bdbm_bug_on (1);
 		} else {

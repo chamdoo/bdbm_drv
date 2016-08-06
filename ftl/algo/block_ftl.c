@@ -138,7 +138,7 @@ uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)
 {
 	bdbm_abm_info_t* abm = NULL;
 	bdbm_block_ftl_private_t* p = NULL;
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS(bdi);
 
 	uint64_t nr_segs;
@@ -240,7 +240,7 @@ fail:
 void bdbm_block_ftl_destroy (
 	bdbm_drv_info_t* bdi)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	uint64_t i, j;
 
 	if (p == NULL)
@@ -275,7 +275,7 @@ uint32_t bdbm_block_ftl_get_ppa (
 	bdbm_phyaddr_t* ppa,
 	uint64_t* sp_off)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
@@ -300,9 +300,9 @@ uint32_t bdbm_block_ftl_get_ppa (
 	} 
 
 	/* see if the mapping entry has valid physical locations */ 
-	bdbm_bug_on (e->channel_no == -1);
-	bdbm_bug_on (e->chip_no == -1);
-	bdbm_bug_on (e->block_no == -1);
+	bdbm_bug_on (e->channel_no == (uint64_t)-1);
+	bdbm_bug_on (e->chip_no == (uint64_t)-1);
+	bdbm_bug_on (e->block_no == (uint64_t)-1);
 
 	/* return a phyical page address */
 	ppa->channel_no = e->channel_no;
@@ -325,7 +325,7 @@ uint32_t __bdbm_block_ftl_is_allocated (
 	bdbm_drv_info_t* bdi, 
 	int64_t segment_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint32_t nr_alloc_blks = 0;
 	uint32_t i;
@@ -351,8 +351,8 @@ int32_t __bdbm_block_ftl_allocate_segment (
 	bdbm_drv_info_t* bdi, 
 	int64_t segment_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	uint32_t i;
 
 	for (i = 0; i < p->nr_blks_per_seg; i++) {
@@ -387,7 +387,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 	int64_t lpa,
 	bdbm_phyaddr_t* ppa)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
@@ -489,7 +489,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 	int64_t lpa,
 	bdbm_phyaddr_t* ppa)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
@@ -568,7 +568,7 @@ uint32_t bdbm_block_ftl_get_free_ppa (
 		uint64_t channel_no;
 		uint64_t chip_no;
 		bdbm_abm_block_t* b = NULL;
-		bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+		bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 
 		channel_no = block_no % np->nr_channels;
 		chip_no = block_no / np->nr_channels;
@@ -600,7 +600,7 @@ uint32_t bdbm_block_ftl_map_lpa_to_ppa (
 	bdbm_logaddr_t* logaddr,
 	bdbm_phyaddr_t* ppa)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
@@ -655,7 +655,7 @@ uint32_t bdbm_block_ftl_invalidate_lpa (
 	int64_t lpa,
 	uint64_t len)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
@@ -719,12 +719,12 @@ uint32_t bdbm_block_ftl_invalidate_lpa (
 
 uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t segment_no;
 	uint64_t block_no;
 	uint64_t page_ofs;
-	uint32_t ret = 0;
+	uint8_t ret = 0;
 
 	segment_no = __bdbm_block_ftl_get_segment_no (p, lpa);
 	block_no = __bdbm_block_ftl_get_block_no (p, lpa);
@@ -733,7 +733,7 @@ uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 	bdbm_bug_on (e == NULL);
 
 	if (e->status == BFTL_ALLOCATED) {
-		if (e->rw_pg_ofs != -1 && e->rw_pg_ofs >= page_ofs) {
+		if (e->rw_pg_ofs != -1 && e->rw_pg_ofs >= (int64_t)page_ofs) {
 			/* see if all the segment are invalid */
 			if (p->nr_valid_pgs[segment_no] == 0) {
 				ret = 1; /* trigger GC */
@@ -754,7 +754,7 @@ uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 
 uint32_t __bdbm_block_ftl_erase_block (bdbm_drv_info_t* bdi, uint64_t seg_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i = 0, j = 0;
 
@@ -827,8 +827,8 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 	bdbm_drv_info_t* bdi,
 	uint64_t seg_no)
 {
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = NULL;
 	uint64_t i;
 
@@ -847,9 +847,9 @@ uint32_t __bdbm_block_ftl_do_gc_segment (
 			continue; /* if it is, ignore it */
 
 		/* check error cases */
-		bdbm_bug_on (e->channel_no == -1);
-		bdbm_bug_on (e->chip_no == -1);
-		bdbm_bug_on (e->block_no == -1);
+		bdbm_bug_on (e->channel_no == (uint64_t)-1);
+		bdbm_bug_on (e->chip_no == (uint64_t)-1);
+		bdbm_bug_on (e->block_no == (uint64_t)-1);
 
 		/* reset all the variables */
 		e->status = BFTL_NOT_ALLOCATED;
@@ -878,9 +878,9 @@ uint32_t __bdbm_block_ftl_do_gc_block_merge (
 	uint64_t seg_no,
 	uint64_t blk_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	bdbm_block_mapping_entry_t* e = &p->mt[seg_no][blk_no];
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t j, k, nr_valid_pgs = 0, nr_trim_pgs = 0;
 
@@ -1029,7 +1029,7 @@ uint32_t bdbm_block_ftl_do_gc (
 	int64_t lpa)
 {
 #if 0
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	uint64_t seg_no = -1; /* victim */
 	uint64_t i;
 	uint32_t ret;
@@ -1055,7 +1055,7 @@ uint32_t bdbm_block_ftl_do_gc (
 	ret = __bdbm_block_ftl_do_gc_segment (bdi, seg_no);
 #endif
 
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
 	uint64_t segment_no = __bdbm_block_ftl_get_segment_no (p, lpa);
 	uint64_t block_no = __bdbm_block_ftl_get_block_no (p, lpa);
 
@@ -1067,7 +1067,8 @@ uint32_t bdbm_block_ftl_do_gc (
 
 uint64_t bdbm_block_ftl_get_segno (bdbm_drv_info_t* bdi, uint64_t lpa)
 {
-	return __bdbm_block_ftl_get_segment_no (BDBM_FTL_PRIV (bdi), lpa);
+	return __bdbm_block_ftl_get_segment_no (
+		(bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi), lpa);
 }
 
 uint32_t bdbm_block_ftl_load (bdbm_drv_info_t* bdi, const char* fn)
@@ -1082,8 +1083,8 @@ uint32_t bdbm_block_ftl_store (bdbm_drv_info_t* bdi, const char* fn)
 
 void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t block_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	uint64_t i, j;
 
@@ -1150,9 +1151,9 @@ static void __bdbm_block_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	int i, j;
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
+	uint64_t i, j;
 
 	for (i = 0; i < np->nr_channels; i++) {
 		for (j = 0; j < np->nr_chips_per_channel; j++) {
@@ -1170,8 +1171,8 @@ static void __bdbm_block_mark_it_dead (
 
 uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 {
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
 	uint64_t i = 0, j = 0;
 	uint32_t ret = 0;
@@ -1210,8 +1211,8 @@ uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 	*/
 
 #if 0	
-	bdbm_block_ftl_private_t* p = BDBM_FTL_PRIV (bdi);
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_block_ftl_private_t* p = (bdbm_block_ftl_private_t*)BDBM_FTL_PRIV (bdi);
+	bdbm_device_params_t* np = (bdbm_device_params_t*)BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_block_mapping_entry_t* me = NULL;
 	uint64_t i = 0, j = 0;
 	uint32_t ret = 0;
