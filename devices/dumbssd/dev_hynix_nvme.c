@@ -42,6 +42,7 @@ THE SOFTWARE.
 #define BITS_PER_DIE	6
 
 #define USE_ASYNC
+/*#define USE_LOG*/
 
 static void submit_io_done (struct request *rq, int error)
 {
@@ -73,7 +74,9 @@ int simple_read (dumb_ssd_dev_t* dev, hd_req_t* hc)
 				  hc->die << (BITS_PER_WU + BITS_PER_SLICE) |
 				  hc->wu << (BITS_PER_SLICE);
 
+#ifdef USE_LOG
 	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
+#endif
 
 	bdbm_bug_on (cmd == NULL);
 
@@ -128,7 +131,9 @@ int simple_write (dumb_ssd_dev_t* dev, hd_req_t* hc)
 
 	bdbm_bug_on (cmd == NULL);
 
+#ifdef USE_LOG
 	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
+#endif
 
 	/* setup bio */
 	if (hc->kp_ptr)
@@ -186,7 +191,9 @@ int simple_erase (dumb_ssd_dev_t* dev, hd_req_t* hc)
 
 	bdbm_bug_on (cmd == NULL);
 
+#ifdef USE_LOG
 	bdbm_msg ("  ==> req_ofs: %llu", req_ofs);
+#endif
 
 	ubuffer_64[1] = req_ofs;
 
@@ -268,12 +275,14 @@ uint32_t dev_hynix_nvme_submit_io (
 	case REQTYPE_GC_WRITE:
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_META_WRITE:
+#ifdef USE_LOG
 		bdbm_msg ("WRITE(%x): %llu => %llu, %llu, %llu", 
 			r->req_type,
 			r->logaddr.lpa[0],
 			hc->die, 
 			hc->block,
 			hc->wu);
+#endif
 		hc->rw = WRITE;
 		ret = simple_write (dev, hc);
 		break;
@@ -282,21 +291,25 @@ uint32_t dev_hynix_nvme_submit_io (
 	case REQTYPE_GC_READ:
 	case REQTYPE_RMW_READ:
 	case REQTYPE_META_READ:
+#ifdef USE_LOG
 		bdbm_msg ("READ(%x): %llu => %llu, %llu, %llu", 
 			r->req_type,
 			r->logaddr.lpa[0],
 			hc->die, 
 			hc->block, 
 			hc->wu);
+#endif
 		hc->rw = READ;
 		ret = simple_read (dev, hc);
 		break;
 
 	case REQTYPE_GC_ERASE:
+#ifdef USE_LOG
 		bdbm_msg ("ERASE(%x): %llu, %llu", 
 			r->req_type,
 			hc->die, 
 			hc->block);
+#endif
 		hc->rw = 0xFF;
 		ret = simple_erase (dev, hc);
 		break;
