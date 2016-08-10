@@ -1,7 +1,7 @@
 # Makefile for a RISA Device Driver
 #
 
-CC = g++
+CC = arm-linux-gnueabihf-g++
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
@@ -22,11 +22,6 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USER_MODE \
 		  -D USE_PMU \
-		  #-D USE_NEW_RMW \
-
-#DMLIB := ../../devices/libdummy/libdummy.a
-#DMLIB := ../../devices/libramdrive/libramdrive.a
-#DMLIB := dev_proxy.c $(DM_COMMON)/dev_params.c
 
 LIBSRC := \
 	userio.c \
@@ -58,9 +53,6 @@ $(OUT): $(LIBOBJ)
 
 .c.o:
 	$(CC) $(INCLUDES) $(LIBS) $(CFLAGS) -c $< -o $@
-
-
-#all: $(OUT) 
 
 clean:
 	@$(RM) *.o core *~ libftl 

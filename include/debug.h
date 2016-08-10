@@ -29,11 +29,11 @@ THE SOFTWARE.
 #ifdef CONFIG_ENABLE_MSG
 	#define bdbm_msg(fmt, ...)  \
 		do {    \
-			printk(KERN_INFO "bdbm: " fmt "\n", ##__VA_ARGS__);  \
+			printk(KERN_INFO "nohost: " fmt "\n", ##__VA_ARGS__);  \
 		} while (0);
 	#define bdbm_track() \
 		do {	\
-			printk(KERN_INFO "bdbm: [%s:%d]\n", __FUNCTION__, __LINE__); \
+			printk(KERN_INFO "nohost: [%s:%d]\n", __FUNCTION__, __LINE__); \
 		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
@@ -41,11 +41,11 @@ THE SOFTWARE.
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \
-		printk(KERN_ERR "bdbm-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
+		printk(KERN_ERR "nohost-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 #define bdbm_error(fmt, ...)  \
 	do {    \
-		printk(KERN_ERR "bdbm-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
+		printk(KERN_ERR "nohost-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 
 
@@ -56,11 +56,11 @@ THE SOFTWARE.
 #ifdef CONFIG_ENABLE_MSG
 	#define bdbm_msg(fmt, ...)  \
 		do {    \
-			printf("bdbm: " fmt "\n", ##__VA_ARGS__);  \
+			printf("nohost: " fmt "\n", ##__VA_ARGS__);  \
 		} while (0);
 	#define bdbm_track() \
 		do {	\
-			printf("bdbm: [%s:%d]\n", __FUNCTION__, __LINE__); \
+			printf("nohost: [%s:%d]\n", __FUNCTION__, __LINE__); \
 		} while (0);
 #else
 	#define bdbm_msg(fmt, ...)
@@ -68,11 +68,11 @@ THE SOFTWARE.
 #endif
 #define bdbm_warning(fmt, ...)  \
 	do {    \
-		printf("bdbm-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
+		printf("nohost-warning: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 #define bdbm_error(fmt, ...)  \
 	do {    \
-		printf("bdbm-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
+		printf("nohost-error: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 	} while (0);
 
 #define BUG_ON(a) 
@@ -88,7 +88,7 @@ THE SOFTWARE.
 #define bdbm_warn_on(condition) \
 	do { 	\
 		if (condition)	\
-			bdbm_warning ("bdbm_warn_on"); \
+			bdbm_warning ("nohost_warn_on"); \
 		WARN_ON(condition); \
 	} while (0);
 
@@ -97,12 +97,12 @@ THE SOFTWARE.
 	#define bdbm_bug_on(condition)  \
 		do { 	\
 			if (condition)	\
-				bdbm_error ("bdbm_bug_on"); \
+				bdbm_error ("nohost_bug_on"); \
 			BUG_ON(condition); \
 		} while (0);
 	#define bdbm_dbg_msg(fmt, ...)  \
 		do {    \
-			printk(KERN_INFO "bdbm: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
+			printk(KERN_INFO "nohost: " fmt " [%s:%d]\n", ##__VA_ARGS__, __FILE__, __LINE__);    \
 		} while (0);
 #else
 	#define bdbm_bug_on(condition)

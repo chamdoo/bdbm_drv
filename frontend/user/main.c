@@ -77,19 +77,30 @@ void write_done (void* req)
 	uint32_t j = 0;
 	bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)req;
 
+	/*bdbm_msg ("write_done - 1");*/
+
+	bdbm_sema_unlock ((bdbm_sema_t*)blkio_req->user2);
+
+	/*
 	for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
 		bdbm_free (blkio_req->bi_bvec_ptr[j]);
 	bdbm_free (blkio_req);
+	*/
+
+	bdbm_msg ("write_done - 2");
 }
 
-void* host_thread_fn_write (void *data) 
+/*void* host_thread_fn_write (void *data) */
+void* host_thread_fn_write (int lpa) 
 {
 	int i = 0;
 	uint32_t j = 0;
-	int offset = 0; /* sector (512B) */
-	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
+	int offset = lpa*8; /* sector (512B) */
+	int size = 8; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 10000; i++) {
+	bdbm_msg ("write_submit - 1");
+
+	for (i = 0; i < 1; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
 		/* build blkio req */
@@ -99,6 +110,9 @@ void* host_thread_fn_write (void *data)
 		blkio_req->bi_bvec_cnt = size / 8;
 		blkio_req->cb_done = write_done;
 		blkio_req->user = (void*)blkio_req;
+		blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+
+		bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
 
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
 			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
@@ -108,14 +122,27 @@ void* host_thread_fn_write (void *data)
 		}
 
 		/* send req to ftl */
+		bdbm_msg ("write_submit - 2");
+
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
+		/*bdbm_msg (" .... waiting for ack from dm");*/
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+		bdbm_msg ("write_submit - 3");
+
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+			bdbm_free (blkio_req->bi_bvec_ptr[j]);
+		bdbm_free (blkio_req);
 
 		/* increase offset */
 		offset += size;
 		w_cnt++;
 	}
 
-	pthread_exit (NULL);
+	bdbm_msg ("write_submit - 4");
+
+	/*pthread_exit (NULL);*/
 	return NULL;
 }
 
@@ -124,6 +151,7 @@ void read_done (void* req)
 	uint32_t j = 0;
 	bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)req;
 
+#if 0
 	for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
 		if (blkio_req->bi_bvec_ptr[j][0] != (uint8_t)blkio_req->bi_offset) {
 			bdbm_msg ("mismatch: %u %u", 
@@ -143,17 +171,32 @@ void read_done (void* req)
 		bdbm_free (blkio_req->bi_bvec_ptr[j]);
 	}
 	bdbm_free (blkio_req);
+#endif
+	/*bdbm_msg ("read_done - 1");*/
+
+	bdbm_sema_unlock ((bdbm_sema_t*)blkio_req->user2);
+
+	/*
+	for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+		bdbm_free (blkio_req->bi_bvec_ptr[j]);
+	bdbm_free (blkio_req);
+	*/
+
+	bdbm_msg ("read_done - 2");
 }
 
-void* host_thread_fn_read (void *data) 
+/*void* host_thread_fn_read (void *data) */
+void* host_thread_fn_read (int lpa) 
 {
 	int i = 0;
 	uint32_t j = 0;
-	int offset = 0; /* sector (512B) */
-	int size = 8 * 32; /* 512B * 8 * 32 = 128 KB */
+	int offset = lpa*8; /* sector (512B) */
+	int size = 8; /* 512B * 8 * 32 = 128 KB */
 
-	for (i = 0; i < 10000; i++) {
+	for (i = 0; i < 1; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
+
+		/*bdbm_msg ("read_submit - 1");*/
 
 		/* build blkio req */
 		blkio_req->bi_rw = REQTYPE_READ;
@@ -162,6 +205,9 @@ void* host_thread_fn_read (void *data)
 		blkio_req->bi_bvec_cnt = size / 8;
 		blkio_req->cb_done = read_done;
 		blkio_req->user = (void*)blkio_req;
+		blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+
+		bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
 
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
 			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
@@ -172,15 +218,83 @@ void* host_thread_fn_read (void *data)
 		}
 
 		/* send req to ftl */
+		bdbm_msg ("read_submit - 2");
+
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
+		bdbm_msg (" .... waiting for ack from dm");
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+		bdbm_msg ("read_submit - 3");
+
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+			bdbm_free (blkio_req->bi_bvec_ptr[j]);
+		bdbm_free (blkio_req);
 
 		/* increase offset */
 		offset += size;
 	}
 
-	pthread_exit (NULL);
+	/*pthread_exit (NULL);*/
 	return NULL;
 }
+
+void erase_done (void* req)
+{
+	bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)req;
+	bdbm_sema_unlock ((bdbm_sema_t*)blkio_req->user2);
+
+	bdbm_msg ("erase_done");
+}
+
+/*void* host_thread_fn_read (void *data) */
+void* host_thread_fn_erase (int lpa) 
+{
+	int i = 0;
+	uint32_t j = 0;
+	int offset = lpa * 8; /* sector (512B) */
+	int size = 8; /* 512B * 8 * 32 = 128 KB */
+
+	for (i = 0; i < 1; i++) {
+		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
+
+		/* build blkio req */
+		blkio_req->bi_rw = REQTYPE_TRIM;
+		blkio_req->bi_offset = offset;
+		blkio_req->bi_size = size;
+		blkio_req->bi_bvec_cnt = size / 8;
+		blkio_req->cb_done = erase_done;
+		blkio_req->user = (void*)blkio_req;
+		blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+
+		bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
+
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
+			if (blkio_req->bi_bvec_ptr[j] == NULL) {
+				bdbm_msg ("bdbm_malloc () failed");
+				exit (-1);
+			}
+		}
+
+		/* send req to ftl */
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
+		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+			bdbm_free (blkio_req->bi_bvec_ptr[j]);
+		bdbm_free (blkio_req);
+
+		/* increase offset */
+		offset += size;
+	}
+
+	/*pthread_exit (NULL);*/
+	return NULL;
+}
+
+
 
 int main (int argc, char** argv)
 {
@@ -205,6 +319,7 @@ int main (int argc, char** argv)
 	bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi));
 	bdbm_drv_run (_bdi);
 
+#if 0
 	do {
 		bdbm_msg ("[main] start writes");
 		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
@@ -233,6 +348,20 @@ int main (int argc, char** argv)
 		}
 
 	} while (0);
+#endif
+
+	/*host_thread_fn_write (NULL);*/
+
+	for (int i = 0; i < 256*64; i++) {
+		host_thread_fn_write (i);
+		host_thread_fn_read (i);
+	}
+
+	printf ("erasing....");
+	for (int i = 0; i < 64; i++) {
+		host_thread_fn_erase (i);
+	}
+
 
 	bdbm_msg ("[main] destroy bdbm_drv");
 	bdbm_drv_close (_bdi);
