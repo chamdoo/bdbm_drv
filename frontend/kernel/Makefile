@@ -54,9 +54,9 @@ EXTRA_CFLAGS += -D USE_NEW_RMW
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
-	$(COMMON)/bdbm_main.o \
+	$(COMMON)/bm_main.o \
 
-bdbm_drv-y := \
+robusta_drv-y := \
 	kmain.o \
 	blkdev.o \
 	blkio.o \
@@ -79,7 +79,7 @@ bdbm_drv-y := \
 	$(COMMON)/bdbm_main.o \
 
 
-obj-m := bdbm_drv.o
+obj-m := robusta_drv.o
 
 ccflags-y := -I$(src)
 

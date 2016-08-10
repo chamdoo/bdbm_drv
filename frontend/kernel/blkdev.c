@@ -209,13 +209,13 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	}
 
 	/* register a blk device */
-	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
+	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "robusta")) < 0) {
 		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
 		return bdbm_device_major_num;
 	}
 	if (!(bdbm_device.gd = alloc_disk (1))) {
 		bdbm_msg ("alloc_disk failed");
-		unregister_blkdev (bdbm_device_major_num, "blueDBM");
+		unregister_blkdev (bdbm_device_major_num, "robusta");
 		return -ENOMEM;
 	}
 	bdbm_device.gd->major = bdbm_device_major_num;
@@ -223,7 +223,7 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	bdbm_device.gd->fops = &bdops;
 	bdbm_device.gd->queue = bdbm_device.queue;
 	bdbm_device.gd->private_data = NULL;
-	strcpy (bdbm_device.gd->disk_name, "blueDBM");
+	strcpy (bdbm_device.gd->disk_name, "robusta");
 
 	{
 		uint64_t capacity;
@@ -244,6 +244,6 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 	del_gendisk (bdbm_device.gd);
 	blk_cleanup_queue (bdbm_device.gd->queue);
 	put_disk (bdbm_device.gd);
-	unregister_blkdev (bdbm_device_major_num, "blueDBM");
+	unregister_blkdev (bdbm_device_major_num, "robusta");
 }
 

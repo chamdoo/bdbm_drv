@@ -154,10 +154,10 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi)
 		return 1;
 	}
 
-	/* register blueDBM */
+	/* register robusta */
 	if ((ret = host_blkdev_register_device
 			(bdi, __host_blkio_make_request_fn)) != 0) {
-		bdbm_error ("failed to register blueDBM");
+		bdbm_error ("failed to register robusta");
 		bdbm_free (p);
 		return 1;
 	}
@@ -573,10 +573,10 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi)
 	atomic64_set (&p->nr_reqs, 0);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
-	/* register blueDBM */
+	/* register robusta*/
 	if ((ret = host_blkdev_register_device
 			(bdi, __host_blkio_make_request_fn)) != 0) {
-		bdbm_error ("failed to register blueDBM");
+		bdbm_error ("failed to register robusta");
 		bdbm_free_atomic (p);
 		return 1;
 	}

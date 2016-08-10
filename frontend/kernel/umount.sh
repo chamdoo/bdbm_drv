@@ -1,6 +1,6 @@
-sudo umount /media/blueDBM
+sudo umount /media/robusta
 sleep 1
-sudo rmmod bdbm_drv
+sudo rmmod robusta_drv
 sleep 5
 sudo rmmod nvme
 sleep 1 

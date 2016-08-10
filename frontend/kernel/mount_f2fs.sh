@@ -9,5 +9,5 @@ sudo insmod nvme.ko
 sleep 1
 sudo insmod bdbm_drv.ko
 sleep 1
-sudo mkfs.f2fs -a 0 -s 2 /dev/blueDBM
-sudo mount -t f2fs -o discard /dev/blueDBM /media/blueDBM
+sudo mkfs.f2fs -a 0 -s 2 /dev/robusta
+sudo mount -t f2fs -o discard /dev/robusta /media/robusta
