@@ -96,7 +96,7 @@ void userio_close (bdbm_drv_info_t* bdi)
 	p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
 
 	/* wait for host reqs to finish */
-	bdbm_msg ("wait for host reqs to finish");
+	//bdbm_msg ("wait for host reqs to finish");
 	for (;;) {
 		/*if (atomic_read (&p->nr_host_reqs) == 0)*/
 		/*break;*/
@@ -107,7 +107,7 @@ void userio_close (bdbm_drv_info_t* bdi)
 		}
 		bdbm_sema_unlock (&p->count_lock);
 
-		bdbm_msg ("p->nr_host_reqs = %llu", p->nr_host_reqs);
+		//bdbm_msg ("p->nr_host_reqs = %llu", p->nr_host_reqs);
 		bdbm_thread_msleep (1);
 	}
 
@@ -128,7 +128,7 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
 	bdbm_hlm_req_t* hr = NULL;
 
-	bdbm_msg ("userio_make_req - begin");
+	//bdbm_msg ("userio_make_req - begin");
 
 	/* get a free hlm_req from the hlm_reqs_pool */
 	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
@@ -167,7 +167,7 @@ void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 	}
 	bdbm_sema_unlock (&p->host_lock);
 
-	bdbm_msg ("userio_make_req - done");
+	//bdbm_msg ("userio_make_req - done");
 }
 
 void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
@@ -175,7 +175,7 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
 
-	bdbm_msg ("userio_end_req");
+	//bdbm_msg ("userio_end_req");
 
 	/* destroy hlm_req */
 	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, req);
