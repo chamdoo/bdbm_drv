@@ -14,15 +14,15 @@
 	#--numjobs=8 \
 	#--fsync=1000
 
-sudo rm /media/blueDBM/fio
+sudo rm /media/hoon/TEMP/fio
 
 sudo fio --randrepeat=1 \
 	--ioengine=libaio \
 	--name=fio\
-	--filename=/media/blueDBM/fio \
+	--filename=/media/hoon/TEMP/fio \
 	--bs=4k \
 	--iodepth=128 \
-	--size=1000M \
+	--size=7000M \
 	--readwrite=randrw \
 	--rwmixread=0 \
 	--overwrite=0 \
