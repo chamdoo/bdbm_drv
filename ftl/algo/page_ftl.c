@@ -363,6 +363,12 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
 	/* is it a valid logical address */
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
+                printf("logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
+                                logaddr->lpa[k], logaddr->ofs,
+				phyaddr->channel_no, 
+				phyaddr->chip_no,
+				phyaddr->block_no,
+				phyaddr->page_no);
 		if (logaddr->lpa[k] == -1) {
 			/* the correpsonding subpage must be set to invalid for gc */
 			bdbm_abm_invalidate_page (
