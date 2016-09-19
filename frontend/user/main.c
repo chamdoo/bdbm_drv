@@ -72,6 +72,9 @@ bdbm_drv_info_t* _bdi = NULL;
 
 static int w_cnt = 0;
 
+void* host_thread_fn_read_tracefile (size_t offset, int size);
+void* host_thread_fn_write_tracefile (size_t offset, int size);
+
 void write_done (void* req)
 {
 	uint32_t j = 0;
@@ -87,7 +90,7 @@ void write_done (void* req)
 	bdbm_free (blkio_req);
 	*/
 
-	bdbm_msg ("write_done - 2");
+	//bdbm_msg ("write_done - 2");
 }
 
 /*void* host_thread_fn_write (void *data) */
@@ -98,7 +101,7 @@ void* host_thread_fn_write (int lpa)
 	int offset = lpa*8; /* sector (512B) */
 	int size = 8; /* 512B * 8 * 32 = 128 KB */
 
-	bdbm_msg ("write_submit - 1");
+	//bdbm_msg ("write_submit - 1");
 
 	for (i = 0; i < 1; i++) {
 		bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
@@ -122,14 +125,14 @@ void* host_thread_fn_write (int lpa)
 		}
 
 		/* send req to ftl */
-		bdbm_msg ("write_submit - 2");
+		//bdbm_msg ("write_submit - 2");
 
 		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
 		/*bdbm_msg (" .... waiting for ack from dm");*/
 		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 
-		bdbm_msg ("write_submit - 3");
+		//bdbm_msg ("write_submit - 3");
 
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
 			bdbm_free (blkio_req->bi_bvec_ptr[j]);
@@ -140,7 +143,7 @@ void* host_thread_fn_write (int lpa)
 		w_cnt++;
 	}
 
-	bdbm_msg ("write_submit - 4");
+	//bdbm_msg ("write_submit - 4");
 
 	/*pthread_exit (NULL);*/
 	return NULL;
@@ -182,7 +185,7 @@ void read_done (void* req)
 	bdbm_free (blkio_req);
 	*/
 
-	bdbm_msg ("read_done - 2");
+	//bdbm_msg ("read_done - 2");
 }
 
 /*void* host_thread_fn_read (void *data) */
@@ -218,14 +221,14 @@ void* host_thread_fn_read (int lpa)
 		}
 
 		/* send req to ftl */
-		bdbm_msg ("read_submit - 2");
+		//bdbm_msg ("read_submit - 2");
 
 		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 		_bdi->ptr_host_inf->make_req (_bdi, blkio_req);
-		bdbm_msg (" .... waiting for ack from dm");
+		//bdbm_msg (" .... waiting for ack from dm");
 		bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 
-		bdbm_msg ("read_submit - 3");
+		//bdbm_msg ("read_submit - 3");
 
 		for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
 			bdbm_free (blkio_req->bi_bvec_ptr[j]);
@@ -244,7 +247,7 @@ void erase_done (void* req)
 	bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)req;
 	bdbm_sema_unlock ((bdbm_sema_t*)blkio_req->user2);
 
-	bdbm_msg ("erase_done");
+	//bdbm_msg ("erase_done");
 }
 
 /*void* host_thread_fn_read (void *data) */
@@ -302,74 +305,187 @@ int main (int argc, char** argv)
 
 	pthread_t thread[NUM_THREADS];
 	int thread_args[NUM_THREADS];
+        int fd;
+        FILE* fp;
+        char tmps[64];
+        char ops[16];
+        float tmpf;
+        int tmp;
+        size_t offset, limit=0;
+        int size;
+        //bdbm_msg ("[main] run ftlib... (%d)", sizeof (bdbm_llm_req_t));
 
-	bdbm_msg ("[main] run ftlib... (%d)", sizeof (bdbm_llm_req_t));
+        //bdbm_msg ("[user-main] initialize bdbm_drv");
+        if ((_bdi = bdbm_drv_create ()) == NULL) {
+                bdbm_error ("[kmain] bdbm_drv_create () failed");
+                return -1;
+        }
 
-	bdbm_msg ("[user-main] initialize bdbm_drv");
-	if ((_bdi = bdbm_drv_create ()) == NULL) {
-		bdbm_error ("[kmain] bdbm_drv_create () failed");
-		return -1;
-	}
+        if (bdbm_dm_init (_bdi) != 0) {
+                bdbm_error ("[kmain] bdbm_dm_init () failed");
+                return -1;
+        }
 
-	if (bdbm_dm_init (_bdi) != 0) {
-		bdbm_error ("[kmain] bdbm_dm_init () failed");
-		return -1;
-	}
-
-	bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi));
-	bdbm_drv_run (_bdi);
+        bdbm_drv_setup (_bdi, &_userio_inf, bdbm_dm_get_inf (_bdi));
+        bdbm_drv_run (_bdi);
 
 #if 0
-	do {
-		bdbm_msg ("[main] start writes");
-		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			thread_args[loop_thread] = loop_thread;
-			pthread_create (&thread[loop_thread], NULL, 
-				&host_thread_fn_write, 
-				(void*)&thread_args[loop_thread]);
-		}
+        do {
+                bdbm_msg ("[main] start writes");
+                for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+                        thread_args[loop_thread] = loop_thread;
+                        pthread_create (&thread[loop_thread], NULL,
+                                        &host_thread_fn_write,
+                                        (void*)&thread_args[loop_thread]);
+                }
 
-		bdbm_msg ("[main] wait for threads to end...");
-		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			pthread_join (thread[loop_thread], NULL);
-		}
+                bdbm_msg ("[main] wait for threads to end...");
+                for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+                        pthread_join (thread[loop_thread], NULL);
+                }
 
-		bdbm_msg ("[main] start reads");
-		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			thread_args[loop_thread] = loop_thread;
-			pthread_create (&thread[loop_thread], NULL, 
-				&host_thread_fn_read, 
-				(void*)&thread_args[loop_thread]);
-		}
+                bdbm_msg ("[main] start reads");
+                for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+                        thread_args[loop_thread] = loop_thread;
+                        pthread_create (&thread[loop_thread], NULL,
+                                        &host_thread_fn_read,
+                                        (void*)&thread_args[loop_thread]);
+                }
 
-		bdbm_msg ("[main] wait for threads to end...");
-		for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
-			pthread_join (thread[loop_thread], NULL);
-		}
+                bdbm_msg ("[main] wait for threads to end...");
+                for (loop_thread = 0; loop_thread < NUM_THREADS; loop_thread++) {
+                        pthread_join (thread[loop_thread], NULL);
+                }
 
-	} while (0);
+        } while (0);
 #endif
 
-	/*host_thread_fn_write (NULL);*/
+        /*host_thread_fn_write (NULL);*/
 
-	for (i = 0; i < 256*64; i++) {
-		host_thread_fn_write (i);
-		host_thread_fn_read (i);
-	}
-
-	printf ("erasing....");
-	for (i = 0; i < 64; i++) {
-		host_thread_fn_erase (i);
-	}
+        /*
+           for (i = 0; i < 256*64; i++) {
+           host_thread_fn_write (i);
+           host_thread_fn_read (i);
+           }
 
 
-	bdbm_msg ("[main] destroy bdbm_drv");
-	bdbm_drv_close (_bdi);
-	bdbm_dm_exit (_bdi);
-	bdbm_drv_destroy (_bdi);
+           printf ("erasing....");
+           for (i = 0; i < 64; i++) {
+           host_thread_fn_erase (i);
+           }
+           */
+        limit = _bdi->parm_dev.nr_channels * _bdi->parm_dev.nr_chips_per_channel *
+                _bdi->parm_dev.nr_blocks_per_chip *
+                _bdi->parm_dev.nr_pages_per_block *
+                _bdi->parm_dev.page_main_size / 512;
 
-	bdbm_msg ("[main] done");
+        fd = open(argv[1], O_RDONLY);
+        fp = fdopen(fd, "r");
+        while(!feof(fp)){
 
-	return 0;
+                fscanf(fp, "%d,%d %d %d %d.%d %d %[^ ] %[^ ] %zu + %d %[^ ]\n", \
+                                &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, \
+                                tmps, ops, &offset, &size, tmps);
+
+             //   printf("%s,%zu,%d\n",  ops, offset, size);
+                if(offset >= limit)
+                        continue;
+
+                if(ops[0] == 'W'){
+                        host_thread_fn_write_tracefile (offset, size);
+                }
+                else if(ops[0] == 'R'){
+                        host_thread_fn_read_tracefile (offset, size);
+                }
+
+        }
+
+
+
+
+
+        bdbm_msg ("[main] destroy bdbm_drv");
+        bdbm_drv_close (_bdi);
+        bdbm_dm_exit (_bdi);
+        bdbm_drv_destroy (_bdi);
+
+        bdbm_msg ("[main] done");
+
+        return 0;
 }
 
+void* host_thread_fn_write_tracefile (size_t offset, int size) 
+{
+        int i = 0;
+        uint32_t j = 0;
+
+        for (i = 0; i < 1; i++) {
+                bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
+
+                /* build blkio req */
+                blkio_req->bi_rw = REQTYPE_WRITE;
+                blkio_req->bi_offset = offset;
+                blkio_req->bi_size = size;
+                blkio_req->bi_bvec_cnt = size / 8;
+                blkio_req->cb_done = write_done;
+                blkio_req->user = (void*)blkio_req;
+                blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+
+                bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
+
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+                        blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
+                }
+
+                bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+                _bdi->ptr_host_inf->make_req (_bdi, blkio_req);
+                bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+                        bdbm_free (blkio_req->bi_bvec_ptr[j]);
+                bdbm_free (blkio_req);
+
+                offset += size;
+                w_cnt++;
+        }
+
+        return NULL;
+}
+
+void* host_thread_fn_read_tracefile (size_t offset, int size) 
+{
+        int i = 0;
+        uint32_t j = 0;
+
+        for (i = 0; i < 1; i++) {
+                bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
+
+                /* build blkio req */
+                blkio_req->bi_rw = REQTYPE_READ;
+                blkio_req->bi_offset = offset;
+                blkio_req->bi_size = size;
+                blkio_req->bi_bvec_cnt = size / 8;
+                blkio_req->cb_done = write_done;
+                blkio_req->user = (void*)blkio_req;
+                blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+
+                bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
+
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+                        blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
+                }
+
+                bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+                _bdi->ptr_host_inf->make_req (_bdi, blkio_req);
+                bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++)
+                        bdbm_free (blkio_req->bi_bvec_ptr[j]);
+                bdbm_free (blkio_req);
+
+                offset += size;
+                w_cnt++;
+        }
+
+        return NULL;
+}
