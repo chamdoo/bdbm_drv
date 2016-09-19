@@ -1,7 +1,8 @@
 # Makefile for a RISA Device Driver
 #
 
-CC = arm-linux-gnueabihf-g++
+CC = g++
+#CC = arm-linux-gnueabihf-g++
 FTL := ../../ftl
 INCLUDE := ../../include
 COMMON := ../../common
@@ -23,8 +24,8 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D USE_PMU \
 	#	  -D USE_NEW_RMW \
 
-#DMLIB := ../../devices/libramdrive/libramdrive.a
-DMLIB := ../../devices/nohost/nohost.a
+DMLIB := ../../devices/libramdrive/libramdrive.a
+#DMLIB := ../../devices/nohost/nohost.a
 LIBFTL := libftl.a
 
 SRCS := \
