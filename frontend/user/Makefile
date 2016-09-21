@@ -21,7 +21,7 @@ CFLAGS += -D HASH_BLOOM=20 \
 		  -D CONFIG_ENABLE_DEBUG \
 		  -D USER_MODE \
 		  -D USE_PMU \
-	#	  -D USE_NEW_RMW \
+		  -D USE_NEW_RMW \
 
 #DMLIB := ../../devices/libramdrive/libramdrive.a
 DMLIB := ../../devices/libdummy/libdummy.a

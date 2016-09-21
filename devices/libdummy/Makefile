@@ -23,7 +23,8 @@ CFLAGS += \
 	-D CONFIG_DEVICE_TYPE_USER_DUMMY \
 	-D USE_PMU \
 	-D USE_KTIMER \
-	-D USER_MODE
+	-D USER_MODE \
+	-D USE_NEW_RMW
 
 LIBSRC := \
 	dm_dummy.c \
