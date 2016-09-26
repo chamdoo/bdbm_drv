@@ -379,6 +379,7 @@ int main (int argc, char** argv)
                 _bdi->parm_dev.nr_pages_per_block *
                 _bdi->parm_dev.page_main_size / 512;
 
+        i = 0;
         fd = open(argv[1], O_RDONLY);
         fp = fdopen(fd, "r");
         while(!feof(fp)){
@@ -387,7 +388,12 @@ int main (int argc, char** argv)
                                 &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, \
                                 tmps, ops, &offset, &size, tmps);
 
-                printf("%s,%zu,%d\n",  ops, offset, size);
+                printf("%d : %s,%zu,%d\n", i++, ops, offset, size);
+                if(i == 270712)
+                {
+                        printf("stop\n");
+                        printf("stop\n");
+                }
                 if(offset >= limit)
                         continue;
 
@@ -433,16 +439,18 @@ void* host_thread_fn_write_tracefile (size_t offset, int size)
 
                 bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
 
-                blkio_req->bi_bvec_ptr[0] = (uint8_t*)bdbm_malloc (4096);
-                for (j = 1; j < blkio_req->bi_bvec_cnt; j++) {
-                        blkio_req->bi_bvec_ptr[j] = blkio_req->bi_bvec_ptr[0];
+		for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+			blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
                 }
 
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
                 _bdi->ptr_host_inf->make_req (_bdi, blkio_req);
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 
-                bdbm_free (blkio_req->bi_bvec_ptr[0]);
+
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+                        bdbm_free (blkio_req->bi_bvec_ptr[j]);
+                }
                 bdbm_free (blkio_req);
 
                 offset += size;
@@ -471,16 +479,17 @@ void* host_thread_fn_read_tracefile (size_t offset, int size)
 
                 bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
 
-                blkio_req->bi_bvec_ptr[0] = (uint8_t*)bdbm_malloc (4096);
-                for (j = 1; j < blkio_req->bi_bvec_cnt; j++) {
-                        blkio_req->bi_bvec_ptr[j] = blkio_req->bi_bvec_ptr[0];
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+                        blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc (4096);
                 }
 
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
                 _bdi->ptr_host_inf->make_req (_bdi, blkio_req);
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
 
-                bdbm_free (blkio_req->bi_bvec_ptr[0]);
+                for (j = 0; j < blkio_req->bi_bvec_cnt; j++) {
+                        bdbm_free (blkio_req->bi_bvec_ptr[j]);
+                }
                 bdbm_free (blkio_req);
 
                 offset += size;

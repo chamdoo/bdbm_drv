@@ -54,6 +54,7 @@ struct dm_user_private {
 	bdbm_spinlock_t dm_lock;
 	uint64_t w_cnt;
 	uint64_t w_cnt_done;
+        uint64_t* oob_data;
 };
 
 static void __dm_setup_device_params (bdbm_device_params_t* params)
@@ -114,89 +115,125 @@ uint32_t dm_user_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* params)
 		goto fail;
 	}
 
-	/* initialize some variables */
-	bdbm_spin_lock_init (&p->dm_lock);
-	p->w_cnt = 0;
-	p->w_cnt_done = 0;
+        if ((p->oob_data = (uint64_t*)bdbm_malloc
+                                (sizeof (uint64_t) * params->nr_subpages_per_ssd)) == NULL) {
+                bdbm_error ("bdbm_malloc failed(oob_data)");
+                goto fail;
+        }
 
-	/* OK! keep private info */
-	bdi->ptr_dm_inf->ptr_private = (void*)p;
+        /* initialize some variables */
+        bdbm_spin_lock_init (&p->dm_lock);
+        p->w_cnt = 0;
+        p->w_cnt_done = 0;
 
-	return 0;
+        /* OK! keep private info */
+        bdi->ptr_dm_inf->ptr_private = (void*)p;
+
+        return 0;
 
 fail:
-	return -1;
+        return -1;
 }
 
 uint32_t dm_user_open (bdbm_drv_info_t* bdi)
 {
-	struct dm_user_private * p;
+        struct dm_user_private * p;
 
-	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_user_open is initialized");
 
-	return 0;
+        bdbm_msg ("dm_user_open is initialized");
+
+        return 0;
 }
 
 void dm_user_close (bdbm_drv_info_t* bdi)
 {
-	struct dm_user_private* p; 
+        struct dm_user_private* p; 
 
-	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("dm_user: w_cnt = %llu, w_cnt_done = %llu", p->w_cnt, p->w_cnt_done);
-	bdbm_msg ("dm_user_close is destroyed");
+        bdbm_msg ("dm_user: w_cnt = %llu, w_cnt_done = %llu", p->w_cnt, p->w_cnt_done);
+        bdbm_msg ("dm_user_close is destroyed");
 
-	bdbm_free_atomic (p);
+        bdbm_free_atomic (p);
 }
 
 uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
-	struct dm_user_private* p; 
+        struct dm_user_private* p; 
+	bdbm_device_params_t dp = bdi->parm_dev;
+        bdbm_llm_req_t* r = ptr_llm_req;
+        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        uint64_t idx = (r->phyaddr.channel_no * dp.nr_blocks_per_channel * dp.nr_subpages_per_block) + 
+                (r->phyaddr.chip_no * dp.nr_blocks_per_chip * dp.nr_subpages_per_block) + 
+                (r->phyaddr.block_no * dp.nr_subpages_per_block) + r->phyaddr.page_no;
 
-	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	/*TODO: do somthing */
-	bdbm_spin_lock (&p->dm_lock);
-	p->w_cnt++;
-	bdbm_spin_unlock (&p->dm_lock);
 
-	dm_user_end_req (bdi, ptr_llm_req);
+        /*TODO: do somthing */
+        bdbm_spin_lock (&p->dm_lock);
+        p->w_cnt++;
+        
+        if(bdbm_is_read(r->req_type)){
+                ((uint64_t*)r->foob.data)[0] = p->oob_data[idx];
+        /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d\n",
+                                p->oob_data[r->phyaddr.punit_id],
+                                r->phyaddr.channel_no,
+                                r->phyaddr.chip_no,
+                                r->phyaddr.block_no,
+                                r->phyaddr.page_no,
+                                r->phyaddr.punit_id);*/
 
-	return 0;
+        }
+        else if(bdbm_is_write(r->req_type)){
+                p->oob_data[idx] = r->logaddr.lpa[0];
+            /*    printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d\n",r->logaddr.lpa[0],
+                                r->phyaddr.channel_no,
+                                r->phyaddr.chip_no,
+                                r->phyaddr.block_no,
+                                r->phyaddr.page_no,
+                                r->phyaddr.punit_id);
+                                */
+
+        }
+        bdbm_spin_unlock (&p->dm_lock);
+
+        dm_user_end_req (bdi, ptr_llm_req);
+
+        return 0;
 }
 
 void dm_user_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
-	struct dm_user_private* p; 
+        struct dm_user_private* p; 
 
-	p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_spin_lock (&p->dm_lock);
-	p->w_cnt_done++;
-	bdbm_spin_unlock (&p->dm_lock);
+        bdbm_spin_lock (&p->dm_lock);
+        p->w_cnt_done++;
+        bdbm_spin_unlock (&p->dm_lock);
 
-	bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
+        bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }
 
 /* for snapshot */
 uint32_t dm_user_load (bdbm_drv_info_t* bdi, const char* fn)
 {	
-	struct dm_user_private * p = 
-		(struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        struct dm_user_private * p = 
+                (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("loading a DRAM snapshot...");
+        bdbm_msg ("loading a DRAM snapshot...");
 
-	return 0;
+        return 0;
 }
 
 uint32_t dm_user_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-	struct dm_user_private * p = 
-		(struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+        struct dm_user_private * p = 
+                (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-	bdbm_msg ("storing a DRAM snapshot...");
+        bdbm_msg ("storing a DRAM snapshot...");
 
-	return 0;
+        return 0;
 }

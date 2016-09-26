@@ -111,203 +111,204 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		/* (1) get the physical locations through the FTL */
-		if (bdbm_is_normal (lr->req_type)) {
-			/* handling normal I/O operations */
-			if (bdbm_is_read (lr->req_type)) {
-				if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr, &sp_ofs) != 0) {
-					/* Note that there could be dummy reads (e.g., when the
-					 * file-systems are initialized) */
-					lr->req_type = REQTYPE_READ_DUMMY;
-				} else {
-					hlm_reqs_pool_relocate_kp (lr, sp_ofs);
-				}
-			} else if (bdbm_is_write (lr->req_type)) {
-				if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
-					bdbm_error ("`ftl->get_free_ppa' failed");
-					goto fail;
-				}
-				if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
-					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
-					goto fail;
-				}
-			} else {
-				bdbm_error ("oops! invalid type (%x)", lr->req_type);
-				bdbm_bug_on (1);
-			}
-		} else if (bdbm_is_rmw (lr->req_type)) {
-			bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
+                /* (1) get the physical locations through the FTL */
+                if (bdbm_is_normal (lr->req_type)) {
+                        /* handling normal I/O operations */
+                        if (bdbm_is_read (lr->req_type)) {
+                                if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr, &sp_ofs) != 0) {
+                                        /* Note that there could be dummy reads (e.g., when the
+                                         * file-systems are initialized) */
+                                        //lr->req_type = REQTYPE_READ_DUMMY;
+                                        lr->req_type = REQTYPE_READ;
+                                } else {
+                                        hlm_reqs_pool_relocate_kp (lr, sp_ofs);
+                                }
+                        } else if (bdbm_is_write (lr->req_type)) {
+                                if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
+                                        bdbm_error ("`ftl->get_free_ppa' failed");
+                                        goto fail;
+                                }
+                                if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
+                                        bdbm_error ("`ftl->map_lpa_to_ppa' failed");
+                                        goto fail;
+                                }
+                        } else {
+                                bdbm_error ("oops! invalid type (%x)", lr->req_type);
+                                bdbm_bug_on (1);
+                        }
+                } else if (bdbm_is_rmw (lr->req_type)) {
+                        bdbm_phyaddr_t* phyaddr = &lr->phyaddr_src;
 
-			/* finding the location of the previous data */ 
-			if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_ofs) != 0) {
-				/* if it was not written before, change it to a write request */
-				lr->req_type = REQTYPE_WRITE;
-				phyaddr = &lr->phyaddr;
-			} else {
-				hlm_reqs_pool_relocate_kp (lr, sp_ofs);
-				phyaddr = &lr->phyaddr_dst;
-			}
+                        /* finding the location of the previous data */ 
+                        if (ftl->get_ppa (bdi, lr->logaddr.lpa[0], phyaddr, &sp_ofs) != 0) {
+                                /* if it was not written before, change it to a write request */
+                                lr->req_type = REQTYPE_WRITE;
+                                phyaddr = &lr->phyaddr;
+                        } else {
+                                hlm_reqs_pool_relocate_kp (lr, sp_ofs);
+                                phyaddr = &lr->phyaddr_dst;
+                        }
 
-			/* getting the location to which data will be written */
-			if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
-				bdbm_error ("`ftl->get_free_ppa' failed");
-				goto fail;
-			}
-			if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, phyaddr) != 0) {
-				bdbm_error ("`ftl->map_lpa_to_ppa' failed");
-				goto fail;
-			}
-		} else {
-			bdbm_error ("oops! invalid type (%x)", lr->req_type);
-			bdbm_bug_on (1);
-		}
+                        /* getting the location to which data will be written */
+                        if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], phyaddr) != 0) {
+                                bdbm_error ("`ftl->get_free_ppa' failed");
+                                goto fail;
+                        }
+                        if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, phyaddr) != 0) {
+                                bdbm_error ("`ftl->map_lpa_to_ppa' failed");
+                                goto fail;
+                        }
+                } else {
+                        bdbm_error ("oops! invalid type (%x)", lr->req_type);
+                        bdbm_bug_on (1);
+                }
 
-		/* (2) setup oob */
-		for (j = 0; j < np->nr_subpages_per_page; j++) {
-			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
-		}
-	}
+                /* (2) setup oob */
+                for (j = 0; j < np->nr_subpages_per_page; j++) {
+                        ((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
+                }
+        }
 
-	/* (3) send llm_req to llm */
-	if (bdi->ptr_llm_inf->make_reqs == NULL) {
-		/* send individual llm-reqs to llm */
-		bdbm_hlm_for_each_llm_req (lr, hr, i) {
-			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
-				bdbm_error ("oops! make_req () failed");
-				bdbm_bug_on (1);
-			}
-		}
-	} else {
-		/* send a bulk of llm-reqs to llm if make_reqs is supported */
-		if (bdi->ptr_llm_inf->make_reqs (bdi, hr) != 0) {
-			bdbm_error ("oops! make_reqs () failed");
-			bdbm_bug_on (1);
-		}
-	}
+        /* (3) send llm_req to llm */
+        if (bdi->ptr_llm_inf->make_reqs == NULL) {
+                /* send individual llm-reqs to llm */
+                bdbm_hlm_for_each_llm_req (lr, hr, i) {
+                        if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
+                                bdbm_error ("oops! make_req () failed");
+                                bdbm_bug_on (1);
+                        }
+                }
+        } else {
+                /* send a bulk of llm-reqs to llm if make_reqs is supported */
+                if (bdi->ptr_llm_inf->make_reqs (bdi, hr) != 0) {
+                        bdbm_error ("oops! make_reqs () failed");
+                        bdbm_bug_on (1);
+                }
+        }
 
-	bdbm_bug_on (hr->nr_llm_reqs != i);
+        bdbm_bug_on (hr->nr_llm_reqs != i);
 
-	return 0;
+        return 0;
 
 fail:
-	return 1;
+        return 1;
 }
 
 /* TODO: it must be more general... */
 void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
-	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
-	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+        bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
+        bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 
-	if (dp->mapping_type == MAPPING_POLICY_PAGE) {
-		uint32_t loop;
-		/* see if foreground GC is needed or not */
-		for (loop = 0; loop < 10; loop++) {
-			if (hr->req_type == REQTYPE_WRITE && 
-				ftl->is_gc_needed != NULL && 
-				ftl->is_gc_needed (bdi, 0)) {
-				/* perform GC before sending requests */ 
-				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
-				ftl->do_gc (bdi, 0);
-			} else
-				break;
-		}
-	} else if (dp->mapping_type == MAPPING_POLICY_RSD ||
-			   dp->mapping_type == MAPPING_POLICY_BLOCK) {
-		/* perform mapping with the FTL */
-		if (hr->req_type == REQTYPE_WRITE && ftl->is_gc_needed != NULL) {
-			bdbm_llm_req_t* lr = NULL;
-			uint64_t i = 0;
-			bdbm_hlm_for_each_llm_req (lr, hr, i) {
-				/* NOTE: segment-level ftl does not support fine-grain rmw */
-				if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
-					/* perform GC before sending requests */ 
-					//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
-					ftl->do_gc (bdi, lr->logaddr.lpa[0]);
-				}
-			}
-		}
-	} else {
-		/* do nothing */
-	}
+        if (dp->mapping_type == MAPPING_POLICY_PAGE) {
+                uint32_t loop;
+                /* see if foreground GC is needed or not */
+                for (loop = 0; loop < 10; loop++) {
+                        if (hr->req_type == REQTYPE_WRITE && 
+                                        ftl->is_gc_needed != NULL && 
+                                        ftl->is_gc_needed (bdi, 0)) {
+                                /* perform GC before sending requests */ 
+                                //bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+                                ftl->do_gc (bdi, 0);
+                        } else
+                                break;
+                }
+        } else if (dp->mapping_type == MAPPING_POLICY_RSD ||
+                        dp->mapping_type == MAPPING_POLICY_BLOCK) {
+                /* perform mapping with the FTL */
+                if (hr->req_type == REQTYPE_WRITE && ftl->is_gc_needed != NULL) {
+                        bdbm_llm_req_t* lr = NULL;
+                        uint64_t i = 0;
+                        bdbm_hlm_for_each_llm_req (lr, hr, i) {
+                                /* NOTE: segment-level ftl does not support fine-grain rmw */
+                                if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
+                                        /* perform GC before sending requests */ 
+                                        //bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+                                        ftl->do_gc (bdi, lr->logaddr.lpa[0]);
+                                }
+                        }
+                }
+        } else {
+                /* do nothing */
+        }
 }
 
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
-	uint32_t ret;
-	bdbm_stopwatch_t sw;
-	bdbm_stopwatch_start (&sw);
+        uint32_t ret;
+        bdbm_stopwatch_t sw;
+        bdbm_stopwatch_start (&sw);
 
-	/* is req_type correct? */
-	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
+        /* is req_type correct? */
+        bdbm_bug_on (!bdbm_is_normal (hr->req_type));
 
 #if 0
-	/* trigger gc if necessary */
-	if (dp->mapping_type != MAPPING_POLICY_DFTL) {
-		bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
-		/* see if foreground GC is needed or not */
-		for (loop = 0; loop < 10; loop++) {
-			if (hr->req_type == REQTYPE_WRITE && 
-				ftl->is_gc_needed != NULL && 
-				ftl->is_gc_needed (bdi, 0)) {
-				/* perform GC before sending requests */ 
-				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
-				ftl->do_gc (bdi, 0);
-			} else
-				break;
-		}
-	}
+        /* trigger gc if necessary */
+        if (dp->mapping_type != MAPPING_POLICY_DFTL) {
+                bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+                /* see if foreground GC is needed or not */
+                for (loop = 0; loop < 10; loop++) {
+                        if (hr->req_type == REQTYPE_WRITE && 
+                                        ftl->is_gc_needed != NULL && 
+                                        ftl->is_gc_needed (bdi, 0)) {
+                                /* perform GC before sending requests */ 
+                                bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+                                ftl->do_gc (bdi, 0);
+                        } else
+                                break;
+                }
+        }
 #endif
 
-	/* perform i/o */
-	if (bdbm_is_trim (hr->req_type)) {
-		if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {
-			/* call 'ptr_host_inf->end_req' directly */
-			bdi->ptr_host_inf->end_req (bdi, hr);
-			/* hr is now NULL */
-		}
-	} else {
-		/* do we need to do garbage collection? */
-		__hlm_nobuf_check_ondemand_gc (bdi, hr);
+        /* perform i/o */
+        if (bdbm_is_trim (hr->req_type)) {
+                if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {
+                        /* call 'ptr_host_inf->end_req' directly */
+                        bdi->ptr_host_inf->end_req (bdi, hr);
+                        /* hr is now NULL */
+                }
+        } else {
+                /* do we need to do garbage collection? */
+                __hlm_nobuf_check_ondemand_gc (bdi, hr);
 
-		ret = __hlm_nobuf_make_rw_req (bdi, hr);
-	} 
+                ret = __hlm_nobuf_make_rw_req (bdi, hr);
+        } 
 
-	return ret;
+        return ret;
 }
 
 void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
-	bdbm_hlm_req_t* hr = (bdbm_hlm_req_t* )lr->ptr_hlm_req;
+        bdbm_hlm_req_t* hr = (bdbm_hlm_req_t* )lr->ptr_hlm_req;
 
-	/* increase # of reqs finished */
-	atomic64_inc (&hr->nr_llm_reqs_done);
-	lr->req_type |= REQTYPE_DONE;
+        /* increase # of reqs finished */
+        atomic64_inc (&hr->nr_llm_reqs_done);
+        lr->req_type |= REQTYPE_DONE;
 
-	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
-		/* finish the host request */
-		bdi->ptr_host_inf->end_req (bdi, hr);
-	}
+        if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
+                /* finish the host request */
+                bdi->ptr_host_inf->end_req (bdi, hr);
+        }
 }
 
 void __hlm_nobuf_end_gcio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
-	bdbm_hlm_req_gc_t* hr_gc = (bdbm_hlm_req_gc_t* )lr->ptr_hlm_req;
+        bdbm_hlm_req_gc_t* hr_gc = (bdbm_hlm_req_gc_t* )lr->ptr_hlm_req;
 
-	atomic64_inc (&hr_gc->nr_llm_reqs_done);
-	lr->req_type |= REQTYPE_DONE;
+        atomic64_inc (&hr_gc->nr_llm_reqs_done);
+        lr->req_type |= REQTYPE_DONE;
 
-	if (atomic64_read (&hr_gc->nr_llm_reqs_done) == hr_gc->nr_llm_reqs) {
-		bdbm_sema_unlock (&hr_gc->done);
-	}
+        if (atomic64_read (&hr_gc->nr_llm_reqs_done) == hr_gc->nr_llm_reqs) {
+                bdbm_sema_unlock (&hr_gc->done);
+        }
 }
 
 void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
-	if (bdbm_is_gc (lr->req_type)) {
-		__hlm_nobuf_end_gcio_req (bdi, lr);
-	} else {
-		__hlm_nobuf_end_blkio_req (bdi, lr);
-	}
+        if (bdbm_is_gc (lr->req_type)) {
+                __hlm_nobuf_end_gcio_req (bdi, lr);
+        } else {
+                __hlm_nobuf_end_blkio_req (bdi, lr);
+        }
 }
 
