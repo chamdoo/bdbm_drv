@@ -133,9 +133,9 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 typedef struct {
 	bdbm_spinlock_t lock;
 	bdbm_llm_req_t** llm_reqs;
-} dm_ramssd_private_t;
+} dm_nohost_private_t;
 
-dm_ramssd_private_t* _priv = NULL;
+dm_nohost_private_t* _priv = NULL;
 
 /* global data structure */
 extern bdbm_drv_info_t* _bdi_dm;
@@ -273,7 +273,7 @@ uint32_t dm_nohost_probe (
 	bdbm_drv_info_t* bdi, 
 	bdbm_device_params_t* params)
 {
-	dm_ramssd_private_t* p = NULL;
+	dm_nohost_private_t* p = NULL;
 	uint32_t nr_punit;
 
 	bdbm_msg ("[dm_nohost_probe] PROBE STARTED");
@@ -282,8 +282,8 @@ uint32_t dm_nohost_probe (
 	*params = get_default_device_params ();
 
 	/* create a private structure for ramdrive */
-	if ((p = (dm_ramssd_private_t*)bdbm_malloc
-			(sizeof (dm_ramssd_private_t))) == NULL) {
+	if ((p = (dm_nohost_private_t*)bdbm_malloc
+			(sizeof (dm_nohost_private_t))) == NULL) {
 		bdbm_error ("bdbm_malloc failed");
 		goto fail;
 	}
@@ -317,7 +317,7 @@ fail:
 
 uint32_t dm_nohost_open (bdbm_drv_info_t* bdi)
 {
-	dm_ramssd_private_t * p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
+	dm_nohost_private_t * p = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
 	bdbm_msg ("[dm_nohost_open] open done!");
 
@@ -326,7 +326,7 @@ uint32_t dm_nohost_open (bdbm_drv_info_t* bdi)
 
 void dm_nohost_close (bdbm_drv_info_t* bdi)
 {
-	dm_ramssd_private_t* p = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
+	dm_nohost_private_t* p = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
 	bdbm_msg ("[dm_nohost_close] closed!");
 
@@ -338,7 +338,7 @@ uint32_t dm_nohost_make_req (
 	bdbm_llm_req_t* r)
 {
 	uint32_t punit_id, ret, i;
-	dm_ramssd_private_t* priv = (dm_ramssd_private_t*)BDBM_DM_PRIV (bdi);
+	dm_nohost_private_t* priv = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
 	/*
 	if (r->req_type == REQTYPE_READ_DUMMY) {
@@ -381,7 +381,6 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_META_WRITE:
 		printf ("LOG: device->writePage, tag=%d lpa=%d\n", tag, r->logaddr.lpa[0]); fflush(stdout);
 		device->writePage (tag, r->logaddr.lpa[0], tag * FPAGE_SIZE);
-		//device->writePage (tag, 1, tag * FPAGE_SIZE);
 		break;
 
 	case REQTYPE_READ:
@@ -391,7 +390,6 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_META_READ:
 		printf ("LOG: device->readPage, tag=%d lap=%d\n", tag, r->logaddr.lpa[0]); fflush(stdout);
 		device->readPage (tag, r->logaddr.lpa[0], tag * FPAGE_SIZE);
-		//device->readPage (tag, 1, tag * FPAGE_SIZE);
 		break;
 
 	case REQTYPE_GC_ERASE:
@@ -416,3 +414,4 @@ void dm_nohost_end_req (
 	bdbm_msg ("dm_nohost_end_req done");
 	bdi->ptr_llm_inf->end_req (bdi, r);
 }
+
