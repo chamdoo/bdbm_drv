@@ -40,7 +40,7 @@ bdbm_host_inf_t _userio_inf = {
 	.ptr_private = NULL,
 	.open = userio_open,
 	.close = userio_close,
-	.make_req = userio_make_req,
+	.make_req = userio_buf_make_req,
 	.end_req = userio_end_req,
 };
 
@@ -122,11 +122,54 @@ void userio_close (bdbm_drv_info_t* bdi)
 	bdbm_free_atomic (p);
 }
 
+int userio_buf_make_req(bdbm_drv_info_t* bdi, void* bio)
+{
+
+	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
+	static bdbm_hlm_req_t* hr = NULL;
+	uint64_t req_size;
+	uint64_t ret = 0; 
+	bdbm_msg("start buf_make_req");
+
+	if(hr==NULL) {
+		hr = bdbm_hlm_reqs_pool_get_item(p->hlm_reqs_pool); //hlmsize=0;
+	}
+
+	req_size = hr->nr_charged + br->bi_bvec_cnt; // unit: 4k
+
+
+
+	while(req_size >= 4)
+	{
+		req_size = hr->nr_charged + br->bi_bvec_cnt;
+		bdbm_msg("In while, req size %lld", req_size);
+		ret = bdbm_hlm_reqs_pool_add(p->hlm_reqs_pool, hr, br); // ret is added size
+		if(bdi->ptr_hlm_inf->make_req(bdi, hr) !=0) {
+			bdbm_error("'bdi->ptr_hlm_inf->make_req' failed");
+		}
+		br->bi_bvec_cnt -=ret;
+		br->bi_bvec_index +=ret;
+		br->bi_offset += 8*ret; // offset unit is 512B, ret unit is 4KB
+	 	req_size = req_size - ret;
+		hr = bdbm_hlm_reqs_pool_get_item(p->hlm_reqs_pool);
+	}
+
+	if(req_size !=0) {
+		ret = bdbm_hlm_reqs_pool_add(p->hlm_reqs_pool, hr, br); // change hr->size !!
+	}
+
+	//temporarily send end req must be  modified
+
+
+	bdbm_msg("end buf_make_req");
+}
+
 void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 {
 	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
-	bdbm_hlm_req_t* hr = NULL;
+	static bdbm_hlm_req_t* hr = NULL;
 
 	//bdbm_msg ("userio_make_req - begin");
 
@@ -190,4 +233,5 @@ void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 	if (r->cb_done)
 		r->cb_done (r);
 }
+
 

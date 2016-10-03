@@ -58,8 +58,6 @@ bdbm_hlm_inf_t _hlm_nobuf_inf = {
 	/*.store = hlm_nobuf_store,*/
 };
 
-bdbm_hlm_req_t * hlm_buf_ptr;
-
 /* data structures for hlm_nobuf */
 typedef struct {
 	bdbm_hlm_req_t tmp_hr;
@@ -110,14 +108,9 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
 	uint64_t i = 0, j = 0, sp_ofs;
-	uint64_t c=0;
-	bdbm_blkio_req_t* br =(bdbm_blkio_req_t*)hr->blkio_req;
 
-	bdbm_msg("blkio_req->cnt : %lld", br->bi_bvec_cnt);
-	bdbm_msg("hlm->nr_llm_reqs : %lld", hr->nr_llm_reqs);
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
-		bdbm_msg("hlm_for_each_llm_req : %lld",c++);
 		/* (1) get the physical locations through the FTL */
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
@@ -214,7 +207,7 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				ftl->is_gc_needed != NULL && 
 				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
-				bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 				ftl->do_gc (bdi, 0);
 			} else
 				break;
@@ -239,12 +232,14 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 }
 
-
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)hr->bio;
+
+	printf("bi_bvec_cnt : %lld\n");
 	/* is req_type correct? */
 	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
 
@@ -266,10 +261,8 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 #endif
 
-	bdbm_msg("hlm_nobuf_make_req");
 	/* perform i/o */
 	if (bdbm_is_trim (hr->req_type)) {
-		bdbm_msg("make_req call make_trim_req");
 		if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {
 			/* call 'ptr_host_inf->end_req' directly */
 			bdi->ptr_host_inf->end_req (bdi, hr);
@@ -277,10 +270,8 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 	} else {
 		/* do we need to do garbage collection? */
-
-		bdbm_msg("make_req call make_rw_req");
 		__hlm_nobuf_check_ondemand_gc (bdi, hr);
-		
+
 		ret = __hlm_nobuf_make_rw_req (bdi, hr);
 	} 
 

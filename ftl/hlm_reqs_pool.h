@@ -40,6 +40,7 @@ void bdbm_hlm_reqs_pool_destroy (bdbm_hlm_reqs_pool_t* pool);
 bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item (bdbm_hlm_reqs_pool_t* pool);
 void bdbm_hlm_reqs_pool_free_item (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* req);
 int bdbm_hlm_reqs_pool_build_req (bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* hr, bdbm_blkio_req_t* br);
+int bdbm_hlm_reqs_pool_add(bdbm_hlm_reqs_pool_t* pool, bdbm_hlm_req_t* hr, bdbm_blkio_req_t* br);
 
 typedef enum {
 	RP_MEM_VIRT = 0,

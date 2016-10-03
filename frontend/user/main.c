@@ -419,6 +419,8 @@ void* host_thread_fn_write_tracefile (size_t offset, int size)
         int i = 0;
         uint32_t j = 0;
 
+
+		bdbm_msg("first fn_write tracefile");
         for (i = 0; i < 1; i++) {
                 bdbm_blkio_req_t* blkio_req = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
 
@@ -431,6 +433,8 @@ void* host_thread_fn_write_tracefile (size_t offset, int size)
                 blkio_req->user = (void*)blkio_req;
                 blkio_req->user2 = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
 
+				blkio_req->bi_bvec_index = 0;
+
                 bdbm_sema_init ((bdbm_sema_t*)blkio_req->user2);
 
                 blkio_req->bi_bvec_ptr[0] = (uint8_t*)bdbm_malloc (4096);
@@ -438,9 +442,13 @@ void* host_thread_fn_write_tracefile (size_t offset, int size)
                         blkio_req->bi_bvec_ptr[j] = blkio_req->bi_bvec_ptr[0];
                 }
 
+				bdbm_msg("host_inf->make_req start");
+
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
                 _bdi->ptr_host_inf->make_req (_bdi, blkio_req);
                 bdbm_sema_lock ((bdbm_sema_t*)blkio_req->user2);
+
+				bdbm_msg("host_inf->make_req done");
 
                 bdbm_free (blkio_req->bi_bvec_ptr[0]);
                 bdbm_free (blkio_req);
@@ -448,6 +456,7 @@ void* host_thread_fn_write_tracefile (size_t offset, int size)
                 offset += size;
                 w_cnt++;
         }
+		bdbm_msg("last fn_write tracefile");
 
         return NULL;
 }

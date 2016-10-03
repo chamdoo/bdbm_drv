@@ -197,6 +197,10 @@ again:
 	list_del (&item->list);
 	list_add_tail (&item->list, &pool->used_list);
 
+	//initialize hr
+	item->nr_blkio_req = 0;
+	item->nr_charged = 0;
+
 	bdbm_spin_unlock (&pool->lock);
 	return item;
 
@@ -239,7 +243,7 @@ static int __hlm_reqs_pool_create_trim_req  (
 		hr->lpa = (sec_start) / NR_KSECTORS_IN(pool->map_unit);
 		hr->len = 0;
 	}
-	hr->blkio_req = (void*)br;
+	hr->blkio_req[0] = (void*)br; //temporary assign req[0];
 	hr->ret = 0;
 
 	return 0;
@@ -313,6 +317,45 @@ void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr)
 		i++;
 	}
 	logaddr->ofs = 0;
+}
+
+static int __hlm_reqs_pool_add_write_req(
+	bdbm_hlm_reqs_pool_t* pool,
+	bdbm_hlm_req_t * hr,
+	bdbm_blkio_req_t* br)
+{
+	uint64_t nr_remain_page = 4 - hr->nr_charged; //number of remain page
+	uint64_t nr_add = br->bi_bvec_cnt; // number of to add
+	uint64_t bvec_index = br->bi_bvec_index;
+	uint64_t i,ret;
+
+	bdbm_llm_req_t* ptr_lr = &hr->llm_reqs[0]; // need only one llm
+	bdbm_flash_page_main_t* ptr_fm = &ptr_lr->fmain;
+
+	//initialized empty page
+	if(nr_remain_page==4) {
+		hlm_reqs_pool_reset_fmain(ptr_fm);
+		hlm_reqs_pool_reset_logaddr(&ptr_lr->logaddr);
+	}
+
+	if(nr_add > nr_remain_page) {
+		ret = nr_remain_page;
+		for(i=nr_remain_page; i<4; i++) {
+			ptr_fm->kp_stt[i] = KP_STT_DATA;
+			ptr_fm->kp_ptr[i] = br->bi_bvec_ptr[bvec_index++];
+		}
+	} else {
+		ret = nr_add;
+		for(i=0; i<nr_add; i++) {
+			ptr_fm->kp_stt[i] = KP_STT_DATA;
+			ptr_fm->kp_ptr[i] = br->bi_bvec_ptr[bvec_index++];
+		}
+	}
+
+	//hr->bio[hr->nr_blkio_req] = br; <-add
+
+	return ret;
+
 }
 
 static int __hlm_reqs_pool_create_write_req (
@@ -395,7 +438,7 @@ static int __hlm_reqs_pool_create_write_req (
 	hr->nr_llm_reqs = nr_llm_reqs;
 	atomic64_set (&hr->nr_llm_reqs_done, 0);
 	bdbm_sema_lock (&hr->done);
-	hr->blkio_req = (void*)br;
+	hr->blkio_req[0] = (void*)br; //temporarily assign req[0]
 	hr->ret = 0;
 
 	return 0;
@@ -450,10 +493,26 @@ static int __hlm_reqs_pool_create_read_req (
 	hr->nr_llm_reqs = nr_llm_reqs;
 	atomic64_set (&hr->nr_llm_reqs_done, 0);
 	bdbm_sema_lock (&hr->done);
-	hr->blkio_req = (void*)br;
+	hr->blkio_req[0] = (void*)br;  //temporarily assign req[0]
 	hr->ret = 0;
 
 	return 0;
+}
+
+int bdbm_hlm_reqs_pool_add(
+	bdbm_hlm_reqs_pool_t* pool,
+	bdbm_hlm_req_t* hr,
+	bdbm_blkio_req_t* br)
+{
+	int ret = -1;
+
+	if(br->bi_rw == REQTYPE_TRIM) {
+	} else if(br->bi_rw == REQTYPE_WRITE) {
+		ret = __hlm_reqs_pool_add_write_req(pool, hr, br);
+	} else if(br->bi_rw == REQTYPE_READ) {
+	}
+
+	return ret;
 }
 
 int bdbm_hlm_reqs_pool_build_req (
@@ -463,6 +522,7 @@ int bdbm_hlm_reqs_pool_build_req (
 {
 	int ret = 1;
 
+	bdbm_msg("build_req br->cnt : %lld", br->bi_bvec_cnt);
 	/* create a hlm_req using a bio */
 	if (br->bi_rw == REQTYPE_TRIM) {
 		ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);

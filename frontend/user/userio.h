@@ -40,7 +40,9 @@ typedef struct {
 uint32_t userio_open (bdbm_drv_info_t* bdi);
 void userio_close (bdbm_drv_info_t* bdi);
 void userio_make_req (bdbm_drv_info_t* bdi, void* bio);
+int userio_buf_make_req(bdbm_drv_info_t* bdi, void* bio);
 void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+
 
 #endif
 

@@ -63,7 +63,7 @@ $(OUT): $(LIBOBJ)
 #all: $(OUT) 
 
 clean:
-	@$(RM) *.o core *~ libftl 
+	@$(RM) *.o core *~ libftl libftl.a 
 	@cd $(FTL); rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd $(COMMON)/utils; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
 	@cd $(COMMON)/3rd; rm -rf *.o .*.cmd; rm -rf */*.o */.*.cmd;
