@@ -319,6 +319,13 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		pmu_inc (bdi, r);
 
 		/* finish a request */
+#ifdef LAZY_INVALID
+	//	bdbm_ftl_inf_t* (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+		if(bdbm_is_write(r->req_type)){
+//			bdbm_msg("EUNJI: invalidate_obsolete_ppa\n");
+			bdi->ptr_ftl_inf->invalidate_obsolete_ppa(bdi, &r->logaddr);
+		}
+#endif
 		bdi->ptr_hlm_inf->end_req (bdi, r);
 
 

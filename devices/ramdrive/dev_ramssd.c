@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+//#define DATA_CHECK
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;

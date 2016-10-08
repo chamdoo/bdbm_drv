@@ -58,6 +58,9 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	.get_ppa = bdbm_page_ftl_get_ppa,
 	.map_lpa_to_ppa = bdbm_page_ftl_map_lpa_to_ppa,
 	.invalidate_lpa = bdbm_page_ftl_invalidate_lpa,
+#ifdef LAZY_INVALID
+	.invalidate_obsolete_ppa = bdbm_page_ftl_invalidate_obsolete_ppa,
+#endif
 	.do_gc = bdbm_page_ftl_do_gc,
 	.is_gc_needed = bdbm_page_ftl_is_gc_needed,
 	.scan_badblocks = bdbm_page_badblock_scan,
@@ -77,6 +80,11 @@ enum BDBM_PFTL_PAGE_STATUS {
 
 typedef struct {
 	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
+#ifdef LAZY_INVALID 
+	uint8_t has_obs;
+	bdbm_phyaddr_t obs_phyaddr; /* physical location */
+	uint8_t obs_sp_off;
+#endif
 	bdbm_phyaddr_t phyaddr; /* physical location */
 	uint8_t sp_off;
 } bdbm_page_mapping_entry_t;
@@ -351,6 +359,106 @@ uint32_t bdbm_page_ftl_get_free_ppa (
 	return 0;
 }
 
+#ifdef LAZY_INVALID
+uint32_t bdbm_page_ftl_invalidate_obsolete_ppa(
+	bdbm_drv_info_t* bdi, 
+	bdbm_logaddr_t* logaddr)
+{
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
+
+	int k;
+
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+
+		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
+			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
+			return 1;
+		}
+
+		/* get the mapping entry for lpa */
+		me = &p->ptr_mapping_table[logaddr->lpa[k]];
+		bdbm_bug_on (me == NULL);
+	
+		/* update the mapping table */
+		if (me->status == PFTL_PAGE_VALID) {
+			bdbm_abm_invalidate_page (
+				p->bai,
+				me->obs_phyaddr.channel_no,
+				me->obs_phyaddr.chip_no,
+				me->obs_phyaddr.block_no,
+				me->obs_phyaddr.page_no,
+				me->obs_sp_off
+			);
+			me->has_obs = 0;
+		}
+	}
+	return 0;
+}
+
+#endif
+
+#ifdef LAZY_INVALID
+uint32_t bdbm_page_ftl_map_lpa_to_obsolete_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_logaddr_t* logaddr,
+	bdbm_phyaddr_t* phyaddr)
+{
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
+	int k;
+
+	/* is it a valid logical address */
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+		if (logaddr->lpa[k] == -1) {
+			/* the correpsonding subpage must be set to invalid for gc */
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				phyaddr->channel_no, 
+				phyaddr->chip_no,
+				phyaddr->block_no,
+				phyaddr->page_no,
+				k
+			);
+			continue;
+		}
+
+		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
+			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
+			return 1;
+		}
+
+		/* get the mapping entry for lpa */
+		me = &p->ptr_mapping_table[logaddr->lpa[k]];
+		bdbm_bug_on (me == NULL);
+
+		/* update the mapping table */
+		if (me->status == PFTL_PAGE_VALID) {
+			bdbm_bug_on(me->has_obs == 0);
+
+			bdbm_abm_invalidate_page (
+				p->bai, 
+				me->obs_phyaddr.channel_no, 
+				me->obs_phyaddr.chip_no,
+				me->obs_phyaddr.block_no,
+				me->obs_phyaddr.page_no,
+				me->obs_sp_off
+			);
+
+			me->obs_phyaddr.channel_no = phyaddr->channel_no;
+			me->obs_phyaddr.chip_no = phyaddr->chip_no;
+			me->obs_phyaddr.block_no = phyaddr->block_no;
+			me->obs_phyaddr.page_no = phyaddr->page_no;
+			me->obs_sp_off = k;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_drv_info_t* bdi, 
 	bdbm_logaddr_t* logaddr,
@@ -387,6 +495,16 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
 		/* update the mapping table */
 		if (me->status == PFTL_PAGE_VALID) {
+#ifdef LAZY_INVALID
+			bdbm_bug_on(me->has_obs == 1);
+
+			me->obs_phyaddr.channel_no = me->phyaddr.channel_no;
+			me->obs_phyaddr.chip_no = me->phyaddr.chip_no;
+			me->obs_phyaddr.block_no = me->phyaddr.block_no;
+			me->obs_phyaddr.page_no = me->phyaddr.page_no;
+			me->obs_sp_off = me->sp_off;
+			me->has_obs = 1;
+#else
 			bdbm_abm_invalidate_page (
 				p->bai, 
 				me->phyaddr.channel_no, 
@@ -395,6 +513,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 				me->phyaddr.page_no,
 				me->sp_off
 			);
+#endif
 		}
 		me->status = PFTL_PAGE_VALID;
 		me->phyaddr.channel_no = phyaddr->channel_no;
@@ -480,6 +599,19 @@ uint32_t bdbm_page_ftl_invalidate_lpa (
 				me->phyaddr.page_no,
 				me->sp_off
 			);
+#ifdef LAZY_INVALID
+			if(me->has_obs) {
+				bdbm_abm_invalidate_page (
+					p->bai, 
+					me->obs_phyaddr.channel_no, 
+					me->obs_phyaddr.chip_no,
+					me->obs_phyaddr.block_no,
+					me->obs_phyaddr.page_no,
+					me->sp_off
+				);
+				me->has_obs = 0;
+			}
+#endif
 			me->status = PFTL_PAGE_INVALID;
 		}
 	}
@@ -494,7 +626,7 @@ uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 20) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= 2) {
 		return 1;
 	}
 
@@ -645,7 +777,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
-	bdi->ptr_llm_inf->flush (bdi);
+	bdi->ptr_llm_inf-> obsolete flush (bd obsolete i);
 
 	if (nr_llm_reqs == 0) 
 		goto erase_blks;
@@ -756,6 +888,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	uint64_t nr_llm_reqs = 0;
 	uint64_t nr_punits = 0;
 	uint64_t i, j, k;
+	uint64_t pst_off = 0;
 	bdbm_stopwatch_t sw;
 
 	nr_punits = np->nr_channels * np->nr_chips_per_channel;
@@ -796,7 +929,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			hlm_reqs_pool_reset_fmain (&r->fmain);
 			hlm_reqs_pool_reset_logaddr (&r->logaddr);
 			for (k = 0; k < np->nr_subpages_per_page; k++) {
-				if (b->pst[j*np->nr_subpages_per_page+k] != BDBM_ABM_SUBPAGE_INVALID) {
+				pst_off = j*np->nr_subpages_per_page+k;
+				if (b->pst[pst_off] != BDBM_ABM_SUBPAGE_INVALID) {
 					has_valid = 1;
 					r->logaddr.lpa[k] = -1; /* the subpage contains new data */
 					r->fmain.kp_stt[k] = KP_STT_DATA;
@@ -822,9 +956,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 
 	/*
 	bdbm_msg ("----------------------------------------------");
+	*/
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-	*/
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
@@ -920,10 +1054,23 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
 		}
+#ifdef LAZY_INVALID
+		if(r->logaddr.lpa[k] >=0 && p->ptr_mapping_table[r->logaddr.lpa[k]].has_obs){
+			if (bdbm_page_ftl_map_lpa_to_obsolete_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
+			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
+			bdbm_bug_on (1);
+			}
+		}else
+			if (bdbm_page_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
+			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
+			bdbm_bug_on (1);
+		}
+#else
 		if (bdbm_page_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
 			bdbm_bug_on (1);
 		}
+#endif
 	}
 
 	/* send write reqs to llm */
