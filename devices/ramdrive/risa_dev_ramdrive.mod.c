@@ -46,6 +46,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x3744cf36, __VMLINUX_SYMBOL_STR(vmalloc_to_pfn) },
 	{ 0x391afe42, __VMLINUX_SYMBOL_STR(current_task) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
+	{ 0x449ad0a7, __VMLINUX_SYMBOL_STR(memcmp) },
 	{ 0x8c03d20c, __VMLINUX_SYMBOL_STR(destroy_workqueue) },
 	{ 0x6dc6dd56, __VMLINUX_SYMBOL_STR(down) },
 	{ 0xe2d432f9, __VMLINUX_SYMBOL_STR(device_create) },
@@ -83,4 +84,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "F0EEF1B1FFEDD95DFD2DDDB");
+MODULE_INFO(srcversion, "916B4C2E18F41A40F1247EC");

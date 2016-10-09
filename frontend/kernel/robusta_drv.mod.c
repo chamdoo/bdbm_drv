@@ -34,11 +34,11 @@ __attribute__((section("__versions"))) = {
 	{ 0xd8c17cea, __VMLINUX_SYMBOL_STR(blk_queue_io_min) },
 	{ 0x28438de8, __VMLINUX_SYMBOL_STR(filp_close) },
 	{ 0xf0bcdce2, __VMLINUX_SYMBOL_STR(vfs_fsync) },
-	{ 0x33767621, __VMLINUX_SYMBOL_STR(bdbm_dm_init) },
+	{ 0xd5f6d247, __VMLINUX_SYMBOL_STR(bdbm_dm_init) },
 	{ 0x999e8297, __VMLINUX_SYMBOL_STR(vfree) },
 	{ 0x91715312, __VMLINUX_SYMBOL_STR(sprintf) },
 	{ 0x75e82745, __VMLINUX_SYMBOL_STR(kthread_create_on_node) },
-	{ 0x2538d10b, __VMLINUX_SYMBOL_STR(bdbm_dm_exit) },
+	{ 0xecf1a8c4, __VMLINUX_SYMBOL_STR(bdbm_dm_exit) },
 	{ 0x9e88526, __VMLINUX_SYMBOL_STR(__init_waitqueue_head) },
 	{ 0x4f8b5ddb, __VMLINUX_SYMBOL_STR(_copy_to_user) },
 	{ 0xffd5a395, __VMLINUX_SYMBOL_STR(default_wake_function) },
@@ -71,7 +71,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x4f68e5c9, __VMLINUX_SYMBOL_STR(do_gettimeofday) },
 	{ 0x1e047854, __VMLINUX_SYMBOL_STR(warn_slowpath_fmt) },
 	{ 0xc9fef317, __VMLINUX_SYMBOL_STR(add_wait_queue) },
-	{ 0xa3648ff5, __VMLINUX_SYMBOL_STR(bdbm_dm_get_inf) },
+	{ 0x9b26fae8, __VMLINUX_SYMBOL_STR(bdbm_dm_get_inf) },
 	{ 0x37a0cba, __VMLINUX_SYMBOL_STR(kfree) },
 	{ 0x69acdf38, __VMLINUX_SYMBOL_STR(memcpy) },
 	{ 0x6df1aaf1, __VMLINUX_SYMBOL_STR(kernel_sigaction) },
@@ -90,4 +90,4 @@ __attribute__((section(".modinfo"))) =
 "depends=risa_dev_ramdrive";
 
 
-MODULE_INFO(srcversion, "41548C8325B1E29ED57E57C");
+MODULE_INFO(srcversion, "988AC87F727BB233BD96B2E");
