@@ -71,123 +71,127 @@ uint32_t userio_open (bdbm_drv_info_t* bdi)
 	bdbm_sema_init (&p->count_lock);
 
 	/* create hlm_reqs pool */
+    /*
 	if (bdi->parm_dev.nr_subpages_per_page == 1)
 		mapping_unit_size = bdi->parm_dev.page_main_size;
 	else
 		mapping_unit_size = KERNEL_PAGE_SIZE;
+        */
 
-	if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
-			mapping_unit_size,	/* mapping unit */
-			bdi->parm_dev.page_main_size	/* io unit */	
-			)) == NULL) {
-		bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");
-		return 1;
-	}
+    mapping_unit_size = bdi->parm_dev.page_main_size;
 
-	bdi->ptr_host_inf->ptr_private = (void*)p;
+    if ((p->hlm_reqs_pool = bdbm_hlm_reqs_pool_create (
+                    mapping_unit_size,	/* mapping unit */
+                    bdi->parm_dev.page_main_size	/* io unit */	
+                    )) == NULL) {
+        bdbm_warning ("bdbm_hlm_reqs_pool_create () failed");
+        return 1;
+    }
 
-	return 0;
+    bdi->ptr_host_inf->ptr_private = (void*)p;
+
+    return 0;
 }
 
 void userio_close (bdbm_drv_info_t* bdi)
 {
-	bdbm_userio_private_t* p = NULL;
+    bdbm_userio_private_t* p = NULL;
 
-	p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
+    p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
 
-	/* wait for host reqs to finish */
-	//bdbm_msg ("wait for host reqs to finish");
-	for (;;) {
-		/*if (atomic_read (&p->nr_host_reqs) == 0)*/
-		/*break;*/
-		bdbm_sema_lock (&p->count_lock);
-		if (p->nr_host_reqs == 0)  {
-			bdbm_sema_unlock (&p->count_lock);
-			break;
-		}
-		bdbm_sema_unlock (&p->count_lock);
+    /* wait for host reqs to finish */
+    //bdbm_msg ("wait for host reqs to finish");
+    for (;;) {
+        /*if (atomic_read (&p->nr_host_reqs) == 0)*/
+        /*break;*/
+        bdbm_sema_lock (&p->count_lock);
+        if (p->nr_host_reqs == 0)  {
+            bdbm_sema_unlock (&p->count_lock);
+            break;
+        }
+        bdbm_sema_unlock (&p->count_lock);
 
-		//bdbm_msg ("p->nr_host_reqs = %llu", p->nr_host_reqs);
-		bdbm_thread_msleep (1);
-	}
+        //bdbm_msg ("p->nr_host_reqs = %llu", p->nr_host_reqs);
+        bdbm_thread_msleep (1);
+    }
 
-	if (p->hlm_reqs_pool) {
-		bdbm_hlm_reqs_pool_destroy (p->hlm_reqs_pool);
-	}
+    if (p->hlm_reqs_pool) {
+        bdbm_hlm_reqs_pool_destroy (p->hlm_reqs_pool);
+    }
 
-	bdbm_sema_free (&p->host_lock);
-	bdbm_sema_free (&p->count_lock);
+    bdbm_sema_free (&p->host_lock);
+    bdbm_sema_free (&p->count_lock);
 
-	/* free private */
-	bdbm_free_atomic (p);
+    /* free private */
+    bdbm_free_atomic (p);
 }
 
 void userio_make_req (bdbm_drv_info_t* bdi, void *bio)
 {
-	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
-	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
-	bdbm_hlm_req_t* hr = NULL;
+    bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
+    bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
+    bdbm_hlm_req_t* hr = NULL;
 
-	//bdbm_msg ("userio_make_req - begin");
+    //bdbm_msg ("userio_make_req - begin");
 
-	/* get a free hlm_req from the hlm_reqs_pool */
-	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
-		bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
-		bdbm_bug_on (1);
-		return;
-	}
+    /* get a free hlm_req from the hlm_reqs_pool */
+    if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
+        bdbm_error ("bdbm_hlm_reqs_pool_alloc_item () failed");
+        bdbm_bug_on (1);
+        return;
+    }
 
-	/* build hlm_req with bio */
-	if (bdbm_hlm_reqs_pool_build_req (p->hlm_reqs_pool, hr, br) != 0) {
-		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
-		bdbm_bug_on (1);
-		return;
-	}
+    /* build hlm_req with bio */
+    if (bdbm_hlm_reqs_pool_build_req (p->hlm_reqs_pool, hr, br) != 0) {
+        bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+        bdbm_bug_on (1);
+        return;
+    }
 
-	/* if success, increase # of host reqs */
-	/*atomic_inc (&p->nr_host_reqs);*/
-	bdbm_sema_lock (&p->count_lock);
-	p->nr_host_reqs++;
-	bdbm_sema_unlock (&p->count_lock);
+    /* if success, increase # of host reqs */
+    /*atomic_inc (&p->nr_host_reqs);*/
+    bdbm_sema_lock (&p->count_lock);
+    p->nr_host_reqs++;
+    bdbm_sema_unlock (&p->count_lock);
 
-	bdbm_sema_lock (&p->host_lock);
+    bdbm_sema_lock (&p->host_lock);
 
-	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
-	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
-	if (bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
-		/* oops! something wrong */
-		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+    /* NOTE: it would be possible that 'hlm_req' becomes NULL 
+     * if 'bdi->ptr_hlm_inf->make_req' is success. */
+    if (bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
+        /* oops! something wrong */
+        bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 
-		/* cancel the request */
-		/*atomic_dec (&p->nr_host_reqs);*/
-		bdbm_sema_lock (&p->count_lock);
-		p->nr_host_reqs--;
-		bdbm_sema_unlock (&p->count_lock);
-		bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
-	}
-	bdbm_sema_unlock (&p->host_lock);
+        /* cancel the request */
+        /*atomic_dec (&p->nr_host_reqs);*/
+        bdbm_sema_lock (&p->count_lock);
+        p->nr_host_reqs--;
+        bdbm_sema_unlock (&p->count_lock);
+        bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
+    }
+    bdbm_sema_unlock (&p->host_lock);
 
-	//bdbm_msg ("userio_make_req - done");
+    //bdbm_msg ("userio_make_req - done");
 }
 
 void userio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)
 {
-	bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
-	bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
+    bdbm_userio_private_t* p = (bdbm_userio_private_t*)BDBM_HOST_PRIV(bdi);
+    bdbm_blkio_req_t* r = (bdbm_blkio_req_t*)req->blkio_req;
 
-	//bdbm_msg ("userio_end_req");
+    //bdbm_msg ("userio_end_req");
 
-	/* destroy hlm_req */
-	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, req);
+    /* destroy hlm_req */
+    bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, req);
 
-	/* decreate # of reqs */
-	/*atomic_dec (&p->nr_host_reqs);*/
-	bdbm_sema_lock (&p->count_lock);
-	p->nr_host_reqs--;
-	bdbm_sema_unlock (&p->count_lock);
+    /* decreate # of reqs */
+    /*atomic_dec (&p->nr_host_reqs);*/
+    bdbm_sema_lock (&p->count_lock);
+    p->nr_host_reqs--;
+    bdbm_sema_unlock (&p->count_lock);
 
-	/* call call-back function */
-	if (r->cb_done)
-		r->cb_done (r);
+    /* call call-back function */
+    if (r->cb_done)
+        r->cb_done (r);
 }
 

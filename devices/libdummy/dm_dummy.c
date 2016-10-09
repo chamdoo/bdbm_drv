@@ -161,41 +161,50 @@ void dm_user_close (bdbm_drv_info_t* bdi)
 
 uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
+        int i;
         struct dm_user_private* p; 
 	bdbm_device_params_t dp = bdi->parm_dev;
         bdbm_llm_req_t* r = ptr_llm_req;
         p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
         uint64_t idx = (r->phyaddr.channel_no * dp.nr_blocks_per_channel * dp.nr_subpages_per_block) + 
                 (r->phyaddr.chip_no * dp.nr_blocks_per_chip * dp.nr_subpages_per_block) + 
-                (r->phyaddr.block_no * dp.nr_subpages_per_block) + r->phyaddr.page_no;
+                (r->phyaddr.block_no * dp.nr_subpages_per_block) + r->phyaddr.page_no*dp.nr_subpages_per_page;
 
 
 
         /*TODO: do somthing */
         bdbm_spin_lock (&p->dm_lock);
         p->w_cnt++;
-        
-        if(bdbm_is_read(r->req_type)){
-                ((uint64_t*)r->foob.data)[0] = p->oob_data[idx];
-        /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d\n",
-                                p->oob_data[r->phyaddr.punit_id],
-                                r->phyaddr.channel_no,
-                                r->phyaddr.chip_no,
-                                r->phyaddr.block_no,
-                                r->phyaddr.page_no,
-                                r->phyaddr.punit_id);*/
+        for (i = 0; i < BDBM_MAX_PAGES; i++){ 
+                if(bdbm_is_read(r->req_type)){
+                        if(r->fmain.kp_stt[i] == KP_STT_DATA){
+                                ((uint64_t*)r->foob.data)[i] = p->oob_data[idx + i];
+                                /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                                          p->oob_data[r->phyaddr.punit_id],
+                                          r->phyaddr.channel_no,
+                                          r->phyaddr.chip_no,
+                                          r->phyaddr.block_no,
+                                          r->phyaddr.page_no,
+                                          r->phyaddr.punit_id,
+                                          i, r->fmain.kp_ptr[i]);*/
+                        }
 
-        }
-        else if(bdbm_is_write(r->req_type)){
-                p->oob_data[idx] = r->logaddr.lpa[0];
-            /*    printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d\n",r->logaddr.lpa[0],
-                                r->phyaddr.channel_no,
-                                r->phyaddr.chip_no,
-                                r->phyaddr.block_no,
-                                r->phyaddr.page_no,
-                                r->phyaddr.punit_id);
-                                */
+                }
+                else if(bdbm_is_write(r->req_type)){
+                        if(r->fmain.kp_stt[i] == KP_STT_DATA){
+                                p->oob_data[idx + i] = r->logaddr.lpa[i];
+                                /*                       printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                                                         r->logaddr.lpa[0],
+                                                         r->phyaddr.channel_no,
+                                                         r->phyaddr.chip_no,
+                                                         r->phyaddr.block_no,
+                                                         r->phyaddr.page_no,
+                                                         r->phyaddr.punit_id,
+                                                         i, r->fmain.kp_ptr[i]);
+                                                         */
 
+                        }
+                }
         }
         bdbm_spin_unlock (&p->dm_lock);
 

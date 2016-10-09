@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# for 3 GB
+# for 24 GB
 sudo rm /media/hoon/TEMP/1 -rf
 sudo rm /media/hoon/TEMP/2 -rf
 sudo rm /media/hoon/TEMP/3 -rf
 sudo mkdir /media/hoon/TEMP/1
-sudo bonnie++ -s 2048:1024 -n 40 -x 2 -r 8 -u root -d /media/hoon/TEMP/1 &
+sudo bonnie++ -s 1280:1024 -n 40 -x 4 -r 8 -u root -d /media/hoon/TEMP/1 &
 sudo mkdir /media/hoon/TEMP/2
-sudo bonnie++ -s 2048:1024 -n 40 -x 2 -r 8 -u root -d /media/hoon/TEMP/2 &
+sudo bonnie++ -s 1280:1024 -n 40 -x 4 -r 8 -u root -d /media/hoon/TEMP/2 &
 sudo mkdir /media/hoon/TEMP/3
-sudo bonnie++ -s 2048:1024 -n 40 -x 2 -r 8 -u root -d /media/hoon/TEMP/3 &
+sudo bonnie++ -s 1280:1024 -n 40 -x 4 -r 8 -u root -d /media/hoon/TEMP/3 &
 
 # for 16 GB
 #sudo mkdir /media/hoon/TEMP/1

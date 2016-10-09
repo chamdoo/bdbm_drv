@@ -133,7 +133,8 @@ typedef struct {
 } bdbm_phyaddr_t;
 
 /* max kernel pages per physical flash page */
-#define BDBM_MAX_PAGES 1
+//#define BDBM_MAX_PAGES 1
+#define BDBM_MAX_PAGES 4
 
 /* a bluedbm blockio request */
 #define BDBM_BLKIO_MAX_VECS 512
@@ -165,7 +166,8 @@ typedef enum {
 } kp_stt_t;
 
 typedef struct {
-	int64_t lpa[BDBM_MAX_PAGES];
+	int64_t lpa_cg; //coarse-grained lpa (16KB)
+	int64_t lpa[BDBM_MAX_PAGES]; // fine-grained lpa (4KB)
 	int32_t ofs;	/* only used for reads */
 } bdbm_logaddr_t;
 
@@ -316,8 +318,8 @@ typedef struct {
 	void* ptr_private;
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
-	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
-	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
+	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi, int64_t lpa);

@@ -54,6 +54,7 @@ THE SOFTWARE.
 #include "algo/no_ftl.h"
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
+#include "algo/fgm_ftl.h"
 #include "algo/dftl.h"
 #include "ufile.h"
 
@@ -142,7 +143,7 @@ int bdbm_drv_setup (
 	case MAPPING_POLICY_NO_FTL:
 		bdi->ptr_ftl_inf = &_ftl_no_ftl;
 		break;
-	case MAPPING_POLICY_BLOCK:
+	/*case MAPPING_POLICY_BLOCK:
 		bdi->ptr_ftl_inf = &_ftl_block_ftl;
 		break;
 	case MAPPING_POLICY_RSD:
@@ -151,8 +152,13 @@ int bdbm_drv_setup (
 	case MAPPING_POLICY_PAGE:
 		bdi->ptr_ftl_inf = &_ftl_page_ftl;
 		break;
+        */
 	case MAPPING_POLICY_DFTL:
 		bdi->ptr_ftl_inf = &_ftl_dftl;
+		break;
+        
+	case MAPPING_POLICY_FGM:
+		bdi->ptr_ftl_inf = &_ftl_fgm_ftl;
 		break;
 	default:
 		bdbm_error ("invalid ftl type");

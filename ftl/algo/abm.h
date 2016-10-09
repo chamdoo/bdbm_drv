@@ -54,6 +54,7 @@ enum BDBM_ABM_BLK_STATUS {
 	BDBM_ABM_BLK_FREE_PREPARE,
 	BDBM_ABM_BLK_CLEAN,
 	BDBM_ABM_BLK_DIRTY,
+	BDBM_ABM_BLK_DIRTY_4KB,
 
 	BDBM_ABM_BLK_BAD,
 };
@@ -76,6 +77,7 @@ typedef struct {
 	struct list_head** list_head_free;
 	struct list_head** list_head_clean;
 	struct list_head** list_head_dirty;
+	struct list_head** list_head_dirty_4kb;
 	struct list_head** list_head_bad;
 
 	/* # of blocks according to their types */
@@ -84,6 +86,7 @@ typedef struct {
 	uint64_t nr_free_blks_prepared;
 	uint64_t nr_clean_blks;
 	uint64_t nr_dirty_blks;
+	uint64_t nr_dirty_4kb_blks;
 	uint64_t nr_bad_blks;
 } bdbm_abm_info_t;
 

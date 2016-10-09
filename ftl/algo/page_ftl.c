@@ -1,18 +1,14 @@
 /*
 The MIT License (MIT)
-
 Copyright (c) 2014-2015 CSAIL, MIT
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -377,7 +373,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 				phyaddr->block_no,
 				phyaddr->page_no);*/
 		if (logaddr->lpa[k] == -1) {
-			/* the correpsonding subpage must be set to invalid for gc
+			/* the correpsonding subpage must be set to invalid for gc */
 			bdbm_abm_invalidate_page (
 				p->bai, 
 				phyaddr->channel_no, 
@@ -385,8 +381,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 				phyaddr->block_no,
 				phyaddr->page_no,
 				k
-			);*/
-                        bdbm_page_ftl_invalidate_lpa(bdi, logaddr->lpa[k], 1);
+			);
                         continue;
                 }
 
@@ -401,8 +396,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
                 /* update the mapping table */
                 if (me->status == PFTL_PAGE_VALID) {
-                        bdbm_page_ftl_invalidate_lpa(bdi, logaddr->lpa[k], 1);
-                        /*bdbm_abm_invalidate_page (
+                        bdbm_abm_invalidate_page (
                                         p->bai, 
                                         me->phyaddr.channel_no, 
                                         me->phyaddr.chip_no,
@@ -410,46 +404,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
                                         me->phyaddr.page_no,
                                         me->sp_off
                                         );
-*/
 
-                }
-                if( (me->phyaddr.channel_no == 1 &&
-                                        me->phyaddr.chip_no == 3 &&
-                                        me->phyaddr.block_no == 8 ) ||
-                                (phyaddr->channel_no == 1 &&
-                                 phyaddr->chip_no == 3 &&
-                                 phyaddr->block_no == 8) ){
-
-
-                        /*
-                        printf("MAPPING_BEFORE::logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
-                                        logaddr->lpa[k], me->sp_off,
-                                        me->phyaddr.channel_no, 
-                                        me->phyaddr.chip_no,
-                                        me->phyaddr.block_no,
-                                        me->phyaddr.page_no);
-                        printf("MAPPING_AFTER::logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
-                                        logaddr->lpa[k], logaddr->ofs,
-                                        phyaddr->channel_no, 
-                                        phyaddr->chip_no,
-                                        phyaddr->block_no,
-                                        phyaddr->page_no);
-                                        */
-                }
-
-                if(logaddr->lpa[k] == 183510){
-                        printf("LPA_BEFORE::logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
-                                        logaddr->lpa[k], me->sp_off,
-                                        me->phyaddr.channel_no, 
-                                        me->phyaddr.chip_no,
-                                        me->phyaddr.block_no,
-                                        me->phyaddr.page_no);
-                        printf("LPA_AFTER::logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
-                                        logaddr->lpa[k], logaddr->ofs,
-                                        phyaddr->channel_no, 
-                                        phyaddr->chip_no,
-                                        phyaddr->block_no,
-                                        phyaddr->page_no);
 
                 }
 
@@ -642,9 +597,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
         uint64_t nr_punits = 0;
         uint64_t i, j, k;
         bdbm_stopwatch_t sw;
-
         nr_punits = np->nr_channels * np->nr_chips_per_channel;
-
         /* choose victim blocks for individual parallel units */
         bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * nr_punits);
         bdbm_stopwatch_start (&sw);
@@ -662,7 +615,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
                 /*bdbm_warning ("TODO: this warning will be removed with load-balancing");*/
                 return 0;
         }
-
         /* build hlm_req_gc for reads */
         for (i = 0, nr_llm_reqs = 0; i < nr_gc_blks; i++) {
                 bdbm_abm_block_t* b = p->gc_bab[i];
@@ -698,20 +650,16 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
                         }
                 }
         }
-
         /*
            bdbm_msg ("----------------------------------------------");
            bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
            nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
            */
-
         /* wait until Q in llm becomes empty 
          * TODO: it might be possible to further optimize this */
         bdi->ptr_llm_inf->flush (bdi);
-
         if (nr_llm_reqs == 0) 
                 goto erase_blks;
-
         /* send read reqs to llm */
         hlm_gc->req_type = REQTYPE_GC_READ;
         hlm_gc->nr_llm_reqs = nr_llm_reqs;
@@ -725,7 +673,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
         }
         bdbm_sema_lock (&hlm_gc->done);
         bdbm_sema_unlock (&hlm_gc->done);
-
         /* build hlm_req_gc for writes */
         for (i = 0; i < nr_llm_reqs; i++) {
                 bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
@@ -750,7 +697,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
                         bdbm_bug_on (1);
                 }
         }
-
         /* send write reqs to llm */
         hlm_gc->req_type = REQTYPE_GC_WRITE;
         hlm_gc->nr_llm_reqs = nr_llm_reqs;
@@ -764,7 +710,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi)
         }
         bdbm_sema_lock (&hlm_gc->done);
         bdbm_sema_unlock (&hlm_gc->done);
-
         /* erase blocks */
 erase_blks:
         for (i = 0; i < nr_gc_blks; i++) {
@@ -780,7 +725,6 @@ erase_blks:
                 r->ptr_hlm_req = (void*)hlm_gc;
                 r->ret = 0;
         }
-
         /* send erase reqs to llm */
         hlm_gc->req_type = REQTYPE_GC_ERASE;
         hlm_gc->nr_llm_reqs = p->nr_punits;
@@ -794,7 +738,6 @@ erase_blks:
         }
         bdbm_sema_lock (&hlm_gc->done);
         bdbm_sema_unlock (&hlm_gc->done);
-
         /* FIXME: what happens if block erasure fails */
         for (i = 0; i < nr_gc_blks; i++) {
                 uint8_t ret = 0;
@@ -803,7 +746,6 @@ erase_blks:
                         ret = 1;	/* bad block */
                 bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
         }
-
         return 0;
 }
 #endif
@@ -916,7 +858,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 #if 0
         /* perform write compaction for gc */
 #include "hlm_reqs_pool.h"
-
         /* build hlm_req_gc for writes */
         for (i = 0; i < nr_llm_reqs; i++) {
                 bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
@@ -941,7 +882,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
                         bdbm_bug_on (1);
                 }
         }
-
         /* send write reqs to llm */
         hlm_gc->req_type = REQTYPE_GC_WRITE;
         hlm_gc->nr_llm_reqs = nr_llm_reqs;
@@ -1305,9 +1245,7 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
         uint64_t i = 0;
         uint32_t ret = 0;
         uint32_t erased_blocks = 0;
-
         bdbm_msg ("[WARNING] 'bdbm_page_badblock_scan' is called! All of the flash blocks will be dirty!!!");
-
         /* step1: reset the page-level mapping table */
         bdbm_msg ("step1: reset the page-level mapping table");
         me = p->ptr_mapping_table;
@@ -1318,7 +1256,6 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
                 me[i].phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
                 me[i].phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
         }
-
         /* step2: erase all the blocks */
         bdi->ptr_llm_inf->flush (bdi);
         for (i = 0; i < np->nr_blocks_per_chip; i++) {
@@ -1328,13 +1265,11 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
                         __bdbm_page_mark_it_dead (bdi, i);
                 erased_blocks += np->nr_channels;
         }
-
         /* step3: store abm */
         if ((ret = bdbm_abm_store (p->bai, "/usr/share/bdbm_drv/abm.dat"))) {
                 bdbm_error ("bdbm_abm_store failed");
                 return 1;
         }
-
         /* step4: get active blocks */
         bdbm_msg ("step2: get active blocks");
         if (__bdbm_page_ftl_get_active_blocks (np, p->bai, p->ac_bab) != 0) {
@@ -1343,7 +1278,6 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
         }
         p->curr_puid = 0;
         p->curr_page_ofs = 0;
-
         bdbm_msg ("[summary] Total: %llu, Free: %llu, Clean: %llu, Dirty: %llu",
                         bdbm_abm_get_nr_total_blocks (p->bai),
                         bdbm_abm_get_nr_free_blocks (p->bai),
