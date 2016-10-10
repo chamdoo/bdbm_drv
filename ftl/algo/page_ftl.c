@@ -59,7 +59,9 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	.map_lpa_to_ppa = bdbm_page_ftl_map_lpa_to_ppa,
 	.invalidate_lpa = bdbm_page_ftl_invalidate_lpa,
 #ifdef LAZY_INVALID
-	.invalidate_pending_lpa = bdbm_page_ftl_invalidate_pending_lpa,
+	.set_obsolete_ppa = bdbm_page_ftl_set_obsolete_ppa,
+	.invalidate_obsolete_ppa = bdbm_page_ftl_invalidate_obsolete_ppa,
+	.need_more_free_blks = bdbm_page_ftl_need_more_free_blks,
 #endif
 	.do_gc = bdbm_page_ftl_do_gc,
 	.is_gc_needed = bdbm_page_ftl_is_gc_needed,
@@ -82,10 +84,6 @@ typedef struct {
 	uint8_t status; /* BDBM_PFTL_PAGE_STATUS */
 	bdbm_phyaddr_t phyaddr; /* physical location */
 	uint8_t sp_off;
-#ifdef LAZY_INVALID
-	bdbm_phyaddr_t o_phyaddr; /*obsolete physical location */
-	uint8_t o_sp_off;
-#endif
 } bdbm_page_mapping_entry_t;
 
 typedef struct {
@@ -358,6 +356,166 @@ uint32_t bdbm_page_ftl_get_free_ppa (
 	return 0;
 }
 
+#ifdef LAZY_INVALID
+#if 0
+uint32_t bdbm_page_ftl_set_obsolete_ppa_gc (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* lr, 
+	bdbm_logaddr_t* logaddr,
+	bdbm_phyaddr_t* phyaddr)
+{
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
+	int k;
+
+	if(logaddr == NULL)
+		return 1;
+
+
+	// set obsolete pages to pending state
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+		if(logaddr->lpa[k] == -1){
+			lr->o_phyaddr = *(phyaddr); // 현재 page 를 invalidate 해야함. 
+			bdbm_abm_set_pending_page ( 
+				p->bai, 
+				phyaddr->channel_no, 
+				phyaddr->chip_no,
+				phyaddr->block_no,
+				phyaddr->page_no,
+				k	
+			);
+
+		}else{ // obsolete page 를 invalidate 해야함. 
+			// get mapping table
+			me = &p->ptr_mapping_table[logaddr->lpa[k]];
+			bdbm_bug_on (me == NULL);
+
+			bdbm_abm_set_pending_page ( 
+				p->bai, 
+				me->phyaddr.channel_no, 
+				me->phyaddr.chip_no,
+				me->phyaddr.block_no,
+				me->phyaddr.page_no,
+				me->sp_off
+			);
+
+			lr->o_phyaddr = me->phyaddr;
+		}
+	}
+	return 0;
+}
+#endif
+#endif
+
+
+#ifdef LAZY_INVALID
+uint32_t bdbm_page_ftl_set_obsolete_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* lr, 
+	bdbm_logaddr_t* logaddr,
+	bdbm_phyaddr_t* phyaddr)
+{
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
+	int k;
+
+	if(logaddr == NULL)
+		return 1;
+
+
+	// set obsolete pages to pending state
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+		if(logaddr->lpa[k] == -1){ // GC에서 dummy req 등. 다른 경우에도 있나? 
+//			bdbm_msg("EUNJI: logaddr = -1: %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+			bdbm_abm_set_pending_page ( 
+				p->bai, 
+				phyaddr->channel_no, 
+				phyaddr->chip_no,
+				phyaddr->block_no,
+				phyaddr->page_no,
+				k	
+			);
+
+			lr->o_phyaddr = *(phyaddr); // 현재 page 를 invalidate 해야함. 
+
+		}else{ // obsolete page 를 invalidate 해야함. 
+			// get mapping table
+			me = &p->ptr_mapping_table[logaddr->lpa[k]];
+			bdbm_bug_on (me == NULL);
+
+//			bdbm_msg("EUNJI: logaddr != -1: %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+
+			if (me->status == PFTL_PAGE_VALID) {
+				bdbm_abm_set_pending_page ( 
+					p->bai, 
+					me->phyaddr.channel_no, 
+					me->phyaddr.chip_no,
+					me->phyaddr.block_no,
+					me->phyaddr.page_no,
+					me->sp_off
+				);
+
+				lr->o_phyaddr = me->phyaddr;
+			}
+		}
+	}
+	return 0;
+}
+
+#endif
+
+#ifdef LAZY_INVALID
+uint32_t bdbm_page_ftl_invalidate_obsolete_ppa (
+	bdbm_drv_info_t* bdi, 
+	bdbm_llm_req_t* lr)
+//	bdbm_phyaddr_t* phyaddr)
+{	
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_page_mapping_entry_t* me = NULL;
+	int k;
+
+
+	// 초기값이 무엇인지.. 
+	if(lr->o_phyaddr.punit_id == PFTL_PAGE_INVALID_ADDR ||
+		lr->o_phyaddr.channel_no == PFTL_PAGE_INVALID_ADDR ||
+		lr->o_phyaddr.chip_no == PFTL_PAGE_INVALID_ADDR ||
+		lr->o_phyaddr.block_no == PFTL_PAGE_INVALID_ADDR ||
+		lr->o_phyaddr.page_no == PFTL_PAGE_INVALID_ADDR )
+		return 0;
+
+	/* is it a valid logical address */
+	for (k = 0; k < np->nr_subpages_per_page; k++) {
+
+		/* get the mapping entry for lpa */
+		me = &p->ptr_mapping_table[lr->logaddr.lpa[k]];
+		bdbm_bug_on (me == NULL);
+
+		/* update the mapping table */
+		bdbm_abm_invalidate_pending_page ( 
+			p->bai, 
+			lr->o_phyaddr.channel_no, 
+			lr->o_phyaddr.chip_no,
+			lr->o_phyaddr.block_no,
+			lr->o_phyaddr.page_no,
+			k	
+		);
+	}
+
+	// 초기값으로 되돌려 놓기 
+	lr->o_phyaddr.punit_id = PFTL_PAGE_INVALID_ADDR;
+	lr->o_phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
+	lr->o_phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
+	lr->o_phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
+	lr->o_phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+	return 0;
+}
+#endif
+
+
+
 uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_drv_info_t* bdi, 
 	bdbm_logaddr_t* logaddr,
@@ -370,7 +528,14 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
 	/* is it a valid logical address */
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
+		// 만약 pending 중인 write 를 GC 하는 거라면 logaddr = -1 로 세팅되어 들어옴. 
+		// 이 경우에도 바로 invalidate 안하고 pending 시켰다가 완료되면 처리.  
 		if (logaddr->lpa[k] == -1) {
+#ifdef LAZY_INVALID
+#else
+			bdbm_msg("%llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+
+
 			/* the correpsonding subpage must be set to invalid for gc */
 			bdbm_abm_invalidate_page (
 				p->bai, 
@@ -380,12 +545,14 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 				phyaddr->page_no,
 				k
 			);
+#endif
 			continue;
 		}
 
 		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
 			return 1;
+
 		}
 
 		/* get the mapping entry for lpa */
@@ -396,20 +563,6 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 		if (me->status == PFTL_PAGE_VALID) {
 
 #ifdef LAZY_INVALID
-			me->o_phyaddr.channel_no = me->phyaddr.channel_no, 
-			me->o_phyaddr.chip_no = me->phyaddr.chip_no,
-			me->o_phyaddr.block_no = me->phyaddr.block_no,
-			me->o_ohyaddr.page_no = me->phyaddr.page_no,
-			me->o_sp_off = me->sp_off
-
-			bdbm_abm_pending_page ( 
-				p->bai, 
-				me->phyaddr.channel_no, 
-				me->phyaddr.chip_no,
-				me->phyaddr.block_no,
-				me->phyaddr.page_no,
-				me->sp_off
-			};
 #else
 			bdbm_abm_invalidate_page (
 				p->bai, 
@@ -477,72 +630,6 @@ uint32_t bdbm_page_ftl_get_ppa (
 	return ret;
 }
 
-#ifdef LAZY_INVALID
-uint32_t bdbm_page_ftl_invalidate_pending_lpa (
-	bdbm_drv_info_t* bdi, 
-	bdbm_logaddr_t* logaddr,
-	bdbm_phyaddr_t* phyaddr)
-{	
-	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
-	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
-	bdbm_page_mapping_entry_t* me = NULL;
-	int k;
-
-	/* is it a valid logical address */
-	for (k = 0; k < np->nr_subpages_per_page; k++) {
-
-		/* get the mapping entry for lpa */
-		me = &p->ptr_mapping_table[logaddr->lpa[k]];
-		bdbm_bug_on (me == NULL);
-
-		bdbm_bug_on (me->o_phyaddr.channel_no != phyaddr->channel_no);
-		bdbm_bug_on (me->o_phyaddr.channel_no != phyaddr->chip_no);
-		bdbm_bug_on (me->o_phyaddr.channel_no != phyaddr->block_no);
-		bdbm_bug_on (me->o_phyaddr.channel_no != phyaddr->page_no);
-
-		/* update the mapping table */
-		bdbm_abm_invalidate_pending_page ( 
-			p->bai, 
-			me->o_phyaddr.channel_no, 
-			me->o_phyaddr.chip_no,
-			me->o_phyaddr.block_no,
-			me->o_phyaddr.page_no,
-			me->o_sp_off
-		};
-
-		me->o_phyaddr.channel_no = -1;
-		me->o_phyaddr.chip_no = -1;
-		me->o_phyaddr.block_no = -1;
-		me->o_phyaddr.page_no = -1;
-		me->o_sp_off = -1;
-	}
-
-	return 0;
-}
-
-
-
-
-	/* make them invalid */
-	for (loop = lpa; loop < (lpa + len); loop++) {
-		me = &p->ptr_mapping_table[loop];
-		if (me->status == PFTL_PAGE_VALID) {
-			bdbm_abm_invalidate_page (
-				p->bai, 
-				me->phyaddr.channel_no, 
-				me->phyaddr.chip_no,
-				me->phyaddr.block_no,
-				me->phyaddr.page_no,
-				me->sp_off
-			);
-			me->status = PFTL_PAGE_INVALID;
-		}
-	}
-
-	return 0;
-}
-#endif
-
 uint32_t bdbm_page_ftl_invalidate_lpa (
 	bdbm_drv_info_t* bdi, 
 	int64_t lpa, 
@@ -586,7 +673,7 @@ uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 20) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= LOW_WATERMARK_FOR_FREE_BLKS) {
 		return 1;
 	}
 
@@ -600,6 +687,24 @@ uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 
 	return 0;
 }
+
+#ifdef LAZY_INVALID
+
+uint8_t bdbm_page_ftl_need_more_free_blks (bdbm_drv_info_t* bdi)
+{
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	uint64_t nr_total_blks = bdbm_abm_get_nr_total_blocks (p->bai);
+	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
+
+	/* invoke gc when remaining free blocks are less than 1% of total blocks */
+	if ((nr_free_blks * 100 / nr_total_blks) <= HIGH_WATERMARK_FOR_FREE_BLKS) {
+		bdbm_msg("free_blk_ratio = %llu", (nr_free_blks*100/nr_total_blks));
+		return 1; // need to get more free blocks
+	}
+
+	return 0;
+}
+#endif
 
 /* VICTIM SELECTION - First Selection:
  * select the first dirty block in a list */
@@ -884,6 +989,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		for (j = 0; j < np->nr_pages_per_block; j++) {
 			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
 			int has_valid = 0;
+#ifdef LAZY_INVALID
+			int has_pending = 0;
+#endif
 			/* are there any valid subpages in a block */
 			hlm_reqs_pool_reset_fmain (&r->fmain);
 			hlm_reqs_pool_reset_logaddr (&r->logaddr);
@@ -900,16 +1008,15 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 					r->logaddr.lpa[k] = -1; /* the subpage contains new data */
 					r->fmain.kp_stt[k] = KP_STT_DATA;
 				} 
-#if 0
 #ifdef LAZY_INVALID 
 				// invalid pages 
-				else if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_INVALID_PENDING) {
+				else if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_PENDING_INVALID) {
 					// For pending write, insert dummy request 
-					// has_pending = 1; 
+					has_pending = 1; 
+					bdbm_msg("EUNJI: try to reclaim a page pending in write");
 					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
 					r->fmain.kp_stt[k] = KP_STT_HOLE;
 				}
-#endif
 #endif
 			}
 			/* if it is, selects it as the gc candidates */
@@ -924,21 +1031,28 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 				r->ret = 0;
 				nr_llm_reqs++;
 			}
-#if 0
 #ifdef LAZY_INALID
-			if (has_pending) }
-// dummy request
+			else if (has_pending) {
+				bdbm_msg("EUNJI: insert gc dummy read");
+			// dummy request
+				r->req_type = REQTYPE_GC_READ;
+				r->phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
+				r->phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
+				r->phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
+				r->phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+				r->phyaddr.punit_id = PFTL_PAGE_INVALID_ADDR;
+				r->ret = 0;
+				nr_llm_reqs++;
 			}
-#endif
 #endif
 		}
 	}
 
-	/*
+//	/*
 	bdbm_msg ("----------------------------------------------");
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-	*/
+//	*/
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
@@ -1018,6 +1132,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc_w->llm_reqs[i];
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
+
+
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
 			if (r->fmain.kp_stt[k] == KP_STT_DATA) {
@@ -1029,11 +1145,16 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 				bdbm_bug_on (1);
 			}
 		}
+
 		r->ptr_hlm_req = (void*)hlm_gc_w;
 		if (bdbm_page_ftl_get_free_ppa (bdi, 0, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
 		}
+
+#ifdef LAZY_INVALID
+		bdbm_page_ftl_set_obsolete_ppa(bdi, r, &r->logaddr, &r->phyaddr);
+#endif
 		if (bdbm_page_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
 			bdbm_bug_on (1);

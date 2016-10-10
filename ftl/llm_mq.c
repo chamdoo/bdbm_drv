@@ -243,8 +243,10 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	/* obtain the elapsed time taken by FTL algorithms */
 	pmu_update_sw (bdi, r);
 
-	/* wait until there are enough free slots in Q */
-	while (bdbm_prior_queue_get_nr_items (p->q) >= 96) {
+// LAZY_INVALID
+//	bdbm_msg("queue length = %llu", bdbm_prior_queue_get_nr_items(p->q));
+//  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
+	while (bdbm_prior_queue_get_nr_items (p->q) >= MAX_QSIZE) {
 		bdbm_thread_yield ();
 	}
 
@@ -319,8 +321,8 @@ void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		pmu_inc (bdi, r);
 
 #ifdef LAZY_INVALID
-		if (bdbm_is_write (r->req_type) && !bdbm_is_gc(r->req_type))
-			bdi->ptr_ftl_inf->invalidate_pending_lpa(bdi, &r->logaddr, &r->phyaddr);
+		if (bdbm_is_write (r->req_type))
+			bdi->ptr_ftl_inf->invalidate_obsolete_ppa(bdi, r);
 #endif
 
 		/* finish a request */

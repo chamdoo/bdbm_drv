@@ -97,7 +97,7 @@ babm_abm_subpage_t* __bdbm_abm_create_pst (bdbm_device_params_t* np)
 	 * mapping FTLs that are often used to avoid expensive read-modify-writes
 	 * */
 	pst = bdbm_malloc (sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
-	bdbm_memset (pst, BABM_ABM_SUBPAGE_NOT_INVALID, sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
+	bdbm_memset (pst, BDBM_ABM_SUBPAGE_NOT_INVALID, sizeof (babm_abm_subpage_t) * np->nr_subpages_per_block);
 
 	return pst;
 };
@@ -423,7 +423,7 @@ void bdbm_abm_erase_block (
 	blk->nr_invalid_subpages = 0;
 	if (blk->pst) {
 		bdbm_memset (blk->pst, 
-			BABM_ABM_SUBPAGE_NOT_INVALID, 
+			BDBM_ABM_SUBPAGE_NOT_INVALID, 
 			sizeof (babm_abm_subpage_t) * bai->np->nr_subpages_per_block
 		);
 	}
@@ -499,7 +499,7 @@ void bdbm_abm_set_to_dirty_block (
 }
 
 #ifdef LAZY_INVALID
-void bdbm_abm_pending_page (
+void bdbm_abm_set_pending_page (
 	bdbm_abm_info_t* bai, 
 	uint64_t channel_no, 
 	uint64_t chip_no, 
@@ -527,7 +527,7 @@ void bdbm_abm_pending_page (
 	if (b->pst == NULL)
 		return;
 
-	if (b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID) {
+	if (b->pst[pst_off] == BDBM_ABM_SUBPAGE_NOT_INVALID) {
 		b->pst[pst_off] = BDBM_ABM_SUBPAGE_PENDING_INVALID;
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {
@@ -586,8 +586,8 @@ void bdbm_abm_invalidate_pending_page (
 	if (b->pst == NULL)
 		return;
 
-	//if (b->pst[pst_off] == BABM_ABM_SUBPAGE_PENDING_INVALID) {
-	if (b->pst[pst_off] != BABM_ABM_SUBPAGE_INVALID) {
+	//if (b->pst[pst_off] == BDBM_ABM_SUBPAGE_PENDING_INVALID) {
+	if (b->pst[pst_off] != BDBM_ABM_SUBPAGE_INVALID) {
 		b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
 
 #if 0
@@ -653,7 +653,7 @@ void bdbm_abm_invalidate_page (
 	if (b->pst == NULL)
 		return;
 
-	if (b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID) {
+	if (b->pst[pst_off] == BDBM_ABM_SUBPAGE_NOT_INVALID) {
 		b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {

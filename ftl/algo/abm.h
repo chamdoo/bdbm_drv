@@ -43,7 +43,7 @@ THE SOFTWARE.
 
 
 enum BDBM_ABM_SUBPAGE_STATUS {
-	BABM_ABM_SUBPAGE_NOT_INVALID = 0,
+	BDBM_ABM_SUBPAGE_NOT_INVALID = 0,
 	BDBM_ABM_SUBPAGE_INVALID,
 #ifdef LAZY_INVALID
 	BDBM_ABM_SUBPAGE_PENDING_INVALID,
@@ -100,11 +100,19 @@ void bdbm_abm_erase_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t c
 void bdbm_abm_invalidate_page (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, uint64_t page_no, uint64_t subpage_no);
 void bdbm_abm_set_to_dirty_block (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no);
 
+#ifdef LAZY_INVALID
+void bdbm_abm_set_pending_page (bdbm_abm_info_t* bai, uint64_t channel_no,uint64_t chip_no, uint64_t block_no, 	uint64_t page_no, uint64_t subpage_no);
+void bdbm_abm_invalidate_pending_page (bdbm_abm_info_t* bai, uint64_t channel_no,uint64_t chip_no, uint64_t block_no, 	uint64_t page_no, uint64_t subpage_no);
+#endif
+
 static inline uint64_t bdbm_abm_get_nr_free_blocks (bdbm_abm_info_t* bai) { return bai->nr_free_blks; }
 static inline uint64_t bdbm_abm_get_nr_free_blocks_prepared (bdbm_abm_info_t* bai) { return bai->nr_free_blks_prepared; }
 static inline uint64_t bdbm_abm_get_nr_clean_blocks (bdbm_abm_info_t* bai) { return bai->nr_clean_blks; }
 static inline uint64_t bdbm_abm_get_nr_dirty_blocks (bdbm_abm_info_t* bai) { return bai->nr_dirty_blks; }
 static inline uint64_t bdbm_abm_get_nr_total_blocks (bdbm_abm_info_t* bai) { return bai->nr_total_blks; }
+
+
+
 
 uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn);
 uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);

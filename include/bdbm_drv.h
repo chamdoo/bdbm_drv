@@ -1,4 +1,11 @@
-#define LAZY_INVALID
+//#define LAZY_INVALID
+//  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
+
+#define MAX_QSIZE 262144
+//#define MAX_QSIZE 96
+#define LOW_WATERMARK_FOR_FREE_BLKS 2
+#define HIGH_WATERMARK_FOR_FREE_BLKS 2
+//#define HIGH_WATERMARK_FOR_FREE_BLKS 20
 /*
 The MIT License (MIT)
 
@@ -191,7 +198,10 @@ typedef struct {
 	bdbm_phyaddr_t phyaddr;
 	bdbm_phyaddr_t phyaddr_src;
 	bdbm_phyaddr_t phyaddr_dst;
-
+#ifdef LAZY_INVALID
+	bdbm_phyaddr_t o_phyaddr;
+	uint8_t o_status;
+#endif
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
@@ -319,6 +329,11 @@ typedef struct {
 	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
 	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+#ifdef LAZY_INVALID
+	uint32_t (*set_obsolete_ppa)(bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr, bdbm_logaddr_t* logaddr,	bdbm_phyaddr_t* phyaddr);
+	uint32_t (*invalidate_obsolete_ppa) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr);
+	uint8_t (*need_more_free_blks) (bdbm_drv_info_t* bdi);
+#endif
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi, int64_t lpa);
 	uint8_t (*is_gc_needed) (bdbm_drv_info_t* bdi, int64_t lpa);

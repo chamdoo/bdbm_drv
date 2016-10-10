@@ -127,6 +127,19 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					bdbm_error ("`ftl->get_free_ppa' failed");
 					goto fail;
 				}
+#ifdef LAZY_INVALID
+				if(ftl->set_obsolete_ppa(bdi, lr, &lr->logaddr, &lr->phyaddr) != 0) {
+					bdbm_error ("set obsolete_ppa failed");
+					goto fail;
+				}
+
+#if 0
+				lr->o_phyaddr.channel_no = lr->phyaddr.channel_no;
+				lr->o_phyaddr.chip_no = lr->phyaddr.channel_no;
+				lr->o_phyaddr.block_no = lr->phyaddr.channel_no;
+				lr->o_phyaddr.page_no = lr->phyaddr.channel_no;
+#endif
+#endif
 				if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
 					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 					goto fail;
@@ -208,7 +221,11 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
 				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
-				ftl->do_gc (bdi, 0);
+#ifdef LAZY_INVALID
+				do {
+					ftl->do_gc (bdi, 0);
+				} while(ftl->need_more_free_blks(bdi));
+#endif
 			} else
 				break;
 		}

@@ -42,7 +42,9 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+#ifdef LAZY_INVALID
+//#define DATA_CHECK
+#endif
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
@@ -196,6 +198,14 @@ static uint8_t __ramssd_read_page (
 	uint8_t* ptr_ramssd_addr = NULL;
 	uint32_t nr_kpages, loop;
 
+
+#ifdef LAZY_INVALID
+	if( channel_no == -1 || chip_no == -1 || block_no == -1 ||	page_no == -1 ){
+		bdbm_msg("EUNJI: dummy read write");
+		return 0;
+	}
+#endif
+
 	/* get the memory address for the destined page */
 	if ((ptr_ramssd_addr = __ramssd_page_addr (ri, channel_no, chip_no, block_no, page_no)) == NULL) {
 		bdbm_error ("invalid ram_addr (%p)", ptr_ramssd_addr);
@@ -281,6 +291,13 @@ static uint8_t __ramssd_prog_page (
 	uint8_t ret = 0;
 	uint8_t* ptr_ramssd_addr = NULL;
 	uint32_t nr_kpages, loop;
+
+#ifdef LAZY_INVALID
+	if( channel_no == -1 || chip_no == -1 || block_no == -1 ||	page_no == -1 ){
+		bdbm_msg("EUNJI: dummy read write");
+		return 0;
+	}
+#endif
 
 	/* get the memory address for the destined page */
 	if ((ptr_ramssd_addr = __ramssd_page_addr (ri, channel_no, chip_no, block_no, page_no)) == NULL) {
@@ -429,7 +446,6 @@ static uint32_t __ramssd_send_cmd (
 		/* do nothing for TRIM */
 		ret = 0;
 		break;
-
 	default:
 		bdbm_error ("invalid command");
 		ret = 1;
@@ -677,6 +693,7 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 			case REQTYPE_READ_DUMMY:
 				target_elapsed_time_us = 0;	/* dummy read */
 				break;
+
 			default:
 				bdbm_error ("invalid REQTYPE (%u)", r->req_type);
 				bdbm_bug_on (1);
