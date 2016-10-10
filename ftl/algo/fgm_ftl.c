@@ -165,7 +165,7 @@ bdbm_fgm_mapping_entry_t* __bdbm_fgm_ftl_create_mapping_table (
     }
 
     /* initialize a page-level mapping table */
-    for (loop = 0; loop < np->nr_subpages_per_ssd / np->nr_subpages_per_page; loop++) {
+    for (loop = 0; loop < np->nr_pages_per_ssde; loop++) {
         me[loop].status = PFTL_PAGE_NOT_ALLOCATED;
         me[loop].phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
         me[loop].phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
@@ -532,14 +532,9 @@ uint32_t __bdbm_fgm_ftl_map_lpa_to_ppa_4kb (
     int k, pst_off = 0;
 
 
-
-    for (k = 0; k < np->nr_subpages_per_page; k++) {
-        if(logaddr->lpa[k] != -1){
-            if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
-                bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
-                return 1;
-            }
-        }
+    if (logaddr->lpa[logaddr->ofs] >= np->nr_subpages_per_ssd) {
+        bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
+        return 1;
     }
 
     for (k = 0; k < np->nr_subpages_per_page; k++) {
@@ -547,15 +542,15 @@ uint32_t __bdbm_fgm_ftl_map_lpa_to_ppa_4kb (
         if(b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID)
             break;
     }
-/*
-    printf("logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d sub page = %d\n",
-      logaddr->lpa[logaddr->ofs], logaddr->ofs,
-      phyaddr->channel_no, 
-      phyaddr->chip_no,
-      phyaddr->block_no,
-      phyaddr->page_no,
-      pst_off);
-      */
+    /*
+       printf("logaddr=%d, ofs=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d sub page = %d\n",
+       logaddr->lpa[logaddr->ofs], logaddr->ofs,
+       phyaddr->channel_no, 
+       phyaddr->chip_no,
+       phyaddr->block_no,
+       phyaddr->page_no,
+       pst_off);
+       */
 
     spme = find_lpa_4kb(p, logaddr->lpa[logaddr->ofs]);
     if(spme != NULL){
@@ -594,15 +589,15 @@ uint32_t __bdbm_fgm_ftl_map_lpa_to_ppa (
     int k = 0;
 
     /* is it a valid logical address */
-   /* printf("logaddr=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
-            logaddr->lpa_cg,
-            phyaddr->channel_no, 
-            phyaddr->chip_no,
-            phyaddr->block_no,
-            phyaddr->page_no);
-            */
+    /* printf("logaddr=%d, phy:: ch=%d, chip=%d, block=%d, page_no=%d\n",
+       logaddr->lpa_cg,
+       phyaddr->channel_no, 
+       phyaddr->chip_no,
+       phyaddr->block_no,
+       phyaddr->page_no);
+       */
 
-    if (logaddr->lpa_cg >= np->nr_subpages_per_ssd / np->nr_subpages_per_page) {
+    if (logaddr->lpa_cg >= np->nr_pages_per_ssd) {
         bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
         return 1;
     }
@@ -721,10 +716,11 @@ uint32_t bdbm_fgm_ftl_get_ppa (
     bdbm_fgm_ftl_private_t* p = _ftl_fgm_ftl.ptr_private;
     bdbm_fgm_mapping_entry_t* me = NULL;
     bdbm_fgm_sp_mapping_entry_t* spme = NULL;
-    uint32_t ret, k;
+    uint32_t ret, k, is_rmw_get_ppa = 0;
 
     for (k = 0; k < np->nr_subpages_per_page; k++) {
         if(logaddr->lpa[k] != -1){
+            is_rmw_get_ppa++;
 
             if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
                 bdbm_error ("A given lpa is beyond logical space (%llu)", logaddr->lpa[k]);
@@ -738,13 +734,15 @@ uint32_t bdbm_fgm_ftl_get_ppa (
                 phyaddr->block_no = spme->ppa.block_no; 
                 phyaddr->page_no = spme->ppa.page_no;
                 *sp_off = spme->sp_off;
-                return 0;
             }
         }
     }
 
+    if(is_rmw_get_ppa == 1)
+        return 0;
+
     logaddr->ofs = 0;
-    if (logaddr->lpa_cg >= np->nr_subpages_per_ssd / np->nr_subpages_per_page) {
+    if (logaddr->lpa_cg >= np->nr_pages_per_ssd) {
         bdbm_error ("A given lpa is beyond logical space (%llu)", logaddr->lpa_cg);
         return 1;
     }
@@ -764,9 +762,9 @@ uint32_t bdbm_fgm_ftl_invalidate_lpa (
     uint64_t loop, k;
 
     /* check the range of input addresses */
-    if ((lpa + len) > np->nr_subpages_per_ssd / np->nr_subpages_per_page) {
+    if ((lpa + len) > np->nr_pages_per_ssd) {
         bdbm_warning ("LPA is beyond logical space (%llu = %llu+%llu) %llu", 
-                lpa+len, lpa, len, np->nr_subpages_per_ssd / np->nr_subpages_per_page);
+                lpa+len, lpa, len, np->nr_pages_per_ssd);
         return 1;
     }
 

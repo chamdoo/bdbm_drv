@@ -59,45 +59,6 @@ struct dm_user_private {
 
 static void __dm_setup_device_params (bdbm_device_params_t* params)
 {
-#if 0
-	/* user-specified parameters */
-	params->nr_channels = _param_nr_channels;
-	params->nr_chips_per_channel = _param_nr_chips_per_channel;
-	params->nr_blocks_per_chip = _param_nr_blocks_per_chip;
-	params->nr_pages_per_block = _param_nr_pages_per_block;
-	params->page_main_size = _param_page_main_size;
-	params->page_oob_size = _param_page_oob_size;
-	params->device_type = _param_device_type;
-	params->page_prog_time_us = _param_page_prog_time_us;
-	params->page_read_time_us = _param_page_read_time_us;
-	params->block_erase_time_us = _param_block_erase_time_us;
-	/*params->timing_mode = _param_ramdrv_timing_mode;*/
-
-	/* other parameters derived from user parameters */
-	params->nr_blocks_per_channel = 
-		params->nr_chips_per_channel * 
-		params->nr_blocks_per_chip;
-
-	params->nr_blocks_per_ssd = 
-		params->nr_channels * 
-		params->nr_chips_per_channel * 
-		params->nr_blocks_per_chip;
-
-	params->nr_chips_per_ssd =
-		params->nr_channels * 
-		params->nr_chips_per_channel;
-
-	params->nr_pages_per_ssd =
-		params->nr_pages_per_block * 
-		params->nr_blocks_per_ssd;
-
-	params->device_capacity_in_byte = 0;
-	params->device_capacity_in_byte += params->nr_channels;
-	params->device_capacity_in_byte *= params->nr_chips_per_channel;
-	params->device_capacity_in_byte *= params->nr_blocks_per_chip;
-	params->device_capacity_in_byte *= params->nr_pages_per_block;
-	params->device_capacity_in_byte *= params->page_main_size;
-#endif
 	*params = get_default_device_params ();
 }
 
@@ -161,88 +122,88 @@ void dm_user_close (bdbm_drv_info_t* bdi)
 
 uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
-        int i;
-        struct dm_user_private* p; 
-	bdbm_device_params_t dp = bdi->parm_dev;
-        bdbm_llm_req_t* r = ptr_llm_req;
-        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
-        uint64_t idx = (r->phyaddr.channel_no * dp.nr_blocks_per_channel * dp.nr_subpages_per_block) + 
-                (r->phyaddr.chip_no * dp.nr_blocks_per_chip * dp.nr_subpages_per_block) + 
-                (r->phyaddr.block_no * dp.nr_subpages_per_block) + r->phyaddr.page_no*dp.nr_subpages_per_page;
+    int i;
+    struct dm_user_private* p; 
+    bdbm_device_params_t dp = bdi->parm_dev;
+    bdbm_llm_req_t* r = ptr_llm_req;
+    p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+    uint64_t idx = (r->phyaddr.channel_no * dp.nr_blocks_per_channel * dp.nr_subpages_per_block) + 
+        (r->phyaddr.chip_no * dp.nr_blocks_per_chip * dp.nr_subpages_per_block) + 
+        (r->phyaddr.block_no * dp.nr_subpages_per_block) + r->phyaddr.page_no*dp.nr_subpages_per_page;
 
 
 
-        /*TODO: do somthing */
-        bdbm_spin_lock (&p->dm_lock);
-        p->w_cnt++;
-        for (i = 0; i < BDBM_MAX_PAGES; i++){ 
-                if(bdbm_is_read(r->req_type)){
-                        if(r->fmain.kp_stt[i] == KP_STT_DATA){
-                                ((uint64_t*)r->foob.data)[i] = p->oob_data[idx + i];
-                                /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
-                                          p->oob_data[r->phyaddr.punit_id],
-                                          r->phyaddr.channel_no,
-                                          r->phyaddr.chip_no,
-                                          r->phyaddr.block_no,
-                                          r->phyaddr.page_no,
-                                          r->phyaddr.punit_id,
-                                          i, r->fmain.kp_ptr[i]);*/
-                        }
+    /*TODO: do somthing */
+    bdbm_spin_lock (&p->dm_lock);
+    p->w_cnt++;
+    for (i = 0; i < BDBM_MAX_PAGES; i++){ 
+        if(bdbm_is_read(r->req_type)){
+            if(r->fmain.kp_stt[i] == KP_STT_DATA){
+                ((uint64_t*)r->foob.data)[i] = p->oob_data[idx + i];
+                /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                          p->oob_data[r->phyaddr.punit_id],
+                          r->phyaddr.channel_no,
+                          r->phyaddr.chip_no,
+                          r->phyaddr.block_no,
+                          r->phyaddr.page_no,
+                          r->phyaddr.punit_id,
+                          i, r->fmain.kp_ptr[i]);*/
+            }
 
-                }
-                else if(bdbm_is_write(r->req_type)){
-                        if(r->fmain.kp_stt[i] == KP_STT_DATA){
-                                p->oob_data[idx + i] = r->logaddr.lpa[i];
-                                /*                       printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
-                                                         r->logaddr.lpa[0],
-                                                         r->phyaddr.channel_no,
-                                                         r->phyaddr.chip_no,
-                                                         r->phyaddr.block_no,
-                                                         r->phyaddr.page_no,
-                                                         r->phyaddr.punit_id,
-                                                         i, r->fmain.kp_ptr[i]);
-                                                         */
-
-                        }
-                }
         }
-        bdbm_spin_unlock (&p->dm_lock);
+        else if(bdbm_is_write(r->req_type)){
+            if(r->fmain.kp_stt[i] == KP_STT_DATA){
+                p->oob_data[idx + i] = r->logaddr.lpa[i];
+                /*                       printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                                         r->logaddr.lpa[0],
+                                         r->phyaddr.channel_no,
+                                         r->phyaddr.chip_no,
+                                         r->phyaddr.block_no,
+                                         r->phyaddr.page_no,
+                                         r->phyaddr.punit_id,
+                                         i, r->fmain.kp_ptr[i]);
+                                         */
 
-        dm_user_end_req (bdi, ptr_llm_req);
+            }
+        }
+    }
+    bdbm_spin_unlock (&p->dm_lock);
 
-        return 0;
+    dm_user_end_req (bdi, ptr_llm_req);
+
+    return 0;
 }
 
 void dm_user_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
 {
-        struct dm_user_private* p; 
+    struct dm_user_private* p; 
 
-        p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+    p = (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-        bdbm_spin_lock (&p->dm_lock);
-        p->w_cnt_done++;
-        bdbm_spin_unlock (&p->dm_lock);
+    bdbm_spin_lock (&p->dm_lock);
+    p->w_cnt_done++;
+    bdbm_spin_unlock (&p->dm_lock);
 
-        bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
+    bdi->ptr_llm_inf->end_req (bdi, ptr_llm_req);
 }
 
 /* for snapshot */
 uint32_t dm_user_load (bdbm_drv_info_t* bdi, const char* fn)
 {	
-        struct dm_user_private * p = 
-                (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+    struct dm_user_private * p = 
+        (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-        bdbm_msg ("loading a DRAM snapshot...");
+    bdbm_msg ("loading a DRAM snapshot...");
 
-        return 0;
+    return 0;
 }
 
 uint32_t dm_user_store (bdbm_drv_info_t* bdi, const char* fn)
 {
-        struct dm_user_private * p = 
-                (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
+    struct dm_user_private * p = 
+        (struct dm_user_private*)bdi->ptr_dm_inf->ptr_private;
 
-        bdbm_msg ("storing a DRAM snapshot...");
+    bdbm_msg ("storing a DRAM snapshot...");
 
-        return 0;
+    return 0;
 }
