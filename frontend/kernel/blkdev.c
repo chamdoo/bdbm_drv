@@ -195,7 +195,8 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	blk_queue_logical_block_size (bdbm_device.queue, bdi->parm_ftl.kernel_sector_size);
 	blk_queue_io_min (bdbm_device.queue, bdi->parm_dev.page_main_size);
 	blk_queue_io_opt (bdbm_device.queue, bdi->parm_dev.page_main_size);
-	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
+	blk_queue_max_segment_size (bdbm_device.queue, 4096);
+	/*blk_queue_max_hw_sectors (bdbm_device.queue, 16);*/
 
 	/* see if a TRIM command is used or not */
 	if (bdi->parm_ftl.trim == TRIM_ENABLE) {

@@ -172,6 +172,7 @@ again:
 	/* oops! there are no free items in the free-list */
 	if (item == NULL) {
 		int i = 0;
+		bdbm_msg ("size of pool: %u", pool->pool_size + DEFAULT_POOL_INC_SIZE);
 		/* add more items to the free-list */
 		for (i = 0; i < DEFAULT_POOL_INC_SIZE; i++) {
 			bdbm_hlm_req_t* item = NULL;
@@ -260,13 +261,17 @@ void hlm_reqs_pool_allocate_llm_reqs (
 		fo = &llm_reqs[i].foob;
 		for (j = 0; j < BDBM_MAX_PAGES; j++)
 			if (flag == RP_MEM_PHY)
-				fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+				//fm->kp_pad[j] = (uint8_t*)bdbm_malloc_phy (KPAGE_SIZE);
+				fm->kp_pad[j] = NULL;
 			else 
-				fm->kp_pad[j] = (uint8_t*)bdbm_malloc (KPAGE_SIZE);
+				//fm->kp_pad[j] = (uint8_t*)bdbm_malloc (KPAGE_SIZE);
+				fm->kp_pad[j] = NULL;
+		/*
 		if (flag == RP_MEM_PHY)
 			fo->data = (uint8_t*)bdbm_malloc_phy (8*BDBM_MAX_PAGES);
 		else
 			fo->data = (uint8_t*)bdbm_malloc (8*BDBM_MAX_PAGES);
+		*/
 	}
 }
 
@@ -283,15 +288,20 @@ void hlm_reqs_pool_release_llm_reqs (
 	for (i = 0; i < nr_llm_reqs; i++) {
 		fm = &llm_reqs[i].fmain;
 		fo = &llm_reqs[i].foob;
-		for (j = 0; j < BDBM_MAX_PAGES; j++)
+		for (j = 0; j < BDBM_MAX_PAGES; j++) {
+			if (fm->kp_pad[j] == NULL)
+				continue;
 			if (flag == RP_MEM_PHY)
 				bdbm_free_phy (fm->kp_pad[j]);
 			else
 				bdbm_free (fm->kp_pad[j]);
+		}
+		/*
 		if (flag == RP_MEM_PHY)
 			bdbm_free_phy (fo->data);
 		else
-			bdbm_free (fm->kp_pad[j]);
+			bdbm_free (fo->data);
+		*/
 	}
 }
 
@@ -300,7 +310,22 @@ void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain)
 	int i = 0;
 	while (i < BDBM_MAX_PAGES) {
 		fmain->kp_stt[i] = KP_STT_HOLE;
-		fmain->kp_ptr[i] = fmain->kp_pad[i];
+		fmain->kp_ptr[i] = fmain->kp_pad[i]; 
+		/* Note that fmain->kp_pad[i] could be NULL; In that case, kp_pad[i]
+		 * must be mapped to memory later by calling
+		 * hlm_reqs_pool_alloc_fmain_pad () */ 
+		i++;
+	}
+}
+
+void hlm_reqs_pool_alloc_fmain_pad (bdbm_flash_page_main_t* fmain)
+{
+	int i = 0;
+	while (i < BDBM_MAX_PAGES) {
+		if (fmain->kp_stt[i] == KP_STT_HOLE && fmain->kp_pad[i] == NULL) {
+			fmain->kp_pad[i] = bdbm_malloc (KPAGE_SIZE);
+			fmain->kp_ptr[i] = fmain->kp_pad[i];
+		}
 		i++;
 	}
 }
@@ -374,6 +399,9 @@ static int __hlm_reqs_pool_create_write_req (
 				break;
 		}
 
+		/* if there are holes, they must be filled up with valid memory */
+		hlm_reqs_pool_alloc_fmain_pad (ptr_fm);
+
 		/* decide the reqtype for llm_req */
 		ptr_lr->req_type = br->bi_rw;
 		if (hole == 1 && pool->in_place_rmw && br->bi_rw == REQTYPE_WRITE) {
@@ -421,12 +449,13 @@ static int __hlm_reqs_pool_create_read_req (
 	for (i = 0; i < nr_llm_reqs; i++) {
 		offset = pg_start % NR_KPAGES_IN(pool->map_unit);
 
-		if (pool->in_place_rmw == 0) 
+		if (pool->in_place_rmw == 0)
 			bdbm_bug_on (offset != 0);
 
 		hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
 		ptr_lr->fmain.kp_stt[offset] = KP_STT_DATA;
 		ptr_lr->fmain.kp_ptr[offset] = br->bi_bvec_ptr[bvec_cnt++];
+		hlm_reqs_pool_alloc_fmain_pad (&ptr_lr->fmain);
 
 		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 		ptr_lr->req_type = br->bi_rw;
@@ -503,9 +532,8 @@ void hlm_reqs_pool_write_compaction (
 	bdbm_llm_req_t* src_r = NULL;
 
 	dst->nr_llm_reqs = 0;
-	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++)
 		hlm_reqs_pool_reset_fmain (&dst->llm_reqs[i].fmain);
-	}
 
 	dst_r = &dst->llm_reqs[0];
 	dst->nr_llm_reqs = 1;
@@ -534,5 +562,7 @@ void hlm_reqs_pool_write_compaction (
 			}
 		}
 	}
-}
 
+	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++)
+		hlm_reqs_pool_alloc_fmain_pad (&dst->llm_reqs[i].fmain);
+}
