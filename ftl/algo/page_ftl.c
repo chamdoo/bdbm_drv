@@ -978,6 +978,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	/* TEMP */
 	for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
 		hlm_reqs_pool_reset_fmain (&hlm_gc->llm_reqs[i].fmain);
+		/* The memory for pads must be allocated for GC 
+		 * because there are no buffers from bio */
+		hlm_reqs_pool_alloc_fmain_pad (&hlm_gc->llm_reqs[i].fmain);
 	}
 	/* TEMP */
 
@@ -1019,6 +1022,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 				}
 #endif
 			}
+			hlm_reqs_pool_alloc_fmain_pad (&r->fmain);
 			/* if it is, selects it as the gc candidates */
 			if (has_valid) {
 				r->req_type = REQTYPE_GC_READ;
@@ -1121,7 +1125,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 
 	/* perform write compaction for gc */
 #include "hlm_reqs_pool.h"
-	/*bdbm_track ();*/
 	hlm_reqs_pool_write_compaction (hlm_gc_w, hlm_gc, np);
 
 	/*bdbm_msg ("compaction: %llu => %llu", nr_llm_reqs, hlm_gc_w->nr_llm_reqs);*/

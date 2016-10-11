@@ -8,11 +8,11 @@ sudo fio --randrepeat=1 \
 	--filename=/media/robusta/fio \
 	--bs=4k \
 	--iodepth=1 \
-	--size=1000M \
+	--size=1500M \
 	--readwrite=write \
 	--rwmixread=0 \
 	--overwrite=0 \
-	--numjobs=1 \
+	--numjobs=8 \
 	--direct=0 \
 	--buffered=0
 

@@ -183,7 +183,8 @@ typedef struct {
 } bdbm_flash_page_main_t;
 
 typedef struct {
-	uint8_t* data;
+	//uint8_t* data;
+	uint8_t data[BDBM_MAX_PAGES*64]; /* FIXME: OOB is fixed to 64 bytes :( */
 } bdbm_flash_page_oob_t;
 
 typedef struct {
