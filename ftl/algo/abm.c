@@ -341,6 +341,26 @@ void bdbm_abm_get_free_block_rollback (
         bai->nr_free_blks++;
 }
 
+void bdbm_abm_change_to_normal_dirty_block (
+                bdbm_abm_info_t* bai,
+                bdbm_abm_block_t* blk)
+{
+        bdbm_bug_on (blk->status != BDBM_ABM_BLK_DIRTY_4KB);
+
+        blk->status = BDBM_ABM_BLK_DIRTY;
+
+        list_del (&blk->list);
+        list_add_tail (&blk->list, &(bai->list_head_dirty[blk->channel_no][blk->chip_no]));
+
+        __bdbm_abm_check_status (bai);
+
+        /* change the number of blks */
+        bai->nr_dirty_4kb_blks--;
+        bai->nr_dirty_blks++;
+}
+
+
+
 void bdbm_abm_get_free_block_commit (
                 bdbm_abm_info_t* bai,
                 bdbm_abm_block_t* blk)
@@ -541,7 +561,7 @@ void bdbm_abm_set_to_dirty_block (
 
 }
 
-void bdbm_abm_invalidate_page (
+void bdbm_abm_validate_page_4kb (
                 bdbm_abm_info_t* bai, 
                 uint64_t channel_no, 
                 uint64_t chip_no, 
@@ -570,6 +590,40 @@ void bdbm_abm_invalidate_page (
                 return;
 
         if (b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID) {
+                b->pst[pst_off] = BDBM_ABM_SUBPAGE_VALID;
+        }
+ 
+}
+
+void bdbm_abm_invalidate_page (
+                bdbm_abm_info_t* bai, 
+                uint64_t channel_no, 
+                uint64_t chip_no, 
+                uint64_t block_no, 
+                uint64_t page_no,
+                uint64_t subpage_no)
+{
+        bdbm_abm_block_t* b = NULL;
+        uint64_t pst_off = 0;
+
+        b = bdbm_abm_get_block (bai, channel_no, chip_no, block_no);
+
+        bdbm_bug_on (b == NULL);
+        bdbm_bug_on (page_no >= bai->np->nr_pages_per_block);
+        bdbm_bug_on (b->channel_no != channel_no);
+        bdbm_bug_on (b->chip_no != chip_no);
+        bdbm_bug_on (b->block_no != block_no);
+        bdbm_bug_on (subpage_no >= bai->np->nr_subpages_per_page);
+
+        /* get a subpage offst in pst */
+        pst_off = (page_no * bai->np->nr_subpages_per_page) + subpage_no;
+        bdbm_bug_on (pst_off >= bai->np->nr_subpages_per_block);
+
+        /* if pst is NULL, ignore it */
+        if (b->pst == NULL)
+                return;
+
+        if (b->pst[pst_off] != BDBM_ABM_SUBPAGE_INVALID) {
                 b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
                 /* is the block clean? */
                 if (b->nr_invalid_subpages == 0) {
@@ -627,8 +681,7 @@ void bdbm_abm_invalidate_page_4kb (
         /* if pst is NULL, ignore it */
         if (b->pst == NULL)
                 return;
-
-        if (b->pst[pst_off] == BABM_ABM_SUBPAGE_NOT_INVALID) {
+        if (b->pst[pst_off] != BDBM_ABM_SUBPAGE_INVALID) {
                 b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
                 /* is the block clean? */
                 if (b->nr_invalid_subpages == 0) {

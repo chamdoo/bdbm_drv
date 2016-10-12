@@ -131,6 +131,8 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
                 if (ftl->map_lpa_to_ppa (bdi, &lr->logaddr, &lr->phyaddr) != 0) {
                     bdbm_error ("`ftl->map_lpa_to_ppa' failed");
                     goto fail;
+                }else if(lr->logaddr.lpa_cg == -1){
+                    hlm_reqs_pool_relocate_write_req_ofs(lr);
                 }
             } else {
                 bdbm_error ("oops! invalid type (%x)", lr->req_type);
@@ -200,7 +202,7 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
     bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
     bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 
-    if (dp->mapping_type == MAPPING_POLICY_PAGE) {
+    if (dp->mapping_type == MAPPING_POLICY_FGM) {
         uint32_t loop;
         /* see if foreground GC is needed or not */
         for (loop = 0; loop < 10; loop++) {

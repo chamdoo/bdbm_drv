@@ -503,6 +503,25 @@ int bdbm_hlm_reqs_pool_build_req (
     return 0;
 }
 
+void hlm_reqs_pool_relocate_write_req_ofs (bdbm_llm_req_t* lr)
+{
+    int i = 0;
+
+    while (i < BDBM_MAX_PAGES) {
+        if(lr->fmain.kp_stt[i] == KP_STT_DATA)
+            break;
+        i++;
+    }
+
+    if (i != lr->logaddr.ofs) {
+        lr->fmain.kp_stt[lr->logaddr.ofs] = KP_STT_DATA;
+        lr->fmain.kp_ptr[lr->logaddr.ofs] = lr->fmain.kp_ptr[i];
+        lr->fmain.kp_stt[i] = KP_STT_HOLE;
+        lr->fmain.kp_ptr[i] = lr->fmain.kp_pad[i];
+        lr->logaddr.lpa[lr->logaddr.ofs] = lr->logaddr.lpa[i];
+    }
+}
+
 void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs)
 {
     if (new_sp_ofs != lr->logaddr.ofs) {

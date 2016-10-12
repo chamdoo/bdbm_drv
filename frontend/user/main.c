@@ -389,12 +389,7 @@ int main (int argc, char** argv)
                                 &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, \
                                 tmps, ops, &offset, &size, tmps);
 
-                printf("%d : %s,%zu,%d\n", i++, ops, offset, size);
-                if(i == 237322)
-                {
-                        printf("stop\n");
-                        printf("stop\n");
-                }
+                //printf("%d : %s,%zu,%d\n", i++, ops, offset, size);
                 if(offset >= limit)
                         continue;
 

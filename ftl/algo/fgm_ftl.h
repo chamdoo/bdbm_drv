@@ -49,6 +49,7 @@ uint32_t bdbm_fgm_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, bdbm_logaddr_t* loga
 uint32_t bdbm_fgm_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 uint8_t bdbm_fgm_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa);
 uint32_t bdbm_fgm_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa);
+uint32_t bdbm_fgm_ftl_get_reusable_active_blks (bdbm_drv_info_t* bdi);
 uint32_t bdbm_fgm_badblock_scan (bdbm_drv_info_t* bdi);
 uint32_t bdbm_fgm_ftl_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t bdbm_fgm_ftl_store (bdbm_drv_info_t* bdi, const char* fn);

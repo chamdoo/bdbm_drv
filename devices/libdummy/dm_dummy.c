@@ -137,40 +137,56 @@ uint32_t dm_user_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)
     bdbm_spin_lock (&p->dm_lock);
     p->w_cnt++;
 
-    for (i = 0; i < BDBM_MAX_PAGES; i++){} 
-
     if(bdbm_is_write(r->req_type)){
+          //  printf("DUMMY_DEVICE: \n");
+
         if(r->logaddr.lpa_cg == -1){
-            bdbm_bug_on (r->fmain.kp_stt[r->logaddr.ofs] == KP_STT_DATA);
+            bdbm_bug_on (r->fmain.kp_stt[r->logaddr.ofs] != KP_STT_DATA);
             p->oob_data[idx + r->logaddr.ofs] = r->logaddr.lpa[r->logaddr.ofs];
-            /*printf("DUMMY_WRITE: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
-              r->logaddr.lpa[0],
+/*            printf("FINE_GRAINED: \n");
+            printf("logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+              r->logaddr.lpa[r->logaddr.ofs],
               r->phyaddr.channel_no,
               r->phyaddr.chip_no,
               r->phyaddr.block_no,
               r->phyaddr.page_no,
               r->phyaddr.punit_id,
-              i, r->fmain.kp_ptr[i]);
-              */
+              r->logaddr.ofs, r->fmain.kp_ptr[r->logaddr.ofs]);*/
+              
 
         }else{
+            //printf("COARSE_GRAINED: \n");
             for (i = 0; i < BDBM_MAX_PAGES; i++){
                 p->oob_data[idx + i] = r->logaddr.lpa_cg;
+/*                printf("logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                        r->logaddr.lpa_cg,
+                        r->phyaddr.channel_no,
+                        r->phyaddr.chip_no,
+                        r->phyaddr.block_no,
+                        r->phyaddr.page_no,
+                        r->phyaddr.punit_id,
+                        i, r->fmain.kp_ptr[i]);*/
+
+
             } 
         }
+       // printf("END_DUMMY_DEVICE: \n");
+
 
     }else if(bdbm_is_read(r->req_type)){
         for (i = 0; i < BDBM_MAX_PAGES; i++){
             if(r->fmain.kp_stt[i] == KP_STT_DATA){
                 ((uint64_t*)r->foob.data)[i] = p->oob_data[idx + i];
-                /*        printf("DUMMY_READ: logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
-                          p->oob_data[r->phyaddr.punit_id],
-                          r->phyaddr.channel_no,
-                          r->phyaddr.chip_no,
-                          r->phyaddr.block_no,
-                          r->phyaddr.page_no,
-                          r->phyaddr.punit_id,
-                          i, r->fmain.kp_ptr[i]);*/
+                /*printf("DUMMY_READ: \n");
+                printf("logaddr=%d :ch=%d, chip=%d, blk=%d, page=%d, punit=%d, fmain[%d]=%p\n",
+                        p->oob_data[idx + i],
+                        r->phyaddr.channel_no,
+                        r->phyaddr.chip_no,
+                        r->phyaddr.block_no,
+                        r->phyaddr.page_no,
+                        r->phyaddr.punit_id,
+                        i, r->fmain.kp_ptr[i]);
+                printf("END_DUMMY_READ: \n");*/
             }
         }
 
