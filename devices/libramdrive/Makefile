@@ -1,7 +1,7 @@
 # Makefile for a RISA Device Driver
 #
-#CC = g++
-CC = arm-linux-gnueabihf-g++
+CC = g++
+#CC = arm-linux-gnueabihf-g++
 OUT = libramdrive.a
 INCLUDE = ../../include
 COMMON = ../../common
