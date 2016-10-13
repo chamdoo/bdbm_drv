@@ -1149,7 +1149,6 @@ uint32_t bdbm_fgm_ftl_get_reusable_active_blks (bdbm_drv_info_t* bdi)
             bdbm_bug_on (1);
         }
     }
-    bdbm_sema_lock (&hlm_gc->done);
     bdbm_sema_unlock (&hlm_gc->done);
 
     bdi->ptr_llm_inf->flush (bdi);
