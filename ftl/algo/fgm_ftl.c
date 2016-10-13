@@ -302,7 +302,7 @@ uint32_t bdbm_fgm_ftl_create (bdbm_drv_info_t* bdi)
 
     p->nr_punits = np->nr_chips_per_channel * np->nr_channels;
     p->nr_punits_pages = p->nr_punits * np->nr_pages_per_block;
-    p->nr_max_dirty_4kb_blks = p->nr_punits * np->nr_blocks_per_chip / 4;
+    p->nr_max_dirty_4kb_blks = p->nr_punits * np->nr_blocks_per_chip / 6;
     printf("nr_max_dirty_4kb_blks=%d\n", p->nr_max_dirty_4kb_blks);
 
 
@@ -439,7 +439,7 @@ uint32_t __bdbm_fgm_ftl_get_free_ppa_4kb (
                     p->bai->nr_dirty_4kb_blks, p->nr_max_dirty_4kb_blks);
             printf("nr_free_blks=%d\n", p->bai->nr_free_blks);
 
-            if(p->bai->nr_dirty_4kb_blks == p->nr_max_dirty_4kb_blks){
+            if(p->bai->nr_dirty_4kb_blks > p->nr_max_dirty_4kb_blks){
                 if(b->pst[np->nr_subpages_per_page - 1] != BABM_ABM_SUBPAGE_NOT_INVALID){
 
                     for (i = 0; i < p->nr_punits; i++){
@@ -1112,7 +1112,7 @@ uint32_t bdbm_fgm_ftl_get_reusable_active_blks (bdbm_drv_info_t* bdi)
 
             /* if it is, selects it as the gc candidates */
             if (has_valid) {
-                r->req_type = REQTYPE_GC_READ;
+                r->req_type = REQTYPE_IO_READ;
                 r->phyaddr.channel_no = b->channel_no;
                 r->phyaddr.chip_no = b->chip_no;
                 r->phyaddr.block_no = b->block_no;
