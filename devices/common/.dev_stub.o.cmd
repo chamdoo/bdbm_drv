@@ -114,6 +114,7 @@ deps_/home/ejlee/cooperate/bdbm_drv/devices/ramdrive/../common/dev_stub.o := \
   arch/x86/include/asm/nops.h \
     $(wildcard include/config/mk7.h) \
     $(wildcard include/config/x86/p6/nop.h) \
+  include/asm-generic/barrier.h \
   include/asm-generic/bitops/find.h \
     $(wildcard include/config/generic/find/first/bit.h) \
   include/asm-generic/bitops/sched.h \
