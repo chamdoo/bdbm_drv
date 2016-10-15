@@ -247,7 +247,6 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 //	bdbm_msg("queue length = %llu", bdbm_prior_queue_get_nr_items(p->q));
 //  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
 	while (bdbm_prior_queue_get_nr_items (p->q) >= MAX_QSIZE) {
-		bdbm_msg("yield is started");
 		bdbm_thread_yield ();
 	}
 
