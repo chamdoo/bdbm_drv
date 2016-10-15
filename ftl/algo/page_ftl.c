@@ -105,6 +105,12 @@ typedef struct {
 
 	/* for bad-block scanning */
 	bdbm_sema_t badblk;
+#ifdef LAZY_INVALID
+	uint64_t nr_gc_pending_w;
+	uint64_t nr_gc_total_w;
+#endif
+
+
 } bdbm_page_ftl_private_t;
 
 
@@ -224,6 +230,10 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	p->curr_page_ofs = 0;
 	p->nr_punits = np->nr_chips_per_channel * np->nr_channels;
 	p->nr_punits_pages = p->nr_punits * np->nr_pages_per_block;
+#ifdef LAZY_INVALID
+	p->nr_gc_pending_w = 0;
+	p->nr_gc_total_w = 0;
+#endif
 	bdbm_spin_lock_init (&p->ftl_lock);
 	_ftl_page_ftl.ptr_private = (void*)p;
 
@@ -1016,7 +1026,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 				else if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_PENDING_INVALID) {
 					// For pending write, insert dummy request 
 					has_pending = 1; 
-					bdbm_msg("EUNJI: try to reclaim a page pending in write");
+					p->nr_gc_pending_w++;
+//					bdbm_msg("EUNJI: try to reclaim a page pending in write");
 					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
 					r->fmain.kp_stt[k] = KP_STT_HOLE;
 				}
@@ -1037,7 +1048,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			}
 #ifdef LAZY_INALID
 			else if (has_pending) {
-				bdbm_msg("EUNJI: insert gc dummy read");
+//				bdbm_msg("EUNJI: insert gc dummy read");
 			// dummy request
 				r->req_type = REQTYPE_GC_READ;
 				r->phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
@@ -1053,10 +1064,15 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	}
 
 //	/*
-	bdbm_msg ("----------------------------------------------");
+//	bdbm_msg ("----------------------------------------------");
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
 //	*/
+#ifdef LAZY_INVALID
+	p->nr_gc_total_w += nr_llm_reqs;
+	bdbm_msg("gc_total_w: %llu, gc_pending_w: %llu", p->nr_gc_total_w, p->nr_gc_pending_w);
+#endif
+	
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
