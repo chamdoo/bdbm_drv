@@ -225,6 +225,8 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				do {
 					ftl->do_gc (bdi, 0);
 				} while(ftl->need_more_free_blks(bdi));
+#else
+				ftl->do_gc (bdi, 0);
 #endif
 			} else
 				break;

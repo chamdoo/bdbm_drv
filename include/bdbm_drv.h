@@ -1,7 +1,8 @@
-//#define LAZY_INVALID
+#define LAZY_INVALID
 //  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
 
-#define MAX_QSIZE 262144
+#define MAX_QSIZE 30000
+//#define MAX_QSIZE 262144
 //#define MAX_QSIZE 96
 #define LOW_WATERMARK_FOR_FREE_BLKS 2
 #define HIGH_WATERMARK_FOR_FREE_BLKS 2
