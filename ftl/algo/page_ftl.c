@@ -295,7 +295,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 
 #ifdef LAZY_INVALID_BACKGROUND_GC
 	if((p->gc_thread = bdbm_thread_create(
-			__page_ftl_gc_thread, NULL, "__page_ftl_gc_thread")) == NULL){
+			__page_ftl_gc_thread, bdi, "__page_ftl_gc_thread")) == NULL){
 		bdbm_error("gc_thread_create failed");
 		goto fail;
 	}
@@ -1001,7 +1001,6 @@ int __page_ftl_gc_thread(void *arg)
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	bdbm_hlm_req_gc_t* hlm_gc_w = &p->gc_hlm_w;
 
-
 	for(;;){
 		bdbm_msg("[EUNJI] gc_thread is woken up");
 
@@ -1020,12 +1019,16 @@ int __page_ftl_gc_thread(void *arg)
 				break;
 		}
 
+
 		bdbm_stopwatch_t sw;
+
 
 		bdbm_bug_on(p == NULL);
 		bdbm_bug_on(np == NULL);
 
+
 		nr_punits = np->nr_channels * np->nr_chips_per_channel;
+
 
 		/* choose victim blocks for individual parallel units */
 		bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * nr_punits);
@@ -1033,6 +1036,7 @@ int __page_ftl_gc_thread(void *arg)
 
 
 ////////////////////////// step1. read victim pages 
+
 
 		/* try to get a host lock */
 		bdbm_sema_lock(&bdi->host_lock);
@@ -1305,7 +1309,6 @@ erase_blks:
 
 		/* release a host lock */
 		bdbm_sema_unlock(&bdi->host_lock);
-
 
 	} /* loop of thread */
 	return 0;
