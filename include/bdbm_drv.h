@@ -2,10 +2,15 @@
 //  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
 
 //#define MAX_QSIZE 30000
-#define MAX_QSIZE 262144
+//#define MAX_QSIZE 262144
+#define MAX_QSIZE 100000
+//#define MAX_QSIZE 262144
+#define MIN_QSIZE 0
+//#define MIN_QSIZE 100000
+//#define MAX_QSIZE 262144
 //#define MAX_QSIZE 96
-#define LOW_WATERMARK_FOR_FREE_BLKS 2
-#define HIGH_WATERMARK_FOR_FREE_BLKS 2
+#define LOW_WATERMARK_FOR_FREE_BLKS 20
+#define HIGH_WATERMARK_FOR_FREE_BLKS 20
 //#define HIGH_WATERMARK_FOR_FREE_BLKS 20
 /*
 The MIT License (MIT)
@@ -279,6 +284,9 @@ typedef struct {
 	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*flush) (bdbm_drv_info_t* bdi);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#ifdef LAZY_INVALID
+	uint64_t (*get_qsize) (bdbm_drv_info_t* bdi);
+#endif
 } bdbm_llm_inf_t;
 
 /* a generic device interface */

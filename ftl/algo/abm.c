@@ -529,11 +529,17 @@ void bdbm_abm_set_pending_page (
 
 	if (b->pst[pst_off] == BDBM_ABM_SUBPAGE_NOT_INVALID) {
 		b->pst[pst_off] = BDBM_ABM_SUBPAGE_PENDING_INVALID;
+
+#ifdef EUNJI_BUG_ON
+		bdbm_msg ("EUNJI [set_pending: valid->pending] b->status: %u %llu, %llu, %llu, %llu", 
+			b->status, channel_no, chip_no, block_no, page_no);
+#endif
+
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
-				bdbm_msg ("b->status: %u (%llu %llu %llu) (%llu %llu)", 
-					b->status, channel_no, chip_no, block_no, page_no, subpage_no);
+//				bdbm_msg ("[set_pending_ppa] b->status: %u (%llu %llu %llu) (%llu %llu)", 
+//					b->status, channel_no, chip_no, block_no, page_no, subpage_no);
 				bdbm_bug_on (b->status != BDBM_ABM_BLK_CLEAN);
 			}
 
@@ -555,6 +561,10 @@ void bdbm_abm_set_pending_page (
 		bdbm_bug_on (b->nr_invalid_subpages > bai->np->nr_subpages_per_block);
 	} else {
 		/* ignore if it was invalidated before */
+#ifdef EUNJI_BUG_ON
+//		bdbm_msg ("EUNJI: [set_pending: already invalid] b->status: %u (%llu %llu %llu) (%llu %llu)", 
+//			b->status, channel_no, chip_no, block_no, page_no, subpage_no);
+#endif
 	}
 }
 
@@ -586,11 +596,22 @@ void bdbm_abm_invalidate_pending_page (
 	if (b->pst == NULL)
 		return;
 
+
+//	bdbm_msg ("[invalidate_pending_page]: b->status: %u (%llu %llu %llu) (%llu %llu)", 
+//			b->status, channel_no, chip_no, block_no, page_no, subpage_no);
+
+
 	//if (b->pst[pst_off] == BDBM_ABM_SUBPAGE_PENDING_INVALID) {
 	if (b->pst[pst_off] != BDBM_ABM_SUBPAGE_INVALID) {
 		b->pst[pst_off] = BDBM_ABM_SUBPAGE_INVALID;
-
+		
+		/* keep track of pending blk count */
+#ifdef EUNJI_BUG_ON
+		bdbm_msg ("EUNJI: [inv_pending: pending->invalid] b->status: %u %llu, %llu, %llu, %llu", 
+			b->status, channel_no, chip_no, block_no, page_no);
+#endif
 #if 0
+		/* this is done in set_pending_page */ 
 		/* is the block clean? */
 		if (b->nr_invalid_subpages == 0) {
 			if (b->status != BDBM_ABM_BLK_CLEAN) {
@@ -618,10 +639,12 @@ void bdbm_abm_invalidate_pending_page (
 #endif
 	} else {
 		/* ignore if it was invalidated before */
+#ifdef EUNJI_BUG_ON
+		bdbm_msg ("EUNJI: [inv_pending: already invalid] b->status: %u %llu, %llu, %llu, %llu", 
+			b->status, channel_no, chip_no, block_no, page_no);
+#endif
 	}
 }
-
-
 #endif
 
 
@@ -637,6 +660,9 @@ void bdbm_abm_invalidate_page (
 	uint64_t pst_off = 0;
 
 	b = bdbm_abm_get_block (bai, channel_no, chip_no, block_no);
+
+// EUNJI
+	bdbm_msg("EUNJI: bdbm_abm_invalidate_page is called");
 
 	bdbm_bug_on (b == NULL);
 	bdbm_bug_on (page_no >= bai->np->nr_pages_per_block);

@@ -233,6 +233,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 #ifdef LAZY_INVALID
 	p->nr_gc_pending_w = 0;
 	p->nr_gc_total_w = 0;
+	bdbm_msg("nr_gc_pending_w is set");
 #endif
 	bdbm_spin_lock_init (&p->ftl_lock);
 	_ftl_page_ftl.ptr_private = (void*)p;
@@ -438,7 +439,9 @@ uint32_t bdbm_page_ftl_set_obsolete_ppa (
 	// set obsolete pages to pending state
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
 		if(logaddr->lpa[k] == -1){ // GC에서 dummy req 등. 다른 경우에도 있나? 
-//			bdbm_msg("EUNJI: logaddr = -1: %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+#ifdef EUNJI_BUG_ON
+			bdbm_msg("EUNJI: [set_obsolete] new_phyaddr : %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+#endif
 			bdbm_abm_set_pending_page ( 
 				p->bai, 
 				phyaddr->channel_no, 
@@ -449,13 +452,16 @@ uint32_t bdbm_page_ftl_set_obsolete_ppa (
 			);
 
 			lr->o_phyaddr = *(phyaddr); // 현재 page 를 invalidate 해야함. 
+		//	bdbm_msg("EUNJI: lr: %llu, %llu, %llu, %llu", lr->o_phyaddr.channel_no,lr->o_phyaddr.chip_no, lr->o_phyaddr.block_no, lr->o_phyaddr.page_no);
 
 		}else{ // obsolete page 를 invalidate 해야함. 
 			// get mapping table
 			me = &p->ptr_mapping_table[logaddr->lpa[k]];
 			bdbm_bug_on (me == NULL);
 
-//			bdbm_msg("EUNJI: logaddr != -1: %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+#ifdef EUNJI_BUG_ON
+			bdbm_msg("EUNJI: [set_obsolete] new_phyaddr: %llu, %llu, %llu, %llu", phyaddr->channel_no, phyaddr->chip_no, phyaddr->block_no, phyaddr->page_no);
+#endif
 
 			if (me->status == PFTL_PAGE_VALID) {
 				bdbm_abm_set_pending_page ( 
@@ -468,8 +474,18 @@ uint32_t bdbm_page_ftl_set_obsolete_ppa (
 				);
 
 				lr->o_phyaddr = me->phyaddr;
+		//		bdbm_msg("EUNJI: lr: %llu, %llu, %llu, %llu", lr->o_phyaddr->channel_no,lr->o_phyaddr->chip_no, lr->o_phyaddr->block_no, lr->o_phyaddr->page_no);
+
+			}else{
+#ifdef EUNJI_BUG_ON
+				bdbm_msg("EUNJI:[set_obsolete] old_phyaddr is already invalid: %llu, %llu, %llu, %llu,");
+#endif
 			}
 		}
+#ifdef EUNJI_BUG_ON
+		bdbm_msg("EUNJI: [set_obsolete] old_phyaddr: %llu, %llu, %llu, %llu", lr->o_phyaddr.channel_no,lr->o_phyaddr.chip_no, lr->o_phyaddr.block_no, lr->o_phyaddr.page_no);
+#endif
+
 	}
 	return 0;
 }
@@ -961,6 +977,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	bdbm_hlm_req_gc_t* hlm_gc_w = &p->gc_hlm_w;
 	uint64_t nr_gc_blks = 0;
 	uint64_t nr_llm_reqs = 0;
+#ifdef LAZY_INVALID
+	uint64_t nr_pending_reqs = 0;
+#endif
 	uint64_t nr_punits = 0;
 	uint64_t i, j, k;
 	bdbm_stopwatch_t sw;
@@ -1030,6 +1049,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 //					bdbm_msg("EUNJI: try to reclaim a page pending in write");
 					r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
 					r->fmain.kp_stt[k] = KP_STT_HOLE;
+				}else{
+					bdbm_msg("EUNJI: unexpected status\n");
 				}
 #endif
 			}
@@ -1058,16 +1079,22 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 				r->phyaddr.punit_id = PFTL_PAGE_INVALID_ADDR;
 				r->ret = 0;
 				nr_llm_reqs++;
+				nr_pending_reqs++;
 			}
 #endif
 		}
 	}
 
-//	/*
-//	bdbm_msg ("----------------------------------------------");
+#ifdef LAZY_INVALID
+	bdbm_msg ("gc-victim: %llu pages, %llu pending pages, %llu blocks, %llu us %llu queue items", 
+		nr_llm_reqs, nr_pending_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw),
+		bdi->ptr_llm_inf->get_qsize(bdi));
+#else
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-//	*/
+#endif
+
+
 #ifdef LAZY_INVALID
 	p->nr_gc_total_w += nr_llm_reqs;
 	bdbm_msg("gc_total_w: %llu, gc_pending_w: %llu", p->nr_gc_total_w, p->nr_gc_pending_w);
@@ -1076,7 +1103,10 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
+#ifdef LAZY_INVALID
+#else
 	bdi->ptr_llm_inf->flush (bdi);
+#endif
 
 	if (nr_llm_reqs == 0) 
 		goto erase_blks;
@@ -1460,7 +1490,10 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	}
 
 	/* step2: erase all the blocks */
+#ifdef LAZY_INVALID
+#else
 	bdi->ptr_llm_inf->flush (bdi);
+#endif
 	for (i = 0; i < np->nr_blocks_per_chip; i++) {
 		__bdbm_page_badblock_scan_eraseblks (bdi, i);
 	}

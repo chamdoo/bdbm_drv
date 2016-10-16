@@ -96,7 +96,10 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 	uint64_t i;
 
 	for (i = 0; i < ptr_hlm_req->len; i++) {
+#ifdef LAZY_INVALID
+#else
 		ftl->invalidate_lpa (bdi, ptr_hlm_req->lpa + i, 1);
+#endif
 	}
 
 	return 0;
@@ -222,9 +225,9 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				/* perform GC before sending requests */ 
 				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 #ifdef LAZY_INVALID
-				do {
-					ftl->do_gc (bdi, 0);
-				} while(ftl->need_more_free_blks(bdi));
+//				do {
+				ftl->do_gc (bdi, 0);
+//				} while(ftl->need_more_free_blks(bdi));
 #else
 				ftl->do_gc (bdi, 0);
 #endif
@@ -280,6 +283,9 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 	/* perform i/o */
 	if (bdbm_is_trim (hr->req_type)) {
+#ifdef LAZY_INVALID
+		bdbm_msg("EUNJI: trim req occurs");
+#endif
 		if ((ret = __hlm_nobuf_make_trim_req (bdi, hr)) == 0) {
 			/* call 'ptr_host_inf->end_req' directly */
 			bdi->ptr_host_inf->end_req (bdi, hr);

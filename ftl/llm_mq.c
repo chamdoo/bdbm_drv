@@ -60,6 +60,9 @@ bdbm_llm_inf_t _llm_mq_inf = {
 	.make_req = llm_mq_make_req,
 	.flush = llm_mq_flush,
 	.end_req = llm_mq_end_req,
+#ifdef LAZY_INVALID
+	.get_qsize = llm_mq_get_qsize,	
+#endif
 };
 
 /* private */
@@ -231,6 +234,18 @@ void llm_mq_destroy (bdbm_drv_info_t* bdi)
 	bdbm_msg ("done");
 }
 
+#ifdef LAZY_INVALID
+uint64_t llm_mq_get_qsize (bdbm_drv_info_t* bdi)
+{
+	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+
+	return bdbm_prior_queue_get_nr_items (p->q);
+}
+#endif
+
+
+
+
 uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
@@ -270,6 +285,7 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	}
 
 	/* wake up thread if it sleeps */
+
 	bdbm_thread_wakeup (p->llm_thread);
 
 	return ret;
