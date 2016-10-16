@@ -218,7 +218,10 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	if (dp->mapping_type == MAPPING_POLICY_PAGE) {
 		uint32_t loop;
 		/* see if foreground GC is needed or not */
-		for (loop = 0; loop < 10; loop++) {
+#ifdef LAZY_INVALID
+		for (loop = 0; loop < 1; loop++) {
+#endif
+//		for (loop = 0; loop < 10; loop++) {
 			if (hr->req_type == REQTYPE_WRITE && 
 				ftl->is_gc_needed != NULL && 
 				ftl->is_gc_needed (bdi, 0)) {
@@ -228,6 +231,7 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 //				do {
 				ftl->do_gc (bdi, 0);
 //				} while(ftl->need_more_free_blks(bdi));
+
 #else
 				ftl->do_gc (bdi, 0);
 #endif

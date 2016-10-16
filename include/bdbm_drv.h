@@ -1,9 +1,10 @@
 #define LAZY_INVALID
+#define LAZY_INVALID_BACKGROUND_GC
 //  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
 
 //#define MAX_QSIZE 30000
 //#define MAX_QSIZE 262144
-#define MAX_QSIZE 100000
+#define MAX_QSIZE 96
 //#define MAX_QSIZE 262144
 #define MIN_QSIZE 0
 //#define MIN_QSIZE 100000
@@ -406,6 +407,9 @@ struct _bdbm_drv_info_t {
 	bdbm_llm_inf_t* ptr_llm_inf;
 	bdbm_ftl_inf_t* ptr_ftl_inf;
 	bdbm_perf_monitor_t pm;
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_sema_t host_lock;
+#endif
 };
 
 /* functions for bdi creation, setup, run, and remove */

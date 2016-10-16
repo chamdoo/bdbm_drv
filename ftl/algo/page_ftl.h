@@ -57,6 +57,8 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t bdbm_page_ftl_set_obsolete_ppa (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* phyaddr);
 uint32_t bdbm_page_ftl_invalidate_obsolete_ppa (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr);
 uint8_t bdbm_page_ftl_need_more_free_blks (bdbm_drv_info_t* bdi);
+
+int __page_ftl_gc_thread(void *arg);
 #endif
 
 #endif /* _BLUEDBM_FTL_BLOCKFTL_H */

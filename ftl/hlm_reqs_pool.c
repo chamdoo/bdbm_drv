@@ -172,7 +172,7 @@ again:
 	/* oops! there are no free items in the free-list */
 	if (item == NULL) {
 		int i = 0;
-		bdbm_msg ("size of pool: %u", pool->pool_size + DEFAULT_POOL_INC_SIZE);
+		//bdbm_msg ("size of pool: %u", pool->pool_size + DEFAULT_POOL_INC_SIZE);
 		/* add more items to the free-list */
 		for (i = 0; i < DEFAULT_POOL_INC_SIZE; i++) {
 			bdbm_hlm_req_t* item = NULL;

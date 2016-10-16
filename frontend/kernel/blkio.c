@@ -51,7 +51,10 @@ bdbm_host_inf_t _blkio_inf = {
 };
 
 typedef struct {
+#ifdef LAZY_INVALID_BACKGROUND_GC
+#else
 	bdbm_sema_t host_lock;
+#endif
 	atomic_t nr_host_reqs;
 	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
 } bdbm_blkio_private_t;
@@ -136,7 +139,11 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi)
 		bdbm_error ("bdbm_malloc failed");
 		return 1;
 	}
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_sema_init (&bdi->host_lock);
+#else
 	bdbm_sema_init (&p->host_lock);
+#endif
 	atomic_set (&p->nr_host_reqs, 0);
 	bdi->ptr_host_inf->ptr_private = (void*)p;
 
@@ -211,7 +218,11 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	}
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_sema_lock (&bdi->host_lock);
+#else
 	bdbm_sema_lock (&p->host_lock);
+#endif
 
 	/* if success, increase # of host reqs */
 	atomic_inc (&p->nr_host_reqs);
@@ -227,7 +238,11 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	}
 
 	/* ulock a global mutex */
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_sema_unlock (&bdi->host_lock);
+#else
 	bdbm_sema_unlock (&p->host_lock);
+#endif
 
 	return;
 

@@ -49,6 +49,10 @@ THE SOFTWARE.
 #include "algo/page_ftl.h"
 
 
+#ifdef LAZY_INVALID
+#include "uthread.h"
+#endif
+
 /* FTL interface */
 bdbm_ftl_inf_t _ftl_page_ftl = {
 	.ptr_private = NULL,
@@ -64,6 +68,7 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	.need_more_free_blks = bdbm_page_ftl_need_more_free_blks,
 #endif
 	.do_gc = bdbm_page_ftl_do_gc,
+//	.do_gc = bdbm_page_ftl_do_background_gc,
 	.is_gc_needed = bdbm_page_ftl_is_gc_needed,
 	.scan_badblocks = bdbm_page_badblock_scan,
 	/*.load = bdbm_page_ftl_load,*/
@@ -108,6 +113,9 @@ typedef struct {
 #ifdef LAZY_INVALID
 	uint64_t nr_gc_pending_w;
 	uint64_t nr_gc_total_w;
+#endif
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_thread_t* gc_thread;
 #endif
 
 
@@ -285,6 +293,17 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	bdbm_sema_init (&p->gc_hlm_w.done);
 	hlm_reqs_pool_allocate_llm_reqs (p->gc_hlm_w.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
 
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	if((p->gc_thread = bdbm_thread_create(
+			__page_ftl_gc_thread, NULL, "__page_ftl_gc_thread")) == NULL){
+		bdbm_error("gc_thread_create failed");
+		goto fail;
+	}
+	bdbm_thread_run(p->gc_thread);
+
+#endif
+
+fail:
 	return 0;
 }
 
@@ -969,9 +988,337 @@ erase_blks:
 }
 #endif
 
+
+#ifdef LAZY_INVALID_BACKGROUND_GC
+/// background_gc 
+int __page_ftl_gc_thread(void *arg)
+{
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	bdbm_drv_info_t* bdi = (bdbm_drv_info_t*)arg;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+//	bdbm_blkio_private_t* bp = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
+
+	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
+	bdbm_hlm_req_gc_t* hlm_gc_w = &p->gc_hlm_w;
+
+
+	for(;;){
+		bdbm_msg("[EUNJI] gc_thread is woken up");
+
+		uint64_t nr_gc_blks = 0;
+		uint64_t nr_llm_reqs = 0;
+#ifdef LAZY_INVALID
+		uint64_t nr_pending_reqs = 0; // count pending reqs
+#endif
+		uint64_t nr_punits = 0;
+		uint64_t i, j, k;
+
+		///// go to sleep 
+		if(!bdbm_page_ftl_need_more_free_blks(bdi))	{
+			bdbm_thread_schedule_setup(p->gc_thread);
+			if(bdbm_thread_schedule_sleep(p->gc_thread) == SIGKILL)
+				break;
+		}
+
+		bdbm_stopwatch_t sw;
+
+		bdbm_bug_on(p == NULL);
+		bdbm_bug_on(np == NULL);
+
+		nr_punits = np->nr_channels * np->nr_chips_per_channel;
+
+		/* choose victim blocks for individual parallel units */
+		bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * nr_punits);
+		bdbm_stopwatch_start (&sw);
+
+
+////////////////////////// step1. read victim pages 
+
+		/* try to get a host lock */
+		bdbm_sema_lock(&bdi->host_lock);
+
+		for (i = 0, nr_gc_blks = 0; i < np->nr_channels; i++) {
+			for (j = 0; j < np->nr_chips_per_channel; j++) {
+				bdbm_abm_block_t* b; 
+				if ((b = __bdbm_page_ftl_victim_selection_greedy (bdi, i, j))) {
+					p->gc_bab[nr_gc_blks] = b;
+					nr_gc_blks++;
+				}
+			}
+		}
+		if (nr_gc_blks < nr_punits) {
+			/* TODO: we need to implement a load balancing feature to avoid this */
+			/*bdbm_warning ("TODO: this warning will be removed with load-balancing");*/
+			bdbm_sema_unlock(&bdi->host_lock);
+			return 0;
+		}
+
+		/* TEMP */
+		for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+			hlm_reqs_pool_reset_fmain (&hlm_gc->llm_reqs[i].fmain);
+			/* The memory for pads must be allocated for GC 
+			 * because there are no buffers from bio */
+			hlm_reqs_pool_alloc_fmain_pad (&hlm_gc->llm_reqs[i].fmain);
+		}
+		/* TEMP */
+
+		/* build hlm_req_gc for reads */
+		for (i = 0, nr_llm_reqs = 0; i < nr_gc_blks; i++) {
+			bdbm_abm_block_t* b = p->gc_bab[i];
+			if (b == NULL)
+				break;
+			for (j = 0; j < np->nr_pages_per_block; j++) {
+				bdbm_llm_req_t* r = &hlm_gc->llm_reqs[nr_llm_reqs];
+				int has_valid = 0;
+#ifdef LAZY_INVALID
+				int has_pending = 0;
+#endif
+				/* are there any valid subpages in a block */
+				hlm_reqs_pool_reset_fmain (&r->fmain);
+				hlm_reqs_pool_reset_logaddr (&r->logaddr);
+				for (k = 0; k < np->nr_subpages_per_page; k++) {
+					if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_INVALID) {
+						r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
+						r->fmain.kp_stt[k] = KP_STT_HOLE;
+#ifdef LAZY_INVALID
+					} else if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_NOT_INVALID) {
+#else
+					} else{
+#endif
+						has_valid = 1;
+						r->logaddr.lpa[k] = -1; /* the subpage contains new data */
+						r->fmain.kp_stt[k] = KP_STT_DATA;
+					} 
+#ifdef LAZY_INVALID 
+					// invalid pages 
+					else if (b->pst[j*np->nr_subpages_per_page+k] == BDBM_ABM_SUBPAGE_PENDING_INVALID) {
+						// For pending write, insert dummy request 
+						has_pending = 1; 
+						p->nr_gc_pending_w++;
+	//					bdbm_msg("EUNJI: try to reclaim a page pending in write");
+						r->logaddr.lpa[k] = -1;	/* the subpage contains obsolate data */
+						r->fmain.kp_stt[k] = KP_STT_HOLE;
+					}else{
+						bdbm_msg("EUNJI: unexpected status\n");
+					}
+#endif
+				} // end of for loop in subpages
+
+				hlm_reqs_pool_alloc_fmain_pad (&r->fmain);
+				/* if it is, selects it as the gc candidates */
+				if (has_valid) {
+					r->req_type = REQTYPE_GC_READ;
+					r->phyaddr.channel_no = b->channel_no;
+					r->phyaddr.chip_no = b->chip_no;
+					r->phyaddr.block_no = b->block_no;
+					r->phyaddr.page_no = j;
+					r->phyaddr.punit_id = BDBM_GET_PUNIT_ID (bdi, (&r->phyaddr));
+					r->ptr_hlm_req = (void*)hlm_gc;
+					r->ret = 0;
+					nr_llm_reqs++;
+				}
+#ifdef LAZY_INALID
+				else if (has_pending) {
+//				bdbm_msg("EUNJI: insert gc dummy read");
+			// dummy request
+					r->req_type = REQTYPE_GC_READ;
+					r->phyaddr.channel_no = PFTL_PAGE_INVALID_ADDR;
+					r->phyaddr.chip_no = PFTL_PAGE_INVALID_ADDR;
+					r->phyaddr.block_no = PFTL_PAGE_INVALID_ADDR;
+					r->phyaddr.page_no = PFTL_PAGE_INVALID_ADDR;
+					r->phyaddr.punit_id = PFTL_PAGE_INVALID_ADDR;
+					r->ret = 0;
+					nr_llm_reqs++;
+					nr_pending_reqs++;
+				}
+#endif
+			} // end of loop nr_pages_per_blk
+		} // end of loop nr_gc_blks
+
+#ifdef LAZY_INVALID
+		bdbm_msg ("gc-victim: %llu pages, %llu pending pages, %llu blocks, %llu us %llu queue items", 
+			nr_llm_reqs, nr_pending_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw),
+			bdi->ptr_llm_inf->get_qsize(bdi));
+#else
+		bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
+			nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
+#endif
+
+
+#ifdef LAZY_INVALID
+		p->nr_gc_total_w += nr_llm_reqs;
+		bdbm_msg("gc_total_w: %llu, gc_pending_w: %llu", p->nr_gc_total_w, p->nr_gc_pending_w);
+#endif
+	
+
+	/* wait until Q in llm becomes empty 
+	 * TODO: it might be possible to further optimize this */
+#ifdef LAZY_INVALID
+#else
+		bdi->ptr_llm_inf->flush (bdi);
+#endif
+
+		if (nr_llm_reqs == 0) 
+			goto erase_blks;
+
+		/* send read reqs to llm */
+		hlm_gc->req_type = REQTYPE_GC_READ;
+		hlm_gc->nr_llm_reqs = nr_llm_reqs;
+		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
+		bdbm_sema_lock (&hlm_gc->done);
+
+		bdbm_msg("step1: read victim valid pages");
+
+		for (i = 0; i < nr_llm_reqs; i++) {
+			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
+				bdbm_error ("llm_make_req failed");
+				bdbm_bug_on (1);
+			}
+		}
+
+		/* release a host lock */
+		bdbm_sema_unlock (&bdi->host_lock);
+
+		bdbm_sema_lock (&hlm_gc->done);
+		bdbm_sema_unlock (&hlm_gc->done);
+
+
+/////////////////////////////// step 2. write valid pages 
+
+	/* perform write compaction for gc */
+#include "hlm_reqs_pool.h"
+		/* get a host lock */
+		bdbm_sema_lock(&bdi->host_lock);
+		bdbm_msg("step2: write victim valid pages");
+
+		hlm_reqs_pool_write_compaction (hlm_gc_w, hlm_gc, np);
+	
+		/*bdbm_msg ("compaction: %llu => %llu", nr_llm_reqs, hlm_gc_w->nr_llm_reqs);*/
+	
+		nr_llm_reqs = hlm_gc_w->nr_llm_reqs;
+	
+		/* build hlm_req_gc for writes */
+		for (i = 0; i < nr_llm_reqs; i++) {
+			bdbm_llm_req_t* r = &hlm_gc_w->llm_reqs[i];
+			r->req_type = REQTYPE_GC_WRITE;	/* change to write */
+	
+	
+			for (k = 0; k < np->nr_subpages_per_page; k++) {
+				/* move subpages that contain new data */
+				if (r->fmain.kp_stt[k] == KP_STT_DATA) {
+					r->logaddr.lpa[k] = ((uint64_t*)r->foob.data)[k];
+				} else if (r->fmain.kp_stt[k] == KP_STT_HOLE) {
+					((uint64_t*)r->foob.data)[k] = -1;
+					r->logaddr.lpa[k] = -1;
+				} else {
+					bdbm_bug_on (1);
+				}
+			}
+	
+			r->ptr_hlm_req = (void*)hlm_gc_w;
+			if (bdbm_page_ftl_get_free_ppa (bdi, 0, &r->phyaddr) != 0) {
+				bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
+				bdbm_bug_on (1);
+			}
+
+#ifdef LAZY_INVALID
+			bdbm_page_ftl_set_obsolete_ppa(bdi, r, &r->logaddr, &r->phyaddr);
+#endif
+			if (bdbm_page_ftl_map_lpa_to_ppa (bdi, &r->logaddr, &r->phyaddr) != 0) {
+				bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
+				bdbm_bug_on (1);
+			}
+		}
+
+		/* send write reqs to llm */
+		hlm_gc_w->req_type = REQTYPE_GC_WRITE;
+		hlm_gc_w->nr_llm_reqs = nr_llm_reqs;
+		atomic64_set (&hlm_gc_w->nr_llm_reqs_done, 0);
+		bdbm_sema_lock (&hlm_gc_w->done);
+		for (i = 0; i < nr_llm_reqs; i++) {
+			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc_w->llm_reqs[i])) != 0) {
+				bdbm_error ("llm_make_req failed");
+				bdbm_bug_on (1);
+			}
+		}
+
+		bdbm_sema_unlock(&bdi->host_lock);
+
+		bdbm_sema_lock (&hlm_gc_w->done);
+		bdbm_sema_unlock (&hlm_gc_w->done);
+
+
+/////////////////////////////// step 3. erase blocks 
+
+		/* try to get a host lock */
+		bdbm_sema_lock(&bdi->host_lock);
+
+	/* erase blocks */
+erase_blks:
+
+		for (i = 0; i < nr_gc_blks; i++) {
+			bdbm_abm_block_t* b = p->gc_bab[i];
+			bdbm_llm_req_t* r = &hlm_gc->llm_reqs[i];
+			r->req_type = REQTYPE_GC_ERASE;
+			r->logaddr.lpa[0] = -1ULL; /* lpa is not available now */
+			r->phyaddr.channel_no = b->channel_no;
+			r->phyaddr.chip_no = b->chip_no;
+			r->phyaddr.block_no = b->block_no;
+			r->phyaddr.page_no = 0;
+			r->phyaddr.punit_id = BDBM_GET_PUNIT_ID (bdi, (&r->phyaddr));
+			r->ptr_hlm_req = (void*)hlm_gc;
+			r->ret = 0;
+		}
+
+		/* send erase reqs to llm */
+		hlm_gc->req_type = REQTYPE_GC_ERASE;
+		hlm_gc->nr_llm_reqs = p->nr_punits;
+		atomic64_set (&hlm_gc->nr_llm_reqs_done, 0);
+		bdbm_sema_lock (&hlm_gc->done);
+		for (i = 0; i < nr_gc_blks; i++) {
+			if ((bdi->ptr_llm_inf->make_req (bdi, &hlm_gc->llm_reqs[i])) != 0) {
+				bdbm_error ("llm_make_req failed");
+				bdbm_bug_on (1);
+			}
+		}
+
+		/* release a host lock */
+		bdbm_sema_unlock(&bdi->host_lock);
+
+		bdbm_sema_lock (&hlm_gc->done);
+		bdbm_sema_unlock (&hlm_gc->done);
+
+
+/////////////////////// step 4. mapping update after erase 
+
+		/* try to get a host lock */
+		bdbm_sema_lock(&bdi->host_lock);
+
+		/* FIXME: what happens if block erasure fails */
+		for (i = 0; i < nr_gc_blks; i++) {
+			uint8_t ret = 0;
+			bdbm_abm_block_t* b = p->gc_bab[i];
+			if (hlm_gc->llm_reqs[i].ret != 0) 
+				ret = 1;	/* bad block */
+			bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
+		}
+
+		/* release a host lock */
+		bdbm_sema_unlock(&bdi->host_lock);
+
+
+	} /* loop of thread */
+	return 0;
+}
+#endif
+
+
 uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 {
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_thread_wakeup(p->gc_thread);
+#else
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_hlm_req_gc_t* hlm_gc = &p->gc_hlm;
 	bdbm_hlm_req_gc_t* hlm_gc_w = &p->gc_hlm_w;
@@ -983,6 +1330,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	uint64_t nr_punits = 0;
 	uint64_t i, j, k;
 	bdbm_stopwatch_t sw;
+
 
 	nr_punits = np->nr_channels * np->nr_chips_per_channel;
 
@@ -1263,7 +1611,7 @@ erase_blks:
 			ret = 1;	/* bad block */
 		bdbm_abm_erase_block (p->bai, b->channel_no, b->chip_no, b->block_no, ret);
 	}
-
+#endif
 	return 0;
 }
 
