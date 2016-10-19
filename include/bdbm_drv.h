@@ -195,6 +195,9 @@ typedef struct {
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
+
+	/* extension for nohost */
+	int tag;
 } bdbm_llm_req_t;
 
 typedef struct {

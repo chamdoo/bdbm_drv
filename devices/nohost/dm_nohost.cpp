@@ -109,8 +109,6 @@ uint ref_blkmapAlloc;
 uint16_t (*blkmap)[NUM_CHANNELS*NUM_CHIPS]; // 4096*64
 uint16_t (*blkmgr)[NUM_CHIPS][NUM_BLOCKS];  // 8*8*4096
 
-int tag = 1;
-
 // temp
 bdbm_sema_t global_lock;
 /***/
@@ -340,38 +338,17 @@ uint32_t dm_nohost_make_req (
 	uint32_t punit_id, ret, i;
 	dm_nohost_private_t* priv = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
-	/*
-	if (r->req_type == REQTYPE_READ_DUMMY) {
-		_bdi_dm->ptr_dm_inf->end_req (bdi, r);
-		return 0;
-	}
-	*/
-
 	bdbm_msg ("dm_nohost_make_req - begin");
 	bdbm_sema_lock (&global_lock);
-	bdbm_msg ("dm_nohost_make_req - ok");
-
-	/* check punit (= tags) */
-	/*
-	punit_id = r->phyaddr.punit_id;
-
-	bdbm_spin_lock (&priv->lock);
-	if (priv->llm_reqs[punit_id] != NULL) {
-		bdbm_spin_unlock (&priv->lock);
-		bdbm_error ("punit_id (%u) is busy...", punit_id);
+	if (priv->llm_reqs[r->tag] != NULL) {
+		bdbm_sema_unlock (&global_lock);
+		bdbm_error ("tag (%u) is busy...", r->tag);
 		bdbm_bug_on (1);
-	} else
-		priv->llm_reqs[punit_id] = r;
-	bdbm_spin_unlock (&priv->lock);
-	*/
-
-	if (priv->llm_reqs[tag] != NULL) {
-		bdbm_spin_unlock (&priv->lock);
-		bdbm_error ("tag (%u) is busy...", tag);
-		bdbm_bug_on (1);
+		return -1;
 	} else {
-		priv->llm_reqs[tag] = r;
+		priv->llm_reqs[r->tag] = r;
 	}
+	bdbm_sema_unlock (&global_lock);
 
 	/* submit reqs to the device */
 	switch (r->req_type) {
@@ -379,8 +356,8 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_GC_WRITE:
 	case REQTYPE_META_WRITE:
-		printf ("LOG: device->writePage, tag=%d lpa=%d\n", tag, r->logaddr.lpa[0]); fflush(stdout);
-		device->writePage (tag, r->logaddr.lpa[0], tag * FPAGE_SIZE);
+		printf ("LOG: device->writePage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		device->writePage (r->tag, r->logaddr.lpa[0], r->tag * FPAGE_SIZE);
 		break;
 
 	case REQTYPE_READ:
@@ -388,13 +365,13 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_RMW_READ:
 	case REQTYPE_GC_READ:
 	case REQTYPE_META_READ:
-		printf ("LOG: device->readPage, tag=%d lap=%d\n", tag, r->logaddr.lpa[0]); fflush(stdout);
-		device->readPage (tag, r->logaddr.lpa[0], tag * FPAGE_SIZE);
+		printf ("LOG: device->readPage, tag=%d lap=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		device->readPage (r->tag, r->logaddr.lpa[0], r->tag * FPAGE_SIZE);
 		break;
 
 	case REQTYPE_GC_ERASE:
-		printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", tag, r->logaddr.lpa[0]); fflush(stdout);
-		device->eraseBlock (tag, r->logaddr.lpa[0]);
+		printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		device->eraseBlock (r->tag, r->logaddr.lpa[0]);
 		break;
 
 	default:

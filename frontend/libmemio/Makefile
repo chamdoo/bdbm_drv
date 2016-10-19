@@ -38,7 +38,7 @@ INCLUDES := \
 LIBS := \
 	-lm -lpthread -lrt
 
-TARGETSRC := \
+SRCS := \
 	$(PWD)/$(BOARDDIR)/FlashRequest.c \
 	$(PWD)/$(BOARDDIR)/FlashIndication.c \
 	$(PWD)/$(BOARDDIR)/GeneratedCppCallbacks.cpp \
@@ -58,37 +58,17 @@ TARGETSRC := \
 	$(DM_NOHOST)/dm_nohost.cpp \
 	$(DM_COMMON)/dev_main.c \
 
-#TARGETOBJ := \
-	$(DM_NOHOST)/dm_nohost.o \
-	$(DM_COMMON)/dev_params.o \
-	$(DM_COMMON)/dev_main.o \
-	$(COMMON)/utils/umemory.o \
-	$(PWD)/$(BOARDDIR)/FlashRequest.o \
-	$(PWD)/$(BOARDDIR)/FlashIndication.o \
-	$(PWD)/$(BOARDDIR)/GeneratedCppCallbacks.o \
-	$(PWD)/$(BOARDDIR)/MMURequest.o \
-	$(PWD)/$(BOARDDIR)/MMUIndication.o \
-	$(PWD)/$(BOARDDIR)/MemServerRequest.o \
-	$(PWD)/$(BOARDDIR)/MemServerIndication.o \
-	$(PWD)/connectal/cpp/portal.o \
-	$(PWD)/connectal/cpp/portalPrintf.o \
-	$(PWD)/connectal/cpp/transportHardware.o \
-	$(PWD)/connectal/cpp/poller.o \
-	$(PWD)/connectal/cpp/dmaManager.o \
-	$(PWD)/connectal/cpp/platformMemory.o \
-	$(PWD)/connectal/cpp/timer.o \
-
-TARGETOBJ := $(TARGETSRC:.c=.o)
-TARGETOBJ += $(TARGETSRC:.cpp=.o)
+OBJS := \
+	$(SRCS:.c=.o) $(SRCS:.cpp=.o)
 
 
 all: nohost.exe
 
-nohost.exe: $(TARGETSRC) nohost.a main.cpp
+nohost.exe: $(SRCS) nohost.a main.cpp
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ main.cpp nohost.a $(LIBS) 
 
-nohost.a: $(TARGETOBJ)
-	$(AR) r $(@) $(TARGETOBJ)
+nohost.a: $(OBJS)
+	$(AR) r $(@) $(OBJS)
 
 .c.o:
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
@@ -103,4 +83,3 @@ clean:
 	@$(RM) $(PWD)/$(BOARDDIR)/*.o
 	@$(RM) $(PWD)/connectal/cpp/*.o
 	@$(RM) $(COMMON)/utils/*.o
-
