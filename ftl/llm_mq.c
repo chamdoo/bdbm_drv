@@ -58,6 +58,9 @@ bdbm_llm_inf_t _llm_mq_inf = {
 	.create = llm_mq_create,
 	.destroy = llm_mq_destroy,
 	.make_req = llm_mq_make_req,
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	.make_gc_req = llm_mq_make_gc_req,
+#endif
 	.flush = llm_mq_flush,
 	.end_req = llm_mq_end_req,
 #ifdef LAZY_INVALID
@@ -244,7 +247,50 @@ uint64_t llm_mq_get_qsize (bdbm_drv_info_t* bdi)
 #endif
 
 
+uint32_t llm_mq_make_gc_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
+{
+	uint32_t ret;
+	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
+#if defined(ENABLE_SEQ_DBG)
+	bdbm_sema_lock (&p->dbg_seq);
+#endif
+
+	/* obtain the elapsed time taken by FTL algorithms */
+	pmu_update_sw (bdi, r);
+
+// LAZY_INVALID
+//	bdbm_msg("queue length = %llu", bdbm_prior_queue_get_nr_items(p->q));
+//  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
+	while (bdbm_prior_queue_get_nr_items (p->q) >= MAX_QSIZE) {
+		bdbm_thread_yield ();
+	}
+
+	/* put a request into Q */
+	if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
+		/* step 1: put READ first */
+		r->phyaddr = r->phyaddr_src;
+		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr_src.punit_id, r->logaddr.lpa[0], (void*)r))) {
+			bdbm_msg ("bdbm_prior_queue_enqueue failed");
+		}
+		/* step 2: put WRITE second with the same LPA */
+		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr_dst.punit_id, r->logaddr.lpa[0], (void*)r))) {
+			bdbm_msg ("bdbm_prior_queue_enqueue failed");
+		}
+	} else if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
+		bdbm_bug_on (1);
+	} else {
+		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, r->logaddr.lpa[0], (void*)r))) {
+			bdbm_msg ("bdbm_prior_queue_enqueue failed");
+		}
+	}
+
+	/* wake up thread if it sleeps */
+
+	bdbm_thread_wakeup (p->llm_thread);
+
+	return ret;
+}
 
 uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
@@ -264,6 +310,18 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	while (bdbm_prior_queue_get_nr_items (p->q) >= MAX_QSIZE) {
 		bdbm_thread_yield ();
 	}
+
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	bdbm_sema_unlock(&bdi->host_lock);
+//	while (bdi->ptr_ftl_inf->get_free_blk_ratio(bdi) < LOW_WATERMARK_FOR_FREE_BLKS){
+	while (bdi->ptr_ftl_inf->get_free_blk_ratio(bdi) < HIGH_WATERMARK_FOR_FREE_BLKS){
+		bdi->ptr_ftl_inf->do_gc(bdi, 0);
+		bdbm_thread_wakeup (p->llm_thread);
+		bdbm_thread_yield();
+	}
+	bdbm_sema_lock(&bdi->host_lock);	
+#endif
+
 
 	/* put a request into Q */
 	if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {

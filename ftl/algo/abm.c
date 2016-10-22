@@ -274,6 +274,8 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 	bdbm_abm_block_t* blk = NULL;
 	uint32_t cnt = 0;
 
+//	bdbm_msg("[EUNJI] nr_free_blks = %llu", bai->nr_free_blks);
+
 	list_for_each (pos, &(bai->list_head_free[channel_no][chip_no])) {
 		cnt++;
 		blk = list_entry (pos, bdbm_abm_block_t, list);
@@ -297,6 +299,8 @@ bdbm_abm_block_t* bdbm_abm_get_free_block_prepare (
 		}
 	}
 
+	if(!blk && bai->nr_free_blks !=0)
+		bdbm_bug_on(1);
 	return blk;
 }
 

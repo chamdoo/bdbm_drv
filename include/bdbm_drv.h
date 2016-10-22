@@ -2,16 +2,16 @@
 #define LAZY_INVALID_BACKGROUND_GC
 //  q length: 1g = 262144 / 512m = 131702 / 256m = 65536 / 128m = 32768 / 64m = 16384 / 32m = 8192
 
-//#define MAX_QSIZE 30000
+#define MAX_QSIZE 10000
 //#define MAX_QSIZE 262144
-#define MAX_QSIZE 96
+//#define MAX_QSIZE 96
 //#define MAX_QSIZE 262144
 #define MIN_QSIZE 0
 //#define MIN_QSIZE 100000
 //#define MAX_QSIZE 262144
 //#define MAX_QSIZE 96
-#define LOW_WATERMARK_FOR_FREE_BLKS 20
-#define HIGH_WATERMARK_FOR_FREE_BLKS 20
+#define LOW_WATERMARK_FOR_FREE_BLKS 2
+#define HIGH_WATERMARK_FOR_FREE_BLKS 10
 //#define HIGH_WATERMARK_FOR_FREE_BLKS 20
 /*
 The MIT License (MIT)
@@ -282,6 +282,9 @@ typedef struct {
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#ifdef LAZY_INVALID_BACKGROUND_GC
+	uint32_t (*make_gc_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#endif
 	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*flush) (bdbm_drv_info_t* bdi);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
@@ -344,6 +347,7 @@ typedef struct {
 	uint32_t (*set_obsolete_ppa)(bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr, bdbm_logaddr_t* logaddr,	bdbm_phyaddr_t* phyaddr);
 	uint32_t (*invalidate_obsolete_ppa) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr);
 	uint8_t (*need_more_free_blks) (bdbm_drv_info_t* bdi);
+	uint8_t (*get_free_blk_ratio) (bdbm_drv_info_t* bdi);
 #endif
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi, int64_t lpa);

@@ -42,8 +42,8 @@ THE SOFTWARE.
 #include "umemory.h"
 #include "debug.h"
 
-//#define SSD_SIZE_15G
-/*#define SSD_SIZE_4G*/
+//#define SSD_SIZE_16G
+//#define SSD_SIZE_4G
 
 enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_SIZE = 4096*BDBM_MAX_PAGES,

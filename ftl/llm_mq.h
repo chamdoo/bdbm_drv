@@ -30,6 +30,9 @@ extern bdbm_llm_inf_t _llm_mq_inf;
 uint32_t llm_mq_create (bdbm_drv_info_t* bdi);
 void llm_mq_destroy (bdbm_drv_info_t* bdi);
 uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#ifdef LAZY_INVALID_BACKGROUND_GC
+uint32_t llm_mq_make_gc_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
+#endif
 void llm_mq_flush (bdbm_drv_info_t* bdi);
 void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 uint64_t llm_mq_get_qsize (bdbm_drv_info_t* bdi);
