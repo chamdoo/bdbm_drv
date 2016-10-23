@@ -54,6 +54,9 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
+//#ifdef NVM_CACHE
+//	NR_NVM_BLOCKS	= 100, 				/* 4KB * 1048576 = 4GB */
+//#endif
 };
 
 int _param_nr_channels 				= NR_CHANNELS;
@@ -67,6 +70,9 @@ int _param_chip_bus_trans_time_us	= NAND_CHIP_BUS_TRANS_TIME_US;
 int _param_page_prog_time_us		= NAND_PAGE_PROG_TIME_US; 		
 int _param_page_read_time_us		= NAND_PAGE_READ_TIME_US;
 int _param_block_erase_time_us		= NAND_BLOCK_ERASE_TIME_US;
+//#ifdef NVM_CACHE
+//int _param_nr_nvm_blocks			= NR_NVM_BLOCKS;
+//#endif
 
 /* TODO: Hmm... there might be a more fancy way than this... */
 #if defined (CONFIG_DEVICE_TYPE_RAMDRIVE)
@@ -129,7 +135,9 @@ bdbm_device_params_t get_default_device_params (void)
  	p.page_prog_time_us = _param_page_prog_time_us;
  	p.page_read_time_us = _param_page_read_time_us;
  	p.block_erase_time_us = _param_block_erase_time_us;
- 
+//#ifdef NVM_CACHE
+//	p.nr_nvm_blocks = _param_nr_nvm_blocks; 
+//#endif
  	/* other parameters derived from user parameters */
  	p.nr_blocks_per_channel = p.nr_chips_per_channel * p.nr_blocks_per_chip;
 	p.nr_blocks_per_ssd = p.nr_channels * p.nr_chips_per_channel * p.nr_blocks_per_chip;
@@ -143,7 +151,6 @@ bdbm_device_params_t get_default_device_params (void)
 #endif
 	p.nr_subpages_per_block = (p.nr_subpages_per_page * p.nr_pages_per_block);
 	p.nr_subpages_per_ssd = (p.nr_subpages_per_page * p.nr_pages_per_ssd);	/* the size of the subpage must be the same as the kernel-page size (4KB) */
-
 	p.device_capacity_in_byte = 0;
 	p.device_capacity_in_byte += p.nr_channels;
 	p.device_capacity_in_byte *= p.nr_chips_per_channel;

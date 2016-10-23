@@ -60,6 +60,7 @@ robusta_drv-y := \
 	kmain.o \
 	blkdev.o \
 	blkio.o \
+	nvm_cache.o \
 	$(FTL)/ftl_params.o \
 	$(FTL)/pmu.o \
 	$(FTL)/hlm_nobuf.o \

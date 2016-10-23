@@ -55,6 +55,9 @@ THE SOFTWARE.
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 #include "algo/dftl.h"
+#ifdef NVM_CACHE
+#include "../frontend/kernel/nvm_cache.h"
+#endif
 #include "ufile.h"
 
 /* TEMP */
@@ -62,6 +65,7 @@ THE SOFTWARE.
 bdbm_ftl_inf_t _ftl_dftl, _ftl_no_ftl;
 bdbm_hlm_inf_t _hlm_dftl_inf, _hlm_buf_inf;
 bdbm_llm_inf_t _llm_noq_inf;
+
 /* TEMP */
 
 /* It creates bdi and setups bdi with default parameters.  Users changes the
@@ -78,7 +82,7 @@ bdbm_drv_info_t* bdbm_drv_create (void)
 
 	/* get default driver paramters */
 	bdi->parm_ftl = get_default_ftl_params ();
-	bdi->parm_dev = get_default_device_params ();
+	bdi->parm_dev = get_default_device_params (); // 여기에서 nvm cache size 세팅되어옴. 
 
 	return bdi;
 }
@@ -160,6 +164,10 @@ int bdbm_drv_setup (
 		break;
 	}
 
+#ifdef NVM_CACHE
+	bdi->ptr_nvm_inf = &_nvm_dev;
+#endif
+
 	return 0;
 }
 
@@ -171,6 +179,9 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	bdbm_llm_inf_t* llm = NULL;
 	bdbm_ftl_inf_t* ftl = NULL;
 	bdbm_dm_inf_t* dm = NULL;
+#ifdef NVM_CACHE
+	bdbm_nvm_inf_t* nvm = NULL;
+#endif
 	uint32_t load = 0;
 
 	/* run setup functions */
@@ -198,6 +209,15 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 		}
 	}
 
+#ifdef NVM_CACHE
+	if(bdi->ptr_nvm_inf) {
+		nvm = bdi->ptr_nvm_inf; // 이거 전의 함수에서 세팅 되어있었어야 함. 	
+		if(nvm->create == NULL || nvm->create(bdi) != 0) {
+			bdbm_error ("[bdbm_drv_main] failed to create nvm (%p)", nvm->create);
+			goto fail;
+		}
+	}
+#endif
 	/* create a low-level memory manager */
 	if (bdi->ptr_llm_inf) {
 		llm = bdi->ptr_llm_inf;

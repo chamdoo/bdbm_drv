@@ -1,3 +1,6 @@
+#define NVM_CACHE
+//#define NVM_CACHE_PARAM
+
 /*
 The MIT License (MIT)
 
@@ -174,6 +177,7 @@ typedef struct {
 	uint8_t* kp_pad[BDBM_MAX_PAGES];
 } bdbm_flash_page_main_t;
 
+
 typedef struct {
 	uint8_t* data;
 } bdbm_flash_page_oob_t;
@@ -247,6 +251,23 @@ typedef struct {
 	void (*make_req) (bdbm_drv_info_t* bdi, void* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 } bdbm_host_inf_t;
+
+#ifdef NVM_CACHE
+typedef struct {
+	void* ptr_private;
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+#if 0
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
+	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
+	
+	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_nvm_req_t* req);
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#endif
+} bdbm_nvm_inf_t;
+#endif
 
 /* a generic high-level memory manager interface */
 typedef struct {
@@ -379,6 +400,10 @@ struct _bdbm_drv_info_t {
 	bdbm_hlm_inf_t* ptr_hlm_inf;
 	bdbm_llm_inf_t* ptr_llm_inf;
 	bdbm_ftl_inf_t* ptr_ftl_inf;
+#ifdef NVM_CACHE
+//	bdbm_nvm_params_t parm_nvm;
+	bdbm_nvm_inf_t* ptr_nvm_inf;
+#endif
 	bdbm_perf_monitor_t pm;
 };
 

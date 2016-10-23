@@ -941,6 +941,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/block_ftl.h \
   /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/page_ftl.h \
   /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/dftl.h \
+  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/../frontend/kernel/nvm_cache.h \
   /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils/ufile.h \
   include/linux/buffer_head.h \
 
