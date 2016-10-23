@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "bdbm_drv.h"
 #include "umemory.h" /* bdbm_malloc */
@@ -49,8 +50,9 @@ typedef struct memio {
 	bdbm_drv_info_t bdi;
 	bdbm_llm_req_t* rr;
 	int nr_punits;
-	size_t io_unit; /* bytes */
-	size_t trim_unit;
+	size_t io_size; /* bytes */
+	size_t trim_size;
+	size_t trim_lbas;
 } memio_t;
 
 static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio);
@@ -115,6 +117,9 @@ static memio_t* memio_open ()
 		goto fail;
 	}
 	mio->nr_punits = 64; /* FIXME: it must be set according to device parameters */
+	mio->io_size = 8192;
+	mio->trim_lbas = (1 << 14);
+	mio->trim_size = mio->trim_lbas * mio->io_size;
 
 	/* setup some internal values according to 
 	 * the device's organization */
@@ -175,7 +180,7 @@ static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 static void __memio_check_alignment (size_t length, size_t alignment)
 {
 	if ((length % alignment) != 0) {
-		bdbm_error ("alignment error occurs (length = %d, io_unit = %d)",
+		bdbm_error ("alignment error occurs (length = %d, alignment = %d)",
 			length, alignment);
 		exit (-1);
 	}
@@ -191,11 +196,10 @@ static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t
 	int ret;
 	
 	/* see if LBA alignment is correct */
-	__memio_check_alignment (lba, mio->io_unit);
-	__memio_check_alignment (len, mio->io_unit);
+	__memio_check_alignment (len, mio->io_size);
 
 	/* fill up logaddr; note that phyaddr is not used here */
-	while (cur_lba < lba + len) {
+	while (cur_lba < lba + (len/mio->io_size)) {
 		/* get an empty llm_req */
 		r = __memio_alloc_llm_req (mio);
 
@@ -203,7 +207,7 @@ static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t
 
 		/* setup llm_req */
 		r->req_type = (dir == 0) ? REQTYPE_READ : REQTYPE_WRITE;
-		r->logaddr.lpa[0] = cur_lba / mio->io_unit;
+		r->logaddr.lpa[0] = cur_lba;
 		r->fmain.kp_ptr[0] = cur_buf;
 
 		/* send I/O requets to the device */
@@ -213,13 +217,24 @@ static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t
 		}
 
 		/* go the next */
-		cur_lba += mio->io_unit;
-		cur_buf += mio->io_unit;
-		sent += mio->io_unit;
+		cur_lba += 1;
+		cur_buf += mio->io_size;
+		sent += mio->io_size;
 	}
 
 	/* return the length of bytes transferred */
 	return sent;
+}
+
+static void memio_wait (memio_t* mio)
+{
+	int i;
+	for (i = 0; i < mio->nr_punits; ) {
+		if (!bdbm_sema_try_lock (mio->rr[i].done))
+			continue;
+		bdbm_sema_unlock (mio->rr[i].done);
+		i++;
+	}
 }
 
 static int memio_read (memio_t* mio, size_t lba, size_t len, uint8_t* data)
@@ -232,40 +247,43 @@ static int memio_write (memio_t* mio, size_t lba, size_t len, uint8_t* data)
 	return __memio_do_io (mio, 1, lba, len, data);
 }
 
-static int memio_trim (memio_t* mio, size_t lba, size_t len, uint8_t* data)
+static int memio_trim (memio_t* mio, size_t lba, size_t len)
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
-	uint8_t* cur_buf = data;
 	size_t cur_lba = lba;
 	size_t sent = 0;
-	int ret;
-	
+	int ret, i;
+
 	/* see if LBA alignment is correct */
-	__memio_check_alignment (lba, mio->trim_unit);
-	__memio_check_alignment (len, mio->trim_unit);
+	__memio_check_alignment (lba, mio->trim_lbas);
+	__memio_check_alignment (len, mio->trim_size);
 
 	/* fill up logaddr; note that phyaddr is not used here */
-	while (cur_lba < lba + len) {
-		/* get an empty llm_req */
-		r = __memio_alloc_llm_req (mio);
+	while (cur_lba < lba + (len/mio->io_size)) {
+		bdbm_msg ("segment #: %d", cur_lba / mio->trim_lbas);
+		for (i = 0; i < mio->nr_punits; i++) {
+			/* get an empty llm_req */
+			r = __memio_alloc_llm_req (mio);
 
-		bdbm_bug_on (!r);
+			bdbm_bug_on (!r);
 
-		/* setup llm_req */
-		r->req_type = REQTYPE_GC_ERASE;
-		r->logaddr.lpa[0] = cur_lba / mio->trim_unit;
-		r->fmain.kp_ptr[0] = NULL;
+			/* setup llm_req */
+			//bdbm_msg ("  -- blk #: %d", i);
+			r->req_type = REQTYPE_GC_ERASE;
+			r->logaddr.lpa[0] = cur_lba + i;
+			r->fmain.kp_ptr[0] = NULL;	/* no data; it must be NULL */
 
-		/* send I/O requets to the device */
-		if ((ret = dm->make_req (&mio->bdi, r)) != 0) {
-			bdbm_error ("dm->make_req() failed (ret = %d)", ret);
-			bdbm_bug_on (1);
+			/* send I/O requets to the device */
+			if ((ret = dm->make_req (&mio->bdi, r)) != 0) {
+				bdbm_error ("dm->make_req() failed (ret = %d)", ret);
+				bdbm_bug_on (1);
+			}
 		}
 
 		/* go the next */
-		cur_lba += mio->trim_unit;
-		sent += mio->trim_unit;
+		cur_lba += mio->trim_lbas;
+		sent += mio->trim_size;
 	}
 
 	/* return the length of bytes transferred */
@@ -311,13 +329,43 @@ static void memio_close (memio_t* mio)
 
 int main (int argc, char** argv)
 {
+	int i = 0, j = 0;
 	memio_t* mio = NULL;
+	uint8_t wdata[8192*4], rdata[8192*4];
 	
 	/* open the device */
 	if ((mio = memio_open ()) == NULL)
 		goto fail;
 
 	/* perform some operations */
+	for (i = 0; i < 1024; i++) {
+		memio_trim (mio, i<<14, (1<<14)*8192);
+		memio_wait (mio);
+	}
+
+	for (i = 0; i < 1024*(1<<14); i++) {
+		wdata[0] = 'A';	
+		wdata[8191] = 'B';
+		memio_write (mio, i, 8192, wdata);
+		if (i%100 == 0) {
+			printf (".");
+			fflush (stdout);
+		}
+	}
+	memio_wait (mio);
+
+	printf ("start reads...\n\n\n");
+	for (i = 0; i < 1024*(1<<14); i++) {
+		memio_read (mio, i, 8192, rdata);
+		memio_wait (mio);
+		if (rdata[0] != 'A' || rdata[8191] != 'B') {
+			bdbm_msg ("[%d] OOPS! rdata[0] = %c, rdata[8191] = %c", i, rdata[0], rdata[8191]);
+		}
+		if (i%100 == 0) {
+			printf (".");
+			fflush (stdout);
+		}
+	}
 
 	/* close the device */
 	memio_close (mio);

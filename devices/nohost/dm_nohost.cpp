@@ -106,13 +106,13 @@ FlashStatusT flashStatus[NUM_BUSES][CHIPS_PER_BUS][BLOCKS_PER_CHIP];
 size_t blkmapAlloc_sz = sizeof(uint16_t) * NUM_SEGMENTS * NUM_LOGBLKS;
 int blkmapAlloc;
 uint ref_blkmapAlloc;
+char *ftlPtr = NULL;
 uint16_t (*blkmap)[NUM_CHANNELS*NUM_CHIPS]; // 4096*64
 uint16_t (*blkmgr)[NUM_CHIPS][NUM_BLOCKS];  // 8*8*4096
 
 // temp
 bdbm_sema_t global_lock;
 /***/
-
 
 /* interface for dm */
 bdbm_dm_inf_t _bdbm_dm_inf = {
@@ -144,24 +144,31 @@ class FlashIndication: public FlashIndicationWrapper {
 		FlashIndication (unsigned int id) : FlashIndicationWrapper (id) { }
 
 		virtual void readDone (unsigned int tag, unsigned int status) {
-			printf ("LOG: readdone: tag=%d status=%d\n", tag, status); fflush (stdout);
-			dm_nohost_end_req (_bdi_dm, _priv->llm_reqs[tag]);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
+			//printf ("LOG: readdone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
+			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void writeDone (unsigned int tag, unsigned int status) {
-			printf ("LOG: writedone: tag=%d status=%d\n", tag, status); fflush (stdout);
-			dm_nohost_end_req (_bdi_dm, _priv->llm_reqs[tag]);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
+			//printf ("LOG: writedone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
+			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void eraseDone (unsigned int tag, unsigned int status) {
-			printf ("LOG: eraseDone, tag=%d, status=%d\n", tag, status); fflush(stdout);
-			dm_nohost_end_req (_bdi_dm, _priv->llm_reqs[tag]);
+			//printf ("LOG: eraseDone, tag=%d, status=%d\n", tag, status); fflush(stdout);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
+			//printf ("LOG: eraseDone, tag=%d/%d, status=%d\n", tag, r->tag, status); fflush(stdout);
+			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void debugDumpResp (unsigned int debug0, unsigned int debug1,  unsigned int debug2, unsigned int debug3, unsigned int debug4, unsigned int debug5) {
@@ -176,6 +183,28 @@ class FlashIndication: public FlashIndicationWrapper {
 			fprintf(stderr, "Map Download(FPGA->Host) done!\n");
 		}
 };
+
+int __readFTLfromFile (const char* path, void* ptr) {
+	FILE *fp;
+	fp = fopen(path, "r");
+
+	if (fp) {
+		size_t read_size = fread( ptr, blkmapAlloc_sz*2, 1, fp);
+		fclose(fp);
+		if (read_size == 0)
+		{
+			fprintf(stderr, "error reading %s\n", path);
+			return -1;
+		}
+	} else {
+		fprintf(stderr, "error reading %s: file not exist\n", path);
+		return -1;
+	}
+
+	return 0; // success
+}
+
+
 
 FlashIndication* indication;
 uint32_t __dm_nohost_init_device (
@@ -195,9 +224,9 @@ uint32_t __dm_nohost_init_device (
 	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz);
 
 	blkmapAlloc = portalAlloc(blkmapAlloc_sz*2, 0);
-	char *tmpPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz*2);
-	blkmap      = (uint16_t(*)[NUM_CHANNELS*NUM_CHIPS]) (tmpPtr);
-	blkmgr      = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (tmpPtr+blkmapAlloc_sz);
+	ftlPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz * 2);
+	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
+	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
 
 	fprintf(stderr, "dstAlloc = %x\n", dstAlloc); 
 	fprintf(stderr, "srcAlloc = %x\n", srcAlloc); 
@@ -261,9 +290,6 @@ uint32_t __dm_nohost_init_device (
 		}
 	}
 
-	//device->downloadMap();
-	//device->uploadMap();
-	
 	return 0;
 }
 
@@ -294,7 +320,7 @@ uint32_t dm_nohost_probe (
 	}
 
 	bdbm_sema_init (&global_lock);
-	nr_punit = params->nr_channels * params->nr_chips_per_channel;
+	nr_punit = 64;
 	if ((p->llm_reqs = (bdbm_llm_req_t**)bdbm_zmalloc (
 			sizeof (bdbm_llm_req_t*) * nr_punit)) == NULL) {
 		bdbm_warning ("bdbm_zmalloc failed");
@@ -306,6 +332,16 @@ uint32_t dm_nohost_probe (
 	_priv = p;
 
 	bdbm_msg ("[dm_nohost_probe] PROBE DONE!");
+
+	if (__readFTLfromFile ("table.dump.0", ftlPtr) == 0) {
+		bdbm_msg ("[dm_nohost_probe] MAP Upload to HW!" ); 
+		fflush(stdout);
+		device->uploadMap();
+		device->downloadMap(); 
+	} else {
+		bdbm_msg ("[dm_nohost_probe] MAP file not found" ); 
+		fflush(stdout);
+	}
 
 	return 0;
 
@@ -338,7 +374,6 @@ uint32_t dm_nohost_make_req (
 	uint32_t punit_id, ret, i;
 	dm_nohost_private_t* priv = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
-	bdbm_msg ("dm_nohost_make_req - begin");
 	bdbm_sema_lock (&global_lock);
 	if (priv->llm_reqs[r->tag] != NULL) {
 		bdbm_sema_unlock (&global_lock);
@@ -356,7 +391,9 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_GC_WRITE:
 	case REQTYPE_META_WRITE:
-		printf ("LOG: device->writePage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		//printf ("LOG: device->writePage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		bdbm_memcpy (writeBuffers[r->tag], r->fmain.kp_ptr[0], 8192);
+		//printf ("WRITE-LOG: %c %c\n", r->fmain.kp_ptr[0][0], r->fmain.kp_ptr[0][8191]); fflush(stdout);
 		device->writePage (r->tag, r->logaddr.lpa[0], r->tag * FPAGE_SIZE);
 		break;
 
@@ -365,12 +402,12 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_RMW_READ:
 	case REQTYPE_GC_READ:
 	case REQTYPE_META_READ:
-		printf ("LOG: device->readPage, tag=%d lap=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		//printf ("LOG: device->readPage, tag=%d lap=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
 		device->readPage (r->tag, r->logaddr.lpa[0], r->tag * FPAGE_SIZE);
 		break;
 
 	case REQTYPE_GC_ERASE:
-		printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		//printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
 		device->eraseBlock (r->tag, r->logaddr.lpa[0]);
 		break;
 
@@ -388,7 +425,12 @@ void dm_nohost_end_req (
 {
 	bdbm_bug_on (r == NULL);
 
-	bdbm_msg ("dm_nohost_end_req done");
+	if (r->req_type == REQTYPE_READ || r->req_type == REQTYPE_GC_READ) {
+		bdbm_memcpy (r->fmain.kp_ptr[0], readBuffers[r->tag], 8192);
+		//printf ("READ-LOG: %c %c\n", r->fmain.kp_ptr[0][0], r->fmain.kp_ptr[0][8191]); fflush(stdout);
+	}
+
+	//bdbm_msg ("dm_nohost_end_req done");
 	bdi->ptr_llm_inf->end_req (bdi, r);
 }
 
