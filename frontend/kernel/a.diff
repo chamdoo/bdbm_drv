@@ -1,0 +1,47 @@
+54,55d53
+< #ifdef LAZY_INVALID_BACKGROUND_GC
+< #else
+57d54
+< #endif
+68c65
+< 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
+---
+> 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bdbm_malloc_atomic (sizeof (bdbm_blkio_req_t));
+100,101c97,98
+< 				bdbm_error ("oops! # of vectors in bio is larger than %u %llu (type=%llu)", 
+< 					BDBM_BLKIO_MAX_VECS, br->bi_bvec_cnt, br->bi_rw);
+---
+> 				bdbm_error ("oops! # of vectors in bio is larger than %u %llu", 
+> 					BDBM_BLKIO_MAX_VECS, br->bi_bvec_cnt);
+111c108
+< 		bdbm_free (br);
+---
+> 		bdbm_free_atomic (br);
+118c115
+< 		bdbm_free (br);
+---
+> 		bdbm_free_atomic (br);
+139c136
+< 		bdbm_error ("bdbm_malloc failed");
+---
+> 		bdbm_error ("bdbm_malloc_atomic failed");
+142,144d138
+< #ifdef LAZY_INVALID_BACKGROUND_GC
+< 	bdbm_sema_init (&bdi->host_lock);
+< #else
+146d139
+< #endif
+221,223d213
+< #ifdef LAZY_INVALID_BACKGROUND_GC
+< 	bdbm_sema_lock (&bdi->host_lock);
+< #else
+225d214
+< #endif
+241,243d229
+< #ifdef LAZY_INVALID_BACKGROUND_GC
+< 	bdbm_sema_unlock (&bdi->host_lock);
+< #else
+245d230
+< #endif
+255d239
+< 

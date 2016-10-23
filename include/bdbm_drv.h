@@ -1,5 +1,5 @@
 #define NVM_CACHE
-//#define NVM_CACHE_PARAM
+#define NVM_CACHE_PARAM
 
 /*
 The MIT License (MIT)
