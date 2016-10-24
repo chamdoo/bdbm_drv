@@ -110,6 +110,10 @@ static inline uint64_t bdbm_abm_get_nr_total_blocks (bdbm_abm_info_t* bai) { ret
 uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn);
 uint32_t bdbm_abm_store (bdbm_abm_info_t* bai, const char* fn);
 
+void bdbm_abm_invalidate_page_4kb (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, 
+                uint64_t page_no, uint64_t subpage_no);
+void bdbm_abm_validate_page_4kb (bdbm_abm_info_t* bai, uint64_t channel_no, uint64_t chip_no, uint64_t block_no, 
+                uint64_t page_no, uint64_t subpage_no);
 #define bdbm_abm_list_for_each_dirty_block(pos, bai, channel_no, chip_no) \
 	list_for_each (pos, &(bai->list_head_dirty[channel_no][chip_no]))
 #define bdbm_abm_fetch_dirty_block(pos) \

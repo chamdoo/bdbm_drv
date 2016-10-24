@@ -6,8 +6,8 @@ INCLUDE := ../../include
 COMMON := ../../common
 DM_COMMON := ../../devices/common
 
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/dumbssd/Module.symvers
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/dumbssd/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
@@ -39,7 +39,6 @@ EXTRA_CFLAGS += -D USE_NEW_RMW
 	$(FTL)/hlm_buf.o \
 	$(FTL)/hlm_dftl.o \
 	$(FTL)/hlm_rsd.o \
-	$(FTL)/llm_noq.o \
 	$(FTL)/llm_mq.o \
 	$(FTL)/algo/abm.o \
 	$(FTL)/algo/no_ftl.o \
@@ -65,8 +64,8 @@ robusta_drv-y := \
 	$(FTL)/hlm_nobuf.o \
 	$(FTL)/llm_mq.o \
 	$(FTL)/algo/abm.o \
-	$(FTL)/algo/page_ftl.o \
 	$(FTL)/algo/block_ftl.o \
+	$(FTL)/algo/fgm_ftl.o \
 	$(FTL)/queue/queue.o \
 	$(FTL)/queue/prior_queue.o \
 	$(FTL)/queue/rd_prior_queue.o \
@@ -77,6 +76,7 @@ robusta_drv-y := \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/utils/umemory.o \
 	$(COMMON)/bdbm_main.o \
+	#$(FTL)/algo/page_ftl.o \
 
 
 obj-m := robusta_drv.o

@@ -322,27 +322,28 @@ static int __hlm_reqs_pool_create_write_req (
         bdbm_blkio_req_t* br)
 {
     int64_t sec_start, sec_end, pg_start, pg_end;
-    int64_t i = 0, j = 0, k = 0;
+    int64_t i = 0, j = 0, k = 0, l = 0, m = 0, tmp_size = 0, added_size = 0;
     int64_t hole = 0, bvec_cnt = 0, nr_llm_reqs;
     bdbm_flash_page_main_t* ptr_fm = NULL;
     bdbm_llm_req_t* ptr_lr = NULL;
+    bdbm_llm_req_t* ptr_lr_prev = NULL;
 
-    //printf("bi_offset=%d, size=%d\n", br->bi_offset, br->bi_size);
+    //printk("REQ:bi_offset=%lld, size=%lld\n", br->bi_offset, br->bi_size);
     /* expand boundary sectors */
     sec_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(pool->map_unit));
     sec_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(pool->map_unit));
     bdbm_bug_on (sec_start >= sec_end);
-    //printf("sec_start=%d, sec_end=%d\n", sec_start, sec_end);
+    //printk("REQ:sec_start=%lld, sec_end=%lld\n", sec_start, sec_end);
 
     pg_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
     pg_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
     bdbm_bug_on (pg_start >= pg_end);
-    //printf("pg_start=%d, pg_end=%d\n", pg_start, pg_end);
+    //printk("REQ:pg_start=%lld, pg_end=%lld\n", pg_start, pg_end);
 
     /* build llm_reqs */
     nr_llm_reqs = BDBM_ALIGN_UP ((sec_end - sec_start), NR_KSECTORS_IN(pool->io_unit)) / NR_KSECTORS_IN(pool->io_unit);
     bdbm_bug_on (nr_llm_reqs > BDBM_BLKIO_MAX_VECS);
-    //printf("nr_llm_reqs=%d\n", nr_llm_reqs);
+    //printk("REQ:nr_llm_reqs=%lld\n", nr_llm_reqs);
 
     ptr_lr = &hr->llm_reqs[0];
     for (i = 0; i < nr_llm_reqs; i++) {
@@ -352,17 +353,13 @@ static int __hlm_reqs_pool_create_write_req (
         hlm_reqs_pool_reset_fmain (ptr_fm);
         hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 
-        //printf("llm[%d]:: ", i);
         /* build mapping-units */
         for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
             /* build kernel-pages */
             ptr_lr->logaddr.lpa_cg = sec_start / NR_KSECTORS_IN(pool->map_unit);
-            //printf("lpa_cg=%d, ", ptr_lr->logaddr.lpa_cg);
             for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
                 uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
 
-                /*printf("(pg_off(%d) >= pg_start(%d) && pg_off(%d) < pg_end)(%d)]\n",
-                  pg_off, pg_start, pg_off, pg_end);*/
                 if (pg_off >= pg_start && pg_off < pg_end) {
                     bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
                     if (bvec_cnt >= br->bi_bvec_cnt) {
@@ -371,10 +368,7 @@ static int __hlm_reqs_pool_create_write_req (
                     ptr_fm->kp_stt[fm_ofs] = KP_STT_DATA;
                     ptr_fm->kp_ptr[fm_ofs] = br->bi_bvec_ptr[bvec_cnt++]; /* assign actual data */
                     ptr_lr->logaddr.lpa[fm_ofs] = pg_off;
-                    //printf("lpa[%d]=%d, ", k, ptr_lr->logaddr.lpa[k]);
                     ptr_lr->logaddr.ofs = fm_ofs;
-                    //printf("kp_state[%d]=%d, kp_ptr[%d]=%p ", fm_ofs, ptr_fm->kp_stt[fm_ofs],
-                    //        fm_ofs, ptr_fm->kp_ptr[fm_ofs]);
                 } else {
                     hole++;
                 }
@@ -387,24 +381,67 @@ static int __hlm_reqs_pool_create_write_req (
             if (sec_start >= sec_end)
                 break;
         }
-        //printf("\n");
 
-        /* decide the reqtype for llm_req */
-        ptr_lr->req_type = br->bi_rw;
+        if(hole > 0 && hole < BDBM_MAX_PAGES - 1){
+            for (l = 0; l < BDBM_MAX_PAGES; l++) {
+                if(ptr_fm->kp_stt[l] == KP_STT_DATA){
+                    ptr_lr->logaddr.ofs = l;
+                    ptr_lr->logaddr.lpa_cg = -1;
+                    ptr_lr->ptr_hlm_req = (void*)hr;
+                    ptr_lr->req_type = br->bi_rw;
+                    ptr_lr_prev = ptr_lr;
+                    //printk("REQ:llm[%lld]:: lpa_cg=%lld ", i, ptr_lr->logaddr.lpa_cg);
+                    /*printk("REQ:lpa[0]=%lld, lpa[1]=%lld, lpa[2]=%lld, lpa[3]=%lld\n ",
+                            ptr_lr->logaddr.lpa[0],
+                            ptr_lr->logaddr.lpa[1],
+                            ptr_lr->logaddr.lpa[2],
+                            ptr_lr->logaddr.lpa[3]);*/
+                    ptr_lr++;
+                    l++;
+                    break;
+                }
+            }
+            tmp_size = BDBM_MAX_PAGES - hole - 1;
+            added_size += tmp_size;
 
-        if (hole == 3){
-            ptr_lr->logaddr.lpa_cg = -1;
+            for (m = 0; m < tmp_size; m++) {
+                hlm_reqs_pool_reset_fmain (&ptr_lr->fmain);
+                hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+                ptr_lr->fmain.kp_stt[l+m] = ptr_fm->kp_stt[l+m];
+                ptr_lr->fmain.kp_ptr[l+m] = ptr_fm->kp_ptr[l+m];
+                ptr_lr->logaddr.lpa[l+m] = ptr_lr_prev->logaddr.lpa[l+m];
+                ptr_lr->logaddr.ofs = l+m;
+                ptr_lr->logaddr.lpa_cg = -1;
 
+                ptr_fm->kp_stt[l+m] = KP_STT_HOLE;
+                ptr_lr_prev->logaddr.lpa[l+m] = -1;
+
+                //printk("REQ:llm[%lld]:: lpa_cg=%lld ", i, ptr_lr->logaddr.lpa_cg);
+                /*printk("REQ:lpa[0]=%lld, lpa[1]=%lld, lpa[2]=%lld, lpa[3]=%lld\n ",
+                        ptr_lr->logaddr.lpa[0],
+                        ptr_lr->logaddr.lpa[1],
+                        ptr_lr->logaddr.lpa[2],
+                        ptr_lr->logaddr.lpa[3]);*/
+                ptr_lr->req_type = br->bi_rw;
+                ptr_lr->ptr_hlm_req = (void*)hr;
+                ptr_lr++;
+            }
+        }else{
+            ptr_lr->req_type = br->bi_rw;
+            if (hole == 3) ptr_lr->logaddr.lpa_cg = -1;
+            ptr_lr->ptr_hlm_req = (void*)hr;
+
+            //printk("REQ:llm[%lld]:: lpa_cg=%lld ", i, ptr_lr->logaddr.lpa_cg);
+            /*printk("REQ:lpa[0]=%lld, lpa[1]=%lld, lpa[2]=%lld, lpa[3]=%lld\n ",
+                    ptr_lr->logaddr.lpa[0],
+                    ptr_lr->logaddr.lpa[1],
+                    ptr_lr->logaddr.lpa[2],
+                    ptr_lr->logaddr.lpa[3]);*/
+
+
+            ptr_lr++;
         }
-        else if (hole > 0 && pool->in_place_rmw && br->bi_rw == REQTYPE_WRITE) {
-            /* NOTE: if there are holes and map-unit is equal to io-unit, we
-             * should perform old-fashioned RMW operations */
-            ptr_lr->req_type = REQTYPE_RMW_READ;
-        }
 
-        /* go to the next */
-        ptr_lr->ptr_hlm_req = (void*)hr;
-        ptr_lr++;
     }
 
     bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
@@ -412,7 +449,7 @@ static int __hlm_reqs_pool_create_write_req (
     /* intialize hlm_req */
     hr->req_type = br->bi_rw;
     bdbm_stopwatch_start (&hr->sw);
-    hr->nr_llm_reqs = nr_llm_reqs;
+    hr->nr_llm_reqs = nr_llm_reqs + added_size;
     atomic64_set (&hr->nr_llm_reqs_done, 0);
     bdbm_sema_lock (&hr->done);
     hr->blkio_req = (void*)br;
@@ -452,11 +489,11 @@ static int __hlm_reqs_pool_create_read_req (
         ptr_lr->req_type = br->bi_rw;
         ptr_lr->logaddr.lpa_cg = pg_start / NR_KPAGES_IN(pool->map_unit);
         ptr_lr->logaddr.lpa[offset] = pg_start;
-    //    if (pool->in_place_rmw == 1) 
-    //        ptr_lr->logaddr.ofs = 0;		/* offset in llm is already decided */
-    //    else
+       // if (pool->in_place_rmw == 1) 
+       //     ptr_lr->logaddr.ofs = 0;		/* offset in llm is already decided */
+       // else
             ptr_lr->logaddr.ofs = offset;	/* it must be adjusted after getting physical locations */
-       
+
         ptr_lr->ptr_hlm_req = (void*)hr;
 
         /* go to the next */
@@ -496,7 +533,7 @@ int bdbm_hlm_reqs_pool_build_req (
 
     /* are there any errors? */
     if (ret != 0) {
-        bdbm_error ("oops! invalid request type: (%llx)", br->bi_rw);
+        bdbm_error ("oops! invalid request type: (%lld)", br->bi_rw);
         return 1;
     }
 
@@ -519,6 +556,8 @@ void hlm_reqs_pool_relocate_write_req_ofs (bdbm_llm_req_t* lr)
         lr->fmain.kp_stt[i] = KP_STT_HOLE;
         lr->fmain.kp_ptr[i] = lr->fmain.kp_pad[i];
         lr->logaddr.lpa[lr->logaddr.ofs] = lr->logaddr.lpa[i];
+        lr->logaddr.lpa[i] = -1;
+        ((int64_t*)lr->foob.data)[lr->logaddr.ofs] = ((int64_t*)lr->foob.data)[i];
     }
 }
 
