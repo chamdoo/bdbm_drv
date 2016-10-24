@@ -21,7 +21,7 @@ CFLAGS += \
 	-D USE_PMU \
 	-D USE_KTIMER \
 	-D USE_NEW_RMW \
-	-D ZYNQ=1 \
+	#-D ZYNQ=1 \ # Already defined in ConnectalProjectConfig.h:20 
 
 INCLUDES := \
 	-I$(PWD) \

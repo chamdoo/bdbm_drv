@@ -46,21 +46,17 @@ THE SOFTWARE.
 #include "FlashRequest.h"
 #include "dmaManager.h"
 
-#define BLOCKS_PER_CHIP 32
-#define CHIPS_PER_BUS 8 // 8
-#define NUM_BUSES 8 // 8
-
-#define FPAGE_SIZE (8192*2)
-#define FPAGE_SIZE_VALID (8224)
+#define FPAGE_SIZE (8192)
+#define FPAGE_SIZE_VALID (8192)
 #define NUM_TAGS 128
 
-#define BLOCKS_PER_CHIP 32
-#define CHIPS_PER_BUS 8 // 8
-#define NUM_BUSES 8 // 8
-
-#define FPAGE_SIZE (8192*2)
-#define FPAGE_SIZE_VALID (8224)
-#define NUM_TAGS 128
+// for Table
+#define NUM_BLOCKS 4096
+#define NUM_SEGMENTS NUM_BLOCKS
+#define NUM_CHANNELS 8
+#define NUM_CHIPS 8
+#define NUM_LOGBLKS (NUM_CHANNELS*NUM_CHIPS)
+#define NUM_PAGES_PER_BLK 256
 
 typedef enum {
 	UNINIT,
@@ -70,9 +66,7 @@ typedef enum {
 
 typedef struct {
 	bool busy;
-	int bus;
-	int chip;
-	int block;
+	int lpa;
 } TagTableEntry;
 
 FlashRequestProxy *device;
@@ -83,29 +77,27 @@ pthread_cond_t flashFreeTagCond;
 //8k * 128
 size_t dstAlloc_sz = FPAGE_SIZE * NUM_TAGS *sizeof(unsigned char);
 size_t srcAlloc_sz = FPAGE_SIZE * NUM_TAGS *sizeof(unsigned char);
+
 int dstAlloc;
 int srcAlloc;
+
 unsigned int ref_dstAlloc;
 unsigned int ref_srcAlloc;
+
 unsigned int* dstBuffer;
 unsigned int* srcBuffer;
+
 unsigned int* readBuffers[NUM_TAGS];
 unsigned int* writeBuffers[NUM_TAGS];
+
 TagTableEntry readTagTable[NUM_TAGS];
 TagTableEntry writeTagTable[NUM_TAGS];
 TagTableEntry eraseTagTable[NUM_TAGS];
-FlashStatusT flashStatus[NUM_BUSES][CHIPS_PER_BUS][BLOCKS_PER_CHIP];
-
-// for Table 
-#define NUM_BLOCKS 4096
-#define NUM_SEGMENTS NUM_BLOCKS
-#define NUM_CHANNELS 8
-#define NUM_CHIPS 8
-#define NUM_LOGBLKS (NUM_CHANNELS*NUM_CHIPS)
+FlashStatusT flashStatus[NUM_SEGMENTS*NUM_PAGES_PER_BLK*NUM_LOGBLKS];
 
 size_t blkmapAlloc_sz = sizeof(uint16_t) * NUM_SEGMENTS * NUM_LOGBLKS;
 int blkmapAlloc;
-uint ref_blkmapAlloc;
+unsigned int ref_blkmapAlloc;
 char *ftlPtr = NULL;
 uint16_t (*blkmap)[NUM_CHANNELS*NUM_CHIPS]; // 4096*64
 uint16_t (*blkmgr)[NUM_CHIPS][NUM_BLOCKS];  // 8*8*4096
@@ -179,7 +171,7 @@ class FlashIndication: public FlashIndicationWrapper {
 			fprintf(stderr, "Map Upload(Host->FPGA) done!\n");
 		}
 
-		virtual void downloadDone() {
+		virtual void downloadDone () {
 			fprintf(stderr, "Map Download(FPGA->Host) done!\n");
 		}
 };
@@ -204,26 +196,50 @@ int __readFTLfromFile (const char* path, void* ptr) {
 	return 0; // success
 }
 
+int __writeFTLtoFile (const char* path, void* ptr) {
+	FILE *fp;
+	fp = fopen(path, "w");
+
+	if (fp) {
+		size_t write_size = fwrite( ptr, blkmapAlloc_sz*2, 1, fp);
+		fclose(fp);
+		if (write_size==0)
+		{
+			fprintf(stderr, "error writing %s\n", path);
+			return -1;
+		}
+	} else {
+		fprintf(stderr, "error writing %s: file not exist\n", path);
+		return -1;
+	}
+
+	return 0; // success
+}
 
 
-FlashIndication* indication;
+
+FlashIndication *indication;
+
 uint32_t __dm_nohost_init_device (
 	bdbm_drv_info_t* bdi, 
 	bdbm_device_params_t* params)
 {
-	fprintf(stderr, "Initializing DMA...\n");
+	fprintf(stderr, "Initializing Connectal & DMA...\n");
+
 	device = new FlashRequestProxy(IfcNames_FlashRequestS2H);
 	indication = new FlashIndication(IfcNames_FlashIndicationH2S);
-	//FlashIndication deviceIndication(IfcNames_FlashIndicationH2S);
     DmaManager *dma = platformInit();
 
 	fprintf(stderr, "Main::allocating memory...\n");
+	
+	// Memory for DMA
 	srcAlloc = portalAlloc(srcAlloc_sz, 0);
 	dstAlloc = portalAlloc(dstAlloc_sz, 0);
-	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz);
-	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz);
+	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz); // Host->Flash Write
+	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz); // Flash->Host Read
 
-	blkmapAlloc = portalAlloc(blkmapAlloc_sz*2, 0);
+	// Memory for FTL
+	blkmapAlloc = portalAlloc(blkmapAlloc_sz * 2, 0);
 	ftlPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz * 2);
 	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
 	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
@@ -247,17 +263,15 @@ uint32_t __dm_nohost_init_device (
 	for (int t = 0; t < NUM_TAGS; t++) {
 		readTagTable[t].busy = false;
 		writeTagTable[t].busy = false;
+		eraseTagTable[t].busy = false;
+
 		int byteOffset = t * FPAGE_SIZE;
 		readBuffers[t] = dstBuffer + byteOffset/sizeof(unsigned int);
 		writeBuffers[t] = srcBuffer + byteOffset/sizeof(unsigned int);
 	}
-	
-	for (int blk=0; blk < BLOCKS_PER_CHIP; blk++) {
-		for (int c=0; c < CHIPS_PER_BUS; c++) {
-			for (int bus=0; bus< NUM_BUSES; bus++) {
-				flashStatus[bus][c][blk] = UNINIT;
-			}
-		}
+
+	for (int lpa=0; lpa < NUM_SEGMENTS*NUM_LOGBLKS*NUM_PAGES_PER_BLK; lpa++) {
+		flashStatus[lpa] = UNINIT;
 	}
 
 	for (int t = 0; t < NUM_TAGS; t++) {
@@ -267,8 +281,7 @@ uint32_t __dm_nohost_init_device (
 		}
 	}
 
-#define MainClockPeriod 5
-
+//#define MainClockPeriod 6 // Already defined in ConnectalProjectConfig.h:20 
 	long actualFrequency=0;
 	long requestedFrequency=1e9/MainClockPeriod;
 	int status = setClockFrequency(0, requestedFrequency, &actualFrequency);
@@ -281,14 +294,6 @@ uint32_t __dm_nohost_init_device (
 
 	device->debugDumpReq(0);
 	sleep(1);
-	device->debugDumpReq(0);
-	sleep(1);
-
-	for (int t = 0; t < NUM_TAGS; t++) {
-		for ( unsigned int i = 0; i < FPAGE_SIZE/sizeof(unsigned int); i++ ) {
-			readBuffers[t][i] = 0xDEADBEEF;
-		}
-	}
 
 	return 0;
 }
@@ -333,11 +338,10 @@ uint32_t dm_nohost_probe (
 
 	bdbm_msg ("[dm_nohost_probe] PROBE DONE!");
 
-	if (__readFTLfromFile ("table.dump.0", ftlPtr) == 0) {
+	if (__readFTLfromFile ("table.dump.0", ftlPtr) == 0) { //if exists, read from table.dump.0
 		bdbm_msg ("[dm_nohost_probe] MAP Upload to HW!" ); 
 		fflush(stdout);
 		device->uploadMap();
-		device->downloadMap(); 
 	} else {
 		bdbm_msg ("[dm_nohost_probe] MAP file not found" ); 
 		fflush(stdout);
@@ -361,6 +365,18 @@ uint32_t dm_nohost_open (bdbm_drv_info_t* bdi)
 void dm_nohost_close (bdbm_drv_info_t* bdi)
 {
 	dm_nohost_private_t* p = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
+
+	/* before closing, dump the table to table.dump.0 */
+	device->downloadMap();
+	sleep(1); // needed??
+	
+	if(__writeFTLtoFile ("table.dump.0", ftlPtr) == 0) {
+		bdbm_msg("[dm_nohost_close] MAP successfully dumped to table.dump.0!");
+		fflush(stdout);
+	} else {
+		bdbm_msg("[dm_nohost_close] Error dumping FTL map to table.dump.0!");
+		fflush(stdout);
+	}
 
 	bdbm_msg ("[dm_nohost_close] closed!");
 

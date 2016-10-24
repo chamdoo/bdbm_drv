@@ -32,7 +32,7 @@ CFLAGS += \
 	-D USE_KTIMER \
 	-D USER_MODE \
 	-D USE_NEW_RMW \
-	-D ZYNQ=1 \
+	#-D ZYNQ=1 \ # Already defined in ConnectalProjectConfig.h:20 
 
 LIBSRC := \
 	$(DM_COMMON)/dev_main.c \
