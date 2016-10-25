@@ -57,6 +57,7 @@ SRCS := \
 	$(DM_COMMON)/dev_params.c \
 	$(DM_NOHOST)/dm_nohost.cpp \
 	$(DM_COMMON)/dev_main.c \
+	$(PWD)/libmemio.cpp \
 
 OBJS := \
 	$(SRCS:.c=.o) $(SRCS:.cpp=.o)
@@ -64,10 +65,10 @@ OBJS := \
 
 all: nohost.exe
 
-nohost.exe: $(SRCS) nohost.a main.cpp
-	$(CC) $(INCLUDES) $(CFLAGS) -o $@ main.cpp nohost.a $(LIBS) 
+nohost.exe: $(SRCS) libmemio.a main.cpp
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ main.cpp libmemio.a $(LIBS) 
 
-nohost.a: $(OBJS)
+libmemio.a: $(OBJS)
 	$(AR) r $(@) $(OBJS)
 
 .c.o:
@@ -77,7 +78,7 @@ nohost.a: $(OBJS)
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 clean:
-	@$(RM) *.o core *~ nohost.a nohost.exe
+	@$(RM) *.o core *~ libmemio.a nohost.exe
 	@$(RM) $(DM_COMMON)/*.o
 	@$(RM) $(DM_NOHOST)/*.o
 	@$(RM) $(PWD)/$(BOARDDIR)/*.o
