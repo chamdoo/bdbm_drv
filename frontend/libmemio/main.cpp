@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "bdbm_drv.h"
 #include "umemory.h" /* bdbm_malloc */
@@ -329,40 +330,48 @@ static void memio_close (memio_t* mio)
 
 int main (int argc, char** argv)
 {
-	int i = 0, j = 0;
+	int i = 0, j = 0, tmplba = 0;
+	srand(time(NULL));
+
 	memio_t* mio = NULL;
-	uint8_t wdata[8192*4], rdata[8192*4];
+	int32_t wdata[2048], rdata[2048]; // uint8_t -> int32_t
 	
 	/* open the device */
 	if ((mio = memio_open ()) == NULL)
 		goto fail;
 
-	/* perform some operations */
-	for (i = 0; i < 1024; i++) {
+	/* perform some operations = test only 512 segments */
+	for (i = 0; i < 512; i++) {
 		memio_trim (mio, i<<14, (1<<14)*8192);
 		memio_wait (mio);
 	}
 
-	for (i = 0; i < 1024*(1<<14); i++) {
-		wdata[0] = 'A';	
-		wdata[8191] = 'B';
-		memio_write (mio, i, 8192, wdata);
+	for (i = 0; i < 512*(1<<14); i++) {
+		/* 4 bytes of LSB and MSB are LBA */
+		wdata[0] = i;    
+		wdata[2047] = i;
+
+		memio_write (mio, i, 8192, (uint8_t*)wdata);
+
 		if (i%100 == 0) {
-			printf (".");
+			printf ("w");
 			fflush (stdout);
 		}
 	}
 	memio_wait (mio);
 
+	/* test random LBAs and read */
 	printf ("start reads...\n\n\n");
-	for (i = 0; i < 1024*(1<<14); i++) {
-		memio_read (mio, i, 8192, rdata);
+	for (i = 0; i < 64*(1<<14); i++) {   // reducing the test case
+		tmplba = rand() % (512*(1<<14)); // try random lba
+
+		memio_read (mio, tmplba, 8192, (uint8_t*)rdata);
 		memio_wait (mio);
-		if (rdata[0] != 'A' || rdata[8191] != 'B') {
-			bdbm_msg ("[%d] OOPS! rdata[0] = %c, rdata[8191] = %c", i, rdata[0], rdata[8191]);
+		if (rdata[0] != tmplba || rdata[2047] != tmplba) {
+			bdbm_msg ("[%d] OOPS! LBA=%d rdata[0] = %d, rdata[2047] = %d", i, tmplba, rdata[0], rdata[8191]);
 		}
 		if (i%100 == 0) {
-			printf (".");
+			printf ("r");
 			fflush (stdout);
 		}
 	}
