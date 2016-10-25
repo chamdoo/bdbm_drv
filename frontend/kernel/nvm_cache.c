@@ -30,9 +30,10 @@ THE SOFTWARE.
 
 #include "bdbm_drv.h"
 #include "debug.h"
+#include "params.h"
+#include "umemory.h"
 //#include "blkdev.h"
 //#include "blkdev_ioctl.h"
-//#include "umemory.h"
 
 #ifdef NVM_CACHE
 
@@ -42,15 +43,137 @@ THE SOFTWARE.
 bdbm_nvm_inf_t _nvm_dev = {
 	.ptr_private = NULL,
 	.create = bdbm_nvm_create,
-//	.destroy = nvm_destroy,
+	.destroy = bdbm_nvm_destroy,
 //	.make_req = nvm_make_req,
 //	.end_req = nvm_end_req,
 };
 
+
+static void* __nvm_alloc_nvmram (bdbm_device_params_t* ptr_np) 
+{
+	void* ptr_nvmram = NULL;
+	
+	uint64_t page_size_in_bytes = ptr_np->nvm_page_size; 
+	uint64_t nvm_size_in_bytes;
+
+	nvm_size_in_bytes = 
+		page_size_in_bytes * ptr_np->nr_nvm_pages;
+
+	if((ptr_nvmram = (void*) bdbm_malloc
+		(nvm_size_in_bytes * sizeof(uint8_t))) == NULL) {
+		bdbm_error("bdbm_malloc failed (nvm size = %llu bytes)", nvm_size_in_bytes);
+		return NULL;
+	}
+	bdbm_memset ((uint8_t*) ptr_nvmram, 0xFF, nvm_size_in_bytes * sizeof (uint8_t));
+	bdbm_msg("nvm cache addr = %p", ptr_nvmram);
+
+	return (void*) ptr_nvmram;
+
+}
+
+
+static void* __nvm_alloc_nvmram_tbl (bdbm_device_params_t* np) 
+{
+	bdbm_nvm_page_t* me; 
+	uint64_t i, j;
+
+	/* allocate mapping entries */
+	if ((me = (bdbm_nvm_page_t*) bdbm_zmalloc 
+		(sizeof (bdbm_nvm_page_t) * np->nr_nvm_pages)) == NULL) {
+		return NULL;
+	}
+
+	/* initialize a mapping table */
+	for (i = 0; i < np->nr_nvm_pages; i++){
+		me[i].logaddr.ofs = -1;
+		for (j = 0; j < np->nr_subpages_per_page; j ++){
+			me[i].logaddr.lpa[j] = -1;
+		}
+	}
+
+	return me;
+}
+
+
+
+
 uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){
-//	if (bdi->ptr_nvm_inf)
-	bdbm_msg("create succeeds");
+	
+	bdbm_nvm_dev_private_t* p = NULL;
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+
+	if (!bdi->ptr_nvm_inf)
+		return 1;
+
+	/* create a private data structure */
+	if ((p = (bdbm_nvm_dev_private_t*)bdbm_zmalloc 
+			(sizeof (bdbm_nvm_dev_private_t))) == NULL) {
+		bdbm_error ("bdbm_malloc failed");
+		bdbm_nvm_destroy(bdi);
+		return 1;
+	}
+
+	/* assign p into ptr_private to destroy it properly upon a fail */
+	_nvm_dev.ptr_private = (void*)p;
+
+	p->nr_total_pages = np->nr_nvm_pages;
+	p->np = np;
+
+	/* alloc ptr_nvmram_data: ptr_nvm_data */
+	if((p->ptr_nvmram = __nvm_alloc_nvmram (np)) == NULL) {
+		bdbm_error ("__alloc_nvmram failed");
+		bdbm_nvm_destroy(bdi);
+		return 1;
+	}
+
+	/* alloc page table: ptr_nvm_tbl */	
+	if((p->ptr_nvm_tbl = __nvm_alloc_nvmram_tbl (np)) == NULL) {
+		bdbm_error ("__alloc_nvmram table failed");
+		bdbm_nvm_destroy(bdi);
+		return 1;
+	}
+
+	/* initialize lock and list */
+	bdbm_spin_lock_init (&p->nvm_lock);
+
+	if((p->lru_list = (struct list_head*) bdbm_zmalloc (sizeof(struct list_head))) == NULL) {
+		bdbm_error ("__alloc nvmram lru_list failed");
+		bdbm_nvm_destroy(bdi);
+		return 1;
+	}
+
+	bdbm_msg("==========================================================");
+	bdbm_msg("NVM CONFIGURATION");
+	bdbm_msg("==========================================================");
+	bdbm_msg("total size = %llu, nr_nvm_pages = %llu, nvm_page_size	= %llu",
+		np->nr_nvm_pages * np->nvm_page_size, np->nr_nvm_pages, np->nvm_page_size);
+
 	return 0;
+}
+
+
+void bdbm_nvm_destroy (bdbm_drv_info_t* bdi)
+{
+	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;  
+
+	if(!p)
+		return;
+
+	if(p->ptr_nvmram) {
+		bdbm_free (p->ptr_nvmram);
+	}
+
+	if(p->ptr_nvm_tbl) {
+		bdbm_free (p->ptr_nvmram);
+	}
+	
+	if(p->lru_list) {
+		bdbm_free (p->lru_list);
+	}
+
+	bdbm_free(p);
+
+	return;
 }
 
 #endif

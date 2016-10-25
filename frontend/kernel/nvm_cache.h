@@ -25,6 +25,9 @@ THE SOFTWARE.
 //#ifndef _BLUEDBM_HOST_BLKDEV_H
 //#define _BLUEDBM_HOST_BLKDEV_H
 
+
+#define NVM_BLK_SIZE 4096
+
 extern bdbm_nvm_inf_t _nvm_dev;
 
 
@@ -32,25 +35,28 @@ typedef struct {
 	uint8_t status;
 	bdbm_logaddr_t logaddr;
 //	bdbm_phyaddr_t phyaddr;
-//	struct list_head list;	/* for lru list */
-	void* ptr_nvmram_data;
-} bdbm_nvm_block_t;
+	struct list_head lru_list;	/* for lru list */
+} bdbm_nvm_page_t;
 
 typedef struct {
 	bdbm_device_params_t* np;
-	uint64_t nr_total_blks;
-	bdbm_spinlock_t nvm_lock;
+	uint64_t nr_total_pages;
 
-	bdbm_nvm_block_t* ptr_nvm_tbl;
 
 	void* ptr_nvmram; /* DRAM memory for nvm */
-	struct list_head lru_list;
+//	bdbm_nvm_page_t* ptr_nvm_rb_tree;
+	bdbm_nvm_page_t* ptr_nvm_tbl;
+
+
+	bdbm_spinlock_t nvm_lock;
+	struct list_head* lru_list;
 
 //	bdbm_nvm_block_t* ptr_lru_list;
 
 } bdbm_nvm_dev_private_t;
 
 uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi);
+void bdbm_nvm_destroy (bdbm_drv_info_t* bdi);
 //#endif
 
 

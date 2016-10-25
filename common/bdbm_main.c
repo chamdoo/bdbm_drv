@@ -263,6 +263,9 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	/* display default parameters */
 	display_device_params (&bdi->parm_dev);
 	display_ftl_params (&bdi->parm_ftl);
+#ifdef NVM_CACHE
+//	display_nvm_params (&bdi->nvm_dev);
+#endif
 
 	/* init performance monitor */
 	pmu_create (bdi);
@@ -274,6 +277,10 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 fail:
 	if (host && host->close)
 		host->close (bdi);
+#ifdef NVM_CACHE
+	if (nvm && nvm->destroy)
+		nvm->destroy (bdi);
+#endif 
 	if (hlm && hlm->destroy)
 		hlm->destroy (bdi);
 	if (ftl && ftl->destroy)
@@ -303,6 +310,11 @@ void bdbm_drv_close (bdbm_drv_info_t* bdi)
 
 	if (bdi->ptr_host_inf)
 		bdi->ptr_host_inf->close (bdi);
+
+#ifdef NVM_CACHE
+	if (bdi->ptr_nvm_inf)
+		bdi->ptr_nvm_inf->destroy (bdi);
+#endif
 
 	if (bdi->ptr_hlm_inf)
 		bdi->ptr_hlm_inf->destroy (bdi);

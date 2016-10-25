@@ -1,5 +1,4 @@
 #define NVM_CACHE
-#define NVM_CACHE_PARAM
 
 /*
 The MIT License (MIT)
@@ -256,8 +255,9 @@ typedef struct {
 typedef struct {
 	void* ptr_private;
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
-#if 0
 	void (*destroy) (bdbm_drv_info_t* bdi);
+
+#if 0
 	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
 	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
