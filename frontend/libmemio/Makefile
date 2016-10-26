@@ -1,12 +1,15 @@
 # Makefile for a RISA Device Driver
 #
 CC = arm-linux-gnueabihf-g++
+AR = arm-linux-gnueabihf-ar
+
 ROOTDIR = ../..
 INCLUDE = $(ROOTDIR)/include
 COMMON = $(ROOTDIR)/common
 DM_COMMON = $(ROOTDIR)/devices/common
 DM_NOHOST = $(ROOTDIR)/devices/nohost
-BOARDDIR = zc706_ubuntu/jni
+BOARD = zc706_ubuntu
+BOARDDIR = $(BOARD)/jni
 
 CFLAGS += \
 	-g \
@@ -54,9 +57,9 @@ SRCS := \
 	$(PWD)/connectal/cpp/platformMemory.cpp \
 	$(PWD)/connectal/cpp/timer.c \
 	$(COMMON)/utils/umemory.c \
+	$(DM_COMMON)/dev_main.c \
 	$(DM_COMMON)/dev_params.c \
 	$(DM_NOHOST)/dm_nohost.cpp \
-	$(DM_COMMON)/dev_main.c \
 	$(PWD)/libmemio.cpp \
 
 OBJS := \
