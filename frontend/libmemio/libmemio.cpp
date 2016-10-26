@@ -227,11 +227,13 @@ void memio_wait (memio_t* mio)
 
 int memio_read (memio_t* mio, size_t lba, size_t len, uint8_t* data)
 {
+	bdbm_msg ("memio_read: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 0, lba, len, data);
 }
 
 int memio_write (memio_t* mio, size_t lba, size_t len, uint8_t* data)
 {
+	bdbm_msg ("memio_write: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 1, lba, len, data);
 }
 
@@ -242,6 +244,8 @@ int memio_trim (memio_t* mio, size_t lba, size_t len)
 	size_t cur_lba = lba;
 	size_t sent = 0;
 	int ret, i;
+
+	bdbm_msg ("memio_trim: %zd, %zd", lba, len);
 
 	/* see if LBA alignment is correct */
 	__memio_check_alignment (lba, mio->trim_lbas);

@@ -43,7 +43,7 @@ int main (int argc, char** argv)
 
 	/* perform some operations = test only 512 segments */
 	for (i = 0; i < 20; i++) {
-		memio_trim (mio, i<<14, (1<<14)*8192);
+		memio_trim (mio, (i<<14), (1<<14)*8192);
 		memio_wait (mio);
 	}
 
