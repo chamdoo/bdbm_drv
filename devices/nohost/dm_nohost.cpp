@@ -141,6 +141,7 @@ class FlashIndication: public FlashIndicationWrapper {
 			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			if( r == NULL ){ printf("readDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
@@ -150,6 +151,7 @@ class FlashIndication: public FlashIndicationWrapper {
 			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			if( r == NULL ) { printf("writeDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
@@ -160,6 +162,7 @@ class FlashIndication: public FlashIndicationWrapper {
 			bdbm_sema_lock (&global_lock);
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
+			if( r == NULL ) { printf("eraseDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
@@ -391,7 +394,11 @@ uint32_t dm_nohost_make_req (
 	dm_nohost_private_t* priv = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
 	bdbm_sema_lock (&global_lock);
-	if (priv->llm_reqs[r->tag] != NULL) {
+	if (priv->llm_reqs[r->tag] == r) {
+		// timeout & send the request again
+	} 
+	else if (priv->llm_reqs[r->tag] != NULL) {
+		// busy tag error
 		bdbm_sema_unlock (&global_lock);
 		bdbm_error ("tag (%u) is busy...", r->tag);
 		bdbm_bug_on (1);
@@ -418,7 +425,7 @@ uint32_t dm_nohost_make_req (
 	case REQTYPE_RMW_READ:
 	case REQTYPE_GC_READ:
 	case REQTYPE_META_READ:
-		//printf ("LOG: device->readPage, tag=%d lap=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+		//printf ("LOG: device->readPage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
 		device->readPage (r->tag, r->logaddr.lpa[0], r->tag * FPAGE_SIZE);
 		break;
 

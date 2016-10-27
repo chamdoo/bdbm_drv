@@ -216,10 +216,17 @@ static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t
 
 void memio_wait (memio_t* mio)
 {
-	int i;
+	int i, j=0;
+	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
 	for (i = 0; i < mio->nr_punits; ) {
-		if (!bdbm_sema_try_lock (mio->rr[i].done))
+		if (!bdbm_sema_try_lock (mio->rr[i].done)){
+			if ( ++j == 1000000 ) {
+				bdbm_msg ("timeout at tag:%d, reissue command", mio->rr[i].tag);
+				dm->make_req (&mio->bdi, mio->rr + i);
+				j=0;
+			}
 			continue;
+		}
 		bdbm_sema_unlock (mio->rr[i].done);
 		i++;
 	}
