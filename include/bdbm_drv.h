@@ -99,10 +99,15 @@ enum BDBM_REQTYPE {
 	REQTYPE_RMW 			= 0x000200,
 	REQTYPE_GC 				= 0x000400,
 	REQTYPE_META 			= 0x000800,
+	REQTYPE_4KB 			= 0x001000,
+
+	REQTYPE_REC_WRITE		= REQTYPE_4KB 	|  REQTYPE_GC 	| REQTYPE_IO_WRITE,
+	REQTYPE_REC_READ		= REQTYPE_4KB 	|  REQTYPE_GC 	| REQTYPE_IO_READ,
+	REQTYPE_SUB_WRITE		= REQTYPE_4KB 	| REQTYPE_IO_WRITE,
 
 	REQTYPE_READ 			= REQTYPE_NORNAL 	| REQTYPE_IO_READ,
 	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL 	| REQTYPE_IO_READ_DUMMY,
-	REQTYPE_WRITE 			= REQTYPE_NORNAL 	| REQTYPE_IO_WRITE,
+	REQTYPE_WRITE 			= REQTYPE_NORNAL 	| REQTYPE_IO_WRITE | REQTYPE_4KB,
 	REQTYPE_TRIM 			= REQTYPE_NORNAL 	| REQTYPE_IO_TRIM,
 	REQTYPE_RMW_READ 		= REQTYPE_RMW 		| REQTYPE_IO_READ,
 	REQTYPE_RMW_WRITE 		= REQTYPE_RMW 		| REQTYPE_IO_WRITE,
@@ -121,7 +126,6 @@ enum BDBM_REQTYPE {
 #define bdbm_is_write(type) (((type & REQTYPE_IO_WRITE) == REQTYPE_IO_WRITE) ? 1 : 0)
 #define bdbm_is_erase(type) (((type & REQTYPE_IO_ERASE) == REQTYPE_IO_ERASE) ? 1 : 0)
 #define bdbm_is_trim(type) (((type & REQTYPE_IO_TRIM) == REQTYPE_IO_TRIM) ? 1 : 0)
-
 
 /* a physical address */
 typedef struct {
@@ -348,12 +352,15 @@ typedef struct {
 	bdbm_stopwatch_t exetime;
 	atomic64_t page_read_cnt;
 	atomic64_t page_write_cnt;
+	atomic64_t subpage_write_cnt; // for 4kb write
 	atomic64_t rmw_read_cnt;
 	atomic64_t rmw_write_cnt;
 	atomic64_t gc_cnt;
 	atomic64_t gc_erase_cnt;
 	atomic64_t gc_read_cnt;
 	atomic64_t gc_write_cnt;
+	atomic64_t rec_read_cnt; // for recycle 4kb read
+	atomic64_t rec_write_cnt; // for recycle 4kb write
 	atomic64_t meta_read_cnt;
 	atomic64_t meta_write_cnt;
 	uint64_t time_r_sw;

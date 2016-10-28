@@ -85,7 +85,7 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 	br->bi_size = bio_sectors (bio);
 	br->bi_bvec_cnt = 0;
 	br->bio = (void*)bio;
-    //printk("bi_offset=%llu, bi_sizse=%llu, bi_bvec_cnt=%llu\n", br->bi_offset, br->bi_size, br->bi_bvec_cnt);
+   // printk("bi_offset=%llu, bi_sizse=%llu, bi_bvec_cnt=%llu\n", br->bi_offset, br->bi_size, br->bi_bvec_cnt);
 	/* get the data from the bio */
 	if (br->bi_rw != REQTYPE_TRIM) {
 		bio_for_each_segment (bvec, bio, iter) {

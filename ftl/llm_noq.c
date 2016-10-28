@@ -48,7 +48,7 @@ bdbm_llm_inf_t _llm_noq_inf = {
 	.create = llm_noq_create,
 	.destroy = llm_noq_destroy,
 	.make_req = llm_noq_make_req,
-	.make_reqs = llm_noq_make_reqs,
+	.make_reqs = NULL,
 	.flush = llm_noq_flush,
 	.end_req = llm_noq_end_req,
 };
@@ -114,7 +114,7 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
     if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
         /* step 1: put READ first */
         r->phyaddr = r->phyaddr_src;
-        if ((ret = ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
+        if ((ret = bdi->ptr_dm_inf->make_req (bdi, llm_req)) != 0) {
             bdbm_msg ("bdbm_prior_queue_enqueue failed");
         }
         /* step 2: put WRITE second with the same LPA */

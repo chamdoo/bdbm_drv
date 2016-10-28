@@ -255,7 +255,7 @@ static uint8_t __ramssd_read_page (
                         ((int64_t*)oob_data)[loop], channel_no, chip_no, block_no, page_no,
                         loop, kp_ptr[loop]);
                 printk("RAM:END_RAMDISK_READ: \n");
-                */
+ */              
                 
                 
 
@@ -363,7 +363,7 @@ static uint8_t __ramssd_prog_page (
                     channel_no, chip_no, block_no, page_no,
                     loop, kp_ptr[loop]);
             printk("RAM:END_RAMDISK_WRITE: \n");
-            */
+           */ 
         }
     }
     if(is_cs == nr_kpages){
@@ -444,6 +444,7 @@ static uint32_t __ramssd_send_cmd (
         case REQTYPE_READ:
         case REQTYPE_META_READ:
         case REQTYPE_GC_READ:
+        case REQTYPE_REC_READ:
             ret = __ramssd_read_page (
                     ri, 
                     ptr_req->phyaddr.channel_no, 
@@ -461,6 +462,8 @@ static uint32_t __ramssd_send_cmd (
         case REQTYPE_WRITE:
         case REQTYPE_META_WRITE:
         case REQTYPE_GC_WRITE:
+        case REQTYPE_REC_WRITE:
+        case REQTYPE_SUB_WRITE:
             ret = __ramssd_prog_page (
                     ri, 
                     ptr_req->phyaddr.channel_no,
@@ -492,7 +495,8 @@ static uint32_t __ramssd_send_cmd (
             break;
 
         default:
-            printk("CMD_ERROR:(ccbp lpa)(%llu %llu %llu %llu) (%llu %llu %llu %llu)\n ",
+            printk("CMD_ERROR:(reqtype(%d), ccbp, lpa)(%llu %llu %llu %llu) (%llu %llu %llu %llu)\n ",
+                    ptr_req->req_type, 
                     ptr_req->phyaddr.channel_no, 
                     ptr_req->phyaddr.chip_no, 
                     ptr_req->phyaddr.block_no, 

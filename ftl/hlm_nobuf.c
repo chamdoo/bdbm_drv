@@ -133,6 +133,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
                     goto fail;
                 }else if(lr->logaddr.lpa_cg == -1){
                     hlm_reqs_pool_relocate_write_req_ofs(lr);
+                    lr->req_type = REQTYPE_SUB_WRITE;
                 }
             } else {
                 bdbm_error ("oops! invalid type (%x)", lr->req_type);
