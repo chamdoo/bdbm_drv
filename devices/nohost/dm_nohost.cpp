@@ -104,6 +104,7 @@ uint16_t (*blkmgr)[NUM_CHIPS][NUM_BLOCKS];  // 8*8*4096
 
 // temp
 bdbm_sema_t global_lock;
+bdbm_sema_t ftl_table_lock;
 /***/
 
 /* interface for dm */
@@ -171,11 +172,13 @@ class FlashIndication: public FlashIndicationWrapper {
 		}
 
 		virtual void uploadDone () {
-			fprintf(stderr, "Map Upload(Host->FPGA) done!\n");
+			bdbm_msg ("[dm_nohost_probe] Map Upload(Host->FPGA) done!\n");
+			bdbm_sema_unlock (&ftl_table_lock);
 		}
 
 		virtual void downloadDone () {
-			fprintf(stderr, "Map Download(FPGA->Host) done!\n");
+			bdbm_msg ("[dm_nohost_close] Map Download(FPGA->Host) done!\n");
+			bdbm_sema_unlock (&ftl_table_lock);
 		}
 };
 
@@ -328,6 +331,9 @@ uint32_t dm_nohost_probe (
 	}
 
 	bdbm_sema_init (&global_lock);
+	bdbm_sema_init (&ftl_table_lock);
+	bdbm_sema_lock (&ftl_table_lock); // initially lock=0 to be used for waiting
+
 	nr_punit = 64;
 	if ((p->llm_reqs = (bdbm_llm_req_t**)bdbm_zmalloc (
 			sizeof (bdbm_llm_req_t*) * nr_punit)) == NULL) {
@@ -345,9 +351,11 @@ uint32_t dm_nohost_probe (
 		bdbm_msg ("[dm_nohost_probe] MAP Upload to HW!" ); 
 		fflush(stdout);
 		device->uploadMap();
+		bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
 	} else {
 		bdbm_msg ("[dm_nohost_probe] MAP file not found" ); 
 		fflush(stdout);
+		goto fail;
 	}
 
 	return 0;
@@ -370,8 +378,9 @@ void dm_nohost_close (bdbm_drv_info_t* bdi)
 	dm_nohost_private_t* p = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
 	/* before closing, dump the table to table.dump.0 */
+	bdbm_msg ("[dm_nohost_close] MAP Download from HW!" ); 
 	device->downloadMap();
-	sleep(1); // needed??
+	bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
 	
 	if(__writeFTLtoFile ("table.dump.0", ftlPtr) == 0) {
 		bdbm_msg("[dm_nohost_close] MAP successfully dumped to table.dump.0!");
