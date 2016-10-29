@@ -223,6 +223,7 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 		remains = bdi->ptr_nvm_inf->make_req(bdi, hr);
 		bdbm_bug_on(remains < 0);
 	}
+//	bdbm_msg("nvm search ends");
 #endif
 
 	/* lock a global mutex -- this function must be finished as soon as possible */

@@ -115,6 +115,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
+#ifdef NVM_CACHE_SKIP
+		if(lr->serviced_by_nvm){
+			bdbm_msg("skip lr serviced by nvm");
+			hlm_nobuf_end_req (bdi, lr);
+		}
+		else
+#endif
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
 			if (bdbm_is_read (lr->req_type)) {
@@ -362,6 +369,12 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
+#ifdef NVM_CACHE
+	if(lr->serviced_by_nvm){
+		bdbm_msg("lr serviced by nvm is completed");
+		lr->serviced_by_nvm = 0;
+	}
+#endif
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
@@ -394,8 +407,6 @@ void __hlm_nobuf_end_wb_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	}
 }
 #endif
-
-
 
 void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {

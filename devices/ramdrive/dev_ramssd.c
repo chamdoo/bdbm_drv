@@ -395,7 +395,10 @@ static uint32_t __ramssd_send_cmd (
 			use_oob,
 			use_partial);
 		break;
-
+#ifdef NVM_CACHE
+	case REQTYPE_WRITE_BACK:
+		bdbm_msg("REQTYPE_WRITE_BACK arrives");
+#endif
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_WRITE:
 	case REQTYPE_META_WRITE:
@@ -651,7 +654,6 @@ void dev_ramssd_destroy (dev_ramssd_info_t* ri)
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
-
 	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
 		int64_t target_elapsed_time_us = 0;
 		uint64_t punit_id = r->phyaddr.punit_id;
@@ -659,6 +661,10 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		/* get the target elapsed time depending on the type of req */
 		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_TIMING) {
 			switch (r->req_type) {
+#ifdef NVM_CACHE
+			case REQTYPE_WRITE_BACK:
+				bdbm_msg("REQTYPE_WRITE_BACK timing");
+#endif
 			case REQTYPE_WRITE:
 			case REQTYPE_GC_WRITE:
 			case REQTYPE_RMW_WRITE:

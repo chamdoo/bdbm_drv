@@ -37,8 +37,6 @@ THE SOFTWARE.
 //#include "blkdev.h"
 //#include "blkdev_ioctl.h"
 
-#ifdef NVM_CACHE
-
 #include "nvm_cache.h"
 
 /* interface for nvm_dev */
@@ -237,7 +235,7 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
 
 	if(nvm_idx < 0){
-		bdbm_msg("not found in nvm");
+//		bdbm_msg("not found in nvm");
 		return 0; // not found 
 	}
 
@@ -248,8 +246,8 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	ptr_nvmram_addr = p->ptr_nvmram + (nvm_idx * np->nvm_page_size); 
 
-	bdbm_msg("nvm_idx =%d, ptr_nvm = %p, dst_addr= %p", 
-		nvm_idx, ptr_nvmram_addr, lr->fmain.kp_ptr[0]);
+	//bdbm_msg("nvm_idx =%d, ptr_nvm = %p, dst_addr= %p", 
+	//	nvm_idx, ptr_nvmram_addr, lr->fmain.kp_ptr[0]);
 
 	bdbm_bug_on(ptr_nvmram_addr == NULL);
 
@@ -281,7 +279,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* get a free page */
 //	if(p->nr_free_pages > LOW_WATERMARK){
 	if(p->nr_free_pages > 0){
-		bdbm_msg("get a free nvm buffer");
+//		bdbm_msg("get a free nvm buffer");
 		bdbm_bug_on(list_empty(p->free_list));
 		npage = list_last_entry(p->free_list, bdbm_nvm_page_t, list); 
 		bdbm_bug_on(npage == NULL);
@@ -291,6 +289,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	}
 	else { // eviction is needed 
 		bdbm_msg("nvm is full");
+#ifndef NVM_CACHE_NO_WB
+		return -1;
+#endif
 		bdbm_bug_on(!list_empty(p->free_list));
 		epage = list_last_entry(p->lru_list, bdbm_nvm_page_t, list);
 		bdbm_bug_on(epage == NULL);
@@ -303,7 +304,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
 			goto fail;
 		}
-		bdbm_msg("hr is created");
+		//bdbm_msg("hr is created");
 // 여기에서 edata cpy 할 때 lock 걸어야 할듯. 일단은 global lock 사용해보자. 
 
 		/* build hlm_req with nvm_info */
@@ -316,16 +317,14 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 		/* send req */
 		bdbm_sema_lock (&bp->host_lock);
-//		atomic_inc (&bp->nr_host_reqs); // 이건 증가안시켜도 됨.  
-		bdbm_msg("host_lock is acquired");
 
 		if(bdi->ptr_hlm_inf->make_wb_req (bdi, hr) != 0) {
 			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 		}
 		bdbm_sema_unlock (&bp->host_lock);
-		bdbm_msg("host_lock is released");
 
 		/* wait for writeback to be completed */
+		bdbm_msg("try to get hr->done lock");
 		bdbm_sema_lock (&hr->done);
 		bdbm_msg("writeback is completed");
 
@@ -343,7 +342,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	list_del(&npage->list);
 	list_add(&npage->list, p->lru_list);
-	bdbm_msg("new nvm_buffer is added to lru_list");
+//	bdbm_msg("new nvm_buffer is added to lru_list");
 	
 	bdbm_bug_on(p->nr_free_pages + p->nr_inuse_pages != p->nr_total_pages);
 
@@ -371,10 +370,12 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* write miss */
 	if(nvm_idx < 0){
-		bdbm_msg("alloc nvm for data write");
-		nvm_idx = bdbm_nvm_alloc_slot(bdi, lr);
+//		bdbm_msg("alloc nvm for data write");
+		if((nvm_idx = bdbm_nvm_alloc_slot(bdi, lr)) < 0)
+			return 0;
 	}
-	bdbm_bug_on(nvm_idx < 0);
+	if(nvm_idx < 0)
+		bdbm_msg("failed to alloc nvm buffer");
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -386,7 +387,7 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* copy data */
 	bdbm_memcpy(ptr_nvmram_addr, lr->fmain.kp_ptr[0], KERNEL_PAGE_SIZE);
-	bdbm_msg("data write succeeds");
+//	bdbm_msg("data write succeeds");
 
 	/* update lr req's status */
 	lr->serviced_by_nvm = 1;
@@ -423,15 +424,12 @@ int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 		}else if(lr->req_type == REQTYPE_WRITE){
 			if(bdbm_nvm_write_data(bdi, &hr->llm_reqs[n]))
 				nr_remains --;
-
-			else
-				bdbm_bug_on(1);
 		}
 	}	
 
 	bdbm_sema_unlock (&p->nvm_lock);
 
-	bdbm_bug_on((hr->req_type == REQTYPE_WRITE) && (nr_remains != 0));
+	//bdbm_bug_on((hr->req_type == REQTYPE_WRITE) && (nr_remains != 0));
 
 	return nr_remains;
 
@@ -466,4 +464,3 @@ static int __hlm_reqs_pool_create_trim_req  (
 	return 0;
 }
 #endif
-#endif // ifdef NVM_CACHE

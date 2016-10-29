@@ -344,8 +344,8 @@ static int __hlm_reqs_pool_create_wb_req (
 
 	/* decide the reqtype for llm_req */
 	ptr_lr->req_type = REQTYPE_WRITE_BACK;
-
 	ptr_lr->ptr_hlm_req = (void*)hr;
+	ptr_lr->serviced_by_nvm = 0;
 
 	/* intialize hlm_req */
 	hr->req_type = REQTYPE_WRITE_BACK;
@@ -431,6 +431,9 @@ static int __hlm_reqs_pool_create_write_req (
 			ptr_lr->req_type = REQTYPE_RMW_READ;
 		}
 
+#ifdef NVM_CACHE
+		ptr_lr->serviced_by_nvm = 0;
+#endif
 		/* go to the next */
 		ptr_lr->ptr_hlm_req = (void*)hr;
 		ptr_lr++;
@@ -485,6 +488,9 @@ static int __hlm_reqs_pool_create_read_req (
 		else
 			ptr_lr->logaddr.ofs = offset;	/* it must be adjusted after getting physical locations */
 		ptr_lr->ptr_hlm_req = (void*)hr;
+#ifdef NVM_CACHE
+		ptr_lr->serviced_by_nvm = 0;
+#endif
 
 		/* go to the next */
 		pg_start++;
