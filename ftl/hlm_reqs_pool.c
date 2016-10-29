@@ -315,6 +315,55 @@ void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr)
 	logaddr->ofs = 0;
 }
 
+
+#ifdef NVM_CACHE
+static int __hlm_reqs_pool_create_wb_req (
+	bdbm_hlm_req_t* hr,
+	bdbm_logaddr_t* logaddr,
+	uint8_t* ptr_data)
+{
+//	int64_t sec_start, sec_end, pg_start, pg_end;
+//	int64_t i = 0, j = 0, k = 0;
+//	int64_t hole = 0, bvec_cnt = 0, nr_llm_reqs;
+	int64_t nr_llm_reqs;
+	bdbm_flash_page_main_t* ptr_fm = NULL;
+	bdbm_llm_req_t* ptr_lr = NULL;
+
+	nr_llm_reqs = 1;
+
+	ptr_lr = &hr->llm_reqs[0];
+	ptr_fm = &ptr_lr->fmain;
+	hlm_reqs_pool_reset_fmain (ptr_fm);
+	hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+
+	ptr_fm->kp_stt[0] = KP_STT_DATA;
+	ptr_fm->kp_ptr[0] = (uint8_t*) bdbm_zmalloc (sizeof(KPAGE_SIZE));
+
+	bdbm_memcpy (&ptr_lr->logaddr, logaddr, sizeof(bdbm_logaddr_t));
+	bdbm_memcpy (ptr_fm->kp_ptr[0], ptr_data, sizeof(KPAGE_SIZE));
+
+	/* decide the reqtype for llm_req */
+	ptr_lr->req_type = REQTYPE_WRITE_BACK;
+
+	ptr_lr->ptr_hlm_req = (void*)hr;
+
+	/* intialize hlm_req */
+	hr->req_type = REQTYPE_WRITE_BACK;
+	bdbm_stopwatch_start (&hr->sw);
+	hr->nr_llm_reqs = nr_llm_reqs;
+	atomic64_set (&hr->nr_llm_reqs_done, 0);
+	bdbm_sema_lock (&hr->done);
+	hr->blkio_req = NULL;
+	//hr->blkio_req = (void*)br;
+	hr->ret = 0;
+
+	return 0;
+}
+#endif
+
+
+
+
 static int __hlm_reqs_pool_create_write_req (
 	bdbm_hlm_reqs_pool_t* pool, 
 	bdbm_hlm_req_t* hr,
@@ -455,6 +504,34 @@ static int __hlm_reqs_pool_create_read_req (
 
 	return 0;
 }
+#ifdef NVM_CACHE
+int bdbm_hlm_reqs_pool_build_wb_req (
+	bdbm_hlm_req_t* hr,
+	bdbm_logaddr_t* logaddr,
+	uint8_t* ptr_data)
+{
+	int ret = 1;
+
+	ret = __hlm_reqs_pool_create_wb_req (hr, logaddr, ptr_data);
+
+#if 0 
+	/* create a hlm_req using a bio */
+	if (br->bi_rw == REQTYPE_TRIM) {
+		ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);
+	} else if (br->bi_rw == REQTYPE_WRITE) {
+		ret = __hlm_reqs_pool_create_write_req (pool, hr, br);
+	} else if (br->bi_rw == REQTYPE_READ) {
+		ret = __hlm_reqs_pool_create_read_req (pool, hr, br);
+	}
+#endif
+	/* are there any errors? */
+	if (ret != 0) {
+		bdbm_msg("error: failed to make wb_req"); 
+	}
+
+	return 0;
+}
+#endif
 
 int bdbm_hlm_reqs_pool_build_req (
 	bdbm_hlm_reqs_pool_t* pool, 

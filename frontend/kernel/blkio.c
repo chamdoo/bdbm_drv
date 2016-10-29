@@ -36,8 +36,10 @@ THE SOFTWARE.
 #include "blkdev.h"
 #include "blkdev_ioctl.h"
 
+#ifdef NVM_CACHE
+#else
 #include "hlm_reqs_pool.h"
-
+#endif
 /*#define ENABLE_DISPLAY*/
 
 extern bdbm_drv_info_t* _bdi;
@@ -50,12 +52,14 @@ bdbm_host_inf_t _blkio_inf = {
 	.end_req = blkio_end_req,
 };
 
+#ifdef NVM_CACHE
+#else
 typedef struct {
 	bdbm_sema_t host_lock;
 	atomic_t nr_host_reqs;
 	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
 } bdbm_blkio_private_t;
-
+#endif
 
 /* This is a call-back function invoked by a block-device layer */
 static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
@@ -191,6 +195,9 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = NULL;
 	bdbm_hlm_req_t* hr = NULL;
+#ifdef NVM_CACHE
+	int64_t remains = 0;
+#endif
 
 	/* get blkio */
 	if ((br = __get_blkio_req ((struct bio*)bio)) == NULL) {
@@ -209,6 +216,14 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
 		goto fail;
 	}
+
+#ifdef NVM_CACHE
+	/* search cache */
+	if(bdi->ptr_nvm_inf->make_req != NULL){
+		remains = bdi->ptr_nvm_inf->make_req(bdi, hr);
+		bdbm_bug_on(remains < 0);
+	}
+#endif
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
 	bdbm_sema_lock (&p->host_lock);
@@ -259,4 +274,3 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	/* decreate # of reqs */
 	atomic_dec (&p->nr_host_reqs);
 }
-

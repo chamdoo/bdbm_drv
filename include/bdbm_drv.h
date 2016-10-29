@@ -101,6 +101,9 @@ enum BDBM_REQTYPE {
 	REQTYPE_RMW 			= 0x000200,
 	REQTYPE_GC 				= 0x000400,
 	REQTYPE_META 			= 0x000800,
+#ifdef NVM_CACHE
+	REQTYPE_INTERNAL		= 0x001000,
+#endif
 
 	REQTYPE_READ 			= REQTYPE_NORNAL 	| REQTYPE_IO_READ,
 	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL 	| REQTYPE_IO_READ_DUMMY,
@@ -113,6 +116,9 @@ enum BDBM_REQTYPE {
 	REQTYPE_GC_ERASE 		= REQTYPE_GC 		| REQTYPE_IO_ERASE,
 	REQTYPE_META_READ 		= REQTYPE_META 		| REQTYPE_IO_READ,
 	REQTYPE_META_WRITE 		= REQTYPE_META 		| REQTYPE_IO_WRITE,
+#ifdef NVM_CACHE
+	REQTYPE_WRITE_BACK		= REQTYPE_NORNAL	| REQTYPE_IO_WRITE | REQTYPE_INTERNAL,
+#endif
 };
 
 #define bdbm_is_normal(type) (((type & REQTYPE_NORNAL) == REQTYPE_NORNAL) ? 1 : 0)
@@ -123,6 +129,10 @@ enum BDBM_REQTYPE {
 #define bdbm_is_write(type) (((type & REQTYPE_IO_WRITE) == REQTYPE_IO_WRITE) ? 1 : 0)
 #define bdbm_is_erase(type) (((type & REQTYPE_IO_ERASE) == REQTYPE_IO_ERASE) ? 1 : 0)
 #define bdbm_is_trim(type) (((type & REQTYPE_IO_TRIM) == REQTYPE_IO_TRIM) ? 1 : 0)
+
+#ifdef NVM_CACHE
+#define bdbm_is_writeback(type) (((type & REQTYPE_WRITE_BACK) == REQTYPE_WRITE_BACK) ? 1 : 0)
+#endif
 
 
 /* a physical address */
@@ -197,6 +207,11 @@ typedef struct {
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
+
+#ifdef NVM_CACHE
+	uint8_t serviced_by_nvm;
+#endif
+
 } bdbm_llm_req_t;
 
 typedef struct {
@@ -256,14 +271,13 @@ typedef struct {
 	void* ptr_private;
 	uint32_t (*create) (bdbm_drv_info_t* bdi);
 	void (*destroy) (bdbm_drv_info_t* bdi);
-
+	uint64_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 #if 0
 	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
 	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
 	
-	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_nvm_req_t* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 #endif
 } bdbm_nvm_inf_t;
@@ -276,6 +290,9 @@ typedef struct {
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#ifdef NVM_CACHE
+	uint32_t (*make_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+#endif
 } bdbm_hlm_inf_t;
 
 /* a generic low-level memory manager interface */

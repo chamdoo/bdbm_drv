@@ -48,7 +48,11 @@ int _param_kernel_sector_size		= KERNEL_SECTOR_SIZE;	/* 512 Bytes */
 int _param_gc_policy 				= GC_POLICY_GREEDY;
 int _param_wl_policy 				= WL_POLICY_NONE;
 int _param_queuing_policy			= QUEUE_POLICY_MULTI_FIFO;
+#ifdef NVM_CACHE
+int _param_trim						= TRIM_DISABLE;
+#else
 int _param_trim						= TRIM_ENABLE;
+#endif
 int _param_snapshot					= SNAPSHOT_DISABLE;
 int _param_mapping_type				= MAPPING_POLICY_PAGE;
 /*int _param_mapping_type				= MAPPING_POLICY_RSD;*/

@@ -33,23 +33,26 @@ extern bdbm_nvm_inf_t _nvm_dev;
 
 typedef struct {
 	uint8_t status;
+	int64_t index;
 	bdbm_logaddr_t logaddr;
 //	bdbm_phyaddr_t phyaddr;
-	struct list_head lru_list;	/* for lru list */
+	struct list_head list;	/* for lru list */
 } bdbm_nvm_page_t;
 
 typedef struct {
 	bdbm_device_params_t* np;
 	uint64_t nr_total_pages;
-
+	uint64_t nr_free_pages;
+	uint64_t nr_inuse_pages; 
 
 	void* ptr_nvmram; /* DRAM memory for nvm */
 //	bdbm_nvm_page_t* ptr_nvm_rb_tree;
 	bdbm_nvm_page_t* ptr_nvm_tbl;
 
 
-	bdbm_spinlock_t nvm_lock;
+	bdbm_sema_t nvm_lock;
 	struct list_head* lru_list;
+	struct list_head* free_list;
 
 //	bdbm_nvm_block_t* ptr_lru_list;
 
@@ -57,6 +60,7 @@ typedef struct {
 
 uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi);
 void bdbm_nvm_destroy (bdbm_drv_info_t* bdi);
+int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
 //#endif
 
 
