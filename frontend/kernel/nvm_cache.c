@@ -64,7 +64,7 @@ static void* __nvm_alloc_nvmram (bdbm_device_params_t* ptr_np)
 		bdbm_error("bdbm_malloc failed (nvm size = %llu bytes)", nvm_size_in_bytes);
 		return NULL;
 	}
-	bdbm_memset ((uint8_t*) ptr_nvmram, 0xFF, nvm_size_in_bytes * sizeof (uint8_t));
+	bdbm_memset ((uint8_t*) ptr_nvmram, 0x00, nvm_size_in_bytes * sizeof (uint8_t));
 	bdbm_msg("nvm cache addr = %p", ptr_nvmram);
 
 	return (void*) ptr_nvmram;
@@ -207,13 +207,14 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	bdbm_nvm_page_t* nvm_tbl = p->ptr_nvm_tbl;
 	uint64_t i = 0;
 	int64_t found = -1;
-	uint64_t lpa;
+	int64_t lpa;
 
 	lpa = lr->logaddr.lpa[0];
 
 	for(i = 0; i < p->nr_total_pages; i++){
+		bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
-			bdbm_msg("read hit: lpa = %llu", lpa);
+			bdbm_msg("hit: lpa = %llu", lpa);
 			found = i;	
 			break;
 		}
@@ -288,8 +289,8 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		p->nr_inuse_pages ++;
 	}
 	else { // eviction is needed 
-		bdbm_msg("nvm is full");
-#ifndef NVM_CACHE_NO_WB
+//		bdbm_msg("nvm is full");
+#ifndef NVM_CACHE_WB
 		return -1;
 #endif
 		bdbm_bug_on(!list_empty(p->free_list));
@@ -324,9 +325,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		bdbm_sema_unlock (&bp->host_lock);
 
 		/* wait for writeback to be completed */
-		bdbm_msg("try to get hr->done lock");
+//		bdbm_msg("try to get hr->done lock");
 		bdbm_sema_lock (&hr->done);
-		bdbm_msg("writeback is completed");
+//		bdbm_msg("writeback is completed");
 
 		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // release lock here 
 		
@@ -362,8 +363,11 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* find nvm cache */
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
+	bdbm_nvm_page_t* nvm_tbl = p->ptr_nvm_tbl;
 	int64_t nvm_idx = -1;
 	uint8_t* ptr_nvmram_addr = NULL;
+	uint64_t i;
+
 
 	/* find data */
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
@@ -387,7 +391,15 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* copy data */
 	bdbm_memcpy(ptr_nvmram_addr, lr->fmain.kp_ptr[0], KERNEL_PAGE_SIZE);
+
+
+	/* update logaddr */
+	nvm_tbl[nvm_idx].logaddr.lpa[0] = lr->logaddr.lpa[0]; 
+
 //	bdbm_msg("data write succeeds");
+	for(i = 0; i < p->nr_total_pages; i++){
+		bdbm_msg("nvm_tbl[%llu] lpa = %d", i, nvm_tbl[i].logaddr.lpa[0]);
+	}
 
 	/* update lr req's status */
 	lr->serviced_by_nvm = 1;

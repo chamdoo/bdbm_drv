@@ -1,5 +1,5 @@
 #define NVM_CACHE
-#define NVM_CACHE_WB
+//#define NVM_CACHE_WB
 #define NVM_CACHE_SKIP
 
 /*

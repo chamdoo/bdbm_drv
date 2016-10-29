@@ -113,14 +113,14 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint64_t i = 0, j = 0, sp_ofs;
 
 	/* perform mapping with the FTL */
+
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
 #ifdef NVM_CACHE_SKIP
 		if(lr->serviced_by_nvm){
-			bdbm_msg("skip lr serviced by nvm");
-			hlm_nobuf_end_req (bdi, lr);
-		}
-		else
+//			bdbm_msg("skip mapping of lr serviced by nvm");
+//			hlm_nobuf_end_req (bdi, lr);
+		}else
 #endif
 		if (bdbm_is_normal (lr->req_type)) {
 			/* handling normal I/O operations */
@@ -182,6 +182,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	if (bdi->ptr_llm_inf->make_reqs == NULL) {
 		/* send individual llm-reqs to llm */
 		bdbm_hlm_for_each_llm_req (lr, hr, i) {
+#ifdef NVM_CACHE_SKIP
+			if(lr->serviced_by_nvm){
+//				bdbm_msg("skip send request serviced by nvm");
+				hlm_nobuf_end_req (bdi, lr);
+			}else
+#endif
 			if (bdi->ptr_llm_inf->make_req (bdi, lr) != 0) {
 				bdbm_error ("oops! make_req () failed");
 				bdbm_bug_on (1);
@@ -371,7 +377,7 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lr->req_type |= REQTYPE_DONE;
 #ifdef NVM_CACHE
 	if(lr->serviced_by_nvm){
-		bdbm_msg("lr serviced by nvm is completed");
+//		bdbm_msg("lr serviced by nvm is completed");
 		lr->serviced_by_nvm = 0;
 	}
 #endif

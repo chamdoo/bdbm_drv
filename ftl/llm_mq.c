@@ -122,9 +122,9 @@ int __llm_mq_thread (void* arg)
 
 			pmu_update_q (bdi, r);
 
-//			if (cnt % 50000 == 0) {
+			if (cnt % 50000 == 0) {
 				bdbm_msg ("llm_make_req: %llu, %llu", cnt, bdbm_prior_queue_get_nr_items (p->q));
-//			}
+			}
 
 			if (bdi->ptr_dm_inf->make_req (bdi, r)) {
 				bdbm_sema_unlock (&p->punit_locks[loop]);
