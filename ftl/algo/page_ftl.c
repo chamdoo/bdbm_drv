@@ -494,7 +494,7 @@ uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)
 	uint64_t nr_free_blks = bdbm_abm_get_nr_free_blocks (p->bai);
 
 	/* invoke gc when remaining free blocks are less than 1% of total blocks */
-	if ((nr_free_blks * 100 / nr_total_blks) <= 20) {
+	if ((nr_free_blks * 100 / nr_total_blks) <= 2) {
 		return 1;
 	}
 
@@ -820,11 +820,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		}
 	}
 
-	/*
 	bdbm_msg ("----------------------------------------------");
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-	*/
 
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */

@@ -543,7 +543,7 @@ int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 
 		p->nr_total_access++;
 	
-		if ((p->nr_total_access % 500) == 0){
+		if ((p->nr_total_access % 5000) == 0){
 			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, total_write = %llu, write hit = %llu, hit = %llu, evict = %llu", 
 				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_total_write, p->nr_write, p->nr_total_hit, p->nr_evict);
 		}
