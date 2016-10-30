@@ -375,6 +375,7 @@ static int __hlm_reqs_pool_create_wb_req (
 	if(memcmp(ptr_data, ptr_fm->kp_ptr[0], KPAGE_SIZE) != 0){
 		bdbm_msg("hlm_reqs_pool_create_wb_req: DATA CORRUPTION");
 		__display_hex_values_all_range(ptr_data, ptr_fm->kp_ptr[0], 16);
+		bdbm_bug_on(1);
 	}
 #endif
 

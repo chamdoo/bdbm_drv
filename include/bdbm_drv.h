@@ -2,7 +2,7 @@
 #define NVM_CACHE_WB
 #define NVM_CACHE_SKIP
 #define NVM_CACHE_DEBUG
-#define NVM_CACHE_TRIM
+//#define NVM_CACHE_TRIM
 
 /*
 The MIT License (MIT)

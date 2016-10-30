@@ -45,6 +45,14 @@ typedef struct {
 	uint64_t nr_free_pages;
 	uint64_t nr_inuse_pages; 
 
+	uint64_t nr_total_access;
+	uint64_t nr_total_write;
+	uint64_t nr_total_read;
+	uint64_t nr_write;
+	uint64_t nr_read;	
+	uint64_t nr_total_hit;
+	uint64_t nr_evict;
+
 	void* ptr_nvmram; /* DRAM memory for nvm */
 //	bdbm_nvm_page_t* ptr_nvm_rb_tree;
 	bdbm_nvm_page_t* ptr_nvm_tbl;

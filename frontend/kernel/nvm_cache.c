@@ -168,6 +168,15 @@ uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){
 	p->nr_inuse_pages = 0;
 	p->np = np;
 
+	p->nr_total_access = 0;
+	p->nr_total_write = 0;
+	p->nr_total_read = 0;
+	p->nr_write = 0;
+	p->nr_read = 0;	
+	p->nr_total_hit = 0;
+	p->nr_evict = 0;
+
+
 	/* alloc ptr_nvmram_data: ptr_nvm_data */
 	if((p->ptr_nvmram = __nvm_alloc_nvmram (np)) == NULL) {
 		bdbm_error ("__alloc_nvmram failed");
@@ -257,6 +266,7 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 //		bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
 //			bdbm_msg("hit: lpa = %llu", lpa);
+			p->nr_total_hit++;
 			found = i;	
 			break;
 		}
@@ -273,6 +283,7 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	int64_t nvm_idx = -1;
 	uint8_t* ptr_nvmram_addr = NULL; 
 
+	p->nr_total_read++;
 
 	/* search data */
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
@@ -281,6 +292,8 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 //		bdbm_msg("not found in nvm");
 		return 0; // not found 
 	}
+
+	p->nr_read++;
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -336,6 +349,8 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 #ifndef NVM_CACHE_WB
 		return -1;
 #endif
+		p->nr_evict++;
+
 		bdbm_bug_on(!list_empty(p->free_list));
 		epage = list_last_entry(p->lru_list, bdbm_nvm_page_t, list);
 		bdbm_bug_on(epage == NULL);
@@ -365,14 +380,11 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		if(bdi->ptr_hlm_inf->make_wb_req (bdi, hr) != 0) {
 			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 		}
-		bdbm_sema_unlock (&bp->host_lock);
-
-		/* wait for write back to be completed */
-		/* no need to wait. assume kp_ptr[0] gets allocated buffer in nvm */
-//		bdbm_sema_lock (&hr->done);
-// 		bdbm_sema_unlock (&hr->done);
 
 #ifdef NVM_CACHE_DEBUG
+#if 0
+// 여기는 쓰기 전에 읽어와서 문제가 되는 듯. 의미 없을듯. 보내고 반영되기 전 or 다른 애가 변경한 후에 읽을 수 있음. 
+ 
 		if(bdi->ptr_dm_inf->get_data){
 			ptr_ramssd_data = bdi->ptr_dm_inf->get_data(bdi, epage->logaddr.lpa[0]);
 		}
@@ -382,9 +394,19 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		if (memcmp(edata_ptr, ptr_ramssd_data, KPAGE_SIZE)!=0){
 			bdbm_msg("[EUNJI] [DATA CORRUPTION] lpa = %d", epage->logaddr.lpa[0]);	
 			__display_hex_values_all_range (edata_ptr, ptr_ramssd_data, 16);
+			bdbm_bug_on(1);
 		}
 #endif
-		
+#endif
+
+		bdbm_sema_unlock (&bp->host_lock);
+
+		/* wait for write back to be completed */
+		/* no need to wait. assume kp_ptr[0] gets allocated buffer in nvm */
+//		bdbm_sema_lock (&hr->done);
+// 		bdbm_sema_unlock (&hr->done);
+
+	
 
 //		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // moved to hlm_end_wb_req
 
@@ -426,6 +448,7 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	uint8_t* ptr_nvmram_addr = NULL;
 	uint64_t i;
 
+	p->nr_total_write++;
 
 	/* find data */
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
@@ -436,8 +459,8 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		if((nvm_idx = bdbm_nvm_alloc_slot(bdi, lr)) < 0)
 			return 0;
 	}
-	if(nvm_idx < 0)
-		bdbm_msg("failed to alloc nvm buffer");
+
+	p->nr_write++;
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -514,8 +537,17 @@ int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 
 	bdbm_sema_lock (&p->nvm_lock);
 
+
 	/* for nr_llm_reqs */	
 	for (n = 0; n < hr->nr_llm_reqs; n++) {
+
+		p->nr_total_access++;
+	
+		if ((p->nr_total_access % 500) == 0){
+			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, total_write = %llu, write hit = %llu, hit = %llu, evict = %llu", 
+				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_total_write, p->nr_write, p->nr_total_hit, p->nr_evict);
+		}
+
 		lr = &hr->llm_reqs[n];
 
 		if(lr->req_type == REQTYPE_READ){
