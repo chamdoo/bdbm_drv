@@ -44,6 +44,18 @@ THE SOFTWARE.
 #define DEFAULT_POOL_SIZE		128
 #define DEFAULT_POOL_INC_SIZE	DEFAULT_POOL_SIZE / 5
 
+
+static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)
+{
+	int i = 0;
+	for (i = 0; i < size; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x != FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3],
+			back[i+0], back[i+1], back[i+2], back[i+3]);
+	}
+}
+
+
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 	int32_t mapping_unit_size, 
 	int32_t io_unit_size)
@@ -340,7 +352,13 @@ static int __hlm_reqs_pool_create_wb_req (
 	ptr_fm->kp_ptr[0] = (uint8_t*) bdbm_zmalloc (sizeof(KPAGE_SIZE));
 
 	bdbm_memcpy (&ptr_lr->logaddr, logaddr, sizeof(bdbm_logaddr_t));
-	bdbm_memcpy (ptr_fm->kp_ptr[0], ptr_data, sizeof(KPAGE_SIZE));
+	bdbm_memcpy (ptr_fm->kp_ptr[0], ptr_data, KPAGE_SIZE);
+
+	if(logaddr->lpa[0] == 1){
+		bdbm_msg("hlm_reqs_pool_create_wb_req");
+		__display_hex_values_all_range(ptr_data, ptr_fm->kp_ptr[0], 16);
+	}
+
 
 	/* decide the reqtype for llm_req */
 	ptr_lr->req_type = REQTYPE_WRITE_BACK;

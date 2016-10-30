@@ -113,13 +113,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint64_t i = 0, j = 0, sp_ofs;
 
 	/* perform mapping with the FTL */
+//	bdbm_msg("[EUNJI] __hlm_nobuf_make_rw_req");
 
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
 #ifdef NVM_CACHE_SKIP
 		if(lr->serviced_by_nvm){
-//			bdbm_msg("skip mapping of lr serviced by nvm");
-//			hlm_nobuf_end_req (bdi, lr);
+//			bdbm_msg("[EUNJI] skip :%llu", i);
 		}else
 #endif
 		if (bdbm_is_normal (lr->req_type)) {
@@ -256,12 +256,12 @@ uint32_t __hlm_nobuf_make_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_llm_req_t* lr = NULL;
 	uint64_t i = 0, j = 0;
 
-	bdbm_msg("make_wb_req() is called");
+//	bdbm_msg("make_wb_req() is called");
 
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
-		bdbm_msg("make llm req %d", i);
+		//bdbm_msg("make llm req %d", i);
 		bdbm_bug_on(lr->req_type != REQTYPE_WRITE_BACK)
 
 		if (ftl->get_free_ppa (bdi, lr->logaddr.lpa[0], &lr->phyaddr) != 0) {
@@ -370,20 +370,29 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
+	int flag = 0;
 	bdbm_hlm_req_t* hr = (bdbm_hlm_req_t* )lr->ptr_hlm_req;
 
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
 #ifdef NVM_CACHE
+	if(lr->logaddr.lpa[0] == 1)
+		bdbm_msg("[EUNJI] lpa=1 req complete %x", lr->req_type);
+
 	if(lr->serviced_by_nvm){
 //		bdbm_msg("lr serviced by nvm is completed");
 		lr->serviced_by_nvm = 0;
+		flag = 1;
 	}
 #endif
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
+#ifdef NVM_CACHE
+		//if(flag)
+		//	bdbm_msg("[EUNJI] skipped req calls host end_req");
+#endif
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
 }

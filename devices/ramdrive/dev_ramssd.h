@@ -1,3 +1,4 @@
+
 /*
 The MIT License (MIT)
 
@@ -57,6 +58,7 @@ typedef struct {
 } dev_ramssd_wq_t;
 #endif
 
+
 typedef struct {
 	uint8_t is_init; /* 0: not initialized, 1: initialized */
 	uint8_t emul_mode;
@@ -72,6 +74,7 @@ typedef struct {
 	dev_ramssd_wq_t works;
 #endif
 } dev_ramssd_info_t;
+
 
 dev_ramssd_info_t* dev_ramssd_create (bdbm_device_params_t* np, void (*intr_handler)(void*));
 void dev_ramssd_destroy (dev_ramssd_info_t* ptr_ramssd_info);
@@ -167,5 +170,9 @@ uint8_t dev_ramssd_is_init (dev_ramssd_info_t* ptr_ramssd_info) {
 	else 
 		return 1;
 }
+
+#ifdef NVM_CACHE_DEBUG
+uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ptr_ramssd_info, int64_t lpa);
+#endif
 
 #endif /* _BLUEDBM_DEV_RAMSSD_H */

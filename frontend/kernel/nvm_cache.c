@@ -49,6 +49,48 @@ bdbm_nvm_inf_t _nvm_dev = {
 };
 
 
+static void __display_hex_values (uint8_t* host, uint8_t* back)
+{
+	bdbm_msg (" * HOST: %x %x %x %x %x != FLASH: %x %x %x %x %x", 
+		host[0], host[1], host[2], host[3], host[4], 
+		back[0], back[1], back[2], back[3], back[4]);
+}
+static void __display_hex_values_all (uint8_t* host, uint8_t* back)
+{
+	int i = 0;
+	for (i = 0; i < KPAGE_SIZE; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x != FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3],
+			back[i+0], back[i+1], back[i+2], back[i+3]);
+	}
+}
+static void __display_hex_values_all_host (uint8_t* host)
+{
+	int i = 0;
+	for (i = 0; i < KPAGE_SIZE; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3]);
+	}
+}
+static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)
+{
+	int i = 0;
+	for (i = 0; i < size; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x != FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3],
+			back[i+0], back[i+1], back[i+2], back[i+3]);
+	}
+}
+static void __display_hex_values_all_host_range (uint8_t* host, int size)
+{
+	int i = 0;
+	for (i = 0; i < size; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3]);
+	}
+}
+
+
 static void* __nvm_alloc_nvmram (bdbm_device_params_t* ptr_np) 
 {
 	void* ptr_nvmram = NULL;
@@ -212,9 +254,10 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lpa = lr->logaddr.lpa[0];
 
 	for(i = 0; i < p->nr_total_pages; i++){
-		bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
+		if(lpa == 1)
+			bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
-			bdbm_msg("hit: lpa = %llu", lpa);
+//			bdbm_msg("hit: lpa = %llu", lpa);
 			found = i;	
 			break;
 		}
@@ -276,7 +319,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	bdbm_hlm_req_t* hr = NULL;
 	int64_t nindex = -1;
 	int64_t eindex = -1;
-
+#ifdef NVM_CACHE_DEBUG
+	uint8_t* ptr_ramssd_data = NULL; 
+#endif
 	/* get a free page */
 //	if(p->nr_free_pages > LOW_WATERMARK){
 	if(p->nr_free_pages > 0){
@@ -289,7 +334,6 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		p->nr_inuse_pages ++;
 	}
 	else { // eviction is needed 
-//		bdbm_msg("nvm is full");
 #ifndef NVM_CACHE_WB
 		return -1;
 #endif
@@ -298,14 +342,19 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		bdbm_bug_on(epage == NULL);
 		eindex = epage->index;
 		edata_ptr = p->ptr_nvmram + (eindex * np->nvm_page_size); 
+
 		bdbm_bug_on(!edata_ptr);
+	
+		if(epage->logaddr.lpa[0] == 1){
+			bdbm_msg("evict page logaddr = %d, data_ptr = %p", epage->logaddr.lpa[0], edata_ptr);	
+			__display_hex_values_all_host_range(edata_ptr, 16);
+		}
 
 		/* get a free hlm_req from the hlm_reqs_pool */
 		if((hr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL){
 			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
 			goto fail;
 		}
-		//bdbm_msg("hr is created");
 // 여기에서 edata cpy 할 때 lock 걸어야 할듯. 일단은 global lock 사용해보자. 
 
 		/* build hlm_req with nvm_info */
@@ -324,13 +373,33 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		}
 		bdbm_sema_unlock (&bp->host_lock);
 
-		/* wait for writeback to be completed */
+		/* wait for write back to be completed */
 //		bdbm_msg("try to get hr->done lock");
 		bdbm_sema_lock (&hr->done);
 //		bdbm_msg("writeback is completed");
 
-		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // release lock here 
+// DATA CHECK
+#ifdef NVM_CACHE_DEBUG
+
+		if(bdi->ptr_dm_inf->get_data){
+			ptr_ramssd_data = bdi->ptr_dm_inf->get_data(bdi, epage->logaddr.lpa[0]);
+		}
+		bdbm_bug_on(edata_ptr == NULL);
+		bdbm_bug_on(ptr_ramssd_data == NULL);
+
+		if(epage->logaddr.lpa[0] == 1){
+			if (memcmp(edata_ptr, ptr_ramssd_data, KPAGE_SIZE)!=0){
+				bdbm_msg("[EUNJI] [DATA CORRUPTION] lpa = %d", epage->logaddr.lpa[0]);	
+				__display_hex_values_all_range (edata_ptr, ptr_ramssd_data, 16);
+			}
+			else{
+				bdbm_msg("[EUNJI] [DATA SAFE] lpa = %d", epage->logaddr.lpa[0]);	
+			}
+		}
+#endif
 		
+
+		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // release lock here 
 
 		/* set new page index */
 		nindex = eindex;
@@ -397,9 +466,9 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	nvm_tbl[nvm_idx].logaddr.lpa[0] = lr->logaddr.lpa[0]; 
 
 //	bdbm_msg("data write succeeds");
-	for(i = 0; i < p->nr_total_pages; i++){
-		bdbm_msg("nvm_tbl[%llu] lpa = %d", i, nvm_tbl[i].logaddr.lpa[0]);
-	}
+//	for(i = 0; i < p->nr_total_pages; i++){
+//		bdbm_msg("nvm_tbl[%llu] lpa = %d", i, nvm_tbl[i].logaddr.lpa[0]);
+//	}
 
 	/* update lr req's status */
 	lr->serviced_by_nvm = 1;

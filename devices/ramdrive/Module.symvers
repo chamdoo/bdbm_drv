@@ -1,0 +1,3 @@
+0x80143265	bdbm_dm_get_inf	/home/ejlee/cooperate/bdbm_drv_dummy_gc/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
+0xdf2f9a5e	bdbm_dm_exit	/home/ejlee/cooperate/bdbm_drv_dummy_gc/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
+0xcaa5608a	bdbm_dm_init	/home/ejlee/cooperate/bdbm_drv_dummy_gc/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL

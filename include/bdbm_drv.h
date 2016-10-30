@@ -1,6 +1,7 @@
 #define NVM_CACHE
-//#define NVM_CACHE_WB
+#define NVM_CACHE_WB
 #define NVM_CACHE_SKIP
+#define NVM_CACHE_DEBUG
 
 /*
 The MIT License (MIT)
@@ -319,6 +320,9 @@ typedef struct {
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
 	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
+#ifdef NVM_CACHE_DEBUG
+	uint8_t* (*get_data) (bdbm_drv_info_t* bdi, int64_t lpa);
+#endif
 } bdbm_dm_inf_t;
 
 /* a generic FTL interface */
@@ -425,6 +429,7 @@ struct _bdbm_drv_info_t {
 #endif
 	bdbm_perf_monitor_t pm;
 };
+
 
 /* functions for bdi creation, setup, run, and remove */
 bdbm_drv_info_t* bdbm_drv_create (void);
