@@ -411,7 +411,7 @@ void __hlm_nobuf_end_wb_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		bdbm_free(lr->fmain.kp_ptr[0]);
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
-		bdi->ptr_host_inf->end_wb_req (bdi, hr);
+		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
 }
 #endif
@@ -421,7 +421,7 @@ void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 #ifdef NVM_CACHE
 	if(bdbm_is_writeback(lr->req_type)){
 		__hlm_nobuf_end_wb_req (bdi, lr);		
-	}else
+	}
 #endif
 	if (bdbm_is_gc (lr->req_type)) {
 		__hlm_nobuf_end_gcio_req (bdi, lr);

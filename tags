@@ -29,13 +29,13 @@ BDBM_ABM_BLK_FREE_PREPARE	ftl/algo/abm.h	/^	BDBM_ABM_BLK_FREE_PREPARE,$/;"	e	enu
 BDBM_ABM_BLK_STATUS	ftl/algo/abm.h	/^enum BDBM_ABM_BLK_STATUS {$/;"	g
 BDBM_ABM_SUBPAGE_INVALID	ftl/algo/abm.h	/^	BDBM_ABM_SUBPAGE_INVALID,$/;"	e	enum:BDBM_ABM_SUBPAGE_STATUS
 BDBM_ABM_SUBPAGE_STATUS	ftl/algo/abm.h	/^enum BDBM_ABM_SUBPAGE_STATUS {$/;"	g
-BDBM_ALIGN_DOWN	include/bdbm_drv.h	167;"	d
-BDBM_ALIGN_UP	include/bdbm_drv.h	166;"	d
+BDBM_ALIGN_DOWN	include/bdbm_drv.h	169;"	d
+BDBM_ALIGN_UP	include/bdbm_drv.h	168;"	d
 BDBM_BADBLOCK_SCAN	frontend/kernel/blkdev_ioctl.h	28;"	d
 BDBM_BADBLOCK_SCAN_CHECK	frontend/kernel/blkdev_ioctl.h	29;"	d
 BDBM_BFTL_BLOCK_STATUS	ftl/algo/block_ftl.c	/^enum BDBM_BFTL_BLOCK_STATUS {$/;"	g	file:
 BDBM_BFTL_PAGE_STATUS	ftl/algo/block_ftl.c	/^enum BDBM_BFTL_PAGE_STATUS {$/;"	g	file:
-BDBM_BLKIO_MAX_VECS	include/bdbm_drv.h	152;"	d
+BDBM_BLKIO_MAX_VECS	include/bdbm_drv.h	154;"	d
 BDBM_BLOCKIO_PROXY_IOCTL_DEVNAME	frontend/hybrid/blkio_proxy_ioctl.h	51;"	d
 BDBM_BLOCKIO_PROXY_IOCTL_DONE	frontend/hybrid/blkio_proxy_ioctl.h	54;"	d
 BDBM_BLOCKIO_PROXY_IOCTL_MAGIC	frontend/hybrid/blkio_proxy_ioctl.h	52;"	d
@@ -52,34 +52,30 @@ BDBM_DM_IOCTL_NAME	devices/common/dev_stub.h	59;"	d
 BDBM_DM_IOCTL_OPEN	devices/common/dev_stub.h	64;"	d
 BDBM_DM_IOCTL_PROBE	devices/common/dev_stub.h	63;"	d
 BDBM_DM_IOCTL_STORE	devices/common/dev_stub.h	69;"	d
-BDBM_DM_PRIV	include/bdbm_drv.h	82;"	d
+BDBM_DM_PRIV	include/bdbm_drv.h	85;"	d
 BDBM_FLASH_PAGE_SIZE	devices/bluedbm/dm_bluedbm.c	249;"	d	file:
-BDBM_FTL_PRIV	include/bdbm_drv.h	85;"	d
-BDBM_GB	include/bdbm_drv.h	66;"	d
+BDBM_FTL_PRIV	include/bdbm_drv.h	88;"	d
+BDBM_GB	include/bdbm_drv.h	69;"	d
 BDBM_GC_POLICY	include/params.h	/^enum BDBM_GC_POLICY {$/;"	g
-BDBM_GET_DEVICE_PARAMS	include/bdbm_drv.h	77;"	d
-BDBM_GET_DM_INF	include/bdbm_drv.h	74;"	d
-BDBM_GET_DRIVER_PARAMS	include/bdbm_drv.h	78;"	d
-BDBM_GET_FTL_INF	include/bdbm_drv.h	79;"	d
-BDBM_GET_HLM_INF	include/bdbm_drv.h	75;"	d
-BDBM_GET_HOST_INF	include/bdbm_drv.h	73;"	d
-BDBM_GET_LLM_INF	include/bdbm_drv.h	76;"	d
-BDBM_GET_NR_PUNITS	include/bdbm_drv.h	87;"	d
-BDBM_GET_PUNIT_ID	include/bdbm_drv.h	89;"	d
-BDBM_HLM_PRIV	include/bdbm_drv.h	83;"	d
+BDBM_GET_DEVICE_PARAMS	include/bdbm_drv.h	80;"	d
+BDBM_GET_DM_INF	include/bdbm_drv.h	77;"	d
+BDBM_GET_DRIVER_PARAMS	include/bdbm_drv.h	81;"	d
+BDBM_GET_FTL_INF	include/bdbm_drv.h	82;"	d
+BDBM_GET_HLM_INF	include/bdbm_drv.h	78;"	d
+BDBM_GET_HOST_INF	include/bdbm_drv.h	76;"	d
+BDBM_GET_LLM_INF	include/bdbm_drv.h	79;"	d
+BDBM_GET_NR_PUNITS	include/bdbm_drv.h	90;"	d
+BDBM_GET_PUNIT_ID	include/bdbm_drv.h	92;"	d
+BDBM_HLM_PRIV	include/bdbm_drv.h	86;"	d
 BDBM_HLM_TYPE	include/params.h	/^enum BDBM_HLM_TYPE {$/;"	g
-BDBM_HOST_PRIV	include/bdbm_drv.h	81;"	d
-BDBM_KB	include/bdbm_drv.h	64;"	d
-BDBM_LLM_PRIV	include/bdbm_drv.h	84;"	d
+BDBM_HOST_PRIV	include/bdbm_drv.h	84;"	d
+BDBM_KB	include/bdbm_drv.h	67;"	d
+BDBM_LLM_PRIV	include/bdbm_drv.h	87;"	d
 BDBM_LLM_TYPE	include/params.h	/^enum BDBM_LLM_TYPE {$/;"	g
 BDBM_MAPPING_POLICY	include/params.h	/^enum BDBM_MAPPING_POLICY {$/;"	g
-BDBM_MAX_PAGES	include/bdbm_drv.h	149;"	d
-BDBM_MB	include/bdbm_drv.h	65;"	d
+BDBM_MAX_PAGES	include/bdbm_drv.h	151;"	d
+BDBM_MB	include/bdbm_drv.h	68;"	d
 BDBM_NUM_TAGS	devices/bluedbm/dm_bluedbm.c	250;"	d	file:
-BDBM_NVM_BLK_CLEAN	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	BDBM_NVM_BLK_CLEAN,$/;"	e	enum:BDBM_NVM_BLK_STATUS
-BDBM_NVM_BLK_DIRTY	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	BDBM_NVM_BLK_DIRTY,$/;"	e	enum:BDBM_NVM_BLK_STATUS
-BDBM_NVM_BLK_FREE	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	BDBM_NVM_BLK_FREE = 0,$/;"	e	enum:BDBM_NVM_BLK_STATUS
-BDBM_NVM_BLK_STATUS	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^enum BDBM_NVM_BLK_STATUS {$/;"	g
 BDBM_PFTL_PAGE_STATUS	ftl/algo/page_ftl.c	/^enum BDBM_PFTL_PAGE_STATUS {$/;"	g	file:
 BDBM_PRIOR_QUEUE_SIZE	ftl/queue/prior_queue.h	/^enum BDBM_PRIOR_QUEUE_SIZE {$/;"	g
 BDBM_PROXY_MAX_REQS	frontend/hybrid/blkio_proxy_ioctl.h	29;"	d
@@ -87,11 +83,11 @@ BDBM_QUEUE_POLICY	include/params.h	/^enum BDBM_QUEUE_POLICY {$/;"	g
 BDBM_QUEUE_SIZE	ftl/queue/queue.h	/^enum BDBM_QUEUE_SIZE {$/;"	g
 BDBM_RD_PRIOR_QUEUE_SIZE	ftl/queue/rd_prior_queue.h	/^enum BDBM_RD_PRIOR_QUEUE_SIZE {$/;"	g
 BDBM_REQTYPE	include/bdbm_drv.h	/^enum BDBM_REQTYPE {$/;"	g
-BDBM_SIZE_GB	include/bdbm_drv.h	71;"	d
-BDBM_SIZE_KB	include/bdbm_drv.h	69;"	d
-BDBM_SIZE_MB	include/bdbm_drv.h	70;"	d
+BDBM_SIZE_GB	include/bdbm_drv.h	74;"	d
+BDBM_SIZE_KB	include/bdbm_drv.h	72;"	d
+BDBM_SIZE_MB	include/bdbm_drv.h	73;"	d
 BDBM_SNAPSHOT	include/params.h	/^enum BDBM_SNAPSHOT {$/;"	g
-BDBM_TB	include/bdbm_drv.h	67;"	d
+BDBM_TB	include/bdbm_drv.h	70;"	d
 BDBM_TRIM	include/params.h	/^enum BDBM_TRIM {$/;"	g
 BDBM_WL_POLICY	include/params.h	/^enum BDBM_WL_POLICY {$/;"	g
 BFTL_ALLOCATED	ftl/algo/block_ftl.c	/^	BFTL_ALLOCATED,$/;"	e	enum:BDBM_BFTL_BLOCK_STATUS	file:
@@ -199,11 +195,11 @@ DEV_COMMON	devices/dumbssd/Makefile	/^DEV_COMMON = ..\/common$/;"	m
 DEV_COMMON	devices/libdummy/Makefile	/^DEV_COMMON = ..\/common$/;"	m
 DEV_COMMON	devices/ramdrive/Makefile	/^DEV_COMMON = ..\/common$/;"	m
 DEV_COMMON	devices/ramdrive_timing/Makefile	/^DEV_COMMON = ..\/common$/;"	m
-DFTL_DIR_CLEAN	ftl/algo/dftl_map.h	/^	DFTL_DIR_CLEAN = DFTL_DIR_DRAM | 0x1,$/;"	e	enum:__anon86
-DFTL_DIR_DIRTY	ftl/algo/dftl_map.h	/^	DFTL_DIR_DIRTY = DFTL_DIR_DRAM | 0x2,$/;"	e	enum:__anon86
-DFTL_DIR_DRAM	ftl/algo/dftl_map.h	/^	DFTL_DIR_DRAM = 0x200,$/;"	e	enum:__anon86
-DFTL_DIR_EMPTY	ftl/algo/dftl_map.h	/^	DFTL_DIR_EMPTY = 0,$/;"	e	enum:__anon86
-DFTL_DIR_FLASH	ftl/algo/dftl_map.h	/^	DFTL_DIR_FLASH = 0x100,$/;"	e	enum:__anon86
+DFTL_DIR_CLEAN	ftl/algo/dftl_map.h	/^	DFTL_DIR_CLEAN = DFTL_DIR_DRAM | 0x1,$/;"	e	enum:__anon85
+DFTL_DIR_DIRTY	ftl/algo/dftl_map.h	/^	DFTL_DIR_DIRTY = DFTL_DIR_DRAM | 0x2,$/;"	e	enum:__anon85
+DFTL_DIR_DRAM	ftl/algo/dftl_map.h	/^	DFTL_DIR_DRAM = 0x200,$/;"	e	enum:__anon85
+DFTL_DIR_EMPTY	ftl/algo/dftl_map.h	/^	DFTL_DIR_EMPTY = 0,$/;"	e	enum:__anon85
+DFTL_DIR_FLASH	ftl/algo/dftl_map.h	/^	DFTL_DIR_FLASH = 0x100,$/;"	e	enum:__anon85
 DFTL_PAGE_INVALID	ftl/algo/dftl_map.h	/^	DFTL_PAGE_INVALID,$/;"	e	enum:BDBM_DFTL_PAGE_STATUS
 DFTL_PAGE_INVALID_ADDR	ftl/algo/dftl_map.h	/^	DFTL_PAGE_INVALID_ADDR = -1,$/;"	e	enum:BDBM_DFTL_PAGE_STATUS
 DFTL_PAGE_NOT_EXIST	ftl/algo/dftl_map.h	/^	DFTL_PAGE_NOT_EXIST = 0,$/;"	e	enum:BDBM_DFTL_PAGE_STATUS
@@ -439,10 +435,10 @@ KBUILD_EXTRA_SYMBOLS	tools/nvmedrv-v4.5.3/Makefile	/^KBUILD_EXTRA_SYMBOLS := $(P
 KELVIN_TEMP_FACTOR	tools/nvme/scsi.c	89;"	d	file:
 KELVIN_TEMP_FACTOR	tools/nvmedrv-v4.5.3/scsi.c	89;"	d	file:
 KERN	frontend/hybrid/Makefile	/^KERN := ..\/kernel$/;"	m
-KERNEL_PAGE_SIZE	include/bdbm_drv.h	32;"	d
-KERNEL_PAGE_SIZE	include/bdbm_drv.h	46;"	d
+KERNEL_PAGE_SIZE	include/bdbm_drv.h	35;"	d
+KERNEL_PAGE_SIZE	include/bdbm_drv.h	49;"	d
 KERNEL_SECTOR_SIZE	include/params.h	30;"	d
-KPAGE_SIZE	include/bdbm_drv.h	59;"	d
+KPAGE_SIZE	include/bdbm_drv.h	62;"	d
 KP_STT_DATA	include/bdbm_drv.h	/^	KP_STT_DATA = 0x20,$/;"	e	enum:__anon27
 KP_STT_DATA_DONE	include/bdbm_drv.h	/^	KP_STT_DATA_DONE = KP_STT_DATA | KP_STT_DONE,$/;"	e	enum:__anon27
 KP_STT_DONE	include/bdbm_drv.h	/^	KP_STT_DONE = 0x0F,$/;"	e	enum:__anon27
@@ -648,7 +644,7 @@ MODULE_PARAM_PREFIX	tools/lightnvm-v4.5.3/core.c	896;"	d	file:
 MODULE_PARAM_PREFIX	tools/lightnvm-v4.5.3/core.c	897;"	d	file:
 MODULE_PARAM_PREFIX	tools/lightnvm/core.c	896;"	d	file:
 MODULE_PARAM_PREFIX	tools/lightnvm/core.c	897;"	d	file:
-MODULE_PARM_DESC	include/bdbm_drv.h	45;"	d
+MODULE_PARM_DESC	include/bdbm_drv.h	48;"	d
 MUR_FMIX	common/3rd/uthash.h	570;"	d
 MUR_GETBLOCK	common/3rd/uthash.h	548;"	d
 MUR_GETBLOCK	common/3rd/uthash.h	564;"	d
@@ -677,9 +673,9 @@ NR_BLOCKS_PER_CHIP	devices/common/dev_params.c	/^	NR_BLOCKS_PER_CHIP = 128,$/;"	
 NR_CHANNELS	devices/common/dev_params.c	/^	NR_CHANNELS = 64,$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
 NR_CHIPS_PER_CHANNEL	devices/common/dev_params.c	/^	NR_CHIPS_PER_CHANNEL = 1,$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
 NR_DIES	devices/dumbssd/dm_dumbssd.c	44;"	d	file:
-NR_KPAGES_IN	include/bdbm_drv.h	169;"	d
-NR_KSECTORS_IN	include/bdbm_drv.h	168;"	d
-NR_NVM_PAGES	devices/common/dev_params.c	/^	NR_NVM_PAGES	= 100, 				\/* 4KB * 1048576 = 4GB *\/$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
+NR_KPAGES_IN	include/bdbm_drv.h	171;"	d
+NR_KSECTORS_IN	include/bdbm_drv.h	170;"	d
+NR_NVM_PAGES	devices/common/dev_params.c	/^	NR_NVM_PAGES	= 262144, 				\/* 4KB * 262144 = 1G \/ 4KB * 1048576 = 4GB *\/$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
 NR_PAGES_PER_BLOCK	devices/common/dev_params.c	/^	NR_PAGES_PER_BLOCK = 64,$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
 NR_PHY_IN_LOG	tools/lightnvm-v4.5.3/rrpc.h	36;"	d
 NR_PHY_IN_LOG	tools/lightnvm/rrpc.h	36;"	d
@@ -738,6 +734,9 @@ NVME_SC_CANCELLED	tools/nvme/nvme.h	/^	NVME_SC_CANCELLED		= -EINTR,$/;"	e	enum:_
 NVME_SC_CANCELLED	tools/nvmedrv-v4.5.3/nvme.h	/^	NVME_SC_CANCELLED		= -EINTR,$/;"	e	enum:__anon51
 NVM_BLK_SIZE	frontend/kernel/nvm_cache.h	29;"	d
 NVM_CACHE	include/bdbm_drv.h	1;"	d
+NVM_CACHE_DEBUG	include/bdbm_drv.h	4;"	d
+NVM_CACHE_SKIP	include/bdbm_drv.h	3;"	d
+NVM_CACHE_WB	include/bdbm_drv.h	2;"	d
 NVM_PAGE_SIZE	devices/common/dev_params.c	/^	NVM_PAGE_SIZE	= 4096,				\/* 4KB *\/$/;"	e	enum:BDBM_DEFAULT_NAND_PARAMS	file:
 OBJS	examples/stringsearch/Makefile	/^OBJS = ss.o ss_impl_sw.o ss_impl_hw.o$/;"	m
 OBJS_FORMAT	tools/dumbssd-format/Makefile	/^OBJS_FORMAT=dumbssd-format.o $/;"	m
@@ -773,8 +772,8 @@ QUEUE_POLICY_NO	include/params.h	/^	QUEUE_POLICY_NO,$/;"	e	enum:BDBM_QUEUE_POLIC
 QUEUE_POLICY_NOT_SPECIFIED	include/params.h	/^	QUEUE_POLICY_NOT_SPECIFIED = 0,$/;"	e	enum:BDBM_QUEUE_POLICY
 QUEUE_POLICY_SINGLE_FIFO	include/params.h	/^	QUEUE_POLICY_SINGLE_FIFO,$/;"	e	enum:BDBM_QUEUE_POLICY
 QUICK_FIX_FOR_RWM	ftl/llm_rmq.c	56;"	d	file:
-RD_PRIORITY_READ	ftl/queue/rd_prior_queue.h	/^	RD_PRIORITY_READ = 0,$/;"	e	enum:__anon78
-RD_PRIORITY_WRITE	ftl/queue/rd_prior_queue.h	/^	RD_PRIORITY_WRITE = 1,$/;"	e	enum:__anon78
+RD_PRIORITY_READ	ftl/queue/rd_prior_queue.h	/^	RD_PRIORITY_READ = 0,$/;"	e	enum:__anon77
+RD_PRIORITY_WRITE	ftl/queue/rd_prior_queue.h	/^	RD_PRIORITY_WRITE = 1,$/;"	e	enum:__anon77
 READ_CAP_10_RESP_SIZE	tools/nvme/scsi.c	170;"	d	file:
 READ_CAP_10_RESP_SIZE	tools/nvmedrv-v4.5.3/scsi.c	170;"	d	file:
 READ_CAP_16_RESP_SIZE	tools/nvme/scsi.c	171;"	d	file:
@@ -785,7 +784,6 @@ REMAINING_TEMP_PAGE_LENGTH	tools/nvme/scsi.c	164;"	d	file:
 REMAINING_TEMP_PAGE_LENGTH	tools/nvmedrv-v4.5.3/scsi.c	164;"	d	file:
 REPORT_LUNS_FIRST_LUN_OFFSET	tools/nvme/scsi.c	178;"	d	file:
 REPORT_LUNS_FIRST_LUN_OFFSET	tools/nvmedrv-v4.5.3/scsi.c	178;"	d	file:
-REQTYOE_WRITE_BACK	include/bdbm_drv.h	/^	REQTYOE_WRITE_BACK		= REQTYPE_NORMAL	| REQTYPE_IO_WRITE | REQTYPE_INTERNAL$/;"	e	enum:BDBM_REQTYPE
 REQTYPE_DONE	include/bdbm_drv.h	/^	REQTYPE_DONE			= 0xFF0000,$/;"	e	enum:BDBM_REQTYPE
 REQTYPE_GC	include/bdbm_drv.h	/^	REQTYPE_GC 				= 0x000400,$/;"	e	enum:BDBM_REQTYPE
 REQTYPE_GC_ERASE	include/bdbm_drv.h	/^	REQTYPE_GC_ERASE 		= REQTYPE_GC 		| REQTYPE_IO_ERASE,$/;"	e	enum:BDBM_REQTYPE
@@ -808,18 +806,19 @@ REQTYPE_RMW_READ	include/bdbm_drv.h	/^	REQTYPE_RMW_READ 		= REQTYPE_RMW 		| REQT
 REQTYPE_RMW_WRITE	include/bdbm_drv.h	/^	REQTYPE_RMW_WRITE 		= REQTYPE_RMW 		| REQTYPE_IO_WRITE,$/;"	e	enum:BDBM_REQTYPE
 REQTYPE_TRIM	include/bdbm_drv.h	/^	REQTYPE_TRIM 			= REQTYPE_NORNAL 	| REQTYPE_IO_TRIM,$/;"	e	enum:BDBM_REQTYPE
 REQTYPE_WRITE	include/bdbm_drv.h	/^	REQTYPE_WRITE 			= REQTYPE_NORNAL 	| REQTYPE_IO_WRITE,$/;"	e	enum:BDBM_REQTYPE
-REQ_STT_ALLOC	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_ALLOC = 0x0100,$/;"	e	enum:__anon67
-REQ_STT_FREE	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_FREE = 0,$/;"	e	enum:__anon67
-REQ_STT_KERN_INIT	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_KERN_INIT = REQ_STT_ALLOC | 0x1, $/;"	e	enum:__anon67
-REQ_STT_KERN_SENT	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_KERN_SENT = REQ_STT_ALLOC | 0x2,$/;"	e	enum:__anon67
-REQ_STT_USER_DONE	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_USER_DONE = REQ_STT_ALLOC | 0x4,$/;"	e	enum:__anon67
-REQ_STT_USER_PROG	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_USER_PROG = REQ_STT_ALLOC | 0x3,$/;"	e	enum:__anon67
+REQTYPE_WRITE_BACK	include/bdbm_drv.h	/^	REQTYPE_WRITE_BACK		= REQTYPE_NORNAL	| REQTYPE_IO_WRITE | REQTYPE_INTERNAL,$/;"	e	enum:BDBM_REQTYPE
+REQ_STT_ALLOC	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_ALLOC = 0x0100,$/;"	e	enum:__anon66
+REQ_STT_FREE	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_FREE = 0,$/;"	e	enum:__anon66
+REQ_STT_KERN_INIT	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_KERN_INIT = REQ_STT_ALLOC | 0x1, $/;"	e	enum:__anon66
+REQ_STT_KERN_SENT	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_KERN_SENT = REQ_STT_ALLOC | 0x2,$/;"	e	enum:__anon66
+REQ_STT_USER_DONE	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_USER_DONE = REQ_STT_ALLOC | 0x4,$/;"	e	enum:__anon66
+REQ_STT_USER_PROG	frontend/hybrid/blkio_proxy_ioctl.h	/^	REQ_STT_USER_PROG = REQ_STT_ALLOC | 0x3,$/;"	e	enum:__anon66
 RESERVED_FIELD	tools/nvme/scsi.c	108;"	d	file:
 RESERVED_FIELD	tools/nvmedrv-v4.5.3/scsi.c	108;"	d	file:
 RESTRICTED_LUNS_RETURNED	tools/nvme/scsi.c	74;"	d	file:
 RESTRICTED_LUNS_RETURNED	tools/nvmedrv-v4.5.3/scsi.c	74;"	d	file:
-RP_MEM_PHY	ftl/hlm_reqs_pool.h	/^	RP_MEM_PHY = 1,$/;"	e	enum:__anon72
-RP_MEM_VIRT	ftl/hlm_reqs_pool.h	/^	RP_MEM_VIRT = 0,$/;"	e	enum:__anon72
+RP_MEM_PHY	ftl/hlm_reqs_pool.h	/^	RP_MEM_PHY = 1,$/;"	e	enum:__anon71
+RP_MEM_VIRT	ftl/hlm_reqs_pool.h	/^	RP_MEM_VIRT = 0,$/;"	e	enum:__anon71
 RRPC_EXPOSED_PAGE_SIZE	tools/lightnvm-v4.5.3/rrpc.h	34;"	d
 RRPC_EXPOSED_PAGE_SIZE	tools/lightnvm/rrpc.h	34;"	d
 RRPC_H_	tools/lightnvm-v4.5.3/rrpc.h	18;"	d
@@ -951,12 +950,12 @@ _BLUEDBM_DEBUG_H	include/debug.h	26;"	d
 _BLUEDBM_DEV_HYNIX_NVME_H	devices/dumbssd/dev_hynix_nvme.h	26;"	d
 _BLUEDBM_DEV_RAMDRV_H	devices/dumbssd/dm_dumbssd.h	26;"	d
 _BLUEDBM_DEV_RAMDRV_H	devices/ramdrive/dm_ramdrive.h	26;"	d
-_BLUEDBM_DEV_RAMSSD_H	devices/ramdrive/dev_ramssd.h	26;"	d
+_BLUEDBM_DEV_RAMSSD_H	devices/ramdrive/dev_ramssd.h	27;"	d
 _BLUEDBM_DM_BLUEDBM_H	devices/bluedbm/dm_bluedbm.h	26;"	d
 _BLUEDBM_DM_DF_H	devices/dragonfire/dm_df.h	26;"	d
 _BLUEDBM_DM_PARAMS_H	devices/common/dev_params.h	26;"	d
 _BLUEDBM_DM_USER_H	devices/libdummy/dm_dummy.h	26;"	d
-_BLUEDBM_DRV_H	include/bdbm_drv.h	28;"	d
+_BLUEDBM_DRV_H	include/bdbm_drv.h	31;"	d
 _BLUEDBM_ERROR_CODES_H	ftl/error_codes.h	26;"	d
 _BLUEDBM_FILE_H	common/utils/ufile.h	26;"	d
 _BLUEDBM_FTL_ABM_H	ftl/algo/abm.h	26;"	d
@@ -1059,6 +1058,12 @@ __copy_bio_to_dma	devices/bluedbm/dm_bluedbm.c	/^void __copy_bio_to_dma ($/;"	f
 __copy_dma_to_bio	devices/bluedbm/dm_bluedbm.c	/^void __copy_dma_to_bio ($/;"	f
 __dev_ramssd_fops_wq_handler	devices/ramdrive/dev_ramssd.c	/^static void __dev_ramssd_fops_wq_handler (struct work_struct *w)$/;"	f	file:
 __display_hex_values	devices/ramdrive/dev_ramssd.c	/^static void __display_hex_values (uint8_t* host, uint8_t* back)$/;"	f	file:
+__display_hex_values	frontend/kernel/nvm_cache.c	/^static void __display_hex_values (uint8_t* host, uint8_t* back)$/;"	f	file:
+__display_hex_values_all	frontend/kernel/nvm_cache.c	/^static void __display_hex_values_all (uint8_t* host, uint8_t* back)$/;"	f	file:
+__display_hex_values_all_host	frontend/kernel/nvm_cache.c	/^static void __display_hex_values_all_host (uint8_t* host)$/;"	f	file:
+__display_hex_values_all_host_range	frontend/kernel/nvm_cache.c	/^static void __display_hex_values_all_host_range (uint8_t* host, int size)$/;"	f	file:
+__display_hex_values_all_range	frontend/kernel/nvm_cache.c	/^static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)$/;"	f	file:
+__display_hex_values_all_range	ftl/hlm_reqs_pool.c	/^static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)$/;"	f	file:
 __dm_intr_handler	devices/common/dev_stub.c	/^void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)$/;"	f
 __dm_intr_handler	examples/raw-flash/raw-flash.c	/^static void __dm_intr_handler ($/;"	f	file:
 __dm_proxy_thread	frontend/user/dev_proxy.c	/^int __dm_proxy_thread (void* arg) $/;"	f
@@ -1094,6 +1099,7 @@ __hlm_nobuf_end_wb_req	ftl/hlm_nobuf.c	/^void __hlm_nobuf_end_wb_req (bdbm_drv_i
 __hlm_nobuf_make_rw_req	ftl/hlm_nobuf.c	/^uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)$/;"	f
 __hlm_nobuf_make_trim_req	ftl/hlm_nobuf.c	/^uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req)$/;"	f
 __hlm_nobuf_make_wb_req	ftl/hlm_nobuf.c	/^uint32_t __hlm_nobuf_make_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)$/;"	f
+__hlm_reqs_pool_create_int_trim_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_int_trim_req  ($/;"	f	file:
 __hlm_reqs_pool_create_read_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_read_req ($/;"	f	file:
 __hlm_reqs_pool_create_trim_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_trim_req  ($/;"	f	file:
 __hlm_reqs_pool_create_wb_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_wb_req ($/;"	f	file:
@@ -1140,6 +1146,7 @@ __packed	tools/nvmedrv-v4.5.3/lightnvm.c	/^} __packed;$/;"	v	typeref:struct:nvme
 __packed	tools/nvmedrv-v4.5.3/lightnvm.c	/^} __packed;$/;"	v	typeref:struct:nvme_nvm_id
 __packed	tools/nvmedrv-v4.5.3/lightnvm.c	/^} __packed;$/;"	v	typeref:struct:nvme_nvm_id_group
 __ptr_ramssd_data	devices/ramdrive/dev_ramssd.c	/^static void* __ptr_ramssd_data = NULL;$/;"	v	file:
+__ptr_ramssd_data_to_nvm	devices/ramdrive/dm_ramdrive.h	/^void* __ptr_ramssd_data_to_nvm = NULL;$/;"	v
 __ramssd_alloc_ssdram	devices/ramdrive/dev_ramssd.c	/^static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_np)$/;"	f	file:
 __ramssd_block_addr	devices/ramdrive/dev_ramssd.c	/^static uint8_t* __ramssd_block_addr ($/;"	f	file:
 __ramssd_cmd_done	devices/ramdrive/dev_ramssd.c	/^void __ramssd_cmd_done (dev_ramssd_info_t* ri)$/;"	f
@@ -1156,6 +1163,9 @@ __ramssd_timing_register_schedule	devices/ramdrive/dev_ramssd.c	/^uint32_t __ram
 __return_llm_req	devices/common/dev_stub.c	/^static void __return_llm_req ($/;"	f	file:
 __rrpc_lock_laddr	tools/lightnvm-v4.5.3/rrpc.h	/^static int __rrpc_lock_laddr(struct rrpc *rrpc, sector_t laddr,$/;"	f
 __rrpc_lock_laddr	tools/lightnvm/rrpc.h	/^static int __rrpc_lock_laddr(struct rrpc *rrpc, sector_t laddr,$/;"	f
+__this_module	devices/ramdrive/risa_dev_ramdrive.mod.c	/^__visible struct module __this_module$/;"	v	typeref:struct:module
+__used	devices/ramdrive/risa_dev_ramdrive.mod.c	/^__used$/;"	v	file:
+__used	devices/ramdrive/risa_dev_ramdrive.mod.c	/^__used$/;"	v	typeref:struct:____versions	file:
 _bdbm_dm_inf	devices/bluedbm/dm_bluedbm.c	/^bdbm_dm_inf_t _bdbm_dm_inf = {$/;"	v
 _bdbm_dm_inf	devices/dumbssd/dm_dumbssd.c	/^bdbm_dm_inf_t _bdbm_dm_inf = {$/;"	v
 _bdbm_dm_inf	devices/libdummy/dm_dummy.c	/^bdbm_dm_inf_t _bdbm_dm_inf = {$/;"	v
@@ -1203,7 +1213,6 @@ _llm_noq_inf	ftl/llm_noq.c	/^bdbm_llm_inf_t _llm_noq_inf = {$/;"	v
 _llm_noq_lock_inf	ftl/llm_noq_lock.c	/^bdbm_llm_inf_t _llm_noq_lock_inf = {$/;"	v
 _llm_rmq_inf	ftl/llm_rmq.c	/^bdbm_llm_inf_t _llm_rmq_inf = {$/;"	v
 _nvm_dev	frontend/kernel/nvm_cache.c	/^bdbm_nvm_inf_t _nvm_dev = {$/;"	v
-_nvm_dev	frontend/kernel/nvm_cache_bak/nvm_cache.c	/^bdbm_nvm_inf_t _nvm_dev = {$/;"	v
 _nvm_misc	devices/dumbssd/dm_dumbssd.c	/^static struct miscdevice _nvm_misc = {$/;"	v	typeref:struct:miscdevice	file:
 _nvm_misc	tools/lightnvm-v4.5.3/core.c	/^static struct miscdevice _nvm_misc = {$/;"	v	typeref:struct:miscdevice	file:
 _nvm_misc	tools/lightnvm/core.c	/^static struct miscdevice _nvm_misc = {$/;"	v	typeref:struct:miscdevice	file:
@@ -1250,15 +1259,15 @@ _utstring_BuildTable	common/3rd/utstring.h	/^_UNUSED_ static void _utstring_Buil
 _utstring_BuildTableR	common/3rd/utstring.h	/^_UNUSED_ static void _utstring_BuildTableR($/;"	f
 _utstring_find	common/3rd/utstring.h	/^_UNUSED_ static long _utstring_find($/;"	f
 _utstring_findR	common/3rd/utstring.h	/^_UNUSED_ static long _utstring_findR($/;"	f
-abm	ftl/algo/block_ftl.c	/^	bdbm_abm_info_t* abm;$/;"	m	struct:__anon83	file:
+abm	ftl/algo/block_ftl.c	/^	bdbm_abm_info_t* abm;$/;"	m	struct:__anon82	file:
 abort_endio	tools/nvme/pci.c	/^static void abort_endio(struct request *req, int error)$/;"	f	file:
 abort_endio	tools/nvmedrv-v4.5.3/pci.c	/^static void abort_endio(struct request *req, int error)$/;"	f	file:
 abort_limit	tools/nvme/nvme.h	/^	atomic_t abort_limit;$/;"	m	struct:nvme_ctrl
 abort_limit	tools/nvmedrv-v4.5.3/nvme.h	/^	atomic_t abort_limit;$/;"	m	struct:nvme_ctrl
 aborted	tools/nvme/pci.c	/^	int aborted;$/;"	m	struct:nvme_iod	file:
 aborted	tools/nvmedrv-v4.5.3/pci.c	/^	int aborted;$/;"	m	struct:nvme_iod	file:
-ac_bab	ftl/algo/dftl.c	/^	bdbm_abm_block_t** ac_bab;$/;"	m	struct:__anon91	file:
-ac_bab	ftl/algo/page_ftl.c	/^	bdbm_abm_block_t** ac_bab;$/;"	m	struct:__anon93	file:
+ac_bab	ftl/algo/dftl.c	/^	bdbm_abm_block_t** ac_bab;$/;"	m	struct:__anon90	file:
+ac_bab	ftl/algo/page_ftl.c	/^	bdbm_abm_block_t** ac_bab;$/;"	m	struct:__anon92	file:
 act_blk	tools/lightnvm-v4.5.3/sysblk.c	/^	int act_blk[MAX_SYSBLKS];$/;"	m	struct:sysblk_scan	file:
 act_blk	tools/lightnvm/sysblk.c	/^	int act_blk[MAX_SYSBLKS];$/;"	m	struct:sysblk_scan	file:
 adapter_alloc_cq	tools/nvme/pci.c	/^static int adapter_alloc_cq(struct nvme_dev *dev, u16 qid,$/;"	f	file:
@@ -1308,17 +1317,17 @@ atomic_sub	common/3rd/uatomic.h	/^static inline void atomic_sub( int i, atomic_t
 atomic_sub_and_test	common/3rd/uatomic.h	/^static inline int atomic_sub_and_test( int i, atomic_t *v )$/;"	f
 atomic_t	common/3rd/uatomic.h	/^} atomic_t;$/;"	t	typeref:struct:__anon7
 babm_abm_subpage_t	ftl/algo/abm.h	/^typedef uint8_t babm_abm_subpage_t; \/* BDBM_ABM_PAGE_STATUS *\/$/;"	t
-badblk	ftl/algo/dftl.c	/^	bdbm_sema_t badblk;$/;"	m	struct:__anon91	file:
-badblk	ftl/algo/page_ftl.c	/^	bdbm_sema_t badblk;$/;"	m	struct:__anon93	file:
+badblk	ftl/algo/dftl.c	/^	bdbm_sema_t badblk;$/;"	m	struct:__anon90	file:
+badblk	ftl/algo/page_ftl.c	/^	bdbm_sema_t badblk;$/;"	m	struct:__anon92	file:
 badblock_scan_thread_fn	frontend/kernel/blkdev.c	/^int badblock_scan_thread_fn (void* arg) $/;"	f
 badblock_scan_thread_fn	frontend/kernel/blkdev_bak.c	/^int badblock_scan_thread_fn (void* arg) $/;"	f
-bai	ftl/algo/dftl.c	/^	bdbm_abm_info_t* bai;$/;"	m	struct:__anon91	file:
-bai	ftl/algo/page_ftl.c	/^	bdbm_abm_info_t* bai;$/;"	m	struct:__anon93	file:
+bai	ftl/algo/dftl.c	/^	bdbm_abm_info_t* bai;$/;"	m	struct:__anon90	file:
+bai	ftl/algo/page_ftl.c	/^	bdbm_abm_info_t* bai;$/;"	m	struct:__anon92	file:
 bar	tools/nvme/pci.c	/^	void __iomem *bar;$/;"	m	struct:nvme_dev	file:
 bar	tools/nvmedrv-v4.5.3/pci.c	/^	void __iomem *bar;$/;"	m	struct:nvme_dev	file:
 bb_list	tools/lightnvm-v4.5.3/gennvm.h	/^	struct list_head bb_list;	\/* Bad blocks. Mutually exclusive with$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
 bb_list	tools/lightnvm/gennvm.h	/^	struct list_head bb_list;	\/* Bad blocks. Mutually exclusive with$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
-bdbm_abm_block_t	ftl/algo/abm.h	/^} bdbm_abm_block_t;$/;"	t	typeref:struct:__anon84
+bdbm_abm_block_t	ftl/algo/abm.h	/^} bdbm_abm_block_t;$/;"	t	typeref:struct:__anon83
 bdbm_abm_create	ftl/algo/abm.c	/^bdbm_abm_info_t* bdbm_abm_create ($/;"	f
 bdbm_abm_destroy	ftl/algo/abm.c	/^void bdbm_abm_destroy (bdbm_abm_info_t* bai) $/;"	f
 bdbm_abm_erase_block	ftl/algo/abm.c	/^void bdbm_abm_erase_block ($/;"	f
@@ -1332,7 +1341,7 @@ bdbm_abm_get_nr_dirty_blocks	ftl/algo/abm.h	/^static inline uint64_t bdbm_abm_ge
 bdbm_abm_get_nr_free_blocks	ftl/algo/abm.h	/^static inline uint64_t bdbm_abm_get_nr_free_blocks (bdbm_abm_info_t* bai) { return bai->nr_free_blks; }$/;"	f
 bdbm_abm_get_nr_free_blocks_prepared	ftl/algo/abm.h	/^static inline uint64_t bdbm_abm_get_nr_free_blocks_prepared (bdbm_abm_info_t* bai) { return bai->nr_free_blks_prepared; }$/;"	f
 bdbm_abm_get_nr_total_blocks	ftl/algo/abm.h	/^static inline uint64_t bdbm_abm_get_nr_total_blocks (bdbm_abm_info_t* bai) { return bai->nr_total_blks; }$/;"	f
-bdbm_abm_info_t	ftl/algo/abm.h	/^} bdbm_abm_info_t;$/;"	t	typeref:struct:__anon85
+bdbm_abm_info_t	ftl/algo/abm.h	/^} bdbm_abm_info_t;$/;"	t	typeref:struct:__anon84
 bdbm_abm_invalidate_page	ftl/algo/abm.c	/^void bdbm_abm_invalidate_page ($/;"	f
 bdbm_abm_list_for_each_dirty_block	ftl/algo/abm.h	109;"	d
 bdbm_abm_load	ftl/algo/abm.c	/^uint32_t bdbm_abm_load (bdbm_abm_info_t* bai, const char* fn)$/;"	f
@@ -1342,12 +1351,13 @@ bdbm_blk_getgeo	frontend/kernel/blkdev.c	/^int bdbm_blk_getgeo (struct block_dev
 bdbm_blk_getgeo	frontend/kernel/blkdev_bak.c	/^int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)$/;"	f
 bdbm_blk_ioctl	frontend/kernel/blkdev.c	/^int bdbm_blk_ioctl ($/;"	f
 bdbm_blk_ioctl	frontend/kernel/blkdev_bak.c	/^int bdbm_blk_ioctl ($/;"	f
-bdbm_blkio_private_t	frontend/kernel/blkio.c	/^} bdbm_blkio_private_t;$/;"	t	typeref:struct:__anon60	file:
-bdbm_blkio_proxy_req_t	frontend/hybrid/blkio_proxy_ioctl.h	/^} bdbm_blkio_proxy_req_t;$/;"	t	typeref:struct:__anon68
-bdbm_blkio_proxy_t	frontend/hybrid/blkio_proxy.c	/^} bdbm_blkio_proxy_t;$/;"	t	typeref:struct:__anon66	file:
-bdbm_blkio_proxy_wq_t	frontend/hybrid/blkio_proxy.c	/^} bdbm_blkio_proxy_wq_t;$/;"	t	typeref:struct:__anon65	file:
+bdbm_blkio_private_t	frontend/kernel/blkio.c	/^} bdbm_blkio_private_t;$/;"	t	typeref:struct:__anon59	file:
+bdbm_blkio_private_t	frontend/kernel/blkio.h	/^} bdbm_blkio_private_t;$/;"	t	typeref:struct:__anon56
+bdbm_blkio_proxy_req_t	frontend/hybrid/blkio_proxy_ioctl.h	/^} bdbm_blkio_proxy_req_t;$/;"	t	typeref:struct:__anon67
+bdbm_blkio_proxy_t	frontend/hybrid/blkio_proxy.c	/^} bdbm_blkio_proxy_t;$/;"	t	typeref:struct:__anon65	file:
+bdbm_blkio_proxy_wq_t	frontend/hybrid/blkio_proxy.c	/^} bdbm_blkio_proxy_wq_t;$/;"	t	typeref:struct:__anon64	file:
 bdbm_blkio_req_t	include/bdbm_drv.h	/^} bdbm_blkio_req_t;$/;"	t	typeref:struct:__anon26
-bdbm_blkio_stub_private_t	frontend/hybrid/blkio_stub.c	/^} bdbm_blkio_stub_private_t;$/;"	t	typeref:struct:__anon69	file:
+bdbm_blkio_stub_private_t	frontend/hybrid/blkio_stub.c	/^} bdbm_blkio_stub_private_t;$/;"	t	typeref:struct:__anon68	file:
 bdbm_block_ftl_badblock_scan	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)$/;"	f
 bdbm_block_ftl_create	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_create (bdbm_drv_info_t* bdi)$/;"	f
 bdbm_block_ftl_destroy	ftl/algo/block_ftl.c	/^void bdbm_block_ftl_destroy ($/;"	f
@@ -1359,9 +1369,9 @@ bdbm_block_ftl_invalidate_lpa	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_inv
 bdbm_block_ftl_is_gc_needed	ftl/algo/block_ftl.c	/^uint8_t bdbm_block_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)$/;"	f
 bdbm_block_ftl_load	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_load (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
 bdbm_block_ftl_map_lpa_to_ppa	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_map_lpa_to_ppa ($/;"	f
-bdbm_block_ftl_private_t	ftl/algo/block_ftl.c	/^} bdbm_block_ftl_private_t;$/;"	t	typeref:struct:__anon83	file:
+bdbm_block_ftl_private_t	ftl/algo/block_ftl.c	/^} bdbm_block_ftl_private_t;$/;"	t	typeref:struct:__anon82	file:
 bdbm_block_ftl_store	ftl/algo/block_ftl.c	/^uint32_t bdbm_block_ftl_store (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
-bdbm_block_mapping_entry_t	ftl/algo/block_ftl.c	/^} bdbm_block_mapping_entry_t;$/;"	t	typeref:struct:__anon82	file:
+bdbm_block_mapping_entry_t	ftl/algo/block_ftl.c	/^} bdbm_block_mapping_entry_t;$/;"	t	typeref:struct:__anon81	file:
 bdbm_bug_on	include/debug.h	108;"	d
 bdbm_bug_on	include/debug.h	97;"	d
 bdbm_complete	common/utils/usync.h	37;"	d
@@ -1404,7 +1414,7 @@ bdbm_dftl_missing_dir_prepare	ftl/algo/dftl_map.c	/^directory_slot_t* bdbm_dftl_
 bdbm_dftl_prepare_mapblk_eviction	ftl/algo/dftl.c	/^bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_eviction ($/;"	f
 bdbm_dftl_prepare_mapblk_load	ftl/algo/dftl.c	/^bdbm_llm_req_t* bdbm_dftl_prepare_mapblk_load ($/;"	f
 bdbm_dftl_prepare_victim_mapblk	ftl/algo/dftl_map.c	/^directory_slot_t* bdbm_dftl_prepare_victim_mapblk ($/;"	f
-bdbm_dftl_private_t	ftl/algo/dftl.c	/^} bdbm_dftl_private_t;$/;"	t	typeref:struct:__anon91	file:
+bdbm_dftl_private_t	ftl/algo/dftl.c	/^} bdbm_dftl_private_t;$/;"	t	typeref:struct:__anon90	file:
 bdbm_dftl_set_mapping_entry	ftl/algo/dftl_map.c	/^int bdbm_dftl_set_mapping_entry (dftl_mapping_table_t* mt, uint64_t lpa, mapping_entry_t* me)$/;"	f
 bdbm_dftl_store	ftl/algo/dftl.c	/^uint32_t bdbm_dftl_store (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
 bdbm_dftl_update_dir_phyaddr	ftl/algo/dftl_map.c	/^void bdbm_dftl_update_dir_phyaddr ($/;"	f
@@ -1427,7 +1437,7 @@ bdbm_dm_init	devices/dumbssd/dm_dumbssd.c	/^EXPORT_SYMBOL (bdbm_dm_init);$/;"	v
 bdbm_dm_init	devices/dumbssd/dm_dumbssd.c	/^int bdbm_dm_init (bdbm_drv_info_t* bdi)$/;"	f
 bdbm_dm_init	frontend/df-user/dev_proxy.c	/^int bdbm_dm_init (bdbm_drv_info_t* bdi)$/;"	f
 bdbm_dm_init	frontend/user/dev_proxy.c	/^int bdbm_dm_init (bdbm_drv_info_t* bdi)$/;"	f
-bdbm_dm_proxy_t	frontend/df-user/dev_proxy.c	/^} bdbm_dm_proxy_t;$/;"	t	typeref:struct:__anon62	file:
+bdbm_dm_proxy_t	frontend/df-user/dev_proxy.c	/^} bdbm_dm_proxy_t;$/;"	t	typeref:struct:__anon61	file:
 bdbm_dm_proxy_t	frontend/user/dev_proxy.c	/^} bdbm_dm_proxy_t;$/;"	t	typeref:struct:__anon55	file:
 bdbm_dm_stub_exit	devices/common/dev_stub.c	/^void bdbm_dm_stub_exit (void)$/;"	f
 bdbm_dm_stub_init	devices/common/dev_stub.c	/^int bdbm_dm_stub_init (void)$/;"	f
@@ -1473,33 +1483,34 @@ bdbm_ftl_params	include/params.h	/^} bdbm_ftl_params;$/;"	t	typeref:struct:__ano
 bdbm_funlink	common/utils/ufile.c	/^uint32_t bdbm_funlink (bdbm_file_t file)$/;"	f
 bdbm_fwrite	common/utils/ufile.c	/^uint64_t bdbm_fwrite (bdbm_file_t file, uint64_t offset, uint8_t* data, uint64_t size) $/;"	f
 bdbm_hlm_buf_private	ftl/hlm_buf.c	/^struct bdbm_hlm_buf_private {$/;"	s	file:
-bdbm_hlm_dftl_private_t	ftl/hlm_dftl.c	/^} bdbm_hlm_dftl_private_t;$/;"	t	typeref:struct:__anon94	file:
-bdbm_hlm_for_each_llm_req	include/bdbm_drv.h	245;"	d
+bdbm_hlm_dftl_private_t	ftl/hlm_dftl.c	/^} bdbm_hlm_dftl_private_t;$/;"	t	typeref:struct:__anon93	file:
+bdbm_hlm_for_each_llm_req	include/bdbm_drv.h	247;"	d
 bdbm_hlm_inf_t	include/bdbm_drv.h	/^} bdbm_hlm_inf_t;$/;"	t	typeref:struct:__anon40
-bdbm_hlm_nobuf_private_t	ftl/hlm_nobuf.c	/^} bdbm_hlm_nobuf_private_t;$/;"	t	typeref:struct:__anon70	file:
+bdbm_hlm_nobuf_private_t	ftl/hlm_nobuf.c	/^} bdbm_hlm_nobuf_private_t;$/;"	t	typeref:struct:__anon69	file:
 bdbm_hlm_req_gc_t	include/bdbm_drv.h	/^} bdbm_hlm_req_gc_t;$/;"	t	typeref:struct:__anon37
 bdbm_hlm_req_t	include/bdbm_drv.h	/^} bdbm_hlm_req_t;$/;"	t	typeref:struct:__anon32
+bdbm_hlm_reqs_pool_build_int_trim_req	ftl/hlm_reqs_pool.c	/^int bdbm_hlm_reqs_pool_build_int_trim_req ($/;"	f
 bdbm_hlm_reqs_pool_build_req	ftl/hlm_reqs_pool.c	/^int bdbm_hlm_reqs_pool_build_req ($/;"	f
 bdbm_hlm_reqs_pool_build_wb_req	ftl/hlm_reqs_pool.c	/^int bdbm_hlm_reqs_pool_build_wb_req ($/;"	f
 bdbm_hlm_reqs_pool_create	ftl/hlm_reqs_pool.c	/^bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create ($/;"	f
 bdbm_hlm_reqs_pool_destroy	ftl/hlm_reqs_pool.c	/^void bdbm_hlm_reqs_pool_destroy ($/;"	f
 bdbm_hlm_reqs_pool_free_item	ftl/hlm_reqs_pool.c	/^void bdbm_hlm_reqs_pool_free_item ($/;"	f
 bdbm_hlm_reqs_pool_get_item	ftl/hlm_reqs_pool.c	/^bdbm_hlm_req_t* bdbm_hlm_reqs_pool_get_item ($/;"	f
-bdbm_hlm_reqs_pool_t	ftl/hlm_reqs_pool.h	/^} bdbm_hlm_reqs_pool_t;$/;"	t	typeref:struct:__anon71
-bdbm_hlm_rsd_private_t	ftl/hlm_rsd.c	/^}bdbm_hlm_rsd_private_t;$/;"	t	typeref:struct:__anon96	file:
+bdbm_hlm_reqs_pool_t	ftl/hlm_reqs_pool.h	/^} bdbm_hlm_reqs_pool_t;$/;"	t	typeref:struct:__anon70
+bdbm_hlm_rsd_private_t	ftl/hlm_rsd.c	/^}bdbm_hlm_rsd_private_t;$/;"	t	typeref:struct:__anon95	file:
 bdbm_host_inf_t	include/bdbm_drv.h	/^} bdbm_host_inf_t;$/;"	t	typeref:struct:__anon38
 bdbm_init_completion	common/utils/usync.h	34;"	d
-bdbm_is_erase	include/bdbm_drv.h	131;"	d
-bdbm_is_gc	include/bdbm_drv.h	127;"	d
-bdbm_is_meta	include/bdbm_drv.h	128;"	d
-bdbm_is_normal	include/bdbm_drv.h	125;"	d
-bdbm_is_read	include/bdbm_drv.h	129;"	d
-bdbm_is_rmw	include/bdbm_drv.h	126;"	d
-bdbm_is_trim	include/bdbm_drv.h	132;"	d
-bdbm_is_write	include/bdbm_drv.h	130;"	d
-bdbm_is_writeback	include/bdbm_drv.h	135;"	d
-bdbm_llm_get_logaddr	include/bdbm_drv.h	248;"	d
-bdbm_llm_get_phyaddr	include/bdbm_drv.h	250;"	d
+bdbm_is_erase	include/bdbm_drv.h	133;"	d
+bdbm_is_gc	include/bdbm_drv.h	129;"	d
+bdbm_is_meta	include/bdbm_drv.h	130;"	d
+bdbm_is_normal	include/bdbm_drv.h	127;"	d
+bdbm_is_read	include/bdbm_drv.h	131;"	d
+bdbm_is_rmw	include/bdbm_drv.h	128;"	d
+bdbm_is_trim	include/bdbm_drv.h	134;"	d
+bdbm_is_write	include/bdbm_drv.h	132;"	d
+bdbm_is_writeback	include/bdbm_drv.h	137;"	d
+bdbm_llm_get_logaddr	include/bdbm_drv.h	250;"	d
+bdbm_llm_get_phyaddr	include/bdbm_drv.h	252;"	d
 bdbm_llm_inf_t	include/bdbm_drv.h	/^} bdbm_llm_inf_t;$/;"	t	typeref:struct:__anon41
 bdbm_llm_mq_private	ftl/llm_mq.c	/^struct bdbm_llm_mq_private {$/;"	s	file:
 bdbm_llm_noq_lock_private	ftl/llm_noq_lock.c	/^struct bdbm_llm_noq_lock_private {$/;"	s	file:
@@ -1507,8 +1518,8 @@ bdbm_llm_noq_private	ftl/llm_noq.c	/^struct bdbm_llm_noq_private {$/;"	s	file:
 bdbm_llm_req_ioctl_t	devices/common/dev_stub.h	/^} bdbm_llm_req_ioctl_t;$/;"	t	typeref:struct:__anon10
 bdbm_llm_req_t	include/bdbm_drv.h	/^} bdbm_llm_req_t;$/;"	t	typeref:struct:__anon31
 bdbm_llm_rmq_private	ftl/llm_rmq.c	/^struct bdbm_llm_rmq_private {$/;"	s	file:
-bdbm_llm_set_logaddr	include/bdbm_drv.h	247;"	d
-bdbm_llm_set_phyaddr	include/bdbm_drv.h	249;"	d
+bdbm_llm_set_logaddr	include/bdbm_drv.h	249;"	d
+bdbm_llm_set_phyaddr	include/bdbm_drv.h	251;"	d
 bdbm_logaddr_t	include/bdbm_drv.h	/^} bdbm_logaddr_t;$/;"	t	typeref:struct:__anon28
 bdbm_malloc	common/utils/umemory.c	/^void* bdbm_malloc (size_t size) { return calloc (1, size); }$/;"	f
 bdbm_malloc	common/utils/umemory.c	/^void* bdbm_malloc (size_t size) { return vzalloc (size); }$/;"	f
@@ -1548,16 +1559,14 @@ bdbm_no_ftl_get_free_ppa	ftl/algo/no_ftl.c	/^uint32_t bdbm_no_ftl_get_free_ppa (
 bdbm_no_ftl_get_ppa	ftl/algo/no_ftl.c	/^uint32_t bdbm_no_ftl_get_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ppa)$/;"	f
 bdbm_no_ftl_invalidate_lpa	ftl/algo/no_ftl.c	/^uint32_t bdbm_no_ftl_invalidate_lpa (bdbm_drv_info_t* bdi, uint64_t lpa, uint64_t len)$/;"	f
 bdbm_no_ftl_map_lpa_to_ppa	ftl/algo/no_ftl.c	/^uint32_t bdbm_no_ftl_map_lpa_to_ppa (bdbm_drv_info_t* bdi, uint64_t lpa, bdbm_phyaddr_t* ptr_phyaddr)$/;"	f
-bdbm_nvm_alloc_slot	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
-bdbm_nvm_block_t	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^} bdbm_nvm_block_t;$/;"	t	typeref:struct:__anon58
+bdbm_nvm_alloc_slot	frontend/kernel/nvm_cache.c	/^static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f	file:
 bdbm_nvm_create	frontend/kernel/nvm_cache.c	/^uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){$/;"	f
-bdbm_nvm_create	frontend/kernel/nvm_cache_bak/nvm_cache.c	/^uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){$/;"	f
 bdbm_nvm_destroy	frontend/kernel/nvm_cache.c	/^void bdbm_nvm_destroy (bdbm_drv_info_t* bdi)$/;"	f
-bdbm_nvm_dev_private_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_dev_private_t;$/;"	t	typeref:struct:__anon57
-bdbm_nvm_dev_private_t	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^} bdbm_nvm_dev_private_t;$/;"	t	typeref:struct:__anon59
-bdbm_nvm_find_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
+bdbm_nvm_dev_private_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_dev_private_t;$/;"	t	typeref:struct:__anon58
+bdbm_nvm_find_data	frontend/kernel/nvm_cache.c	/^int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
 bdbm_nvm_inf_t	include/bdbm_drv.h	/^} bdbm_nvm_inf_t;$/;"	t	typeref:struct:__anon39
-bdbm_nvm_page_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_page_t;$/;"	t	typeref:struct:__anon56
+bdbm_nvm_make_req	frontend/kernel/nvm_cache.c	/^int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){$/;"	f
+bdbm_nvm_page_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_page_t;$/;"	t	typeref:struct:__anon57
 bdbm_nvm_read_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
 bdbm_nvm_write_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
 bdbm_page_badblock_scan	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)$/;"	f
@@ -1570,12 +1579,12 @@ bdbm_page_ftl_invalidate_lpa	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_ftl_invali
 bdbm_page_ftl_is_gc_needed	ftl/algo/page_ftl.c	/^uint8_t bdbm_page_ftl_is_gc_needed (bdbm_drv_info_t* bdi, int64_t lpa)$/;"	f
 bdbm_page_ftl_load	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
 bdbm_page_ftl_map_lpa_to_ppa	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_ftl_map_lpa_to_ppa ($/;"	f
-bdbm_page_ftl_private_t	ftl/algo/page_ftl.c	/^} bdbm_page_ftl_private_t;$/;"	t	typeref:struct:__anon93	file:
+bdbm_page_ftl_private_t	ftl/algo/page_ftl.c	/^} bdbm_page_ftl_private_t;$/;"	t	typeref:struct:__anon92	file:
 bdbm_page_ftl_store	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
-bdbm_page_mapping_entry_t	ftl/algo/page_ftl.c	/^} bdbm_page_mapping_entry_t;$/;"	t	typeref:struct:__anon92	file:
+bdbm_page_mapping_entry_t	ftl/algo/page_ftl.c	/^} bdbm_page_mapping_entry_t;$/;"	t	typeref:struct:__anon91	file:
 bdbm_perf_monitor_t	include/bdbm_drv.h	/^} bdbm_perf_monitor_t;$/;"	t	typeref:struct:__anon44
 bdbm_phyaddr_t	include/bdbm_drv.h	/^} bdbm_phyaddr_t;$/;"	t	typeref:struct:__anon25
-bdbm_prior_lpa_item_t	ftl/queue/prior_queue.h	/^} bdbm_prior_lpa_item_t;$/;"	t	typeref:struct:__anon76
+bdbm_prior_lpa_item_t	ftl/queue/prior_queue.h	/^} bdbm_prior_lpa_item_t;$/;"	t	typeref:struct:__anon75
 bdbm_prior_queue_create	ftl/queue/prior_queue.c	/^bdbm_prior_queue_t* bdbm_prior_queue_create ($/;"	f
 bdbm_prior_queue_dequeue	ftl/queue/prior_queue.c	/^void* bdbm_prior_queue_dequeue ($/;"	f
 bdbm_prior_queue_destroy	ftl/queue/prior_queue.c	/^void bdbm_prior_queue_destroy (bdbm_prior_queue_t* mq)$/;"	f
@@ -1584,16 +1593,16 @@ bdbm_prior_queue_get_nr_items	ftl/queue/prior_queue.c	/^uint64_t bdbm_prior_queu
 bdbm_prior_queue_is_all_empty	ftl/queue/prior_queue.c	/^uint8_t bdbm_prior_queue_is_all_empty (bdbm_prior_queue_t* mq)$/;"	f
 bdbm_prior_queue_is_empty	ftl/queue/prior_queue.c	/^uint8_t bdbm_prior_queue_is_empty ($/;"	f
 bdbm_prior_queue_is_full	ftl/queue/prior_queue.c	/^uint8_t bdbm_prior_queue_is_full (bdbm_prior_queue_t* mq)$/;"	f
-bdbm_prior_queue_item_t	ftl/queue/prior_queue.h	/^} bdbm_prior_queue_item_t;$/;"	t	typeref:struct:__anon75
+bdbm_prior_queue_item_t	ftl/queue/prior_queue.h	/^} bdbm_prior_queue_item_t;$/;"	t	typeref:struct:__anon74
 bdbm_prior_queue_move	ftl/queue/prior_queue.c	/^uint8_t bdbm_prior_queue_move ($/;"	f
 bdbm_prior_queue_remove	ftl/queue/prior_queue.c	/^uint8_t bdbm_prior_queue_remove ($/;"	f
-bdbm_prior_queue_t	ftl/queue/prior_queue.h	/^} bdbm_prior_queue_t;$/;"	t	typeref:struct:__anon77
-bdbm_proxy_req_status_t	frontend/hybrid/blkio_proxy_ioctl.h	/^} bdbm_proxy_req_status_t;$/;"	t	typeref:enum:__anon67
+bdbm_prior_queue_t	ftl/queue/prior_queue.h	/^} bdbm_prior_queue_t;$/;"	t	typeref:struct:__anon76
+bdbm_proxy_req_status_t	frontend/hybrid/blkio_proxy_ioctl.h	/^} bdbm_proxy_req_status_t;$/;"	t	typeref:enum:__anon66
 bdbm_proxy_reqs_pool_alloc_item	frontend/hybrid/blkio_proxy_reqs_pool.c	/^bdbm_blkio_proxy_req_t* bdbm_proxy_reqs_pool_alloc_item ($/;"	f
 bdbm_proxy_reqs_pool_create	frontend/hybrid/blkio_proxy_reqs_pool.c	/^bdbm_proxy_reqs_pool_t* bdbm_proxy_reqs_pool_create ($/;"	f
 bdbm_proxy_reqs_pool_destroy	frontend/hybrid/blkio_proxy_reqs_pool.c	/^void bdbm_proxy_reqs_pool_destroy (bdbm_proxy_reqs_pool_t* pool)$/;"	f
 bdbm_proxy_reqs_pool_free_item	frontend/hybrid/blkio_proxy_reqs_pool.c	/^void bdbm_proxy_reqs_pool_free_item ($/;"	f
-bdbm_proxy_reqs_pool_t	frontend/hybrid/blkio_proxy_reqs_pool.h	/^} bdbm_proxy_reqs_pool_t;$/;"	t	typeref:struct:__anon63
+bdbm_proxy_reqs_pool_t	frontend/hybrid/blkio_proxy_reqs_pool.h	/^} bdbm_proxy_reqs_pool_t;$/;"	t	typeref:struct:__anon62
 bdbm_queue_create	ftl/queue/queue.c	/^bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)$/;"	f
 bdbm_queue_dequeue	ftl/queue/queue.c	/^void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid)$/;"	f
 bdbm_queue_destroy	ftl/queue/queue.c	/^void bdbm_queue_destroy (bdbm_queue_t* mq)$/;"	f
@@ -1603,8 +1612,8 @@ bdbm_queue_get_nr_items	ftl/queue/queue.c	/^uint64_t bdbm_queue_get_nr_items (bd
 bdbm_queue_is_all_empty	ftl/queue/queue.c	/^uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq)$/;"	f
 bdbm_queue_is_empty	ftl/queue/queue.c	/^uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid)$/;"	f
 bdbm_queue_is_full	ftl/queue/queue.c	/^uint8_t bdbm_queue_is_full (bdbm_queue_t* mq)$/;"	f
-bdbm_queue_item_t	ftl/queue/queue.h	/^} bdbm_queue_item_t;$/;"	t	typeref:struct:__anon73
-bdbm_queue_t	ftl/queue/queue.h	/^} bdbm_queue_t;$/;"	t	typeref:struct:__anon74
+bdbm_queue_item_t	ftl/queue/queue.h	/^} bdbm_queue_item_t;$/;"	t	typeref:struct:__anon72
+bdbm_queue_t	ftl/queue/queue.h	/^} bdbm_queue_t;$/;"	t	typeref:struct:__anon73
 bdbm_raw_flash_erase_block	examples/raw-flash/raw-flash.c	/^int bdbm_raw_flash_erase_block ($/;"	f
 bdbm_raw_flash_erase_block_async	examples/raw-flash/raw-flash.c	/^int bdbm_raw_flash_erase_block_async ($/;"	f
 bdbm_raw_flash_exit	examples/raw-flash/raw-flash.c	/^void bdbm_raw_flash_exit (bdbm_raw_flash_t* rf)$/;"	f
@@ -1620,7 +1629,7 @@ bdbm_raw_flash_t	examples/raw-flash/raw-flash.h	/^} bdbm_raw_flash_t;$/;"	t	type
 bdbm_raw_flash_wait	examples/raw-flash/raw-flash.c	/^int bdbm_raw_flash_wait ($/;"	f
 bdbm_raw_flash_write_page	examples/raw-flash/raw-flash.c	/^int bdbm_raw_flash_write_page ($/;"	f
 bdbm_raw_flash_write_page_async	examples/raw-flash/raw-flash.c	/^int bdbm_raw_flash_write_page_async ($/;"	f
-bdbm_rd_prior_lpa_item_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_lpa_item_t;$/;"	t	typeref:struct:__anon80
+bdbm_rd_prior_lpa_item_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_lpa_item_t;$/;"	t	typeref:struct:__anon79
 bdbm_rd_prior_queue_create	ftl/queue/rd_prior_queue.c	/^bdbm_rd_prior_queue_t* bdbm_rd_prior_queue_create ($/;"	f
 bdbm_rd_prior_queue_dequeue	ftl/queue/rd_prior_queue.c	/^void* bdbm_rd_prior_queue_dequeue ($/;"	f
 bdbm_rd_prior_queue_destroy	ftl/queue/rd_prior_queue.c	/^void bdbm_rd_prior_queue_destroy (bdbm_rd_prior_queue_t* mq)$/;"	f
@@ -1629,15 +1638,15 @@ bdbm_rd_prior_queue_get_nr_items	ftl/queue/rd_prior_queue.c	/^uint64_t bdbm_rd_p
 bdbm_rd_prior_queue_is_all_empty	ftl/queue/rd_prior_queue.c	/^uint8_t bdbm_rd_prior_queue_is_all_empty (bdbm_rd_prior_queue_t* mq)$/;"	f
 bdbm_rd_prior_queue_is_empty	ftl/queue/rd_prior_queue.c	/^uint8_t bdbm_rd_prior_queue_is_empty ($/;"	f
 bdbm_rd_prior_queue_is_full	ftl/queue/rd_prior_queue.c	/^uint8_t bdbm_rd_prior_queue_is_full (bdbm_rd_prior_queue_t* mq)$/;"	f
-bdbm_rd_prior_queue_item_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_queue_item_t;$/;"	t	typeref:struct:__anon79
+bdbm_rd_prior_queue_item_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_queue_item_t;$/;"	t	typeref:struct:__anon78
 bdbm_rd_prior_queue_move	ftl/queue/rd_prior_queue.c	/^uint8_t bdbm_rd_prior_queue_move ($/;"	f
 bdbm_rd_prior_queue_remove	ftl/queue/rd_prior_queue.c	/^uint8_t bdbm_rd_prior_queue_remove ($/;"	f
-bdbm_rd_prior_queue_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_queue_t;$/;"	t	typeref:struct:__anon81
+bdbm_rd_prior_queue_t	ftl/queue/rd_prior_queue.h	/^} bdbm_rd_prior_queue_t;$/;"	t	typeref:struct:__anon80
 bdbm_register	devices/dumbssd/dm_dumbssd.c	/^EXPORT_SYMBOL (bdbm_register);$/;"	v
 bdbm_register	devices/dumbssd/dm_dumbssd.c	/^int bdbm_register (struct request_queue* q, char* disk_name)$/;"	f
 bdbm_reinit_completion	common/utils/usync.h	39;"	d
 bdbm_reinit_completion	common/utils/usync.h	41;"	d
-bdbm_rp_mem	ftl/hlm_reqs_pool.h	/^} bdbm_rp_mem;$/;"	t	typeref:enum:__anon72
+bdbm_rp_mem	ftl/hlm_reqs_pool.h	/^} bdbm_rp_mem;$/;"	t	typeref:enum:__anon71
 bdbm_sema_free	common/utils/usync.h	103;"	d
 bdbm_sema_free	common/utils/usync.h	56;"	d
 bdbm_sema_init	common/utils/usync.h	47;"	d
@@ -1693,7 +1702,7 @@ bdbm_track	include/debug.h	67;"	d
 bdbm_try_wait_for_completion	common/utils/usync.h	36;"	d
 bdbm_unregister	devices/dumbssd/dm_dumbssd.c	/^EXPORT_SYMBOL(bdbm_unregister);$/;"	v
 bdbm_unregister	devices/dumbssd/dm_dumbssd.c	/^void bdbm_unregister (char* disk_name)$/;"	f
-bdbm_userio_private_t	frontend/df-user/userio.c	/^} bdbm_userio_private_t;$/;"	t	typeref:struct:__anon61	file:
+bdbm_userio_private_t	frontend/df-user/userio.c	/^} bdbm_userio_private_t;$/;"	t	typeref:struct:__anon60	file:
 bdbm_userio_private_t	frontend/user/userio.c	/^} bdbm_userio_private_t;$/;"	t	typeref:struct:__anon54	file:
 bdbm_wait_for_completion	common/utils/usync.h	35;"	d
 bdbm_warn_on	include/debug.h	88;"	d
@@ -1704,11 +1713,11 @@ bdbm_zmalloc	common/utils/umemory.c	/^void* bdbm_zmalloc (size_t size) { return 
 bdbm_zmalloc	frontend/df-user/df_umemory.c	/^void* bdbm_zmalloc (size_t size) { return calloc (1, size); }$/;"	f
 bdi	devices/common/dev_stub.c	/^	bdbm_drv_info_t* bdi;$/;"	m	struct:__anon9	file:
 bdi	examples/raw-flash/raw-flash.h	/^	bdbm_drv_info_t bdi; $/;"	m	struct:__anon20
-bdi	frontend/hybrid/blkio_proxy.c	/^	bdbm_drv_info_t* bdi;$/;"	m	struct:__anon65	file:
+bdi	frontend/hybrid/blkio_proxy.c	/^	bdbm_drv_info_t* bdi;$/;"	m	struct:__anon64	file:
 bdops	frontend/kernel/blkdev.c	/^static struct block_device_operations bdops = {$/;"	v	typeref:struct:block_device_operations	file:
 bdops	frontend/kernel/blkdev_bak.c	/^static struct block_device_operations bdops = {$/;"	v	typeref:struct:block_device_operations	file:
 bi_bvec_cnt	include/bdbm_drv.h	/^	uint64_t bi_bvec_cnt; \/* unit: kernel-page (4KB); it must be equal to 'bi_size \/ 8' *\/$/;"	m	struct:__anon26
-bi_bvec_ptr	frontend/hybrid/blkio_proxy_ioctl.h	/^	uint8_t bi_bvec_ptr[BDBM_BLKIO_MAX_VECS][KERNEL_PAGE_SIZE]; \/* keep data shared by both kernel and user *\/$/;"	m	struct:__anon68
+bi_bvec_ptr	frontend/hybrid/blkio_proxy_ioctl.h	/^	uint8_t bi_bvec_ptr[BDBM_BLKIO_MAX_VECS][KERNEL_PAGE_SIZE]; \/* keep data shared by both kernel and user *\/$/;"	m	struct:__anon67
 bi_bvec_ptr	include/bdbm_drv.h	/^	uint8_t* bi_bvec_ptr[BDBM_BLKIO_MAX_VECS]; \/* an array of 4 KB data for bvec *\/$/;"	m	struct:__anon26
 bi_offset	include/bdbm_drv.h	/^	uint64_t bi_offset; \/* unit: sector (512B) *\/$/;"	m	struct:__anon26
 bi_rw	include/bdbm_drv.h	/^	uint64_t bi_rw; \/* REQTYPE_WRITE or REQTYPE_READ *\/$/;"	m	struct:__anon26
@@ -1740,7 +1749,7 @@ blkio_proxy_make_req	frontend/hybrid/blkio_proxy.c	/^void blkio_proxy_make_req (
 blkio_proxy_mmap_close	frontend/hybrid/blkio_proxy.c	/^void blkio_proxy_mmap_close (struct vm_area_struct *vma)$/;"	f
 blkio_proxy_mmap_open	frontend/hybrid/blkio_proxy.c	/^void blkio_proxy_mmap_open (struct vm_area_struct *vma)$/;"	f
 blkio_proxy_open	frontend/hybrid/blkio_proxy.c	/^uint32_t blkio_proxy_open (bdbm_drv_info_t* bdi)$/;"	f
-blkio_req	frontend/hybrid/blkio_proxy_ioctl.h	/^	bdbm_blkio_req_t blkio_req;	\/* must be at the top of the structure *\/$/;"	m	struct:__anon68
+blkio_req	frontend/hybrid/blkio_proxy_ioctl.h	/^	bdbm_blkio_req_t blkio_req;	\/* must be at the top of the structure *\/$/;"	m	struct:__anon67
 blkio_req	include/bdbm_drv.h	/^	void* blkio_req;$/;"	m	struct:__anon32
 blkio_stub_close	frontend/hybrid/blkio_stub.c	/^void blkio_stub_close (bdbm_drv_info_t* bdi)$/;"	f
 blkio_stub_end_req	frontend/hybrid/blkio_stub.c	/^void blkio_stub_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req)$/;"	f
@@ -1753,15 +1762,15 @@ block	devices/dumbssd/dm_dumbssd.h	/^	int block;$/;"	m	struct:__anon18
 block_erase_time_us	include/params.h	/^	uint64_t block_erase_time_us;$/;"	m	struct:__anon47
 block_is_full	tools/lightnvm-v4.5.3/rrpc.c	/^static int block_is_full(struct rrpc *rrpc, struct rrpc_block *rblk)$/;"	f	file:
 block_is_full	tools/lightnvm/rrpc.c	/^static int block_is_full(struct rrpc *rrpc, struct rrpc_block *rblk)$/;"	f	file:
-block_no	ftl/algo/abm.h	/^	uint64_t block_no;$/;"	m	struct:__anon84
-block_no	ftl/algo/block_ftl.c	/^	uint64_t block_no;$/;"	m	struct:__anon82	file:
-block_no	ftl/algo/dftl_map.h	/^	uint64_t block_no;$/;"	m	struct:__anon87
+block_no	ftl/algo/abm.h	/^	uint64_t block_no;$/;"	m	struct:__anon83
+block_no	ftl/algo/block_ftl.c	/^	uint64_t block_no;$/;"	m	struct:__anon81	file:
+block_no	ftl/algo/dftl_map.h	/^	uint64_t block_no;$/;"	m	struct:__anon86
 block_no	include/bdbm_drv.h	/^	uint64_t block_no;$/;"	m	struct:__anon25
 block_prio_find_max	tools/lightnvm-v4.5.3/rrpc.c	/^static struct rrpc_block *block_prio_find_max(struct rrpc_lun *rlun)$/;"	f	file:
 block_prio_find_max	tools/lightnvm/rrpc.c	/^static struct rrpc_block *block_prio_find_max(struct rrpc_lun *rlun)$/;"	f	file:
 block_to_addr	tools/lightnvm-v4.5.3/rrpc.c	/^static u64 block_to_addr(struct rrpc *rrpc, struct rrpc_block *rblk)$/;"	f	file:
 block_to_addr	tools/lightnvm/rrpc.c	/^static u64 block_to_addr(struct rrpc *rrpc, struct rrpc_block *rblk)$/;"	f	file:
-blocks	ftl/algo/abm.h	/^	bdbm_abm_block_t* blocks;$/;"	m	struct:__anon85
+blocks	ftl/algo/abm.h	/^	bdbm_abm_block_t* blocks;$/;"	m	struct:__anon84
 blocks	tools/lightnvm-v4.5.3/rrpc.h	/^	struct rrpc_block *blocks;	\/* Reference to block allocation *\/$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::rrpc_block
 blocks	tools/lightnvm/rrpc.h	/^	struct rrpc_block *blocks;	\/* Reference to block allocation *\/$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::rrpc_block
 bloom_bv	common/3rd/uthash.h	/^   uint8_t *bloom_bv;$/;"	m	struct:UT_hash_table
@@ -1793,16 +1802,16 @@ ch_len	tools/nvme/lightnvm.c	/^	__u8			ch_len;$/;"	m	struct:nvme_nvm_addr_format
 ch_len	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			ch_len;$/;"	m	struct:nvme_nvm_addr_format	file:
 ch_offset	tools/nvme/lightnvm.c	/^	__u8			ch_offset;$/;"	m	struct:nvme_nvm_addr_format	file:
 ch_offset	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			ch_offset;$/;"	m	struct:nvme_nvm_addr_format	file:
-channel_no	ftl/algo/abm.h	/^	uint64_t channel_no;$/;"	m	struct:__anon84
-channel_no	ftl/algo/block_ftl.c	/^	uint64_t channel_no;$/;"	m	struct:__anon82	file:
-channel_no	ftl/algo/dftl_map.h	/^	uint8_t channel_no;$/;"	m	struct:__anon87
+channel_no	ftl/algo/abm.h	/^	uint64_t channel_no;$/;"	m	struct:__anon83
+channel_no	ftl/algo/block_ftl.c	/^	uint64_t channel_no;$/;"	m	struct:__anon81	file:
+channel_no	ftl/algo/dftl_map.h	/^	uint8_t channel_no;$/;"	m	struct:__anon86
 channel_no	include/bdbm_drv.h	/^	uint64_t channel_no;$/;"	m	struct:__anon25
 check_mapblk	include/bdbm_drv.h	/^	uint8_t (*check_mapblk) (bdbm_drv_info_t* bdi, uint64_t lpa);$/;"	m	struct:__anon43
 check_thread_fn	examples/stub_test/main.c	/^void check_thread_fn (void* data)$/;"	f
 check_thread_t	examples/stub_test/main.c	/^} check_thread_t;$/;"	t	typeref:struct:__anon23	file:
-chip_no	ftl/algo/abm.h	/^	uint64_t chip_no;$/;"	m	struct:__anon84
-chip_no	ftl/algo/block_ftl.c	/^	uint64_t chip_no;$/;"	m	struct:__anon82	file:
-chip_no	ftl/algo/dftl_map.h	/^	uint8_t chip_no;$/;"	m	struct:__anon87
+chip_no	ftl/algo/abm.h	/^	uint64_t chip_no;$/;"	m	struct:__anon83
+chip_no	ftl/algo/block_ftl.c	/^	uint64_t chip_no;$/;"	m	struct:__anon81	file:
+chip_no	ftl/algo/dftl_map.h	/^	uint8_t chip_no;$/;"	m	struct:__anon86
 chip_no	include/bdbm_drv.h	/^	uint64_t chip_no;$/;"	m	struct:__anon25
 chnl_off	tools/nvme/lightnvm.c	/^	__le32			chnl_off;$/;"	m	struct:nvme_nvm_identity	file:
 chnl_off	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32			chnl_off;$/;"	m	struct:nvme_nvm_identity	file:
@@ -1883,12 +1892,12 @@ ctrl_config	tools/nvme/nvme.h	/^	u32 ctrl_config;$/;"	m	struct:nvme_ctrl
 ctrl_config	tools/nvmedrv-v4.5.3/nvme.h	/^	u32 ctrl_config;$/;"	m	struct:nvme_ctrl
 cur	tools/lightnvm-v4.5.3/rrpc.h	/^	struct rrpc_block *cur, *gc_cur;$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::rrpc_block
 cur	tools/lightnvm/rrpc.h	/^	struct rrpc_block *cur, *gc_cur;$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::rrpc_block
-cur_tag	ftl/queue/prior_queue.h	/^	uint64_t cur_tag;$/;"	m	struct:__anon76
-cur_tag	ftl/queue/rd_prior_queue.h	/^	uint64_t cur_tag;$/;"	m	struct:__anon80
-curr_page_ofs	ftl/algo/dftl.c	/^	uint64_t curr_page_ofs;$/;"	m	struct:__anon91	file:
-curr_page_ofs	ftl/algo/page_ftl.c	/^	uint64_t curr_page_ofs;$/;"	m	struct:__anon93	file:
-curr_puid	ftl/algo/dftl.c	/^	uint64_t curr_puid;$/;"	m	struct:__anon91	file:
-curr_puid	ftl/algo/page_ftl.c	/^	uint64_t curr_puid;$/;"	m	struct:__anon93	file:
+cur_tag	ftl/queue/prior_queue.h	/^	uint64_t cur_tag;$/;"	m	struct:__anon75
+cur_tag	ftl/queue/rd_prior_queue.h	/^	uint64_t cur_tag;$/;"	m	struct:__anon79
+curr_page_ofs	ftl/algo/dftl.c	/^	uint64_t curr_page_ofs;$/;"	m	struct:__anon90	file:
+curr_page_ofs	ftl/algo/page_ftl.c	/^	uint64_t curr_page_ofs;$/;"	m	struct:__anon92	file:
+curr_puid	ftl/algo/dftl.c	/^	uint64_t curr_puid;$/;"	m	struct:__anon90	file:
+curr_puid	ftl/algo/page_ftl.c	/^	uint64_t curr_puid;$/;"	m	struct:__anon92	file:
 d	common/3rd/utarray.h	/^    char *d;     \/* n slots of size icd->sz*\/$/;"	m	struct:__anon5
 d	common/3rd/utstring.h	/^    char *d;$/;"	m	struct:__anon8
 data	include/bdbm_drv.h	/^	uint8_t* data;$/;"	m	struct:__anon30
@@ -1937,6 +1946,7 @@ dev_ramssd_get_channles_per_ssd	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ram
 dev_ramssd_get_chip_size	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_chip_size (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
 dev_ramssd_get_chips_per_channel	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_chips_per_channel (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
 dev_ramssd_get_chips_per_ssd	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_chips_per_ssd (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
+dev_ramssd_get_data	devices/ramdrive/dev_ramssd.c	/^uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ri, int64_t lpa)$/;"	f
 dev_ramssd_get_page_size	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_page_size (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
 dev_ramssd_get_page_size_main	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_page_size_main (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
 dev_ramssd_get_page_size_oob	devices/ramdrive/dev_ramssd.h	/^uint64_t dev_ramssd_get_page_size_oob (dev_ramssd_info_t* ptr_ramssd_info) {$/;"	f
@@ -1956,13 +1966,13 @@ device_capacity_in_byte	include/params.h	/^	uint64_t device_capacity_in_byte;$/;
 device_type	include/params.h	/^	uint32_t device_type;$/;"	m	struct:__anon47
 devnum	devices/common/dev_stub.c	/^static dev_t devnum = 0; $/;"	v	file:
 devnum	frontend/hybrid/blkio_proxy.c	/^static dev_t devnum = 0; $/;"	v	file:
-dftl_mapping_table_t	ftl/algo/dftl_map.h	/^} dftl_mapping_table_t;$/;"	t	typeref:struct:__anon90
+dftl_mapping_table_t	ftl/algo/dftl_map.h	/^} dftl_mapping_table_t;$/;"	t	typeref:struct:__anon89
 die	devices/dumbssd/dev_hynix_nvme.h	/^	uint64_t die;$/;"	m	struct:__anon17
 die	devices/dumbssd/dm_dumbssd.h	/^	int die;$/;"	m	struct:__anon18
 die_locks	devices/dumbssd/dm_dumbssd.c	/^bdbm_sema_t die_locks[NR_DIES];$/;"	v
-dir	ftl/algo/dftl_map.h	/^	directory_slot_t* dir;	\/* always maintained in DRAM *\/$/;"	m	struct:__anon90
-dir_stat	ftl/algo/dftl_map.h	/^} dir_stat;$/;"	t	typeref:enum:__anon86
-directory_slot_t	ftl/algo/dftl_map.h	/^} directory_slot_t;$/;"	t	typeref:struct:__anon89
+dir	ftl/algo/dftl_map.h	/^	directory_slot_t* dir;	\/* always maintained in DRAM *\/$/;"	m	struct:__anon89
+dir_stat	ftl/algo/dftl_map.h	/^} dir_stat;$/;"	t	typeref:enum:__anon85
+directory_slot_t	ftl/algo/dftl_map.h	/^} directory_slot_t;$/;"	t	typeref:struct:__anon88
 disk	tools/lightnvm-v4.5.3/rrpc.h	/^	struct gendisk *disk;$/;"	m	struct:rrpc	typeref:struct:rrpc::gendisk
 disk	tools/lightnvm/rrpc.h	/^	struct gendisk *disk;$/;"	m	struct:rrpc	typeref:struct:rrpc::gendisk
 disk	tools/nvme/nvme.h	/^	struct gendisk *disk;$/;"	m	struct:nvme_ns	typeref:struct:nvme_ns::gendisk
@@ -2018,6 +2028,7 @@ dm_proxy_store	frontend/user/dev_proxy.c	/^uint32_t dm_proxy_store ($/;"	f
 dm_proxy_thread	frontend/user/dev_proxy.c	/^	bdbm_thread_t* dm_proxy_thread;$/;"	m	struct:__anon55	file:
 dm_ramdrive_close	devices/ramdrive/dm_ramdrive.c	/^void dm_ramdrive_close (bdbm_drv_info_t* bdi)$/;"	f
 dm_ramdrive_end_req	devices/ramdrive/dm_ramdrive.c	/^void dm_ramdrive_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)$/;"	f
+dm_ramdrive_get_data	devices/ramdrive/dm_ramdrive.c	/^uint8_t* dm_ramdrive_get_data (bdbm_drv_info_t* bdi, int64_t lpa)$/;"	f
 dm_ramdrive_load	devices/ramdrive/dm_ramdrive.c	/^uint32_t dm_ramdrive_load (bdbm_drv_info_t* bdi, const char* fn)$/;"	f
 dm_ramdrive_make_req	devices/ramdrive/dm_ramdrive.c	/^uint32_t dm_ramdrive_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req)$/;"	f
 dm_ramdrive_make_reqs	devices/ramdrive/dm_ramdrive.c	/^uint32_t dm_ramdrive_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)$/;"	f
@@ -2065,11 +2076,12 @@ end_req	include/bdbm_drv.h	/^	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_re
 end_req	include/bdbm_drv.h	/^	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);$/;"	m	struct:__anon40
 end_req	include/bdbm_drv.h	/^	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);$/;"	m	struct:__anon41
 end_req	include/bdbm_drv.h	/^	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);$/;"	m	struct:__anon42
+end_wb_req	include/bdbm_drv.h	/^	void (*end_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);$/;"	m	struct:__anon38
 entry	tools/nvme/pci.c	/^	struct msix_entry *entry;$/;"	m	struct:nvme_dev	typeref:struct:nvme_dev::msix_entry	file:
 entry	tools/nvmedrv-v4.5.3/pci.c	/^	struct msix_entry *entry;$/;"	m	struct:nvme_dev	typeref:struct:nvme_dev::msix_entry	file:
 erase	tools/nvme/lightnvm.c	/^		struct nvme_nvm_erase_blk erase;$/;"	m	union:nvme_nvm_command::__anon50	typeref:struct:nvme_nvm_command::__anon50::nvme_nvm_erase_blk	file:
 erase	tools/nvmedrv-v4.5.3/lightnvm.c	/^		struct nvme_nvm_erase_blk erase;$/;"	m	union:nvme_nvm_command::__anon53	typeref:struct:nvme_nvm_command::__anon53::nvme_nvm_erase_blk	file:
-erase_count	ftl/algo/abm.h	/^	uint32_t erase_count;$/;"	m	struct:__anon84
+erase_count	ftl/algo/abm.h	/^	uint32_t erase_count;$/;"	m	struct:__anon83
 eui	tools/nvme/nvme.h	/^	u8 eui[8];$/;"	m	struct:nvme_ns
 eui	tools/nvmedrv-v4.5.3/nvme.h	/^	u8 eui[8];$/;"	m	struct:nvme_ns
 eui_show	tools/nvme/core.c	/^static ssize_t eui_show(struct device *dev, struct device_attribute *attr,$/;"	f	file:
@@ -2092,7 +2104,7 @@ factory_nblks	tools/lightnvm-v4.5.3/sysblk.c	/^static int factory_nblks(int nblk
 factory_nblks	tools/lightnvm/sysblk.c	/^static int factory_nblks(int nblks)$/;"	f	file:
 fd	examples/stub_test/main.c	/^	int fd;$/;"	m	struct:__anon23	file:
 fd	examples/stub_test/main.c	/^	int fd;$/;"	m	struct:__anon24	file:
-fd	frontend/hybrid/blkio_stub.c	/^	int fd;$/;"	m	struct:__anon69	file:
+fd	frontend/hybrid/blkio_stub.c	/^	int fd;$/;"	m	struct:__anon68	file:
 fd	frontend/user/dev_proxy.c	/^	int fd;$/;"	m	struct:__anon55	file:
 finish_mapblk_eviction	include/bdbm_drv.h	/^	void (*finish_mapblk_eviction) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);$/;"	m	struct:__anon43
 finish_mapblk_load	include/bdbm_drv.h	/^	void (*finish_mapblk_load) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);$/;"	m	struct:__anon43
@@ -2138,30 +2150,30 @@ fpg_sz	tools/nvme/lightnvm.c	/^	__le16			fpg_sz;$/;"	m	struct:nvme_nvm_id_group	
 fpg_sz	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le16			fpg_sz;$/;"	m	struct:nvme_nvm_id_group	file:
 free_ctrl	tools/nvme/nvme.h	/^	void (*free_ctrl)(struct nvme_ctrl *ctrl);$/;"	m	struct:nvme_ctrl_ops
 free_ctrl	tools/nvmedrv-v4.5.3/nvme.h	/^	void (*free_ctrl)(struct nvme_ctrl *ctrl);$/;"	m	struct:nvme_ctrl_ops
-free_list	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	struct list_head free_list;$/;"	m	struct:__anon63	typeref:struct:__anon63::list_head
-free_list	frontend/kernel/nvm_cache.h	/^	struct list_head* free_list;$/;"	m	struct:__anon57	typeref:struct:__anon57::list_head
-free_list	ftl/hlm_reqs_pool.h	/^	struct list_head free_list;$/;"	m	struct:__anon71	typeref:struct:__anon71::list_head
+free_list	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	struct list_head free_list;$/;"	m	struct:__anon62	typeref:struct:__anon62::list_head
+free_list	frontend/kernel/nvm_cache.h	/^	struct list_head* free_list;$/;"	m	struct:__anon58	typeref:struct:__anon58::list_head
+free_list	ftl/hlm_reqs_pool.h	/^	struct list_head free_list;$/;"	m	struct:__anon70	typeref:struct:__anon70::list_head
 free_list	tools/lightnvm-v4.5.3/gennvm.h	/^	struct list_head free_list;	\/* Not used blocks i.e. released$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
 free_list	tools/lightnvm/gennvm.h	/^	struct list_head free_list;	\/* Not used blocks i.e. released$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
 free_page	common/utils/upage.c	/^void free_page (unsigned long addr) {$/;"	f
-ftl	ftl/hlm_dftl.c	/^	bdbm_ftl_inf_t* ftl;	\/* for hlm_nobuff (it must be on top of this structure) *\/$/;"	m	struct:__anon94	file:
-ftl_lock	ftl/algo/block_ftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon83	file:
-ftl_lock	ftl/algo/dftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon91	file:
-ftl_lock	ftl/algo/page_ftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon93	file:
-ftl_lock	ftl/hlm_dftl.c	/^	bdbm_sema_t ftl_lock;$/;"	m	struct:__anon94	file:
+ftl	ftl/hlm_dftl.c	/^	bdbm_ftl_inf_t* ftl;	\/* for hlm_nobuff (it must be on top of this structure) *\/$/;"	m	struct:__anon93	file:
+ftl_lock	ftl/algo/block_ftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon82	file:
+ftl_lock	ftl/algo/dftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon90	file:
+ftl_lock	ftl/algo/page_ftl.c	/^	bdbm_spinlock_t ftl_lock;$/;"	m	struct:__anon92	file:
+ftl_lock	ftl/hlm_dftl.c	/^	bdbm_sema_t ftl_lock;$/;"	m	struct:__anon93	file:
 fua	tools/nvme/scsi.c	/^	u8 fua;$/;"	m	struct:nvme_trans_io_cdb	file:
 fua	tools/nvmedrv-v4.5.3/scsi.c	/^	u8 fua;$/;"	m	struct:nvme_trans_io_cdb	file:
-gc_bab	ftl/algo/block_ftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon83	file:
-gc_bab	ftl/algo/dftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon91	file:
-gc_bab	ftl/algo/page_ftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon93	file:
+gc_bab	ftl/algo/block_ftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon82	file:
+gc_bab	ftl/algo/dftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon90	file:
+gc_bab	ftl/algo/page_ftl.c	/^	bdbm_abm_block_t** gc_bab;$/;"	m	struct:__anon92	file:
 gc_cnt	include/bdbm_drv.h	/^	atomic64_t gc_cnt;$/;"	m	struct:__anon44
 gc_cur	tools/lightnvm-v4.5.3/rrpc.h	/^	struct rrpc_block *cur, *gc_cur;$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::
 gc_cur	tools/lightnvm/rrpc.h	/^	struct rrpc_block *cur, *gc_cur;$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::
 gc_erase_cnt	include/bdbm_drv.h	/^	atomic64_t gc_erase_cnt;$/;"	m	struct:__anon44
-gc_hlm	ftl/algo/block_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon83	file:
-gc_hlm	ftl/algo/dftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon91	file:
-gc_hlm	ftl/algo/page_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon93	file:
-gc_hlm_w	ftl/algo/page_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm_w;$/;"	m	struct:__anon93	file:
+gc_hlm	ftl/algo/block_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon82	file:
+gc_hlm	ftl/algo/dftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon90	file:
+gc_hlm	ftl/algo/page_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm;$/;"	m	struct:__anon92	file:
+gc_hlm_w	ftl/algo/page_ftl.c	/^	bdbm_hlm_req_gc_t gc_hlm_w;$/;"	m	struct:__anon92	file:
 gc_policy	include/params.h	/^	uint32_t gc_policy;$/;"	m	struct:__anon46
 gc_read_cnt	include/bdbm_drv.h	/^	atomic64_t gc_read_cnt;$/;"	m	struct:__anon44
 gc_timer	tools/lightnvm-v4.5.3/rrpc.h	/^	struct timer_list gc_timer;$/;"	m	struct:rrpc	typeref:struct:rrpc::timer_list
@@ -2233,6 +2245,7 @@ get16bits	common/3rd/uthash.h	486;"	d
 get16bits	common/3rd/uthash.h	490;"	d
 get_bb	tools/nvme/lightnvm.c	/^		struct nvme_nvm_getbbtbl get_bb;$/;"	m	union:nvme_nvm_command::__anon50	typeref:struct:nvme_nvm_command::__anon50::nvme_nvm_getbbtbl	file:
 get_bb	tools/nvmedrv-v4.5.3/lightnvm.c	/^		struct nvme_nvm_getbbtbl get_bb;$/;"	m	union:nvme_nvm_command::__anon53	typeref:struct:nvme_nvm_command::__anon53::nvme_nvm_getbbtbl	file:
+get_data	include/bdbm_drv.h	/^	uint8_t* (*get_data) (bdbm_drv_info_t* bdi, int64_t lpa);$/;"	m	struct:__anon42
 get_default_device_params	devices/common/dev_params.c	/^bdbm_device_params_t get_default_device_params (void)$/;"	f
 get_default_ftl_params	ftl/ftl_params.c	/^bdbm_ftl_params get_default_ftl_params (void)$/;"	f
 get_free_ppa	include/bdbm_drv.h	/^	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);$/;"	m	struct:__anon43
@@ -2249,15 +2262,15 @@ get_unaligned_be24	tools/nvmedrv-v4.5.3/scsi.c	/^static inline u32 get_unaligned
 get_zeroed_page	common/utils/upage.c	/^unsigned long get_zeroed_page (int gfp_mask) {$/;"	f
 groups	tools/nvme/lightnvm.c	/^	struct nvme_nvm_id_group groups[4];$/;"	m	struct:nvme_nvm_id	typeref:struct:nvme_nvm_id::nvme_nvm_id_group	file:
 groups	tools/nvmedrv-v4.5.3/lightnvm.c	/^	struct nvme_nvm_id_group groups[4];$/;"	m	struct:nvme_nvm_id	typeref:struct:nvme_nvm_id::nvme_nvm_id_group	file:
-hash_lpa	ftl/queue/prior_queue.h	/^ 	bdbm_prior_lpa_item_t* hash_lpa;	\/* lpa hash *\/$/;"	m	struct:__anon77
-hash_lpa	ftl/queue/rd_prior_queue.h	/^ 	bdbm_rd_prior_lpa_item_t* hash_lpa;	\/* lpa hash *\/$/;"	m	struct:__anon81
+hash_lpa	ftl/queue/prior_queue.h	/^ 	bdbm_prior_lpa_item_t* hash_lpa;	\/* lpa hash *\/$/;"	m	struct:__anon76
+hash_lpa	ftl/queue/rd_prior_queue.h	/^ 	bdbm_rd_prior_lpa_item_t* hash_lpa;	\/* lpa hash *\/$/;"	m	struct:__anon80
 hashv	common/3rd/uthash.h	/^   unsigned hashv;                   \/* result of hash-fcn(key)        *\/$/;"	m	struct:UT_hash_handle
 hb_rw	tools/nvme/lightnvm.c	/^		struct nvme_nvm_hb_rw hb_rw;$/;"	m	union:nvme_nvm_command::__anon50	typeref:struct:nvme_nvm_command::__anon50::nvme_nvm_hb_rw	file:
 hb_rw	tools/nvmedrv-v4.5.3/lightnvm.c	/^		struct nvme_nvm_hb_rw hb_rw;$/;"	m	union:nvme_nvm_command::__anon53	typeref:struct:nvme_nvm_command::__anon53::nvme_nvm_hb_rw	file:
 hd_req_t	devices/dumbssd/dev_hynix_nvme.h	/^} hd_req_t;$/;"	t	typeref:struct:__anon17
-hh	ftl/hlm_rsd.c	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon95	file:
-hh	ftl/queue/prior_queue.h	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon76
-hh	ftl/queue/rd_prior_queue.h	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon80
+hh	ftl/hlm_rsd.c	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon94	file:
+hh	ftl/queue/prior_queue.h	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon75
+hh	ftl/queue/rd_prior_queue.h	/^	UT_hash_handle hh;	\/* hash header *\/$/;"	m	struct:__anon79
 hh_head	common/3rd/uthash.h	/^   struct UT_hash_handle *hh_head;$/;"	m	struct:UT_hash_bucket	typeref:struct:UT_hash_bucket::UT_hash_handle
 hh_next	common/3rd/uthash.h	/^   struct UT_hash_handle *hh_next;   \/* next hh in bucket order        *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
 hh_prev	common/3rd/uthash.h	/^   struct UT_hash_handle *hh_prev;   \/* previous hh in bucket order    *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
@@ -2291,10 +2304,11 @@ hlm_nobuf_destroy	ftl/hlm_nobuf.c	/^void hlm_nobuf_destroy (bdbm_drv_info_t* bdi
 hlm_nobuf_end_req	ftl/hlm_nobuf.c	/^void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
 hlm_nobuf_make_req	ftl/hlm_nobuf.c	/^uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)$/;"	f
 hlm_nobuf_make_wb_req	ftl/hlm_nobuf.c	/^uint32_t hlm_nobuf_make_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)$/;"	f
-hlm_req	ftl/hlm_rsd.c	/^	bdbm_hlm_req_t* hlm_req;$/;"	m	struct:__anon95	file:
-hlm_reqs_pool	frontend/df-user/userio.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon61	file:
-hlm_reqs_pool	frontend/hybrid/blkio_stub.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon69	file:
-hlm_reqs_pool	frontend/kernel/blkio.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon60	file:
+hlm_req	ftl/hlm_rsd.c	/^	bdbm_hlm_req_t* hlm_req;$/;"	m	struct:__anon94	file:
+hlm_reqs_pool	frontend/df-user/userio.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon60	file:
+hlm_reqs_pool	frontend/hybrid/blkio_stub.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon68	file:
+hlm_reqs_pool	frontend/kernel/blkio.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon59	file:
+hlm_reqs_pool	frontend/kernel/blkio.h	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon56
 hlm_reqs_pool	frontend/user/userio.c	/^	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;$/;"	m	struct:__anon54	file:
 hlm_reqs_pool_allocate_llm_reqs	ftl/hlm_reqs_pool.c	/^void hlm_reqs_pool_allocate_llm_reqs ($/;"	f
 hlm_reqs_pool_release_llm_reqs	ftl/hlm_reqs_pool.c	/^void hlm_reqs_pool_release_llm_reqs ($/;"	f
@@ -2307,17 +2321,18 @@ hlm_rsd_destroy	ftl/hlm_rsd.c	/^void hlm_rsd_destroy (bdbm_drv_info_t* bdi)$/;"	
 hlm_rsd_end_req	ftl/hlm_rsd.c	/^void hlm_rsd_end_req ($/;"	f
 hlm_rsd_make_req	ftl/hlm_rsd.c	/^uint32_t hlm_rsd_make_req ($/;"	f
 hlm_thread	ftl/hlm_buf.c	/^	bdbm_thread_t* hlm_thread;$/;"	m	struct:bdbm_hlm_buf_private	file:
-hlm_thread	ftl/hlm_dftl.c	/^	bdbm_thread_t* hlm_thread;$/;"	m	struct:__anon94	file:
+hlm_thread	ftl/hlm_dftl.c	/^	bdbm_thread_t* hlm_thread;$/;"	m	struct:__anon93	file:
 hlm_type	include/params.h	/^	uint32_t hlm_type;$/;"	m	struct:__anon46
 host_blkdev_register_device	frontend/kernel/blkdev.c	/^uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)$/;"	f
 host_blkdev_register_device	frontend/kernel/blkdev_bak.c	/^uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)$/;"	f
 host_blkdev_unregister_block_device	frontend/kernel/blkdev.c	/^void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)$/;"	f
 host_blkdev_unregister_block_device	frontend/kernel/blkdev_bak.c	/^void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)$/;"	f
-host_lock	frontend/df-user/userio.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon61	file:
-host_lock	frontend/hybrid/blkio_stub.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon69	file:
-host_lock	frontend/kernel/blkio.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon60	file:
+host_lock	frontend/df-user/userio.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon60	file:
+host_lock	frontend/hybrid/blkio_stub.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon68	file:
+host_lock	frontend/kernel/blkio.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon59	file:
+host_lock	frontend/kernel/blkio.h	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon56
 host_lock	frontend/user/userio.c	/^	bdbm_sema_t host_lock;$/;"	m	struct:__anon54	file:
-host_stub_thread	frontend/hybrid/blkio_stub.c	/^	bdbm_thread_t* host_stub_thread; \/* polling the blockio proxy *\/$/;"	m	struct:__anon69	file:
+host_stub_thread	frontend/hybrid/blkio_stub.c	/^	bdbm_thread_t* host_stub_thread; \/* polling the blockio proxy *\/$/;"	m	struct:__anon68	file:
 host_thread_fn_read	frontend/df-user/main.c	/^void host_thread_fn_read (void *data) $/;"	f
 host_thread_fn_read	frontend/user/main.c	/^void host_thread_fn_read (void *data) $/;"	f
 host_thread_fn_write	frontend/df-user/main.c	/^void host_thread_fn_write (void *data) $/;"	f
@@ -2327,20 +2342,19 @@ hrtimer	devices/ramdrive/dev_ramssd.h	/^	struct hrtimer hrtimer;	\/* hrtimer mus
 hw_comp	examples/stringsearch/ss_impl_hw.c	/^int hw_comp (const int fd_dev, const char* pattern, const int start_blk, const int blks)$/;"	f
 i	common/3rd/utarray.h	/^    unsigned i,n;\/* i: index of next available slot, n: num slots *\/$/;"	m	struct:__anon5
 i	common/3rd/utstring.h	/^    size_t i; \/* index of first unused byte *\/$/;"	m	struct:__anon8
-i	frontend/kernel/nvm_cache.c	/^	uint64_t i, n, nr_remains;$/;"	v
 icd	common/3rd/utarray.h	/^    UT_icd icd;  \/* initializer, copy and destructor functions *\/$/;"	m	struct:__anon5
 id	examples/stub_test/main.c	/^	int32_t id;$/;"	m	struct:__anon24	file:
-id	frontend/hybrid/blkio_proxy.c	/^	int id;$/;"	m	struct:__anon65	file:
-id	frontend/hybrid/blkio_proxy_ioctl.h	/^	uint32_t id;$/;"	m	struct:__anon68
-id	ftl/algo/dftl_map.h	/^	uint64_t id;$/;"	m	struct:__anon89
+id	frontend/hybrid/blkio_proxy.c	/^	int id;$/;"	m	struct:__anon64	file:
+id	frontend/hybrid/blkio_proxy_ioctl.h	/^	uint32_t id;$/;"	m	struct:__anon67
+id	ftl/algo/dftl_map.h	/^	uint64_t id;$/;"	m	struct:__anon88
 id	tools/nvme/lightnvm.c	/^	__u8			id[8];$/;"	m	struct:nvme_nvm_lp_tbl	file:
 id	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			id[8];$/;"	m	struct:nvme_nvm_lp_tbl	file:
 ideal_chain_maxlen	common/3rd/uthash.h	/^   unsigned ideal_chain_maxlen;$/;"	m	struct:UT_hash_table
 identity	tools/nvme/lightnvm.c	/^		struct nvme_nvm_identity identity;$/;"	m	union:nvme_nvm_command::__anon50	typeref:struct:nvme_nvm_command::__anon50::nvme_nvm_identity	file:
 identity	tools/nvmedrv-v4.5.3/lightnvm.c	/^		struct nvme_nvm_identity identity;$/;"	m	union:nvme_nvm_command::__anon53	typeref:struct:nvme_nvm_command::__anon53::nvme_nvm_identity	file:
 ilog2	common/3rd/uilog.c	/^int ilog2 (int x) {$/;"	f
-in_place_rmw	ftl/hlm_reqs_pool.h	/^	int8_t in_place_rmw; \/* if it is set (1), the FTL uses in-place-rmw *\/$/;"	m	struct:__anon71
-index	frontend/kernel/nvm_cache.h	/^	uint64_t index;$/;"	m	struct:__anon56
+in_place_rmw	ftl/hlm_reqs_pool.h	/^	int8_t in_place_rmw; \/* if it is set (1), the FTL uses in-place-rmw *\/$/;"	m	struct:__anon70
+index	frontend/kernel/nvm_cache.h	/^	int64_t index;$/;"	m	struct:__anon57
 ineff_expands	common/3rd/uthash.h	/^   unsigned ineff_expands, noexpand;$/;"	m	struct:UT_hash_table
 inflight_rq	tools/lightnvm-v4.5.3/rrpc.h	/^	struct rrpc_inflight_rq inflight_rq;$/;"	m	struct:rrpc_rq	typeref:struct:rrpc_rq::rrpc_inflight_rq
 inflight_rq	tools/lightnvm/rrpc.h	/^	struct rrpc_inflight_rq inflight_rq;$/;"	m	struct:rrpc_rq	typeref:struct:rrpc_rq::rrpc_inflight_rq
@@ -2366,7 +2380,7 @@ invalidate_lpa	include/bdbm_drv.h	/^	uint32_t (*invalidate_lpa) (bdbm_drv_info_t
 io_done	devices/dumbssd/dm_dumbssd.c	/^static void io_done (void* arg)$/;"	f	file:
 io_incapable	tools/nvme/nvme.h	/^	bool (*io_incapable)(struct nvme_ctrl *ctrl);$/;"	m	struct:nvme_ctrl_ops
 io_incapable	tools/nvmedrv-v4.5.3/nvme.h	/^	bool (*io_incapable)(struct nvme_ctrl *ctrl);$/;"	m	struct:nvme_ctrl_ops
-io_unit	ftl/hlm_reqs_pool.h	/^	int32_t io_unit;	\/* bytes *\/$/;"	m	struct:__anon71
+io_unit	ftl/hlm_reqs_pool.h	/^	int32_t io_unit;	\/* bytes *\/$/;"	m	struct:__anon70
 ioctl_io_done	devices/dumbssd/dm_dumbssd.c	/^static void ioctl_io_done (void* arg)$/;"	f	file:
 iod_list	tools/nvme/pci.c	/^static __le64 **iod_list(struct request *req)$/;"	f	file:
 iod_list	tools/nvmedrv-v4.5.3/pci.c	/^static __le64 **iod_list(struct request *req)$/;"	f	file:
@@ -2376,7 +2390,7 @@ irqname	tools/nvme/pci.c	/^	char irqname[24];	\/* nvme4294967295-65535\\0 *\/$/;
 irqname	tools/nvmedrv-v4.5.3/pci.c	/^	char irqname[24];	\/* nvme4294967295-65535\\0 *\/$/;"	m	struct:nvme_queue	file:
 is_gc_needed	include/bdbm_drv.h	/^	uint8_t (*is_gc_needed) (bdbm_drv_info_t* bdi, int64_t lpa);$/;"	m	struct:__anon43
 is_init	devices/ramdrive/dev_ramssd.h	/^	uint8_t is_init; \/* 0: not initialized, 1: initialized *\/$/;"	m	struct:__anon13
-is_under_load	ftl/algo/dftl_map.h	/^	uint32_t is_under_load;$/;"	m	struct:__anon89
+is_under_load	ftl/algo/dftl_map.h	/^	uint32_t is_under_load;$/;"	m	struct:__anon88
 kernel_sector_size	include/params.h	/^	uint32_t kernel_sector_size;$/;"	m	struct:__anon46
 key	common/3rd/uthash.h	/^   void *key;                        \/* ptr to enclosing struct's key  *\/$/;"	m	struct:UT_hash_handle
 keylen	common/3rd/uthash.h	/^   unsigned keylen;                  \/* enclosing struct's key len     *\/$/;"	m	struct:UT_hash_handle
@@ -2418,15 +2432,15 @@ lightnvm-y	tools/lightnvm-v4.5.3/Makefile	/^lightnvm-y := core.o sysblk.o gennvm
 lightnvm-y	tools/lightnvm/Makefile	/^lightnvm-y := core.o sysblk.o gennvm.o rrpc.o$/;"	m
 linear_to_generic_addr	tools/lightnvm-v4.5.3/rrpc.c	/^static struct ppa_addr linear_to_generic_addr(struct nvm_dev *dev,$/;"	f	file:
 linear_to_generic_addr	tools/lightnvm/rrpc.c	/^static struct ppa_addr linear_to_generic_addr(struct nvm_dev *dev,$/;"	f	file:
-list	frontend/hybrid/blkio_proxy_reqs_pool.c	/^	struct list_head list;$/;"	m	struct:__anon64	typeref:struct:__anon64::list_head	file:
-list	frontend/kernel/nvm_cache.h	/^	struct list_head list;	\/* for lru list *\/$/;"	m	struct:__anon56	typeref:struct:__anon56::list_head
-list	ftl/algo/abm.h	/^	struct list_head list;	\/* for list *\/$/;"	m	struct:__anon84	typeref:struct:__anon84::list_head
-list	ftl/algo/dftl_map.h	/^	struct list_head list;$/;"	m	struct:__anon89	typeref:struct:__anon89::list_head
-list	ftl/queue/prior_queue.h	/^	struct list_head list;	\/* list header *\/$/;"	m	struct:__anon76	typeref:struct:__anon76::list_head
-list	ftl/queue/prior_queue.h	/^	struct list_head list; \/* list header *\/$/;"	m	struct:__anon75	typeref:struct:__anon75::list_head
-list	ftl/queue/queue.h	/^	struct list_head list;$/;"	m	struct:__anon73	typeref:struct:__anon73::list_head
-list	ftl/queue/rd_prior_queue.h	/^	struct list_head list;	\/* list header *\/$/;"	m	struct:__anon80	typeref:struct:__anon80::list_head
-list	ftl/queue/rd_prior_queue.h	/^	struct list_head list; \/* list header *\/$/;"	m	struct:__anon79	typeref:struct:__anon79::list_head
+list	frontend/hybrid/blkio_proxy_reqs_pool.c	/^	struct list_head list;$/;"	m	struct:__anon63	typeref:struct:__anon63::list_head	file:
+list	frontend/kernel/nvm_cache.h	/^	struct list_head list;	\/* for lru list *\/$/;"	m	struct:__anon57	typeref:struct:__anon57::list_head
+list	ftl/algo/abm.h	/^	struct list_head list;	\/* for list *\/$/;"	m	struct:__anon83	typeref:struct:__anon83::list_head
+list	ftl/algo/dftl_map.h	/^	struct list_head list;$/;"	m	struct:__anon88	typeref:struct:__anon88::list_head
+list	ftl/queue/prior_queue.h	/^	struct list_head list;	\/* list header *\/$/;"	m	struct:__anon75	typeref:struct:__anon75::list_head
+list	ftl/queue/prior_queue.h	/^	struct list_head list; \/* list header *\/$/;"	m	struct:__anon74	typeref:struct:__anon74::list_head
+list	ftl/queue/queue.h	/^	struct list_head list;$/;"	m	struct:__anon72	typeref:struct:__anon72::list_head
+list	ftl/queue/rd_prior_queue.h	/^	struct list_head list;	\/* list header *\/$/;"	m	struct:__anon79	typeref:struct:__anon79::list_head
+list	ftl/queue/rd_prior_queue.h	/^	struct list_head list; \/* list header *\/$/;"	m	struct:__anon78	typeref:struct:__anon78::list_head
 list	include/bdbm_drv.h	/^	struct list_head list;	\/* for hlm_reqs_pool *\/$/;"	m	struct:__anon32	typeref:struct:__anon32::list_head
 list	tools/lightnvm-v4.5.3/rrpc.h	/^	struct list_head list;$/;"	m	struct:rrpc_block	typeref:struct:rrpc_block::list_head
 list	tools/lightnvm-v4.5.3/rrpc.h	/^	struct list_head list;$/;"	m	struct:rrpc_inflight_rq	typeref:struct:rrpc_inflight_rq::list_head
@@ -2450,10 +2464,10 @@ list_for_each_entry_safe_reverse	common/3rd/ulist.h	361;"	d
 list_for_each_prev	common/3rd/ulist.h	268;"	d
 list_for_each_safe	common/3rd/ulist.h	278;"	d
 list_head	common/3rd/ulist.h	/^struct list_head {$/;"	s
-list_head_bad	ftl/algo/abm.h	/^	struct list_head** list_head_bad;$/;"	m	struct:__anon85	typeref:struct:__anon85::list_head
-list_head_clean	ftl/algo/abm.h	/^	struct list_head** list_head_clean;$/;"	m	struct:__anon85	typeref:struct:__anon85::list_head
-list_head_dirty	ftl/algo/abm.h	/^	struct list_head** list_head_dirty;$/;"	m	struct:__anon85	typeref:struct:__anon85::list_head
-list_head_free	ftl/algo/abm.h	/^	struct list_head** list_head_free;$/;"	m	struct:__anon85	typeref:struct:__anon85::list_head
+list_head_bad	ftl/algo/abm.h	/^	struct list_head** list_head_bad;$/;"	m	struct:__anon84	typeref:struct:__anon84::list_head
+list_head_clean	ftl/algo/abm.h	/^	struct list_head** list_head_clean;$/;"	m	struct:__anon84	typeref:struct:__anon84::list_head
+list_head_dirty	ftl/algo/abm.h	/^	struct list_head** list_head_dirty;$/;"	m	struct:__anon84	typeref:struct:__anon84::list_head
+list_head_free	ftl/algo/abm.h	/^	struct list_head** list_head_free;$/;"	m	struct:__anon84	typeref:struct:__anon84::list_head
 list_move	common/3rd/ulist.h	/^static inline void list_move(struct list_head *list, struct list_head *head)$/;"	f
 list_move_tail	common/3rd/ulist.h	/^static inline void list_move_tail(struct list_head *list,$/;"	f
 list_prepare_entry	common/3rd/ulist.h	311;"	d
@@ -2491,15 +2505,15 @@ load	include/bdbm_drv.h	/^	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* f
 load	include/bdbm_drv.h	/^	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);$/;"	m	struct:__anon43
 lock	devices/bluedbm/dm_bluedbm.c	/^	bdbm_spinlock_t lock;$/;"	m	struct:dm_bluedbm_private	file:
 lock	devices/common/dev_stub.c	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon9	file:
-lock	frontend/hybrid/blkio_proxy.c	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon66	file:
-lock	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon63
+lock	frontend/hybrid/blkio_proxy.c	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon65	file:
+lock	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon62
 lock	frontend/user/dev_proxy.c	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon55	file:
-lock	ftl/hlm_reqs_pool.h	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon71
-lock	ftl/queue/prior_queue.h	/^	bdbm_spinlock_t lock; \/* queue lock *\/$/;"	m	struct:__anon77
-lock	ftl/queue/prior_queue.h	/^	uint8_t lock;$/;"	m	struct:__anon75
-lock	ftl/queue/queue.h	/^	bdbm_spinlock_t lock;	\/* queue lock *\/$/;"	m	struct:__anon74
-lock	ftl/queue/rd_prior_queue.h	/^	bdbm_spinlock_t lock; \/* queue lock *\/$/;"	m	struct:__anon81
-lock	ftl/queue/rd_prior_queue.h	/^	uint8_t lock;$/;"	m	struct:__anon79
+lock	ftl/hlm_reqs_pool.h	/^	bdbm_spinlock_t lock;$/;"	m	struct:__anon70
+lock	ftl/queue/prior_queue.h	/^	bdbm_spinlock_t lock; \/* queue lock *\/$/;"	m	struct:__anon76
+lock	ftl/queue/prior_queue.h	/^	uint8_t lock;$/;"	m	struct:__anon74
+lock	ftl/queue/queue.h	/^	bdbm_spinlock_t lock;	\/* queue lock *\/$/;"	m	struct:__anon73
+lock	ftl/queue/rd_prior_queue.h	/^	bdbm_spinlock_t lock; \/* queue lock *\/$/;"	m	struct:__anon80
+lock	ftl/queue/rd_prior_queue.h	/^	uint8_t lock;$/;"	m	struct:__anon78
 lock	tools/lightnvm-v4.5.3/rrpc.h	/^	spinlock_t lock;$/;"	m	struct:rrpc_block
 lock	tools/lightnvm-v4.5.3/rrpc.h	/^	spinlock_t lock;$/;"	m	struct:rrpc_inflight
 lock	tools/lightnvm-v4.5.3/rrpc.h	/^	spinlock_t lock;$/;"	m	struct:rrpc_lun
@@ -2509,21 +2523,18 @@ lock	tools/lightnvm/rrpc.h	/^	spinlock_t lock;$/;"	m	struct:rrpc_lun
 lock_busy	devices/common/dev_stub.c	/^	bdbm_spinlock_t lock_busy;$/;"	m	struct:__anon9	file:
 log2_num_buckets	common/3rd/uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
 logaddr	devices/common/dev_stub.h	/^	bdbm_logaddr_t logaddr;$/;"	m	struct:__anon10
-logaddr	frontend/kernel/nvm_cache.h	/^	bdbm_logaddr_t logaddr;$/;"	m	struct:__anon56
-logaddr	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	bdbm_logaddr_t logaddr;$/;"	m	struct:__anon58
+logaddr	frontend/kernel/nvm_cache.h	/^	bdbm_logaddr_t logaddr;$/;"	m	struct:__anon57
 logaddr	include/bdbm_drv.h	/^	bdbm_logaddr_t logaddr;$/;"	m	struct:__anon31
+lpa	ftl/queue/prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon74
 lpa	ftl/queue/prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon75
-lpa	ftl/queue/prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon76
+lpa	ftl/queue/rd_prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon78
 lpa	ftl/queue/rd_prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon79
-lpa	ftl/queue/rd_prior_queue.h	/^	uint64_t lpa;$/;"	m	struct:__anon80
 lpa	include/bdbm_drv.h	/^			uint64_t lpa;$/;"	m	struct:__anon32::__anon33::__anon35
 lpa	include/bdbm_drv.h	/^	int64_t lpa[BDBM_MAX_PAGES];$/;"	m	struct:__anon28
 lptbl	tools/nvme/lightnvm.c	/^	struct nvme_nvm_lp_tbl lptbl;$/;"	m	struct:nvme_nvm_id_group	typeref:struct:nvme_nvm_id_group::nvme_nvm_lp_tbl	file:
 lptbl	tools/nvmedrv-v4.5.3/lightnvm.c	/^	struct nvme_nvm_lp_tbl lptbl;$/;"	m	struct:nvme_nvm_id_group	typeref:struct:nvme_nvm_id_group::nvme_nvm_lp_tbl	file:
-lr	frontend/kernel/nvm_cache.c	/^	bdbm_llm_req_t* lr; $/;"	v
-lru_list	frontend/kernel/nvm_cache.h	/^	struct list_head* lru_list;$/;"	m	struct:__anon57	typeref:struct:__anon57::list_head
-lru_list	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	struct list_head lru_list;$/;"	m	struct:__anon59	typeref:struct:__anon59::list_head
-lru_list	ftl/algo/dftl_map.h	/^	struct list_head lru_list; \/* dirty-list header *\/$/;"	m	struct:__anon90	typeref:struct:__anon90::list_head
+lru_list	frontend/kernel/nvm_cache.h	/^	struct list_head* lru_list;$/;"	m	struct:__anon58	typeref:struct:__anon58::list_head
+lru_list	ftl/algo/dftl_map.h	/^	struct list_head lru_list; \/* dirty-list header *\/$/;"	m	struct:__anon89	typeref:struct:__anon89::list_head
 lun_len	tools/nvme/lightnvm.c	/^	__u8			lun_len;$/;"	m	struct:nvme_nvm_addr_format	file:
 lun_len	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			lun_len;$/;"	m	struct:nvme_nvm_addr_format	file:
 lun_offset	tools/lightnvm-v4.5.3/rrpc.h	/^	int lun_offset;$/;"	m	struct:rrpc
@@ -2550,27 +2561,28 @@ make_req	include/bdbm_drv.h	/^	uint64_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_
 make_req	include/bdbm_drv.h	/^	void (*make_req) (bdbm_drv_info_t* bdi, void* req);$/;"	m	struct:__anon38
 make_reqs	include/bdbm_drv.h	/^	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);$/;"	m	struct:__anon41
 make_reqs	include/bdbm_drv.h	/^	uint32_t (*make_reqs) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);$/;"	m	struct:__anon42
+make_wb_req	include/bdbm_drv.h	/^	uint32_t (*make_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);$/;"	m	struct:__anon40
 manual_event	devices/bluedbm/dm_bluedbm.c	/^void manual_event (struct dm_bluedbm_private* priv)$/;"	f
 map_lpa_to_ppa	include/bdbm_drv.h	/^	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);$/;"	m	struct:__anon43
-map_unit	ftl/hlm_reqs_pool.h	/^	int32_t map_unit;	\/* bytes *\/$/;"	m	struct:__anon71
-mapblk_phyaddr_t	ftl/algo/dftl_map.h	/^} mapblk_phyaddr_t;$/;"	t	typeref:struct:__anon87
-mapping_entry_size	ftl/algo/dftl_map.h	/^	uint64_t mapping_entry_size;$/;"	m	struct:__anon90
-mapping_entry_t	ftl/algo/dftl_map.h	/^} mapping_entry_t;$/;"	t	typeref:struct:__anon88
+map_unit	ftl/hlm_reqs_pool.h	/^	int32_t map_unit;	\/* bytes *\/$/;"	m	struct:__anon70
+mapblk_phyaddr_t	ftl/algo/dftl_map.h	/^} mapblk_phyaddr_t;$/;"	t	typeref:struct:__anon86
+mapping_entry_size	ftl/algo/dftl_map.h	/^	uint64_t mapping_entry_size;$/;"	m	struct:__anon89
+mapping_entry_t	ftl/algo/dftl_map.h	/^} mapping_entry_t;$/;"	t	typeref:struct:__anon87
 mapping_type	include/params.h	/^	uint32_t mapping_type;$/;"	m	struct:__anon46
-max_cached_dir_slots	ftl/algo/dftl_map.h	/^	uint64_t max_cached_dir_slots;$/;"	m	struct:__anon90
+max_cached_dir_slots	ftl/algo/dftl_map.h	/^	uint64_t max_cached_dir_slots;$/;"	m	struct:__anon89
 max_hw_sectors	tools/nvme/nvme.h	/^	u32 max_hw_sectors;$/;"	m	struct:nvme_ctrl
 max_hw_sectors	tools/nvmedrv-v4.5.3/nvme.h	/^	u32 max_hw_sectors;$/;"	m	struct:nvme_ctrl
 max_qid	tools/nvme/pci.c	/^	unsigned max_qid;$/;"	m	struct:nvme_dev	file:
 max_qid	tools/nvmedrv-v4.5.3/pci.c	/^	unsigned max_qid;$/;"	m	struct:nvme_dev	file:
 max_queue_items	ftl/queue/queue.c	/^static uint64_t max_queue_items = 0;$/;"	v	file:
-max_size	ftl/queue/prior_queue.h	/^	int64_t max_size;$/;"	m	struct:__anon77
-max_size	ftl/queue/queue.h	/^	int64_t max_size;$/;"	m	struct:__anon74
-max_size	ftl/queue/rd_prior_queue.h	/^	int64_t max_size;$/;"	m	struct:__anon81
-max_tag	ftl/queue/prior_queue.h	/^	uint64_t max_tag;$/;"	m	struct:__anon76
-max_tag	ftl/queue/rd_prior_queue.h	/^	uint64_t max_tag;$/;"	m	struct:__anon80
+max_size	ftl/queue/prior_queue.h	/^	int64_t max_size;$/;"	m	struct:__anon76
+max_size	ftl/queue/queue.h	/^	int64_t max_size;$/;"	m	struct:__anon73
+max_size	ftl/queue/rd_prior_queue.h	/^	int64_t max_size;$/;"	m	struct:__anon80
+max_tag	ftl/queue/prior_queue.h	/^	uint64_t max_tag;$/;"	m	struct:__anon75
+max_tag	ftl/queue/rd_prior_queue.h	/^	uint64_t max_tag;$/;"	m	struct:__anon79
 mccap	tools/nvme/lightnvm.c	/^	__le32			mccap;$/;"	m	struct:nvme_nvm_id_group	file:
 mccap	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32			mccap;$/;"	m	struct:nvme_nvm_id_group	file:
-me	ftl/algo/dftl_map.h	/^	mapping_entry_t* me;	\/* the size of me is equal to a single flash size *\/$/;"	m	struct:__anon89
+me	ftl/algo/dftl_map.h	/^	mapping_entry_t* me;	\/* the size of me is equal to a single flash size *\/$/;"	m	struct:__anon88
 meta_read_cnt	include/bdbm_drv.h	/^	atomic64_t meta_read_cnt;$/;"	m	struct:__anon44
 meta_sg	tools/nvme/pci.c	/^	struct scatterlist meta_sg; \/* metadata requires single contiguous buffer *\/$/;"	m	struct:nvme_iod	typeref:struct:nvme_iod::scatterlist	file:
 meta_sg	tools/nvmedrv-v4.5.3/pci.c	/^	struct scatterlist meta_sg; \/* metadata requires single contiguous buffer *\/$/;"	m	struct:nvme_iod	typeref:struct:nvme_iod::scatterlist	file:
@@ -2582,12 +2594,12 @@ metadata	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le64			metadata;$/;"	m	struct:nvme
 mlc	tools/nvme/lightnvm.c	/^	struct nvme_nvm_lp_mlc	mlc;$/;"	m	struct:nvme_nvm_lp_tbl	typeref:struct:nvme_nvm_lp_tbl::nvme_nvm_lp_mlc	file:
 mlc	tools/nvmedrv-v4.5.3/lightnvm.c	/^	struct nvme_nvm_lp_mlc	mlc;$/;"	m	struct:nvme_nvm_lp_tbl	typeref:struct:nvme_nvm_lp_tbl::nvme_nvm_lp_mlc	file:
 mmap_close	devices/common/dev_stub.c	/^void mmap_close (struct vm_area_struct *vma)$/;"	f
-mmap_nr_reqs	frontend/hybrid/blkio_proxy.c	/^	int64_t mmap_nr_reqs;$/;"	m	struct:__anon66	file:
+mmap_nr_reqs	frontend/hybrid/blkio_proxy.c	/^	int64_t mmap_nr_reqs;$/;"	m	struct:__anon65	file:
 mmap_open	devices/common/dev_stub.c	/^void mmap_open (struct vm_area_struct *vma)$/;"	f
-mmap_req	frontend/hybrid/blkio_proxy_reqs_pool.c	/^	bdbm_blkio_proxy_req_t* mmap_req;$/;"	m	struct:__anon64	file:
-mmap_reqs	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	bdbm_blkio_proxy_req_t* mmap_reqs;$/;"	m	struct:__anon63
-mmap_reqs	frontend/hybrid/blkio_stub.c	/^	bdbm_blkio_proxy_req_t* mmap_reqs;$/;"	m	struct:__anon69	file:
-mmap_reqs_buf	frontend/hybrid/blkio_proxy.c	/^	bdbm_blkio_proxy_req_t* mmap_reqs_buf;$/;"	m	struct:__anon66	file:
+mmap_req	frontend/hybrid/blkio_proxy_reqs_pool.c	/^	bdbm_blkio_proxy_req_t* mmap_req;$/;"	m	struct:__anon63	file:
+mmap_reqs	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	bdbm_blkio_proxy_req_t* mmap_reqs;$/;"	m	struct:__anon62
+mmap_reqs	frontend/hybrid/blkio_stub.c	/^	bdbm_blkio_proxy_req_t* mmap_reqs;$/;"	m	struct:__anon68	file:
+mmap_reqs_buf	frontend/hybrid/blkio_proxy.c	/^	bdbm_blkio_proxy_req_t* mmap_reqs_buf;$/;"	m	struct:__anon65	file:
 mmap_shared	devices/common/dev_stub.c	/^	uint8_t* mmap_shared;$/;"	m	struct:__anon9	file:
 mmap_shared	frontend/user/dev_proxy.c	/^	uint8_t* mmap_shared;$/;"	m	struct:__anon55	file:
 mmap_shared_size	devices/common/dev_stub.c	/^	uint64_t mmap_shared_size;$/;"	m	struct:__anon9	file:
@@ -2602,19 +2614,18 @@ model	tools/nvme/nvme.h	/^	char model[40];$/;"	m	struct:nvme_ctrl
 model	tools/nvmedrv-v4.5.3/core.c	/^nvme_show_function(model);$/;"	v
 model	tools/nvmedrv-v4.5.3/nvme.h	/^	char model[40];$/;"	m	struct:nvme_ctrl
 module_main-y	examples/raw-flash/Makefile	/^module_main-y := \\$/;"	m
-module_param	include/bdbm_drv.h	44;"	d
+module_param	include/bdbm_drv.h	47;"	d
 mpos	tools/nvme/lightnvm.c	/^	__le32			mpos;$/;"	m	struct:nvme_nvm_id_group	file:
 mpos	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32			mpos;$/;"	m	struct:nvme_nvm_id_group	file:
 ms	tools/nvme/nvme.h	/^	u16 ms;$/;"	m	struct:nvme_ns
 ms	tools/nvmedrv-v4.5.3/nvme.h	/^	u16 ms;$/;"	m	struct:nvme_ns
-mt	ftl/algo/block_ftl.c	/^	bdbm_block_mapping_entry_t** mt;$/;"	m	struct:__anon83	file:
-mt	ftl/algo/dftl.c	/^	dftl_mapping_table_t* mt;$/;"	m	struct:__anon91	file:
+mt	ftl/algo/block_ftl.c	/^	bdbm_block_mapping_entry_t** mt;$/;"	m	struct:__anon82	file:
+mt	ftl/algo/dftl.c	/^	dftl_mapping_table_t* mt;$/;"	m	struct:__anon90	file:
 mtype	tools/nvme/lightnvm.c	/^	__u8			mtype;$/;"	m	struct:nvme_nvm_id_group	file:
 mtype	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			mtype;$/;"	m	struct:nvme_nvm_id_group	file:
-mutex	frontend/hybrid/blkio_proxy.c	/^	bdbm_sema_t mutex;$/;"	m	struct:__anon66	file:
+mutex	frontend/hybrid/blkio_proxy.c	/^	bdbm_sema_t mutex;$/;"	m	struct:__anon65	file:
 n	common/3rd/utarray.h	/^    unsigned i,n;\/* i: index of next available slot, n: num slots *\/$/;"	m	struct:__anon5
 n	common/3rd/utstring.h	/^    size_t n; \/* allocd size *\/$/;"	m	struct:__anon8
-n	frontend/kernel/nvm_cache.c	/^	uint64_t i, n, nr_remains;$/;"	v
 name	tools/nvme/nvme.h	/^	char name[12];$/;"	m	struct:nvme_ctrl
 name	tools/nvmedrv-v4.5.3/nvme.h	/^	char name[12];$/;"	m	struct:nvme_ctrl
 namespaces	tools/nvme/nvme.h	/^	struct list_head namespaces;$/;"	m	struct:nvme_ctrl	typeref:struct:nvme_ctrl::list_head
@@ -2645,34 +2656,35 @@ nonideal_items	common/3rd/uthash.h	/^   unsigned nonideal_items;$/;"	m	struct:UT
 np	devices/ramdrive/dev_ramssd.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon13
 np	examples/raw-flash/raw-flash.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon20
 np	examples/stub_test/main.c	/^bdbm_device_params_t np;$/;"	v
-np	frontend/kernel/nvm_cache.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon57
-np	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon59
-np	ftl/algo/abm.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon85
+np	frontend/kernel/nvm_cache.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon58
+np	ftl/algo/abm.h	/^	bdbm_device_params_t* np;$/;"	m	struct:__anon84
 npages	tools/nvme/pci.c	/^	int npages;		\/* In the PRP list. 0 means small pool in use *\/$/;"	m	struct:nvme_iod	file:
 npages	tools/nvmedrv-v4.5.3/pci.c	/^	int npages;		\/* In the PRP list. 0 means small pool in use *\/$/;"	m	struct:nvme_iod	file:
-nr_bad_blks	ftl/algo/abm.h	/^	uint64_t nr_bad_blks;$/;"	m	struct:__anon85
-nr_blks_per_seg	ftl/algo/block_ftl.c	/^	uint64_t nr_blks_per_seg;	\/* how many blocks belong to a segment *\/$/;"	m	struct:__anon83	file:
+nr_bad_blks	ftl/algo/abm.h	/^	uint64_t nr_bad_blks;$/;"	m	struct:__anon84
+nr_blks_per_seg	ftl/algo/block_ftl.c	/^	uint64_t nr_blks_per_seg;	\/* how many blocks belong to a segment *\/$/;"	m	struct:__anon82	file:
 nr_blocks_per_channel	include/params.h	/^	uint64_t nr_blocks_per_channel;$/;"	m	struct:__anon47
 nr_blocks_per_chip	include/params.h	/^	uint64_t nr_blocks_per_chip;$/;"	m	struct:__anon47
 nr_blocks_per_ssd	include/params.h	/^	uint64_t nr_blocks_per_ssd;$/;"	m	struct:__anon47
-nr_cached_slots	ftl/algo/dftl_map.h	/^	atomic64_t nr_cached_slots;$/;"	m	struct:__anon90
+nr_cached_slots	ftl/algo/dftl_map.h	/^	atomic64_t nr_cached_slots;$/;"	m	struct:__anon89
 nr_channels	include/params.h	/^	uint64_t nr_channels;$/;"	m	struct:__anon47
 nr_chips_per_channel	include/params.h	/^	uint64_t nr_chips_per_channel;$/;"	m	struct:__anon47
 nr_chips_per_ssd	include/params.h	/^	uint64_t nr_chips_per_ssd;$/;"	m	struct:__anon47
-nr_clean_blks	ftl/algo/abm.h	/^	uint64_t nr_clean_blks;$/;"	m	struct:__anon85
-nr_dead_segs	ftl/algo/block_ftl.c	/^	int64_t nr_dead_segs;$/;"	m	struct:__anon83	file:
-nr_dirty_blks	ftl/algo/abm.h	/^	uint64_t nr_dirty_blks;$/;"	m	struct:__anon85
-nr_entires_per_dir_slot	ftl/algo/dftl_map.h	/^	uint64_t nr_entires_per_dir_slot;$/;"	m	struct:__anon90
-nr_free_blks	ftl/algo/abm.h	/^	uint64_t nr_free_blks;$/;"	m	struct:__anon85
-nr_free_blks_prepared	ftl/algo/abm.h	/^	uint64_t nr_free_blks_prepared;$/;"	m	struct:__anon85
-nr_free_pages	frontend/kernel/nvm_cache.h	/^	uint64_t nr_free_pages;$/;"	m	struct:__anon57
-nr_host_reqs	frontend/df-user/userio.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon61	file:
-nr_host_reqs	frontend/hybrid/blkio_stub.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon69	file:
-nr_host_reqs	frontend/kernel/blkio.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon60	file:
+nr_clean_blks	ftl/algo/abm.h	/^	uint64_t nr_clean_blks;$/;"	m	struct:__anon84
+nr_dead_segs	ftl/algo/block_ftl.c	/^	int64_t nr_dead_segs;$/;"	m	struct:__anon82	file:
+nr_dirty_blks	ftl/algo/abm.h	/^	uint64_t nr_dirty_blks;$/;"	m	struct:__anon84
+nr_entires_per_dir_slot	ftl/algo/dftl_map.h	/^	uint64_t nr_entires_per_dir_slot;$/;"	m	struct:__anon89
+nr_free_blks	ftl/algo/abm.h	/^	uint64_t nr_free_blks;$/;"	m	struct:__anon84
+nr_free_blks_prepared	ftl/algo/abm.h	/^	uint64_t nr_free_blks_prepared;$/;"	m	struct:__anon84
+nr_free_pages	frontend/kernel/nvm_cache.h	/^	uint64_t nr_free_pages;$/;"	m	struct:__anon58
+nr_host_reqs	frontend/df-user/userio.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon60	file:
+nr_host_reqs	frontend/hybrid/blkio_stub.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon68	file:
+nr_host_reqs	frontend/kernel/blkio.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon59	file:
+nr_host_reqs	frontend/kernel/blkio.h	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon56
 nr_host_reqs	frontend/user/userio.c	/^	atomic_t nr_host_reqs;$/;"	m	struct:__anon54	file:
+nr_inuse_pages	frontend/kernel/nvm_cache.h	/^	uint64_t nr_inuse_pages; $/;"	m	struct:__anon58
 nr_invalid_pages	tools/lightnvm-v4.5.3/rrpc.h	/^	unsigned int nr_invalid_pages;$/;"	m	struct:rrpc_block
 nr_invalid_pages	tools/lightnvm/rrpc.h	/^	unsigned int nr_invalid_pages;$/;"	m	struct:rrpc_block
-nr_invalid_subpages	ftl/algo/abm.h	/^	uint32_t nr_invalid_subpages;$/;"	m	struct:__anon84
+nr_invalid_subpages	ftl/algo/abm.h	/^	uint32_t nr_invalid_subpages;$/;"	m	struct:__anon83
 nr_kp_per_fp	examples/raw-flash/raw-flash.h	/^	uint64_t nr_kp_per_fp;$/;"	m	struct:__anon20
 nr_kp_per_fp	examples/stub_test/main.c	/^int nr_kp_per_fp = 1;$/;"	v
 nr_llm_reqs	include/bdbm_drv.h	/^			uint64_t nr_llm_reqs;$/;"	m	struct:__anon32::__anon33::__anon34
@@ -2684,38 +2696,36 @@ nr_luns	tools/lightnvm-v4.5.3/rrpc.h	/^	int nr_luns;$/;"	m	struct:rrpc
 nr_luns	tools/lightnvm/gennvm.h	/^	int nr_luns;$/;"	m	struct:gen_nvm
 nr_luns	tools/lightnvm/rrpc.h	/^	int nr_luns;$/;"	m	struct:rrpc
 nr_nvm_pages	include/params.h	/^	uint64_t nr_nvm_pages;$/;"	m	struct:__anon47
-nr_out_reqs	frontend/hybrid/blkio_proxy.c	/^	atomic_t nr_out_reqs; \/* # of outstanding requests *\/$/;"	m	struct:__anon66	file:
+nr_out_reqs	frontend/hybrid/blkio_proxy.c	/^	atomic_t nr_out_reqs; \/* # of outstanding requests *\/$/;"	m	struct:__anon65	file:
 nr_pages	tools/lightnvm-v4.5.3/rrpc.h	/^	unsigned long long nr_pages;$/;"	m	struct:rrpc
 nr_pages	tools/lightnvm/rrpc.h	/^	unsigned long long nr_pages;$/;"	m	struct:rrpc
 nr_pages_per_block	include/params.h	/^	uint64_t nr_pages_per_block;$/;"	m	struct:__anon47
 nr_pages_per_ssd	include/params.h	/^	uint64_t nr_pages_per_ssd;$/;"	m	struct:__anon47
-nr_pgs_per_seg	ftl/algo/block_ftl.c	/^	uint64_t nr_pgs_per_seg;	\/* how many pages belong to a segment *\/$/;"	m	struct:__anon83	file:
+nr_pgs_per_seg	ftl/algo/block_ftl.c	/^	uint64_t nr_pgs_per_seg;	\/* how many pages belong to a segment *\/$/;"	m	struct:__anon82	file:
 nr_ppas	tools/lightnvm-v4.5.3/sysblk.c	/^	int nr_ppas;$/;"	m	struct:sysblk_scan	file:
 nr_ppas	tools/lightnvm/sysblk.c	/^	int nr_ppas;$/;"	m	struct:sysblk_scan	file:
 nr_punits	examples/raw-flash/raw-flash.h	/^	uint64_t nr_punits;$/;"	m	struct:__anon20
-nr_punits	ftl/algo/dftl.c	/^	uint64_t nr_punits;	$/;"	m	struct:__anon91	file:
-nr_punits	ftl/algo/page_ftl.c	/^	uint64_t nr_punits;$/;"	m	struct:__anon93	file:
+nr_punits	ftl/algo/dftl.c	/^	uint64_t nr_punits;	$/;"	m	struct:__anon90	file:
+nr_punits	ftl/algo/page_ftl.c	/^	uint64_t nr_punits;$/;"	m	struct:__anon92	file:
 nr_punits	ftl/llm_mq.c	/^	uint64_t nr_punits;$/;"	m	struct:bdbm_llm_mq_private	file:
 nr_punits	ftl/llm_noq_lock.c	/^	uint64_t nr_punits;$/;"	m	struct:bdbm_llm_noq_lock_private	file:
 nr_punits	ftl/llm_rmq.c	/^	uint64_t nr_punits;$/;"	m	struct:bdbm_llm_rmq_private	file:
-nr_punits_pages	ftl/algo/page_ftl.c	/^	uint64_t nr_punits_pages;$/;"	m	struct:__anon93	file:
-nr_queues	ftl/queue/prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon77
-nr_queues	ftl/queue/queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon74
-nr_queues	ftl/queue/rd_prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon81
-nr_remains	frontend/kernel/nvm_cache.c	/^	uint64_t i, n, nr_remains;$/;"	v
-nr_reqs	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	int64_t nr_reqs;$/;"	m	struct:__anon63
+nr_punits_pages	ftl/algo/page_ftl.c	/^	uint64_t nr_punits_pages;$/;"	m	struct:__anon92	file:
+nr_queues	ftl/queue/prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon76
+nr_queues	ftl/queue/queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon73
+nr_queues	ftl/queue/rd_prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon80
+nr_reqs	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	int64_t nr_reqs;$/;"	m	struct:__anon62
 nr_rows	tools/lightnvm-v4.5.3/sysblk.c	/^	int nr_rows;$/;"	m	struct:sysblk_scan	file:
 nr_rows	tools/lightnvm/sysblk.c	/^	int nr_rows;$/;"	m	struct:sysblk_scan	file:
-nr_segs	ftl/algo/block_ftl.c	/^	uint64_t nr_segs;	\/* a segment is the unit of mapping *\/$/;"	m	struct:__anon83	file:
+nr_segs	ftl/algo/block_ftl.c	/^	uint64_t nr_segs;	\/* a segment is the unit of mapping *\/$/;"	m	struct:__anon82	file:
 nr_subpages_per_block	include/params.h	/^	uint64_t nr_subpages_per_block;$/;"	m	struct:__anon47
 nr_subpages_per_page	include/params.h	/^	uint64_t nr_subpages_per_page;$/;"	m	struct:__anon47
 nr_subpages_per_ssd	include/params.h	/^	uint64_t nr_subpages_per_ssd; \/* subpage size must be4 KB *\/$/;"	m	struct:__anon47
-nr_total_blks	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	uint64_t nr_total_blks;$/;"	m	struct:__anon59
-nr_total_blks	ftl/algo/abm.h	/^	uint64_t nr_total_blks;$/;"	m	struct:__anon85
-nr_total_dir_slots	ftl/algo/dftl_map.h	/^	uint64_t nr_total_dir_slots;$/;"	m	struct:__anon90
-nr_total_pages	frontend/kernel/nvm_cache.h	/^	uint64_t nr_total_pages;$/;"	m	struct:__anon57
-nr_trim_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_trim_pgs;$/;"	m	struct:__anon83	file:
-nr_valid_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_valid_pgs;$/;"	m	struct:__anon83	file:
+nr_total_blks	ftl/algo/abm.h	/^	uint64_t nr_total_blks;$/;"	m	struct:__anon84
+nr_total_dir_slots	ftl/algo/dftl_map.h	/^	uint64_t nr_total_dir_slots;$/;"	m	struct:__anon89
+nr_total_pages	frontend/kernel/nvm_cache.h	/^	uint64_t nr_total_pages;$/;"	m	struct:__anon58
+nr_trim_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_trim_pgs;$/;"	m	struct:__anon82	file:
+nr_valid_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_valid_pgs;$/;"	m	struct:__anon82	file:
 ns_cmp	tools/nvme/core.c	/^static int ns_cmp(void *priv, struct list_head *a, struct list_head *b)$/;"	f	file:
 ns_cmp	tools/nvmedrv-v4.5.3/core.c	/^static int ns_cmp(void *priv, struct list_head *a, struct list_head *b)$/;"	f	file:
 ns_id	tools/nvme/nvme.h	/^	unsigned ns_id;$/;"	m	struct:nvme_ns
@@ -2843,7 +2853,6 @@ nvm_get_blk_unlocked	tools/lightnvm/core.c	/^EXPORT_SYMBOL(nvm_get_blk_unlocked)
 nvm_get_blk_unlocked	tools/lightnvm/core.c	/^struct nvm_block *nvm_get_blk_unlocked(struct nvm_dev *dev, struct nvm_lun *lun,$/;"	f
 nvm_get_sysblock	tools/lightnvm-v4.5.3/sysblk.c	/^int nvm_get_sysblock(struct nvm_dev *dev, struct nvm_sb_info *info)$/;"	f
 nvm_get_sysblock	tools/lightnvm/sysblk.c	/^int nvm_get_sysblock(struct nvm_dev *dev, struct nvm_sb_info *info)$/;"	f
-nvm_idx	frontend/kernel/nvm_cache.c	/^	uint64_t nvm_idx = -1;$/;"	v
 nvm_init	tools/lightnvm-v4.5.3/core.c	/^static int nvm_init(struct nvm_dev *dev)$/;"	f	file:
 nvm_init	tools/lightnvm/core.c	/^static int nvm_init(struct nvm_dev *dev)$/;"	f	file:
 nvm_init_mgr	tools/lightnvm-v4.5.3/core.c	/^struct nvmm_type *nvm_init_mgr(struct nvm_dev *dev)$/;"	f
@@ -2866,8 +2875,7 @@ nvm_ioctl_get_devices	tools/lightnvm-v4.5.3/core.c	/^static long nvm_ioctl_get_d
 nvm_ioctl_get_devices	tools/lightnvm/core.c	/^static long nvm_ioctl_get_devices(struct file *file, void __user *arg)$/;"	f	file:
 nvm_ioctl_info	tools/lightnvm-v4.5.3/core.c	/^static long nvm_ioctl_info(struct file *file, void __user *arg)$/;"	f	file:
 nvm_ioctl_info	tools/lightnvm/core.c	/^static long nvm_ioctl_info(struct file *file, void __user *arg)$/;"	f	file:
-nvm_lock	frontend/kernel/nvm_cache.h	/^	bdbm_spinlock_t nvm_lock;$/;"	m	struct:__anon57
-nvm_lock	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	bdbm_spinlock_t nvm_lock;$/;"	m	struct:__anon59
+nvm_lock	frontend/kernel/nvm_cache.h	/^	bdbm_sema_t nvm_lock;$/;"	m	struct:__anon58
 nvm_mod_exit	tools/lightnvm-v4.5.3/core.c	/^module_exit(nvm_mod_exit);$/;"	v
 nvm_mod_exit	tools/lightnvm-v4.5.3/core.c	/^static void __exit nvm_mod_exit(void)$/;"	f	file:
 nvm_mod_exit	tools/lightnvm/core.c	/^module_exit(nvm_mod_exit);$/;"	v
@@ -2925,7 +2933,6 @@ nvm_submit_ppa	tools/lightnvm/core.c	/^EXPORT_SYMBOL(nvm_submit_ppa);$/;"	v
 nvm_submit_ppa	tools/lightnvm/core.c	/^int nvm_submit_ppa(struct nvm_dev *dev, struct ppa_addr *ppa, int nr_ppas,$/;"	f
 nvm_sysblk_to_cpu	tools/lightnvm-v4.5.3/sysblk.c	/^void nvm_sysblk_to_cpu(struct nvm_sb_info *info, struct nvm_system_block *sb)$/;"	f
 nvm_sysblk_to_cpu	tools/lightnvm/sysblk.c	/^void nvm_sysblk_to_cpu(struct nvm_sb_info *info, struct nvm_system_block *sb)$/;"	f
-nvm_tbl	frontend/kernel/nvm_cache.c	/^	bdbm_nvm_page_t* nvm_tbl = p->ptr_nvm_tbl;$/;"	v
 nvm_unregister	tools/lightnvm-v4.5.3/core.c	/^EXPORT_SYMBOL(nvm_unregister);$/;"	v
 nvm_unregister	tools/lightnvm-v4.5.3/core.c	/^void nvm_unregister(char *disk_name)$/;"	f
 nvm_unregister	tools/lightnvm/core.c	/^EXPORT_SYMBOL(nvm_unregister);$/;"	v
@@ -3546,9 +3553,8 @@ open_list	tools/lightnvm-v4.5.3/rrpc.h	/^	struct list_head open_list;	\/* In-use
 open_list	tools/lightnvm/rrpc.h	/^	struct list_head open_list;	\/* In-use open blocks. These are blocks$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::list_head
 ops	tools/nvme/nvme.h	/^	const struct nvme_ctrl_ops *ops;$/;"	m	struct:nvme_ctrl	typeref:struct:nvme_ctrl::nvme_ctrl_ops
 ops	tools/nvmedrv-v4.5.3/nvme.h	/^	const struct nvme_ctrl_ops *ops;$/;"	m	struct:nvme_ctrl	typeref:struct:nvme_ctrl::nvme_ctrl_ops
-p	frontend/kernel/nvm_cache.c	/^	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;$/;"	v
 page_main_size	include/params.h	/^	uint64_t page_main_size;$/;"	m	struct:__anon47
-page_no	ftl/algo/dftl_map.h	/^	uint64_t page_no;$/;"	m	struct:__anon87
+page_no	ftl/algo/dftl_map.h	/^	uint64_t page_no;$/;"	m	struct:__anon86
 page_no	include/bdbm_drv.h	/^	uint64_t page_no;$/;"	m	struct:__anon25
 page_oob_size	include/params.h	/^	uint64_t page_oob_size;$/;"	m	struct:__anon47
 page_pool	tools/lightnvm-v4.5.3/rrpc.h	/^	mempool_t *page_pool;$/;"	m	struct:rrpc
@@ -3576,9 +3582,9 @@ pg_offset	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			pg_offset;$/;"	m	struct:nvme
 ph_rw	tools/nvme/lightnvm.c	/^		struct nvme_nvm_ph_rw ph_rw;$/;"	m	union:nvme_nvm_command::__anon50	typeref:struct:nvme_nvm_command::__anon50::nvme_nvm_ph_rw	file:
 ph_rw	tools/nvmedrv-v4.5.3/lightnvm.c	/^		struct nvme_nvm_ph_rw ph_rw;$/;"	m	union:nvme_nvm_command::__anon53	typeref:struct:nvme_nvm_command::__anon53::nvme_nvm_ph_rw	file:
 phyaddr	devices/common/dev_stub.h	/^	bdbm_phyaddr_t phyaddr;$/;"	m	struct:__anon10
-phyaddr	ftl/algo/dftl_map.h	/^	bdbm_phyaddr_t phyaddr;	\/* the physical location where mapping entries are stored *\/$/;"	m	struct:__anon89
-phyaddr	ftl/algo/dftl_map.h	/^	mapblk_phyaddr_t phyaddr; \/* physical location *\/$/;"	m	struct:__anon88
-phyaddr	ftl/algo/page_ftl.c	/^	bdbm_phyaddr_t phyaddr; \/* physical location *\/$/;"	m	struct:__anon92	file:
+phyaddr	ftl/algo/dftl_map.h	/^	bdbm_phyaddr_t phyaddr;	\/* the physical location where mapping entries are stored *\/$/;"	m	struct:__anon88
+phyaddr	ftl/algo/dftl_map.h	/^	mapblk_phyaddr_t phyaddr; \/* physical location *\/$/;"	m	struct:__anon87
+phyaddr	ftl/algo/page_ftl.c	/^	bdbm_phyaddr_t phyaddr; \/* physical location *\/$/;"	m	struct:__anon91	file:
 phyaddr	include/bdbm_drv.h	/^	bdbm_phyaddr_t phyaddr;$/;"	m	struct:__anon31
 phyaddr_dst	include/bdbm_drv.h	/^	bdbm_phyaddr_t phyaddr_dst;$/;"	m	struct:__anon31
 phyaddr_src	include/bdbm_drv.h	/^	bdbm_phyaddr_t phyaddr_src;$/;"	m	struct:__anon31
@@ -3654,9 +3660,9 @@ pmu_update_w_tot	ftl/pmu.c	/^void pmu_update_w_tot (bdbm_drv_info_t* bdi, bdbm_s
 poffset	tools/lightnvm-v4.5.3/rrpc.h	/^	u64 poffset; \/* physical page offset *\/$/;"	m	struct:rrpc
 poffset	tools/lightnvm/rrpc.h	/^	u64 poffset; \/* physical page offset *\/$/;"	m	struct:rrpc
 pollwq	devices/common/dev_stub.c	/^	wait_queue_head_t pollwq;$/;"	m	struct:__anon9	file:
-pollwq	frontend/hybrid/blkio_proxy.c	/^	wait_queue_head_t pollwq;$/;"	m	struct:__anon66	file:
-pool_item_t	frontend/hybrid/blkio_proxy_reqs_pool.c	/^} pool_item_t;$/;"	t	typeref:struct:__anon64	file:
-pool_size	ftl/hlm_reqs_pool.h	/^	int32_t pool_size; 	\/* # of items *\/$/;"	m	struct:__anon71
+pollwq	frontend/hybrid/blkio_proxy.c	/^	wait_queue_head_t pollwq;$/;"	m	struct:__anon65	file:
+pool_item_t	frontend/hybrid/blkio_proxy_reqs_pool.c	/^} pool_item_t;$/;"	t	typeref:struct:__anon63	file:
+pool_size	ftl/hlm_reqs_pool.h	/^	int32_t pool_size; 	\/* # of items *\/$/;"	m	struct:__anon70
 ppaf	tools/nvme/lightnvm.c	/^	struct nvme_nvm_addr_format ppaf;$/;"	m	struct:nvme_nvm_id	typeref:struct:nvme_nvm_id::nvme_nvm_addr_format	file:
 ppaf	tools/nvmedrv-v4.5.3/lightnvm.c	/^	struct nvme_nvm_addr_format ppaf;$/;"	m	struct:nvme_nvm_id	typeref:struct:nvme_nvm_id::nvme_nvm_addr_format	file:
 ppas	tools/lightnvm-v4.5.3/sysblk.c	/^	struct ppa_addr ppas[MAX_SYSBLKS * MAX_BLKS_PR_SYSBLK];\/* all sysblks *\/$/;"	m	struct:sysblk_scan	typeref:struct:sysblk_scan::ppa_addr	file:
@@ -3708,8 +3714,8 @@ prp_page_pool	tools/nvmedrv-v4.5.3/pci.c	/^	struct dma_pool *prp_page_pool;$/;"	
 prp_small_pool	tools/nvme/pci.c	/^	struct dma_pool *prp_small_pool;$/;"	m	struct:nvme_dev	typeref:struct:nvme_dev::dma_pool	file:
 prp_small_pool	tools/nvmedrv-v4.5.3/pci.c	/^	struct dma_pool *prp_small_pool;$/;"	m	struct:nvme_dev	typeref:struct:nvme_dev::dma_pool	file:
 ps	frontend/user/dev_proxy.c	/^	uint8_t* ps; \/* punit status *\/$/;"	m	struct:__anon55	file:
-pst	ftl/algo/abm.h	/^	babm_abm_subpage_t* pst;	\/* a page status table; used when the FTL requires *\/$/;"	m	struct:__anon84
-pst	ftl/algo/block_ftl.c	/^	uint8_t* pst;	\/* status of pages in a block *\/$/;"	m	struct:__anon82	file:
+pst	ftl/algo/abm.h	/^	babm_abm_subpage_t* pst;	\/* a page status table; used when the FTL requires *\/$/;"	m	struct:__anon83
+pst	ftl/algo/block_ftl.c	/^	uint8_t* pst;	\/* status of pages in a block *\/$/;"	m	struct:__anon81	file:
 ptr_dm_inf	include/bdbm_drv.h	/^	bdbm_dm_inf_t* ptr_dm_inf;$/;"	m	struct:_bdbm_drv_info_t
 ptr_ftl_inf	ftl/hlm_buf.c	/^	bdbm_ftl_inf_t* ptr_ftl_inf;	\/* for hlm_nobuff (it must be on top of this structure) *\/$/;"	m	struct:bdbm_hlm_buf_private	file:
 ptr_ftl_inf	include/bdbm_drv.h	/^	bdbm_ftl_inf_t* ptr_ftl_inf;$/;"	m	struct:_bdbm_drv_info_t
@@ -3717,13 +3723,10 @@ ptr_hlm_inf	include/bdbm_drv.h	/^	bdbm_hlm_inf_t* ptr_hlm_inf;$/;"	m	struct:_bdb
 ptr_hlm_req	include/bdbm_drv.h	/^	void* ptr_hlm_req;$/;"	m	struct:__anon31
 ptr_host_inf	include/bdbm_drv.h	/^	bdbm_host_inf_t* ptr_host_inf; $/;"	m	struct:_bdbm_drv_info_t
 ptr_llm_inf	include/bdbm_drv.h	/^	bdbm_llm_inf_t* ptr_llm_inf;$/;"	m	struct:_bdbm_drv_info_t
-ptr_mapping_table	ftl/algo/page_ftl.c	/^	bdbm_page_mapping_entry_t* ptr_mapping_table;$/;"	m	struct:__anon93	file:
+ptr_mapping_table	ftl/algo/page_ftl.c	/^	bdbm_page_mapping_entry_t* ptr_mapping_table;$/;"	m	struct:__anon92	file:
 ptr_nvm_inf	include/bdbm_drv.h	/^	bdbm_nvm_inf_t* ptr_nvm_inf;$/;"	m	struct:_bdbm_drv_info_t
-ptr_nvm_tbl	frontend/kernel/nvm_cache.h	/^	bdbm_nvm_page_t* ptr_nvm_tbl;$/;"	m	struct:__anon57
-ptr_nvm_tbl	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	bdbm_nvm_block_t* ptr_nvm_tbl;$/;"	m	struct:__anon59
-ptr_nvmram	frontend/kernel/nvm_cache.h	/^	void* ptr_nvmram; \/* DRAM memory for nvm *\/$/;"	m	struct:__anon57
-ptr_nvmram	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	void* ptr_nvmram; \/* DRAM memory for nvm *\/$/;"	m	struct:__anon59
-ptr_nvmram_data	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	void* ptr_nvmram_data;$/;"	m	struct:__anon58
+ptr_nvm_tbl	frontend/kernel/nvm_cache.h	/^	bdbm_nvm_page_t* ptr_nvm_tbl;$/;"	m	struct:__anon58
+ptr_nvmram	frontend/kernel/nvm_cache.h	/^	void* ptr_nvmram; \/* DRAM memory for nvm *\/$/;"	m	struct:__anon58
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon38
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon39
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon40
@@ -3733,9 +3736,9 @@ ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon43
 ptr_punits	devices/ramdrive/dev_ramssd.h	/^	dev_ramssd_punit_t* ptr_punits;	\/* parallel units *\/$/;"	m	struct:__anon13
 ptr_qitem	include/bdbm_drv.h	/^	void* ptr_qitem;$/;"	m	struct:__anon31
 ptr_req	devices/ramdrive/dev_ramssd.h	/^	void* ptr_req;$/;"	m	struct:__anon11
-ptr_req	ftl/queue/prior_queue.h	/^	void* ptr_req;$/;"	m	struct:__anon75
-ptr_req	ftl/queue/queue.h	/^	void* ptr_req;$/;"	m	struct:__anon73
-ptr_req	ftl/queue/rd_prior_queue.h	/^	void* ptr_req;$/;"	m	struct:__anon79
+ptr_req	ftl/queue/prior_queue.h	/^	void* ptr_req;$/;"	m	struct:__anon74
+ptr_req	ftl/queue/queue.h	/^	void* ptr_req;$/;"	m	struct:__anon72
+ptr_req	ftl/queue/rd_prior_queue.h	/^	void* ptr_req;$/;"	m	struct:__anon78
 ptr_ssdram	devices/ramdrive/dev_ramssd.h	/^	void* ptr_ssdram; \/* DRAM memory for SSD *\/$/;"	m	struct:__anon13
 punit	devices/common/dev_stub.c	/^	uint64_t punit;$/;"	m	struct:__anon9	file:
 punit	frontend/user/dev_proxy.c	/^	int punit;$/;"	m	struct:__anon55	file:
@@ -3753,7 +3756,7 @@ punit_status	examples/raw-flash/raw-flash.h	/^	atomic_t* punit_status;$/;"	m	str
 punit_status	examples/stub_test/main.c	/^	uint8_t* punit_status;$/;"	m	struct:__anon23	file:
 q	devices/dumbssd/dev_hynix_nvme.h	/^	struct request_queue *q;$/;"	m	struct:__anon16	typeref:struct:__anon16::request_queue
 q	ftl/hlm_buf.c	/^	bdbm_queue_t* q;$/;"	m	struct:bdbm_hlm_buf_private	file:
-q	ftl/hlm_dftl.c	/^	bdbm_queue_t* q;$/;"	m	struct:__anon94	file:
+q	ftl/hlm_dftl.c	/^	bdbm_queue_t* q;$/;"	m	struct:__anon93	file:
 q	ftl/llm_mq.c	/^	bdbm_prior_queue_t* q;$/;"	m	struct:bdbm_llm_mq_private	file:
 q	ftl/llm_rmq.c	/^	bdbm_rd_prior_queue_t* q;$/;"	m	struct:bdbm_llm_rmq_private	file:
 q_db	tools/nvme/pci.c	/^	u32 __iomem *q_db;$/;"	m	struct:nvme_queue	file:
@@ -3766,14 +3769,14 @@ q_dmadev	tools/nvme/pci.c	/^	struct device *q_dmadev;$/;"	m	struct:nvme_queue	ty
 q_dmadev	tools/nvmedrv-v4.5.3/pci.c	/^	struct device *q_dmadev;$/;"	m	struct:nvme_queue	typeref:struct:nvme_queue::device	file:
 q_lock	tools/nvme/pci.c	/^	spinlock_t q_lock;$/;"	m	struct:nvme_queue	file:
 q_lock	tools/nvmedrv-v4.5.3/pci.c	/^	spinlock_t q_lock;$/;"	m	struct:nvme_queue	file:
-qic	ftl/queue/prior_queue.h	/^	int64_t qic; \/* queue item count *\/$/;"	m	struct:__anon77
-qic	ftl/queue/queue.h	/^	int64_t qic;			\/* queue item count *\/$/;"	m	struct:__anon74
-qic	ftl/queue/rd_prior_queue.h	/^	int64_t qic; \/* queue item count *\/$/;"	m	struct:__anon81
+qic	ftl/queue/prior_queue.h	/^	int64_t qic; \/* queue item count *\/$/;"	m	struct:__anon76
+qic	ftl/queue/queue.h	/^	int64_t qic;			\/* queue item count *\/$/;"	m	struct:__anon73
+qic	ftl/queue/rd_prior_queue.h	/^	int64_t qic; \/* queue item count *\/$/;"	m	struct:__anon80
 qid	tools/nvme/pci.c	/^	u16 qid;$/;"	m	struct:nvme_queue	file:
 qid	tools/nvmedrv-v4.5.3/pci.c	/^	u16 qid;$/;"	m	struct:nvme_queue	file:
-qlh	ftl/queue/prior_queue.h	/^	struct list_head* qlh; \/* queue list header *\/$/;"	m	struct:__anon77	typeref:struct:__anon77::list_head
-qlh	ftl/queue/queue.h	/^	struct list_head* qlh;	\/* queue list header *\/$/;"	m	struct:__anon74	typeref:struct:__anon74::list_head
-qlh	ftl/queue/rd_prior_queue.h	/^	struct list_head* qlh; \/* queue list header *\/$/;"	m	struct:__anon81	typeref:struct:__anon81::list_head
+qlh	ftl/queue/prior_queue.h	/^	struct list_head* qlh; \/* queue list header *\/$/;"	m	struct:__anon76	typeref:struct:__anon76::list_head
+qlh	ftl/queue/queue.h	/^	struct list_head* qlh;	\/* queue list header *\/$/;"	m	struct:__anon73	typeref:struct:__anon73::list_head
+qlh	ftl/queue/rd_prior_queue.h	/^	struct list_head* qlh; \/* queue list header *\/$/;"	m	struct:__anon80	typeref:struct:__anon80::list_head
 queue	devices/dumbssd/dev_hynix_nvme.h	/^	struct request_queue *queue;$/;"	m	struct:__anon16	typeref:struct:__anon16::request_queue
 queue	frontend/kernel/blkdev.c	/^	struct request_queue *queue;$/;"	m	struct:bdbm_device_t	typeref:struct:bdbm_device_t::request_queue	file:
 queue	frontend/kernel/blkdev_bak.c	/^	struct request_queue *queue;$/;"	m	struct:bdbm_device_t	typeref:struct:bdbm_device_t::request_queue	file:
@@ -3801,9 +3804,9 @@ rblk	tools/lightnvm/rrpc.h	/^	struct rrpc_block *rblk;$/;"	m	struct:rrpc_block_g
 rblock_max_invalid	tools/lightnvm-v4.5.3/rrpc.c	/^static struct rrpc_block *rblock_max_invalid(struct rrpc_block *ra,$/;"	f	file:
 rblock_max_invalid	tools/lightnvm/rrpc.c	/^static struct rrpc_block *rblock_max_invalid(struct rrpc_block *ra,$/;"	f	file:
 rbuf	devices/bluedbm/dm_bluedbm.c	/^	uint8_t** rbuf;$/;"	m	struct:dm_bluedbm_private	file:
-rd_prior_iotype_t	ftl/queue/rd_prior_queue.h	/^} rd_prior_iotype_t;$/;"	t	typeref:enum:__anon78
+rd_prior_iotype_t	ftl/queue/rd_prior_queue.h	/^} rd_prior_iotype_t;$/;"	t	typeref:enum:__anon77
 ref_cnt	devices/common/dev_stub.c	/^	uint32_t ref_cnt;$/;"	m	struct:__anon9	file:
-ref_cnt	frontend/hybrid/blkio_proxy.c	/^	atomic_t ref_cnt; \/* # of the user-level FTLs that are linked to the kernel *\/$/;"	m	struct:__anon66	file:
+ref_cnt	frontend/hybrid/blkio_proxy.c	/^	atomic_t ref_cnt; \/* # of the user-level FTLs that are linked to the kernel *\/$/;"	m	struct:__anon65	file:
 reg_read32	tools/nvme/nvme.h	/^	int (*reg_read32)(struct nvme_ctrl *ctrl, u32 off, u32 *val);$/;"	m	struct:nvme_ctrl_ops
 reg_read32	tools/nvmedrv-v4.5.3/nvme.h	/^	int (*reg_read32)(struct nvme_ctrl *ctrl, u32 off, u32 *val);$/;"	m	struct:nvme_ctrl_ops
 reg_read64	tools/nvme/nvme.h	/^	int (*reg_read64)(struct nvme_ctrl *ctrl, u32 off, u64 *val);$/;"	m	struct:nvme_ctrl_ops
@@ -3824,7 +3827,7 @@ req_type	include/bdbm_drv.h	/^	uint32_t req_type;$/;"	m	struct:__anon37
 reqs	examples/stub_test/main.c	/^bdbm_llm_req_t** reqs = NULL;$/;"	v
 reqs	tools/lightnvm-v4.5.3/rrpc.h	/^	struct list_head reqs;$/;"	m	struct:rrpc_inflight	typeref:struct:rrpc_inflight::list_head
 reqs	tools/lightnvm/rrpc.h	/^	struct list_head reqs;$/;"	m	struct:rrpc_inflight	typeref:struct:rrpc_inflight::list_head
-reqs_pool	frontend/hybrid/blkio_proxy.c	/^	bdbm_proxy_reqs_pool_t* reqs_pool;$/;"	m	struct:__anon66	file:
+reqs_pool	frontend/hybrid/blkio_proxy.c	/^	bdbm_proxy_reqs_pool_t* reqs_pool;$/;"	m	struct:__anon65	file:
 request_intersects	tools/lightnvm-v4.5.3/rrpc.h	/^static inline int request_intersects(struct rrpc_inflight_rq *r,$/;"	f
 request_intersects	tools/lightnvm/rrpc.h	/^static inline int request_intersects(struct rrpc_inflight_rq *r,$/;"	f
 requeue_bios	tools/lightnvm-v4.5.3/rrpc.h	/^	struct bio_list requeue_bios;$/;"	m	struct:rrpc	typeref:struct:rrpc::bio_list
@@ -4064,7 +4067,7 @@ run_sync_test	examples/raw-flash/kmain.c	/^static void run_sync_test (bdbm_devic
 rvsd1	tools/nvme/lightnvm.c	/^	__le32	rvsd1;$/;"	m	struct:nvme_nvm_bb_tbl	file:
 rvsd1	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32	rvsd1;$/;"	m	struct:nvme_nvm_bb_tbl	file:
 rw	devices/dumbssd/dev_hynix_nvme.h	/^	int rw;$/;"	m	struct:__anon17
-rw_pg_ofs	ftl/algo/block_ftl.c	/^	int64_t rw_pg_ofs; \/* recently-written page offset *\/$/;"	m	struct:__anon82	file:
+rw_pg_ofs	ftl/algo/block_ftl.c	/^	int64_t rw_pg_ofs; \/* recently-written page offset *\/$/;"	m	struct:__anon81	file:
 scan_badblocks	include/bdbm_drv.h	/^	uint32_t (*scan_badblocks) (bdbm_drv_info_t* bdi);$/;"	m	struct:__anon43
 scan_ppa_idx	tools/lightnvm-v4.5.3/sysblk.c	/^static inline int scan_ppa_idx(int row, int blkid)$/;"	f	file:
 scan_ppa_idx	tools/lightnvm/sysblk.c	/^static inline int scan_ppa_idx(int row, int blkid)$/;"	f	file:
@@ -4080,10 +4083,10 @@ sect_len	tools/nvme/lightnvm.c	/^	__u8			sect_len;$/;"	m	struct:nvme_nvm_addr_fo
 sect_len	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			sect_len;$/;"	m	struct:nvme_nvm_addr_format	file:
 sect_offset	tools/nvme/lightnvm.c	/^	__u8			sect_offset;$/;"	m	struct:nvme_nvm_addr_format	file:
 sect_offset	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8			sect_offset;$/;"	m	struct:nvme_nvm_addr_format	file:
-seg_buf	ftl/hlm_rsd.c	/^	segment_buf_t* seg_buf;$/;"	m	struct:__anon96	file:
-seg_no	ftl/hlm_rsd.c	/^	uint32_t seg_no;$/;"	m	struct:__anon95	file:
-segment_buf_t	ftl/hlm_rsd.c	/^} segment_buf_t;$/;"	t	typeref:struct:__anon95	file:
-sem	frontend/hybrid/blkio_proxy.c	/^	struct semaphore sem;$/;"	m	struct:__anon66	typeref:struct:__anon66::semaphore	file:
+seg_buf	ftl/hlm_rsd.c	/^	segment_buf_t* seg_buf;$/;"	m	struct:__anon95	file:
+seg_no	ftl/hlm_rsd.c	/^	uint32_t seg_no;$/;"	m	struct:__anon94	file:
+segment_buf_t	ftl/hlm_rsd.c	/^} segment_buf_t;$/;"	t	typeref:struct:__anon94	file:
+sem	frontend/hybrid/blkio_proxy.c	/^	struct semaphore sem;$/;"	m	struct:__anon65	typeref:struct:__anon65::semaphore	file:
 serial	tools/nvme/core.c	/^nvme_show_function(serial);$/;"	v
 serial	tools/nvme/nvme.h	/^	char serial[20];$/;"	m	struct:nvme_ctrl
 serial	tools/nvmedrv-v4.5.3/core.c	/^nvme_show_function(serial);$/;"	v
@@ -4113,7 +4116,7 @@ slba	tools/nvmedrv-v4.5.3/scsi.c	/^	__be64	slba;$/;"	m	struct:scsi_unmap_blk_des
 snapshot	include/params.h	/^	uint32_t snapshot;	\/* 0: disable (default), 1: enable *\/$/;"	m	struct:__anon46
 sos	tools/nvme/lightnvm.c	/^	__le16			sos;$/;"	m	struct:nvme_nvm_id_group	file:
 sos	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le16			sos;$/;"	m	struct:nvme_nvm_id_group	file:
-sp_off	ftl/algo/page_ftl.c	/^	uint8_t sp_off;$/;"	m	struct:__anon92	file:
+sp_off	ftl/algo/page_ftl.c	/^	uint8_t sp_off;$/;"	m	struct:__anon91	file:
 spba	tools/nvme/lightnvm.c	/^	__le64			spba;$/;"	m	struct:nvme_nvm_erase_blk	file:
 spba	tools/nvme/lightnvm.c	/^	__le64			spba;$/;"	m	struct:nvme_nvm_getbbtbl	file:
 spba	tools/nvme/lightnvm.c	/^	__le64			spba;$/;"	m	struct:nvme_nvm_hb_rw	file:
@@ -4135,22 +4138,21 @@ sq_head	tools/nvmedrv-v4.5.3/pci.c	/^	u16 sq_head;$/;"	m	struct:nvme_queue	file:
 sq_tail	tools/nvme/pci.c	/^	u16 sq_tail;$/;"	m	struct:nvme_queue	file:
 sq_tail	tools/nvmedrv-v4.5.3/pci.c	/^	u16 sq_tail;$/;"	m	struct:nvme_queue	file:
 start	common/utils/utime.h	/^	ktime_t start;$/;"	m	struct:__anon3
-status	frontend/kernel/nvm_cache.h	/^	uint8_t status;$/;"	m	struct:__anon56
-status	frontend/kernel/nvm_cache_bak/nvm_cache.h	/^	uint8_t status;$/;"	m	struct:__anon58
-status	ftl/algo/abm.h	/^	uint8_t status;	\/* ABM_BLK_STATUS *\/$/;"	m	struct:__anon84
-status	ftl/algo/block_ftl.c	/^	uint8_t status;	\/* BDBM_BFTL_BLOCK_STATUS *\/$/;"	m	struct:__anon82	file:
-status	ftl/algo/dftl_map.h	/^	dir_stat status;$/;"	m	struct:__anon89
-status	ftl/algo/dftl_map.h	/^	uint8_t status;$/;"	m	struct:__anon88
-status	ftl/algo/page_ftl.c	/^	uint8_t status; \/* BDBM_PFTL_PAGE_STATUS *\/$/;"	m	struct:__anon92	file:
+status	frontend/kernel/nvm_cache.h	/^	uint8_t status;$/;"	m	struct:__anon57
+status	ftl/algo/abm.h	/^	uint8_t status;	\/* ABM_BLK_STATUS *\/$/;"	m	struct:__anon83
+status	ftl/algo/block_ftl.c	/^	uint8_t status;	\/* BDBM_BFTL_BLOCK_STATUS *\/$/;"	m	struct:__anon81	file:
+status	ftl/algo/dftl_map.h	/^	dir_stat status;$/;"	m	struct:__anon88
+status	ftl/algo/dftl_map.h	/^	uint8_t status;$/;"	m	struct:__anon87
+status	ftl/algo/page_ftl.c	/^	uint8_t status; \/* BDBM_PFTL_PAGE_STATUS *\/$/;"	m	struct:__anon91	file:
 stop	examples/stub_test/main.c	/^	int stop;$/;"	m	struct:__anon23	file:
-stop	frontend/hybrid/blkio_stub.c	/^	int stop;$/;"	m	struct:__anon69	file:
+stop	frontend/hybrid/blkio_stub.c	/^	int stop;$/;"	m	struct:__anon68	file:
 stop	frontend/user/dev_proxy.c	/^	int stop;$/;"	m	struct:__anon55	file:
 store	include/bdbm_drv.h	/^	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);$/;"	m	struct:__anon42
 store	include/bdbm_drv.h	/^	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);$/;"	m	struct:__anon43
 str	ftl/pmu.c	/^char str[1024];$/;"	v
 stripe_size	tools/nvme/nvme.h	/^	u32 stripe_size;$/;"	m	struct:nvme_ctrl
 stripe_size	tools/nvmedrv-v4.5.3/nvme.h	/^	u32 stripe_size;$/;"	m	struct:nvme_ctrl
-stt	frontend/hybrid/blkio_proxy_ioctl.h	/^	bdbm_proxy_req_status_t stt;$/;"	m	struct:__anon68
+stt	frontend/hybrid/blkio_proxy_ioctl.h	/^	bdbm_proxy_req_status_t stt;$/;"	m	struct:__anon67
 submit_io_done	devices/dumbssd/dev_hynix_nvme.c	/^static void submit_io_done (struct request *rq, int error)$/;"	f	file:
 subsystem	tools/nvme/nvme.h	/^	bool subsystem;$/;"	m	struct:nvme_ctrl
 subsystem	tools/nvme/pci.c	/^	bool subsystem;$/;"	m	struct:nvme_dev	file:
@@ -4167,8 +4169,8 @@ sysblk_get_host_blks	tools/lightnvm/sysblk.c	/^static int sysblk_get_host_blks(s
 sysblk_scan	tools/lightnvm-v4.5.3/sysblk.c	/^struct sysblk_scan {$/;"	s	file:
 sysblk_scan	tools/lightnvm/sysblk.c	/^struct sysblk_scan {$/;"	s	file:
 sz	common/3rd/utarray.h	/^    size_t sz;$/;"	m	struct:__anon4
-tag	ftl/queue/prior_queue.h	/^	uint64_t tag;$/;"	m	struct:__anon75
-tag	ftl/queue/rd_prior_queue.h	/^	uint64_t tag;$/;"	m	struct:__anon79
+tag	ftl/queue/prior_queue.h	/^	uint64_t tag;$/;"	m	struct:__anon74
+tag	ftl/queue/rd_prior_queue.h	/^	uint64_t tag;$/;"	m	struct:__anon78
 tags	tools/nvme/pci.c	/^	struct blk_mq_tags **tags;$/;"	m	struct:nvme_queue	typeref:struct:nvme_queue::blk_mq_tags	file:
 tags	tools/nvmedrv-v4.5.3/pci.c	/^	struct blk_mq_tags **tags;$/;"	m	struct:nvme_queue	typeref:struct:nvme_queue::blk_mq_tags	file:
 tagset	tools/nvme/nvme.h	/^	struct blk_mq_tag_set *tagset;$/;"	m	struct:nvme_ctrl	typeref:struct:nvme_ctrl::blk_mq_tag_set
@@ -4194,7 +4196,7 @@ tdresv	tools/nvme/lightnvm.c	/^	__le32	tdresv;$/;"	m	struct:nvme_nvm_bb_tbl	file
 tdresv	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32	tdresv;$/;"	m	struct:nvme_nvm_bb_tbl	file:
 temp_main	examples/raw-flash/kmain.c	/^uint8_t* temp_main = NULL;$/;"	v
 temp_oob	examples/raw-flash/kmain.c	/^uint8_t* temp_oob = NULL;$/;"	v
-test	frontend/df-user/dev_proxy.c	/^	int test;$/;"	m	struct:__anon62	file:
+test	frontend/df-user/dev_proxy.c	/^	int test;$/;"	m	struct:__anon61	file:
 test_erase	tools/dumbssd-format/dumbssd-format.c	/^void test_erase (int32_t dev_h, int die, int block)$/;"	f
 test_erase	tools/dumbssd-test/dumbssd-test.c	/^void test_erase (int32_t dev_h, int die, int block)$/;"	f
 test_read	tools/dumbssd-format/dumbssd-format.c	/^void test_read (int32_t dev_h, int die, int block, int wu)$/;"	f
@@ -4229,7 +4231,7 @@ time_w_q	include/bdbm_drv.h	/^	uint64_t time_w_q;$/;"	m	struct:__anon44
 time_w_sw	include/bdbm_drv.h	/^	uint64_t time_w_sw;$/;"	m	struct:__anon44
 time_w_tot	include/bdbm_drv.h	/^	uint64_t time_w_tot;$/;"	m	struct:__anon44
 timeval_subtract	common/utils/utime.c	/^int timeval_subtract ($/;"	f
-tmp_hr	ftl/hlm_nobuf.c	/^	bdbm_hlm_req_t tmp_hr;$/;"	m	struct:__anon70	file:
+tmp_hr	ftl/hlm_nobuf.c	/^	bdbm_hlm_req_t tmp_hr;$/;"	m	struct:__anon69	file:
 to_nvme_dev	tools/nvme/pci.c	/^static inline struct nvme_dev *to_nvme_dev(struct nvme_ctrl *ctrl)$/;"	f	file:
 to_nvme_dev	tools/nvmedrv-v4.5.3/pci.c	/^static inline struct nvme_dev *to_nvme_dev(struct nvme_ctrl *ctrl)$/;"	f	file:
 total_blocks	tools/lightnvm-v4.5.3/rrpc.h	/^	unsigned long total_blocks;$/;"	m	struct:rrpc
@@ -4249,7 +4251,7 @@ tt_rrpc	tools/lightnvm-v4.5.3/rrpc.c	/^static struct nvm_tgt_type tt_rrpc = {$/;
 tt_rrpc	tools/lightnvm-v4.5.3/rrpc.c	/^static struct nvm_tgt_type tt_rrpc;$/;"	v	typeref:struct:nvm_tgt_type	file:
 tt_rrpc	tools/lightnvm/rrpc.c	/^static struct nvm_tgt_type tt_rrpc = {$/;"	v	typeref:struct:nvm_tgt_type	file:
 tt_rrpc	tools/lightnvm/rrpc.c	/^static struct nvm_tgt_type tt_rrpc;$/;"	v	typeref:struct:nvm_tgt_type	file:
-type	ftl/queue/rd_prior_queue.h	/^	rd_prior_iotype_t type;$/;"	m	struct:__anon79
+type	ftl/queue/rd_prior_queue.h	/^	rd_prior_iotype_t type;$/;"	m	struct:__anon78
 type	tools/nvme/nvme.h	/^	int type;$/;"	m	struct:nvme_ns
 type	tools/nvmedrv-v4.5.3/nvme.h	/^	int type;$/;"	m	struct:nvme_ns
 uint32_t	common/3rd/uthash.h	/^typedef unsigned int uint32_t;$/;"	t
@@ -4264,8 +4266,8 @@ use_cmb_sqes	tools/nvme/pci.c	/^static bool use_cmb_sqes = true;$/;"	v	file:
 use_cmb_sqes	tools/nvmedrv-v4.5.3/pci.c	/^static bool use_cmb_sqes = true;$/;"	v	file:
 use_threaded_interrupts	tools/nvme/pci.c	/^static int use_threaded_interrupts;$/;"	v	file:
 use_threaded_interrupts	tools/nvmedrv-v4.5.3/pci.c	/^static int use_threaded_interrupts;$/;"	v	file:
-used_list	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	struct list_head used_list;$/;"	m	struct:__anon63	typeref:struct:__anon63::list_head
-used_list	ftl/hlm_reqs_pool.h	/^	struct list_head used_list;$/;"	m	struct:__anon71	typeref:struct:__anon71::list_head
+used_list	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	struct list_head used_list;$/;"	m	struct:__anon62	typeref:struct:__anon62::list_head
+used_list	ftl/hlm_reqs_pool.h	/^	struct list_head used_list;$/;"	m	struct:__anon70	typeref:struct:__anon70::list_head
 used_list	tools/lightnvm-v4.5.3/gennvm.h	/^	struct list_head used_list;	\/* In-use blocks *\/$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
 used_list	tools/lightnvm/gennvm.h	/^	struct list_head used_list;	\/* In-use blocks *\/$/;"	m	struct:gen_lun	typeref:struct:gen_lun::list_head
 user	devices/bluedbm/dm_bluedbm.c	/^	void* user;$/;"	m	struct:__anon15	file:
@@ -4359,14 +4361,14 @@ wbuf	devices/bluedbm/dm_bluedbm.c	/^	uint8_t** wbuf;$/;"	m	struct:dm_bluedbm_pri
 wl_policy	include/params.h	/^	uint32_t wl_policy;$/;"	m	struct:__anon46
 work	devices/bluedbm/dm_bluedbm.c	/^	struct work_struct work; \/* it must be at the end of structre *\/$/;"	m	struct:__anon15	typeref:struct:__anon15::work_struct	file:
 work	devices/ramdrive/dev_ramssd.h	/^	struct work_struct work; \/* it must be at the end of structre *\/$/;"	m	struct:__anon12	typeref:struct:__anon12::work_struct
-work	frontend/hybrid/blkio_proxy.c	/^	struct work_struct work; \/* it must be at the end of structre *\/$/;"	m	struct:__anon65	typeref:struct:__anon65::work_struct	file:
+work	frontend/hybrid/blkio_proxy.c	/^	struct work_struct work; \/* it must be at the end of structre *\/$/;"	m	struct:__anon64	typeref:struct:__anon64::work_struct	file:
 works	devices/bluedbm/dm_bluedbm.c	/^	dm_bluedbm_wq_t works;$/;"	m	struct:dm_bluedbm_private	file:
 works	devices/ramdrive/dev_ramssd.h	/^	dev_ramssd_wq_t works;$/;"	m	struct:__anon13
-works	frontend/hybrid/blkio_proxy.c	/^	bdbm_blkio_proxy_wq_t* works;$/;"	m	struct:__anon66	file:
+works	frontend/hybrid/blkio_proxy.c	/^	bdbm_blkio_proxy_wq_t* works;$/;"	m	struct:__anon65	file:
 wq	common/utils/uthread.h	/^	wait_queue_head_t wq;$/;"	m	struct:__anon1
 wq	devices/bluedbm/dm_bluedbm.c	/^	struct workqueue_struct *wq;$/;"	m	struct:dm_bluedbm_private	typeref:struct:dm_bluedbm_private::workqueue_struct	file:
 wq	devices/ramdrive/dev_ramssd.h	/^	struct workqueue_struct *wq;$/;"	m	struct:__anon13	typeref:struct:__anon13::workqueue_struct
-wq	frontend/hybrid/blkio_proxy.c	/^	struct workqueue_struct *wq;$/;"	m	struct:__anon66	typeref:struct:__anon66::workqueue_struct	file:
+wq	frontend/hybrid/blkio_proxy.c	/^	struct workqueue_struct *wq;$/;"	m	struct:__anon65	typeref:struct:__anon65::workqueue_struct	file:
 ws_gc	tools/lightnvm-v4.5.3/rrpc.h	/^	struct work_struct ws_gc;$/;"	m	struct:rrpc_block_gc	typeref:struct:rrpc_block_gc::work_struct
 ws_gc	tools/lightnvm-v4.5.3/rrpc.h	/^	struct work_struct ws_gc;$/;"	m	struct:rrpc_lun	typeref:struct:rrpc_lun::work_struct
 ws_gc	tools/lightnvm/rrpc.h	/^	struct work_struct ws_gc;$/;"	m	struct:rrpc_block_gc	typeref:struct:rrpc_block_gc::work_struct

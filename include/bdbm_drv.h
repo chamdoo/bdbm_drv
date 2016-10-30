@@ -2,6 +2,7 @@
 #define NVM_CACHE_WB
 #define NVM_CACHE_SKIP
 #define NVM_CACHE_DEBUG
+#define NVM_CACHE_TRIM
 
 /*
 The MIT License (MIT)
@@ -121,6 +122,8 @@ enum BDBM_REQTYPE {
 	REQTYPE_META_WRITE 		= REQTYPE_META 		| REQTYPE_IO_WRITE,
 #ifdef NVM_CACHE
 	REQTYPE_WRITE_BACK		= REQTYPE_NORNAL	| REQTYPE_IO_WRITE | REQTYPE_INTERNAL,
+	REQTYPE_INT_TRIM		= REQTYPE_NORNAL	| REQTYPE_IO_TRIM | REQTYPE_INTERNAL,
+
 #endif
 };
 
@@ -135,6 +138,7 @@ enum BDBM_REQTYPE {
 
 #ifdef NVM_CACHE
 #define bdbm_is_writeback(type) (((type & REQTYPE_WRITE_BACK) == REQTYPE_WRITE_BACK) ? 1 : 0)
+#define bdbm_is_internal(type) (((type & REQTYPE_INTERNAL) == REQTYPE_INTERNAL) ? 1 : 0)
 #endif
 
 

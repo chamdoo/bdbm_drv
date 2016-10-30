@@ -50,9 +50,6 @@ bdbm_host_inf_t _blkio_inf = {
 	.close = blkio_close,
 	.make_req = blkio_make_req,
 	.end_req = blkio_end_req,
-#ifdef NVM_CACHE
-	.end_wb_req = blkio_end_wb_req,
-#endif
 };
 
 #ifdef NVM_CACHE
@@ -256,21 +253,15 @@ fail:
 		__free_blkio_req (br);
 }
 
-#ifdef NVM_CACHE
-void blkio_end_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
-{
-	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
-
-	/* destroy hlm_req */
-	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
-
-}
-#endif
-
 void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)hr->blkio_req;
+
+#ifdef NVM_CACHE
+	if(bdbm_is_internal(hr->req_type))
+		goto destroy; 
+#endif
 
 	/* end bio */
 	if (hr->ret == 0)
@@ -283,8 +274,14 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	/* free blkio_req */
 	__free_blkio_req (br);
 
+destroy:
 	/* destroy hlm_req */
 	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
+
+#ifdef NVM_CACHE
+	if(bdbm_is_internal(hr->req_type))
+		return; 
+#endif
 
 	/* decreate # of reqs */
 	atomic_dec (&p->nr_host_reqs);

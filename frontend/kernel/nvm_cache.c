@@ -418,8 +418,10 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 { 
 	/* find nvm cache */
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_blkio_private_t* bp = (bdbm_blkio_private_t*) BDBM_HOST_PRIV(bdi);
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
 	bdbm_nvm_page_t* nvm_tbl = p->ptr_nvm_tbl;
+	bdbm_hlm_req_t* hr = NULL;
 	int64_t nvm_idx = -1;
 	uint8_t* ptr_nvmram_addr = NULL;
 	uint64_t i;
@@ -466,7 +468,38 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/*								  */
 	/**********************************/
 
+#ifdef NVM_CACHE_TRIM
+//	bdbm_msg("[%s] send TRIM", __FUNCTION__);
+
+	/* get a free hlm_req from the hlm_reqs_pool */
+	if((hr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL){
+		bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
+		goto fail;
+	}
+
+	/* build trim hr with lpa, len */
+	/* hr->done is locked in pool_build_wb_req() */
+	if (bdbm_hlm_reqs_pool_build_int_trim_req (hr, lr->logaddr.lpa[0], 1) != 0) {
+		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+		goto fail;
+	}
+
+
+	/* send req */
+	bdbm_sema_lock (&bp->host_lock);
+
+	if(bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
+		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+	}
+	bdbm_sema_unlock (&bp->host_lock);
+#endif
 	return 1;
+
+fail:
+	if (hr) 
+		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr);
+	return 1;	
+
 }
 
 

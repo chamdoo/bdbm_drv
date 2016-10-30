@@ -230,6 +230,22 @@ void bdbm_hlm_reqs_pool_free_item (
 	bdbm_spin_unlock (&pool->lock);
 }
 
+#ifdef NVM_CACHE_TRIM
+static int __hlm_reqs_pool_create_int_trim_req  (
+	bdbm_hlm_req_t* hr,	uint64_t lpa, uint64_t len)
+{
+	/* initialize variables */
+	hr->req_type = REQTYPE_INT_TRIM;
+	bdbm_stopwatch_start (&hr->sw);
+	hr->lpa = lpa;
+	hr->len = len;
+	hr->blkio_req = NULL;
+	hr->ret = 0;
+
+	return 0;
+}
+#endif
+
 static int __hlm_reqs_pool_create_trim_req  (
 	bdbm_hlm_reqs_pool_t* pool, 
 	bdbm_hlm_req_t* hr,
@@ -541,16 +557,25 @@ int bdbm_hlm_reqs_pool_build_wb_req (
 
 	ret = __hlm_reqs_pool_create_wb_req (hr, logaddr, ptr_data);
 
-#if 0 
-	/* create a hlm_req using a bio */
-	if (br->bi_rw == REQTYPE_TRIM) {
-		ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);
-	} else if (br->bi_rw == REQTYPE_WRITE) {
-		ret = __hlm_reqs_pool_create_write_req (pool, hr, br);
-	} else if (br->bi_rw == REQTYPE_READ) {
-		ret = __hlm_reqs_pool_create_read_req (pool, hr, br);
+	/* are there any errors? */
+	if (ret != 0) {
+		bdbm_msg("error: failed to make wb_req"); 
 	}
+
+	return 0;
+}
 #endif
+
+#ifdef NVM_CACHE_TRIM
+int bdbm_hlm_reqs_pool_build_int_trim_req (
+	bdbm_hlm_req_t* hr,
+	uint64_t lpa,
+	uint64_t len)
+{
+	int ret = 1;
+
+	ret = __hlm_reqs_pool_create_int_trim_req (hr, lpa, len);
+
 	/* are there any errors? */
 	if (ret != 0) {
 		bdbm_msg("error: failed to make wb_req"); 
