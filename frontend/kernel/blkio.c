@@ -50,6 +50,9 @@ bdbm_host_inf_t _blkio_inf = {
 	.close = blkio_close,
 	.make_req = blkio_make_req,
 	.end_req = blkio_end_req,
+#ifdef NVM_CACHE
+	.end_wb_req = blkio_end_wb_req,
+#endif
 };
 
 #ifdef NVM_CACHE
@@ -223,33 +226,6 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 		remains = bdi->ptr_nvm_inf->make_req(bdi, hr);
 		bdbm_bug_on(remains < 0);
 	}
-
-	if(hr->nr_llm_reqs && hr->llm_reqs[0].logaddr.lpa[0] == 1){
-		if(remains == hr->nr_llm_reqs){
-			if (bdbm_is_read(hr->req_type)){
-				bdbm_msg ("[EUNJI] read miss: %d remains", remains);
-			}
-			else{
-				bdbm_msg ("[EUNJI] write miss: %d remains", remains);
-			}
-		}else if (remains == 0){
-			if (bdbm_is_read(hr->req_type)){
-				bdbm_msg ("[EUNJI] read hit: %d remains", remains);
-			}
-			else{
-				bdbm_msg ("[EUNJI] write hit: %d remains", remains);
-			}
-	
-		}else{ 
-			if (bdbm_is_read(hr->req_type)){
-				bdbm_msg ("[EUNJI] partial read hit: %d remains", remains);
-			}
-			else{
-				bdbm_msg ("[EUNJI] partial write hit: %d remains", remains);
-			}
-		}
-	}
-//	bdbm_msg("nvm search ends");
 #endif
 
 	/* lock a global mutex -- this function must be finished as soon as possible */
@@ -279,6 +255,18 @@ fail:
 	if (br)
 		__free_blkio_req (br);
 }
+
+#ifdef NVM_CACHE
+void blkio_end_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
+{
+	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
+
+	/* destroy hlm_req */
+	bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
+
+}
+#endif
+
 void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);

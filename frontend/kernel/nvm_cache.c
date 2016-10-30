@@ -32,7 +32,7 @@ THE SOFTWARE.
 #include "debug.h"
 #include "params.h"
 #include "umemory.h"
-//#include "hlm_reqs_pool.h"
+//#include "hlm_reqs_pool.h" // included in blkio.h
 #include "blkio.h"
 //#include "blkdev.h"
 //#include "blkdev_ioctl.h"
@@ -254,8 +254,7 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	lpa = lr->logaddr.lpa[0];
 
 	for(i = 0; i < p->nr_total_pages; i++){
-		if(lpa == 1)
-			bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
+//		bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
 //			bdbm_msg("hit: lpa = %llu", lpa);
 			found = i;	
@@ -345,17 +344,11 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 		bdbm_bug_on(!edata_ptr);
 	
-		if(epage->logaddr.lpa[0] == 1){
-			bdbm_msg("evict page logaddr = %d, data_ptr = %p", epage->logaddr.lpa[0], edata_ptr);	
-			__display_hex_values_all_host_range(edata_ptr, 16);
-		}
-
 		/* get a free hlm_req from the hlm_reqs_pool */
 		if((hr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL){
 			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
 			goto fail;
 		}
-// 여기에서 edata cpy 할 때 lock 걸어야 할듯. 일단은 global lock 사용해보자. 
 
 		/* build hlm_req with nvm_info */
 		// 아래 함수에서 logaddr 을 많이 보내고, 그걸로 만들도록 하는게 좋을듯. 
@@ -364,6 +357,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 			bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
 			goto fail;
 		}
+		/* hr->done is locked in pool_build_wb_req() */
 
 		/* send req */
 		bdbm_sema_lock (&bp->host_lock);
@@ -374,32 +368,25 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		bdbm_sema_unlock (&bp->host_lock);
 
 		/* wait for write back to be completed */
-//		bdbm_msg("try to get hr->done lock");
-		bdbm_sema_lock (&hr->done);
-//		bdbm_msg("writeback is completed");
+		/* no need to wait. assume kp_ptr[0] gets allocated buffer in nvm */
+//		bdbm_sema_lock (&hr->done);
+// 		bdbm_sema_unlock (&hr->done);
 
-// DATA CHECK
 #ifdef NVM_CACHE_DEBUG
-
 		if(bdi->ptr_dm_inf->get_data){
 			ptr_ramssd_data = bdi->ptr_dm_inf->get_data(bdi, epage->logaddr.lpa[0]);
 		}
 		bdbm_bug_on(edata_ptr == NULL);
 		bdbm_bug_on(ptr_ramssd_data == NULL);
 
-		if(epage->logaddr.lpa[0] == 1){
-			if (memcmp(edata_ptr, ptr_ramssd_data, KPAGE_SIZE)!=0){
-				bdbm_msg("[EUNJI] [DATA CORRUPTION] lpa = %d", epage->logaddr.lpa[0]);	
-				__display_hex_values_all_range (edata_ptr, ptr_ramssd_data, 16);
-			}
-			else{
-				bdbm_msg("[EUNJI] [DATA SAFE] lpa = %d", epage->logaddr.lpa[0]);	
-			}
+		if (memcmp(edata_ptr, ptr_ramssd_data, KPAGE_SIZE)!=0){
+			bdbm_msg("[EUNJI] [DATA CORRUPTION] lpa = %d", epage->logaddr.lpa[0]);	
+			__display_hex_values_all_range (edata_ptr, ptr_ramssd_data, 16);
 		}
 #endif
 		
 
-		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // release lock here 
+//		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // moved to hlm_end_wb_req
 
 		/* set new page index */
 		nindex = eindex;

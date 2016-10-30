@@ -267,6 +267,9 @@ typedef struct {
 	void (*close) (bdbm_drv_info_t* bdi);
 	void (*make_req) (bdbm_drv_info_t* bdi, void* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#ifdef NVM_CACHE
+	void (*end_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#endif
 } bdbm_host_inf_t;
 
 #ifdef NVM_CACHE

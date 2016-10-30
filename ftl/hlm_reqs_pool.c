@@ -44,7 +44,7 @@ THE SOFTWARE.
 #define DEFAULT_POOL_SIZE		128
 #define DEFAULT_POOL_INC_SIZE	DEFAULT_POOL_SIZE / 5
 
-
+#ifdef NVM_CACHE_DEBUG
 static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)
 {
 	int i = 0;
@@ -54,7 +54,7 @@ static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int si
 			back[i+0], back[i+1], back[i+2], back[i+3]);
 	}
 }
-
+#endif 
 
 bdbm_hlm_reqs_pool_t* bdbm_hlm_reqs_pool_create (
 	int32_t mapping_unit_size, 
@@ -349,16 +349,18 @@ static int __hlm_reqs_pool_create_wb_req (
 	hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
 
 	ptr_fm->kp_stt[0] = KP_STT_DATA;
-	ptr_fm->kp_ptr[0] = (uint8_t*) bdbm_zmalloc (sizeof(KPAGE_SIZE));
+	ptr_fm->kp_ptr[0] = (uint8_t*) bdbm_zmalloc (KPAGE_SIZE); // free in hlm_nobuf_end_wb_req
 
 	bdbm_memcpy (&ptr_lr->logaddr, logaddr, sizeof(bdbm_logaddr_t));
 	bdbm_memcpy (ptr_fm->kp_ptr[0], ptr_data, KPAGE_SIZE);
 
-	if(logaddr->lpa[0] == 1){
-		bdbm_msg("hlm_reqs_pool_create_wb_req");
+
+#ifdef NVM_CACHE_DEBUG
+	if(memcmp(ptr_data, ptr_fm->kp_ptr[0], KPAGE_SIZE) != 0){
+		bdbm_msg("hlm_reqs_pool_create_wb_req: DATA CORRUPTION");
 		__display_hex_values_all_range(ptr_data, ptr_fm->kp_ptr[0], 16);
 	}
-
+#endif
 
 	/* decide the reqtype for llm_req */
 	ptr_lr->req_type = REQTYPE_WRITE_BACK;
@@ -370,7 +372,8 @@ static int __hlm_reqs_pool_create_wb_req (
 	bdbm_stopwatch_start (&hr->sw);
 	hr->nr_llm_reqs = nr_llm_reqs;
 	atomic64_set (&hr->nr_llm_reqs_done, 0);
-	bdbm_sema_lock (&hr->done);
+
+	bdbm_sema_lock (&hr->done); // grabs sema lock. 
 	hr->blkio_req = NULL;
 	//hr->blkio_req = (void*)br;
 	hr->ret = 0;

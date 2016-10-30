@@ -55,7 +55,7 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
 	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
 #ifdef NVM_CACHE
-	NR_NVM_PAGES	= 3, 				/* 4KB * 1048576 = 4GB */
+	NR_NVM_PAGES	= 262144, 				/* 4KB * 262144 = 1G / 4KB * 1048576 = 4GB */
 	NVM_PAGE_SIZE	= 4096,				/* 4KB */
 #endif
 };

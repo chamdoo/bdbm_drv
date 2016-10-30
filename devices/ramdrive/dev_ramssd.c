@@ -64,6 +64,9 @@ static void __display_hex_values (uint8_t* host, uint8_t* back)
 		host[0], host[1], host[2], host[3], host[4], 
 		back[0], back[1], back[2], back[3], back[4]);
 }
+#if 0
+#ifdef NVM_CACHE_DEBUG
+
 static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 {
 	int i = 0;
@@ -73,7 +76,6 @@ static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 			back[i+0], back[i+1], back[i+2], back[i+3]);
 	}
 }
-
 
 static void __display_hex_values_all_host (uint8_t* host)
 {
@@ -100,6 +102,8 @@ static void __display_hex_values_all_host_range (uint8_t* host, int size)
 			host[i+0], host[i+1], host[i+2], host[i+3]);
 	}
 }
+#endif // NVM_CACHE_DEBUG
+#endif
 
 #endif
 
@@ -426,13 +430,6 @@ static uint32_t __ramssd_send_cmd (
 		break;
 #ifdef NVM_CACHE
 	case REQTYPE_WRITE_BACK:
-		if(ptr_req->logaddr.lpa[0] == 1){
-			bdbm_msg("REQTYPE_WRITE_BACK arrives: logaddr = %d", ptr_req->logaddr.lpa[0]);
-//			bdbm_msg ("%llu %llu %llu %llu, fmain.kp_ptr = %p, foob.data = %p, ", 
-//				ptr_req->phyaddr.channel_no, ptr_req->phyaddr.chip_no, ptr_req->phyaddr.block_no, ptr_req->phyaddr.page_no,
-//				ptr_req->fmain.kp_ptr, ptr_req->foob.da;
-			__display_hex_values_all_host_range(ptr_req->fmain.kp_ptr[0], 16);
-		}
 #endif
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_WRITE:

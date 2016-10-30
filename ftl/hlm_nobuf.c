@@ -370,29 +370,18 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 
 void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
-	int flag = 0;
 	bdbm_hlm_req_t* hr = (bdbm_hlm_req_t* )lr->ptr_hlm_req;
 
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
 #ifdef NVM_CACHE
-	if(lr->logaddr.lpa[0] == 1)
-		bdbm_msg("[EUNJI] lpa=1 req complete %x", lr->req_type);
-
 	if(lr->serviced_by_nvm){
-//		bdbm_msg("lr serviced by nvm is completed");
 		lr->serviced_by_nvm = 0;
-		flag = 1;
 	}
 #endif
-
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
-#ifdef NVM_CACHE
-		//if(flag)
-		//	bdbm_msg("[EUNJI] skipped req calls host end_req");
-#endif
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	}
 }
@@ -414,11 +403,15 @@ void __hlm_nobuf_end_wb_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 {
 	bdbm_hlm_req_t* hr = (bdbm_hlm_req_t* )lr->ptr_hlm_req;
 
+	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
 
+	if (lr->fmain.kp_ptr[0])
+		bdbm_free(lr->fmain.kp_ptr[0]);
+
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
-		bdbm_sema_unlock (&hr->done);
+		bdi->ptr_host_inf->end_wb_req (bdi, hr);
 	}
 }
 #endif
