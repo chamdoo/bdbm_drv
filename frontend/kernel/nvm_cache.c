@@ -267,6 +267,7 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
 //			bdbm_msg("hit: lpa = %llu", lpa);
 			p->nr_total_hit++;
+			atomic64_inc(&bdi->pm.nvm_h_cnt);
 			found = i;	
 			break;
 		}
@@ -284,6 +285,7 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	uint8_t* ptr_nvmram_addr = NULL; 
 
 	p->nr_total_read++;
+	atomic64_inc(&bdi->pm.nvm_r_cnt);
 
 	/* search data */
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
@@ -294,6 +296,7 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	}
 
 	p->nr_read++;
+	atomic64_inc(&bdi->pm.nvm_r_cnt);
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -350,6 +353,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		return -1;
 #endif
 		p->nr_evict++;
+		atomic64_inc(&bdi->pm.nvm_ev_cnt);
 
 		bdbm_bug_on(!list_empty(p->free_list));
 		epage = list_last_entry(p->lru_list, bdbm_nvm_page_t, list);
@@ -449,6 +453,7 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	uint64_t i;
 
 	p->nr_total_write++;
+	atomic64_inc (&bdi->pm.nvm_w_cnt);
 
 	/* find data */
 	nvm_idx = bdbm_nvm_find_data(bdi, lr);
@@ -461,6 +466,7 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	}
 
 	p->nr_write++;
+	atomic64_inc (&bdi->pm.nvm_wh_cnt);
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -542,8 +548,9 @@ int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	for (n = 0; n < hr->nr_llm_reqs; n++) {
 
 		p->nr_total_access++;
+		atomic64_inc(&bdi->pm.nvm_a_cnt);
 	
-		if ((p->nr_total_access % 5000) == 0){
+		if ((p->nr_total_access % 100000) == 0){
 			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, total_write = %llu, write hit = %llu, hit = %llu, evict = %llu", 
 				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_total_write, p->nr_write, p->nr_total_hit, p->nr_evict);
 		}

@@ -404,6 +404,15 @@ typedef struct {
 	atomic64_t gc_write_cnt;
 	atomic64_t meta_read_cnt;
 	atomic64_t meta_write_cnt;
+#ifdef NVM_CACHE
+	atomic64_t nvm_a_cnt; // all
+	atomic64_t nvm_w_cnt; // all write
+	atomic64_t nvm_r_cnt; // all read 
+	atomic64_t nvm_wh_cnt; // write hit (include miss + alloc)  
+	atomic64_t nvm_rh_cnt; // read hit 
+	atomic64_t nvm_h_cnt; // rh_cnt + real wh 
+	atomic64_t nvm_ev_cnt; // evict 
+#endif
 	uint64_t time_r_sw;
 	uint64_t time_r_q;
 	uint64_t time_r_tot;

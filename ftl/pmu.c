@@ -65,6 +65,16 @@ void pmu_create (bdbm_drv_info_t* bdi)
 	atomic64_set (&bdi->pm.gc_read_cnt, 0);
 	atomic64_set (&bdi->pm.gc_write_cnt, 0);
 
+#ifdef NVM_CACHE
+	atomic64_set (&bdi->pm.nvm_a_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_w_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_r_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_wh_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_rh_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_h_cnt, 0);
+	atomic64_set (&bdi->pm.nvm_ev_cnt, 0);
+#endif
+
 	/* elapsed times taken to handle normal I/Os */
 	bdi->pm.time_r_sw = 0;
 	bdi->pm.time_r_q = 0;
@@ -530,6 +540,26 @@ void pmu_display (bdbm_drv_info_t* bdi)
 		bdbm_msg ("%s", format);
 		bdbm_memset (format, 0x00, sizeof (format));
 	}
+
+#ifdef NVM_CACHE
+	bdbm_msg ("[8] NVM I/Os");
+	bdbm_msg ("# of total accesses: %ld",
+		atomic64_read (&bdi->pm.nvm_a_cnt));
+	bdbm_msg ("# of total write reqests: %ld",
+		atomic64_read (&bdi->pm.nvm_w_cnt));
+	bdbm_msg ("# of total read requests: %ld",
+		atomic64_read (&bdi->pm.nvm_r_cnt));
+	bdbm_msg ("# of write requests serviced by nvm: %ld",
+		atomic64_read (&bdi->pm.nvm_wh_cnt));
+	bdbm_msg ("# of read requests serviced by nvm: %ld",
+		atomic64_read (&bdi->pm.nvm_rh_cnt));
+	bdbm_msg ("# of total requests serviced by nvm: %ld",
+		atomic64_read (&bdi->pm.nvm_h_cnt));
+	bdbm_msg ("# of evict from nvm: %ld",
+		atomic64_read (&bdi->pm.nvm_ev_cnt));
+
+	bdbm_msg ("");
+#endif
 
 	bdbm_msg ("-----------------------------------------------");
 	bdbm_msg ("-----------------------------------------------");
