@@ -187,6 +187,7 @@ void bdbm_thread_yield ()
 #include <inttypes.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 
 void* bdbm_thread_fn (void *data) 
 {
@@ -364,6 +365,15 @@ void bdbm_thread_msleep (uint32_t ms)
 	tv.tv_sec  = microsecs / 1000000;
 	tv.tv_usec = microsecs % 1000000;
 	select (0, NULL, NULL, NULL, &tv);  
+}
+
+void bdbm_thread_nanosleep (uint32_t ns) 
+{
+	struct timespec tv;
+	tv.tv_sec  = 0;
+	tv.tv_nsec = ns;
+//	pselect (0, NULL, NULL, NULL, &tv, NULL);
+	nanosleep (&tv, NULL);
 }
 
 void bdbm_thread_yield (void)

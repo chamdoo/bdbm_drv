@@ -137,33 +137,33 @@ class FlashIndication: public FlashIndicationWrapper {
 		FlashIndication (unsigned int id) : FlashIndicationWrapper (id) { }
 
 		virtual void readDone (unsigned int tag, unsigned int status) {
-			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			//printf ("LOG: readdone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
 			bdbm_sema_lock (&global_lock);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
-			if( r == NULL ){ printf("readDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
+			if( r == NULL ){ printf("readDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
+			//else {  printf("readDone: Ack  with tag=%d, status=%d\n", tag, status); fflush(stdout); }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void writeDone (unsigned int tag, unsigned int status) {
-			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			//printf ("LOG: writedone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
 			bdbm_sema_lock (&global_lock);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
-			if( r == NULL ) { printf("writeDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
+			if( r == NULL ) { printf("writeDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void eraseDone (unsigned int tag, unsigned int status) {
-			//printf ("LOG: eraseDone, tag=%d, status=%d\n", tag, status); fflush(stdout);
-			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			//printf ("LOG: eraseDone, tag=%d/%d, status=%d\n", tag, r->tag, status); fflush(stdout);
 			bdbm_sema_lock (&global_lock);
+			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
 			bdbm_sema_unlock (&global_lock);
-			if( r == NULL ) { printf("eraseDone: Ack Duplicate at tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
+			if( r == NULL ) { printf("eraseDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 

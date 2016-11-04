@@ -57,6 +57,7 @@ SRCS := \
 	$(PWD)/connectal/cpp/platformMemory.cpp \
 	$(PWD)/connectal/cpp/timer.c \
 	$(COMMON)/utils/umemory.c \
+	$(COMMON)/utils/uthread.c \
 	$(DM_COMMON)/dev_main.c \
 	$(DM_COMMON)/dev_params.c \
 	$(DM_NOHOST)/dm_nohost.cpp \

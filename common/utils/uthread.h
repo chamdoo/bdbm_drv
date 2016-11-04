@@ -80,6 +80,7 @@ int bdbm_thread_schedule (bdbm_thread_t* k);
 void bdbm_thread_wakeup (bdbm_thread_t* k);
 void bdbm_thread_stop (bdbm_thread_t* k);
 void bdbm_thread_msleep (uint32_t ms);
+void bdbm_thread_nanosleep (uint32_t ns);
 void bdbm_thread_yield (void);
 void bdbm_thread_schedule_setup (bdbm_thread_t* k);
 void bdbm_thread_schedule_cancel (bdbm_thread_t* k);

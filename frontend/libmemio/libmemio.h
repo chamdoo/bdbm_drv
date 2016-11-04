@@ -1,5 +1,6 @@
 #include "bdbm_drv.h"
 #include "umemory.h" /* bdbm_malloc */
+#include "uthread.h" /* bdbm_thread_nanosleep */
 #include "devices.h" /* bdbm_dm_get_inf */
 #include "debug.h" /* bdbm_msg */
 

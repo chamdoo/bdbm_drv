@@ -182,12 +182,14 @@ static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t
 	size_t cur_lba = lba;
 	size_t sent = 0;
 	int ret;
+	int cnt=0;
 	
 	/* see if LBA alignment is correct */
 	__memio_check_alignment (len, mio->io_size);
 
 	/* fill up logaddr; note that phyaddr is not used here */
 	while (cur_lba < lba + (len/mio->io_size)) {
+		if((++cnt)%64 == 0) bdbm_thread_nanosleep(100);
 		/* get an empty llm_req */
 		r = __memio_alloc_llm_req (mio);
 
@@ -220,7 +222,7 @@ void memio_wait (memio_t* mio)
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
 	for (i = 0; i < mio->nr_punits; ) {
 		if (!bdbm_sema_try_lock (mio->rr[i].done)){
-			if ( ++j == 1000000 ) {
+			if ( ++j == 500000 ) {
 				bdbm_msg ("timeout at tag:%d, reissue command", mio->rr[i].tag);
 				dm->make_req (&mio->bdi, mio->rr + i);
 				j=0;
@@ -234,13 +236,13 @@ void memio_wait (memio_t* mio)
 
 int memio_read (memio_t* mio, size_t lba, size_t len, uint8_t* data)
 {
-	bdbm_msg ("memio_read: %zd, %zd", lba, len);
+	if ( len > 8192*128 ) bdbm_msg ("memio_read: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 0, lba, len, data);
 }
 
 int memio_write (memio_t* mio, size_t lba, size_t len, uint8_t* data)
 {
-	bdbm_msg ("memio_write: %zd, %zd", lba, len);
+	//bdbm_msg ("memio_write: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 1, lba, len, data);
 }
 
@@ -260,7 +262,7 @@ int memio_trim (memio_t* mio, size_t lba, size_t len)
 
 	/* fill up logaddr; note that phyaddr is not used here */
 	while (cur_lba < lba + (len/mio->io_size)) {
-		bdbm_msg ("segment #: %d", cur_lba / mio->trim_lbas);
+		//bdbm_msg ("segment #: %d", cur_lba / mio->trim_lbas);
 		for (i = 0; i < mio->nr_punits; i++) {
 			/* get an empty llm_req */
 			r = __memio_alloc_llm_req (mio);
