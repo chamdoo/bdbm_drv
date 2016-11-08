@@ -165,7 +165,7 @@ static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 	bdbm_sema_unlock (r->done);
 }
 
-static void __memio_check_alignment (size_t length, size_t alignment)
+static void __memio_check_alignment (uint64_t length, uint64_t alignment)
 {
 	if ((length % alignment) != 0) {
 		bdbm_error ("alignment error occurs (length = %d, alignment = %d)",
@@ -174,13 +174,13 @@ static void __memio_check_alignment (size_t length, size_t alignment)
 	}
 }
 
-static int __memio_do_io (memio_t* mio, int dir, size_t lba, size_t len, uint8_t* data)
+static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data)
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
 	uint8_t* cur_buf = data;
-	size_t cur_lba = lba;
-	size_t sent = 0;
+	uint64_t cur_lba = lba;
+	uint64_t sent = 0;
 	int ret;
 	int cnt=0;
 	
@@ -234,27 +234,28 @@ void memio_wait (memio_t* mio)
 	}
 }
 
-int memio_read (memio_t* mio, size_t lba, size_t len, uint8_t* data)
+int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data)
 {
-	if ( len > 8192*128 ) bdbm_msg ("memio_read: %zd, %zd", lba, len);
+	if ( len > 8192*128 ) 
+		bdbm_msg ("memio_read: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 0, lba, len, data);
 }
 
-int memio_write (memio_t* mio, size_t lba, size_t len, uint8_t* data)
+int memio_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data)
 {
 	//bdbm_msg ("memio_write: %zd, %zd", lba, len);
 	return __memio_do_io (mio, 1, lba, len, data);
 }
 
-int memio_trim (memio_t* mio, size_t lba, size_t len)
+int memio_trim (memio_t* mio, uint64_t lba, uint64_t len)
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
-	size_t cur_lba = lba;
-	size_t sent = 0;
+	uint64_t cur_lba = lba;
+	uint64_t sent = 0;
 	int ret, i;
 
-	bdbm_msg ("memio_trim: %zd, %zd", lba, len);
+	bdbm_msg ("memio_trim: %llu, %llu", lba, len);
 
 	/* see if LBA alignment is correct */
 	__memio_check_alignment (lba, mio->trim_lbas);
