@@ -543,20 +543,22 @@ void pmu_display (bdbm_drv_info_t* bdi)
 
 #ifdef NVM_CACHE
 	bdbm_msg ("[8] NVM I/Os");
-	bdbm_msg ("# of total accesses: %ld",
+	bdbm_msg ("#_of_nvm_total_accesses: %ld",
 		atomic64_read (&bdi->pm.nvm_a_cnt));
-	bdbm_msg ("# of total write reqests: %ld",
+	bdbm_msg ("#_of_nvm_total_write_requests: %ld",
 		atomic64_read (&bdi->pm.nvm_w_cnt));
-	bdbm_msg ("# of total read requests: %ld",
+	bdbm_msg ("#_of_nvm_total_read_requests: %ld",
 		atomic64_read (&bdi->pm.nvm_r_cnt));
-	bdbm_msg ("# of write requests serviced by nvm: %ld",
+	bdbm_msg ("#_of_nvm_write_requests_serviced_by_nvm: %ld",
 		atomic64_read (&bdi->pm.nvm_wh_cnt));
-	bdbm_msg ("# of read requests serviced by nvm: %ld",
+	bdbm_msg ("#_of_nvm_read_requests_serviced_by_nvm: %ld",
 		atomic64_read (&bdi->pm.nvm_rh_cnt));
-	bdbm_msg ("# of total requests serviced by nvm: %ld",
+	bdbm_msg ("#_of_nvm_total_requests_serviced_by_nvm: %ld",
 		atomic64_read (&bdi->pm.nvm_h_cnt));
-	bdbm_msg ("# of evict from nvm: %ld",
+	bdbm_msg ("#_of_nvm_evict_from_nvm: %ld",
 		atomic64_read (&bdi->pm.nvm_ev_cnt));
+	bdbm_msg ("#_of_nvm_write_amplification: %ld : %ld",
+		atomic64_read (&bdi->pm.nvm_ev_cnt), atomic64_read (&bdi->pm.gc_write_cnt)+ atomic64_read (&bdi->pm.nvm_ev_cnt));
 
 	bdbm_msg ("");
 #endif

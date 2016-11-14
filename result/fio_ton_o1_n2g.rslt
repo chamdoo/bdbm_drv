@@ -1,0 +1,43 @@
+JESD219: (g=0): rw=randrw, bs=512-64K/512-64K/512-64K, ioengine=libaio, iodepth=256
+...
+fio-2.14-20-gd6192-dirty
+Starting 4 processes
+JESD219: Laying out IO file(s) (1 file(s) / 10240MB)
+
+JESD219: (groupid=0, jobs=4): err= 0: pid=14325: Mon Nov  7 17:09:32 2016
+  read : io=16389MB, bw=124812KB/s, iops=16349, runt=134463msec
+    slat (usec): min=1, max=1365.9K, avg=64.59, stdev=6817.67
+    clat (usec): min=212, max=1417.7K, avg=24622.00, stdev=140373.68
+     lat (usec): min=214, max=1417.7K, avg=24686.69, stdev=140535.98
+    clat percentiles (usec):
+     |  1.00th=[ 1384],  5.00th=[ 1576], 10.00th=[ 1880], 20.00th=[ 2512],
+     | 30.00th=[ 2704], 40.00th=[ 2864], 50.00th=[ 3024], 60.00th=[ 3248],
+     | 70.00th=[ 6432], 80.00th=[11456], 90.00th=[19072], 95.00th=[26752],
+     | 99.00th=[1036288], 99.50th=[1269760], 99.90th=[1335296], 99.95th=[1351680],
+     | 99.99th=[1384448]
+  write: io=24571MB, bw=187118KB/s, iops=24529, runt=134463msec
+    slat (usec): min=2, max=1372.5K, avg=112.86, stdev=9801.14
+    clat (usec): min=189, max=1417.2K, avg=23872.77, stdev=138291.81
+     lat (usec): min=203, max=1417.3K, avg=23985.74, stdev=138630.93
+    clat percentiles (usec):
+     |  1.00th=[ 1352],  5.00th=[ 1496], 10.00th=[ 1736], 20.00th=[ 2480],
+     | 30.00th=[ 2640], 40.00th=[ 2768], 50.00th=[ 2928], 60.00th=[ 3120],
+     | 70.00th=[ 5664], 80.00th=[11072], 90.00th=[18816], 95.00th=[26496],
+     | 99.00th=[987136], 99.50th=[1269760], 99.90th=[1335296], 99.95th=[1351680],
+     | 99.99th=[1384448]
+    lat (usec) : 250=0.01%, 500=0.01%, 750=0.01%, 1000=0.01%
+    lat (msec) : 2=11.93%, 4=55.85%, 10=8.29%, 20=15.09%, 50=6.99%
+    lat (msec) : 100=0.16%, 500=0.13%, 750=0.12%, 1000=0.44%, 2000=1.00%
+  cpu          : usr=0.86%, sys=26.49%, ctx=91886, majf=0, minf=45
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=0.1%, >=64=100.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.1%
+     issued    : total=r=2198362/w=3298308/d=0, short=r=0/w=0/d=0, drop=r=0/w=0/d=0
+     latency   : target=0, window=0, percentile=100.00%, depth=256
+
+Run status group 0 (all jobs):
+   READ: io=16389MB, aggrb=124811KB/s, minb=124811KB/s, maxb=124811KB/s, mint=134463msec, maxt=134463msec
+  WRITE: io=24571MB, aggrb=187118KB/s, minb=187118KB/s, maxb=187118KB/s, mint=134463msec, maxt=134463msec
+
+Disk stats (read/write):
+  robusta: ios=0/0, merge=0/0, ticks=0/0, in_queue=0, util=0.00%

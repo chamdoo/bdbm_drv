@@ -40,6 +40,10 @@ typedef struct {
 } bdbm_nvm_page_t;
 
 typedef struct {
+	int64_t tbl_idx; 
+} bdbm_nvm_lookup_tbl_entry_t;
+
+typedef struct {
 	bdbm_device_params_t* np;
 	uint64_t nr_total_pages;
 	uint64_t nr_free_pages;
@@ -56,7 +60,7 @@ typedef struct {
 	void* ptr_nvmram; /* DRAM memory for nvm */
 //	bdbm_nvm_page_t* ptr_nvm_rb_tree;
 	bdbm_nvm_page_t* ptr_nvm_tbl;
-
+	bdbm_nvm_page_t* ptr_nvm_lookup_tbl;
 
 	bdbm_sema_t nvm_lock;
 	struct list_head* lru_list;

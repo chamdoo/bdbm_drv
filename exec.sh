@@ -15,10 +15,14 @@ fi
 
 if [[ $1 == "tpcc" ]]; then
 	service mysql stop
-	cp ~/mysql_bak/mysql* /media/robusta/
+	echo "copy database ... "
+#	cp -rf ~/mysql_bak/mysql* /media/robusta/
+	sudo chown -R mysql:mysql /media/robusta/mysql*
+	echo "start mysql daemon ..."
 	service mysql start
 	sleep 3
-	$BENCH_HOME/tpcc_start -h127.0.0.1 -dtpcc1000 -uroot -p -w20 -c16 -r10 -l1200 > ~/tpcc-output-ps-55-bpool-256.log
+	echo "start tpcc ..."
+	$BENCH_HOME/tpcc-mysql/tpcc_start -h127.0.0.1 -dtpcc1000 -uroot -p -w20 -c16 -r10 -l1200 > ~/tpcc-output-ps-55-bpool-256.log
 fi	
 		
 

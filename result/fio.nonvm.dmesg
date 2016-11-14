@@ -1,0 +1,1554 @@
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Initializing cgroup subsys cpuacct
+[    0.000000] Linux version 4.4.0-42-generic (buildd@lgw01-13) (gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.2) ) #62-Ubuntu SMP Fri Oct 7 23:11:45 UTC 2016 (Ubuntu 4.4.0-42.62-generic 4.4.21)
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-4.4.0-42-generic.efi.signed root=UUID=f5bf218f-1f62-4a63-bcfe-1bdb8e06f01c ro quiet splash vt.handoff=7
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Centaur CentaurHauls
+[    0.000000] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.000000] x86/fpu: xstate_offset[3]:  960, xstate_sizes[3]:   64
+[    0.000000] x86/fpu: xstate_offset[4]: 1024, xstate_sizes[4]:   64
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x01: 'x87 floating point registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x02: 'SSE registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x04: 'AVX registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x08: 'MPX bounds registers'
+[    0.000000] x86/fpu: Supporting XSAVE feature 0x10: 'MPX CSR'
+[    0.000000] x86/fpu: Enabled xstate features 0x1f, context size is 1088 bytes, using 'standard' format.
+[    0.000000] x86/fpu: Using 'eager' FPU context switches.
+[    0.000000] e820: BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000057fff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000000058000-0x0000000000058fff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000059000-0x000000000009efff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009f000-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000008277cfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000008277d000-0x000000008277dfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000008277e000-0x00000000827a7fff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000827a8000-0x00000000827f9fff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000827fa000-0x000000008303afff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000008303b000-0x000000008a2a5fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000008a2a6000-0x000000008a582fff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000008a583000-0x000000008a749fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000008a74a000-0x000000008ada0fff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000008ada1000-0x000000008b393fff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000008b394000-0x000000008b3fefff] type 20
+[    0.000000] BIOS-e820: [mem 0x000000008b3ff000-0x000000008b3fffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fe000000-0x00000000fe010fff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000106effffff] usable
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] efi: EFI v2.40 by American Megatrends
+[    0.000000] efi:  ESRT=0x8b25af98  ACPI=0x8ad5c000  ACPI 2.0=0x8ad5c000  SMBIOS=0xf05e0  MPS=0xfc9d0 
+[    0.000000] esrt: Reserving ESRT space from 0x000000008b25af98 to 0x000000008b25afd0.
+[    0.000000] SMBIOS 3.0 present.
+[    0.000000] DMI: MSI MS-7984/Z170 KRAIT GAMING (MS-7984), BIOS B.30 09/06/2015
+[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] e820: last_pfn = 0x106f000 max_arch_pfn = 0x400000000
+[    0.000000] MTRR default type: write-back
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 base 00C0000000 mask 7FC0000000 uncachable
+[    0.000000]   1 base 00A0000000 mask 7FE0000000 uncachable
+[    0.000000]   2 base 0090000000 mask 7FF0000000 uncachable
+[    0.000000]   3 base 008C000000 mask 7FFC000000 uncachable
+[    0.000000]   4 base 008B800000 mask 7FFF800000 uncachable
+[    0.000000]   5 disabled
+[    0.000000]   6 disabled
+[    0.000000]   7 disabled
+[    0.000000]   8 disabled
+[    0.000000]   9 disabled
+[    0.000000] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WC  UC- WT  
+[    0.000000] e820: last_pfn = 0x8b400 max_arch_pfn = 0x400000000
+[    0.000000] found SMP MP-table at [mem 0x000fcc70-0x000fcc7f] mapped at [ffff8800000fcc70]
+[    0.000000] Scanning 1 areas for low memory corruption
+[    0.000000] Base memory trampoline at [ffff880000096000] 96000 size 24576
+[    0.000000] Using GB pages for direct mapping
+[    0.000000] BRK [0x03201000, 0x03201fff] PGTABLE
+[    0.000000] BRK [0x03202000, 0x03202fff] PGTABLE
+[    0.000000] BRK [0x03203000, 0x03203fff] PGTABLE
+[    0.000000] BRK [0x03204000, 0x03204fff] PGTABLE
+[    0.000000] BRK [0x03205000, 0x03205fff] PGTABLE
+[    0.000000] BRK [0x03206000, 0x03206fff] PGTABLE
+[    0.000000] RAMDISK: [mem 0x33aaa000-0x35d4cfff]
+[    0.000000] ACPI: Early table checksum verification disabled
+[    0.000000] ACPI: RSDP 0x000000008AD5C000 000024 (v02 ALASKA)
+[    0.000000] ACPI: XSDT 0x000000008AD5C098 0000B4 (v01 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: FACP 0x000000008AD7E928 00010C (v05 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: DSDT 0x000000008AD5C1E8 02273A (v02 ALASKA A M I    01072009 INTL 20120913)
+[    0.000000] ACPI: FACS 0x000000008ADA0F80 000040
+[    0.000000] ACPI: APIC 0x000000008AD7EA38 000084 (v03 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: FPDT 0x000000008AD7EAC0 000044 (v01 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: FIDT 0x000000008AD7EB08 00009C (v01 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: MCFG 0x000000008AD7EBA8 00003C (v01 ALASKA A M I    01072009 MSFT 00000097)
+[    0.000000] ACPI: HPET 0x000000008AD7EBE8 000038 (v01 ALASKA A M I    01072009 AMI. 0005000B)
+[    0.000000] ACPI: SSDT 0x000000008AD7EC20 00036D (v01 SataRe SataTabl 00001000 INTL 20120913)
+[    0.000000] ACPI: LPIT 0x000000008AD7EF90 000094 (v01 INTEL  SKL      00000000 MSFT 0000005F)
+[    0.000000] ACPI: SSDT 0x000000008AD7F028 000248 (v02 INTEL  sensrhub 00000000 INTL 20120913)
+[    0.000000] ACPI: SSDT 0x000000008AD7F270 002BAE (v02 INTEL  PtidDevc 00001000 INTL 20120913)
+[    0.000000] ACPI: SSDT 0x000000008AD81E20 000C45 (v02 INTEL  Ther_Rvp 00001000 INTL 20120913)
+[    0.000000] ACPI: DBGP 0x000000008AD82A68 000034 (v01 INTEL           00000000 MSFT 0000005F)
+[    0.000000] ACPI: DBG2 0x000000008AD82AA0 000054 (v00 INTEL           00000000 MSFT 0000005F)
+[    0.000000] ACPI: SSDT 0x000000008AD82AF8 000615 (v02 INTEL  xh_rvp08 00000000 INTL 20120913)
+[    0.000000] ACPI: SSDT 0x000000008AD83110 0053B2 (v02 SaSsdt SaSsdt   00003000 INTL 20120913)
+[    0.000000] ACPI: UEFI 0x000000008AD884C8 000042 (v01                 00000000      00000000)
+[    0.000000] ACPI: SSDT 0x000000008AD88510 000E9A (v02 CpuRef CpuSsdt  00003000 INTL 20120913)
+[    0.000000] ACPI: BGRT 0x000000008AD893B0 000038 (v01 ALASKA A M I    01072009 AMI  00010013)
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] No NUMA configuration found
+[    0.000000] Faking a node at [mem 0x0000000000000000-0x000000106effffff]
+[    0.000000] NODE_DATA(0) allocated [mem 0x106eff6000-0x106effafff]
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.000000]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000106effffff]
+[    0.000000]   Device   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000001000-0x0000000000057fff]
+[    0.000000]   node   0: [mem 0x0000000000059000-0x000000000009efff]
+[    0.000000]   node   0: [mem 0x0000000000100000-0x000000008277cfff]
+[    0.000000]   node   0: [mem 0x00000000827a8000-0x00000000827f9fff]
+[    0.000000]   node   0: [mem 0x000000008303b000-0x000000008a2a5fff]
+[    0.000000]   node   0: [mem 0x000000008a583000-0x000000008a749fff]
+[    0.000000]   node   0: [mem 0x000000008b3ff000-0x000000008b3fffff]
+[    0.000000]   node   0: [mem 0x0000000100000000-0x000000106effffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000001000-0x000000106effffff]
+[    0.000000] On node 0 totalpages: 16747423
+[    0.000000]   DMA zone: 64 pages used for memmap
+[    0.000000]   DMA zone: 26 pages reserved
+[    0.000000]   DMA zone: 3997 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 8753 pages used for memmap
+[    0.000000]   DMA32 zone: 560130 pages, LIFO batch:31
+[    0.000000]   Normal zone: 252864 pages used for memmap
+[    0.000000]   Normal zone: 16183296 pages, LIFO batch:31
+[    0.000000] Reserving Intel graphics stolen memory at 0x8c000000-0x8fffffff
+[    0.000000] ACPI: PM-Timer IO Port: 0x1808
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0x01] high edge lint[0x1])
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0x02] high edge lint[0x1])
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0x03] high edge lint[0x1])
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0x04] high edge lint[0x1])
+[    0.000000] IOAPIC[0]: apic_id 2, version 32, address 0xfec00000, GSI 0-119
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.000000] ACPI: IRQ0 used by override.
+[    0.000000] ACPI: IRQ9 used by override.
+[    0.000000] Using ACPI (MADT) for SMP configuration information
+[    0.000000] ACPI: HPET id: 0x8086a701 base: 0xfed00000
+[    0.000000] smpboot: Allowing 4 CPUs, 0 hotplug CPUs
+[    0.000000] PM: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x00058000-0x00058fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x0009f000-0x0009ffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8277d000-0x8277dfff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8277e000-0x827a7fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x827fa000-0x8303afff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8a2a6000-0x8a582fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8a74a000-0x8ada0fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8ada1000-0x8b393fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8b394000-0x8b3fefff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8b400000-0x8bffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x8c000000-0x8fffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x90000000-0xdfffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xe0000000-0xefffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xf0000000-0xfdffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfe000000-0xfe010fff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfe011000-0xfebfffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfec00000-0xfec00fff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfec01000-0xfedfffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfee00000-0xfee00fff]
+[    0.000000] PM: Registered nosave memory: [mem 0xfee01000-0xfeffffff]
+[    0.000000] PM: Registered nosave memory: [mem 0xff000000-0xffffffff]
+[    0.000000] e820: [mem 0x90000000-0xdfffffff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on bare hardware
+[    0.000000] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645519600211568 ns
+[    0.000000] setup_percpu: NR_CPUS:256 nr_cpumask_bits:256 nr_cpu_ids:4 nr_node_ids:1
+[    0.000000] PERCPU: Embedded 33 pages/cpu @ffff88106ec00000 s98008 r8192 d28968 u524288
+[    0.000000] pcpu-alloc: s98008 r8192 d28968 u524288 alloc=1*2097152
+[    0.000000] pcpu-alloc: [0] 0 1 2 3 
+[    0.000000] Built 1 zonelists in Node order, mobility grouping on.  Total pages: 16485716
+[    0.000000] Policy zone: Normal
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-4.4.0-42-generic.efi.signed root=UUID=f5bf218f-1f62-4a63-bcfe-1bdb8e06f01c ro quiet splash vt.handoff=7
+[    0.000000] PID hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.000000] Calgary: detecting Calgary via BIOS EBDA area
+[    0.000000] Calgary: Unable to locate Rio Grande table in EBDA - bailing!
+[    0.000000] Memory: 65700716K/66989692K available (8409K kernel code, 1283K rwdata, 3944K rodata, 1480K init, 1292K bss, 1288976K reserved, 0K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] 	Build-time adjustment of leaf fanout to 64.
+[    0.000000] 	RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=64, nr_cpu_ids=4
+[    0.000000] NR_IRQS:16640 nr_irqs:1024 16
+[    0.000000] spurious 8259A interrupt: IRQ7.
+[    0.000000] vt handoff: transparent VT on vt#7
+[    0.000000] Console: colour dummy device 80x25
+[    0.000000] console [tty0] enabled
+[    0.000000] clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 79635855245 ns
+[    0.000000] hpet clockevent registered
+[    0.000000] tsc: PIT calibration matches HPET. 1 loops
+[    0.000000] tsc: Detected 3311.928 MHz processor
+[    0.000021] Calibrating delay loop (skipped), value calculated using timer frequency.. 6623.85 BogoMIPS (lpj=13247712)
+[    0.000023] pid_max: default: 32768 minimum: 301
+[    0.000026] ACPI: Core revision 20150930
+[    0.018771] ACPI Error: [\_SB_.PCI0.XHC_.RHUB.HS11] Namespace lookup failure, AE_NOT_FOUND (20150930/dswload-210)
+[    0.018775] ACPI Exception: AE_NOT_FOUND, During name lookup/catalog (20150930/psobject-227)
+[    0.018803] ACPI Exception: AE_NOT_FOUND, (SSDT:xh_rvp08) while loading table (20150930/tbxfload-193)
+[    0.025000] ACPI Error: 1 table load failures, 7 successful (20150930/tbxfload-214)
+[    0.026907] Security Framework initialized
+[    0.026908] Yama: becoming mindful.
+[    0.026917] AppArmor: AppArmor initialized
+[    0.029486] Dentry cache hash table entries: 8388608 (order: 14, 67108864 bytes)
+[    0.037878] Inode-cache hash table entries: 4194304 (order: 13, 33554432 bytes)
+[    0.041498] Mount-cache hash table entries: 131072 (order: 8, 1048576 bytes)
+[    0.041538] Mountpoint-cache hash table entries: 131072 (order: 8, 1048576 bytes)
+[    0.041793] Initializing cgroup subsys io
+[    0.041795] Initializing cgroup subsys memory
+[    0.041798] Initializing cgroup subsys devices
+[    0.041800] Initializing cgroup subsys freezer
+[    0.041802] Initializing cgroup subsys net_cls
+[    0.041803] Initializing cgroup subsys perf_event
+[    0.041804] Initializing cgroup subsys net_prio
+[    0.041806] Initializing cgroup subsys hugetlb
+[    0.041807] Initializing cgroup subsys pids
+[    0.041824] CPU: Physical Processor ID: 0
+[    0.041824] CPU: Processor Core ID: 0
+[    0.042730] mce: CPU supports 10 MCE banks
+[    0.042744] CPU0: Thermal monitoring enabled (TM1)
+[    0.042751] process: using mwait in idle threads
+[    0.042753] Last level iTLB entries: 4KB 128, 2MB 8, 4MB 8
+[    0.042754] Last level dTLB entries: 4KB 64, 2MB 0, 4MB 0, 1GB 4
+[    0.043007] Freeing SMP alternatives memory: 32K (ffffffff820b4000 - ffffffff820bc000)
+[    0.047205] ftrace: allocating 32007 entries in 126 pages
+[    0.056734] smpboot: Max logical packages: 1
+[    0.056736] smpboot: APIC(0) Converting physical 0 to logical package 0
+[    0.057995] x2apic: IRQ remapping doesn't support X2APIC mode
+[    0.061069] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=0 pin2=0
+[    0.100756] TSC deadline timer enabled
+[    0.100761] smpboot: CPU0: Intel(R) Core(TM) i5-6600 CPU @ 3.30GHz (family: 0x6, model: 0x5e, stepping: 0x3)
+[    0.100773] Performance Events: PEBS fmt3+, 32-deep LBR, Skylake events, full-width counters, Intel PMU driver.
+[    0.100793] ... version:                4
+[    0.100794] ... bit width:              48
+[    0.100795] ... generic registers:      8
+[    0.100795] ... value mask:             0000ffffffffffff
+[    0.100796] ... max period:             0000ffffffffffff
+[    0.100796] ... fixed-purpose events:   3
+[    0.100797] ... event mask:             00000007000000ff
+[    0.101340] x86: Booting SMP configuration:
+[    0.101341] .... node  #0, CPUs:      #1
+[    0.104601] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
+[    0.104644]  #2 #3
+[    0.111166] x86: Booted up 1 node, 4 CPUs
+[    0.111169] smpboot: Total of 4 processors activated (26495.42 BogoMIPS)
+[    0.113698] devtmpfs: initialized
+[    0.113737] memory block size : 128MB
+[    0.118598] evm: security.selinux
+[    0.118599] evm: security.SMACK64
+[    0.118600] evm: security.SMACK64EXEC
+[    0.118600] evm: security.SMACK64TRANSMUTE
+[    0.118601] evm: security.SMACK64MMAP
+[    0.118601] evm: security.ima
+[    0.118602] evm: security.capability
+[    0.118638] PM: Registering ACPI NVS region [mem 0x8277d000-0x8277dfff] (4096 bytes)
+[    0.118639] PM: Registering ACPI NVS region [mem 0x8a74a000-0x8ada0fff] (6647808 bytes)
+[    0.118732] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.118787] pinctrl core: initialized pinctrl subsystem
+[    0.118932] RTC time:  5:48:47, date: 11/07/16
+[    0.119726] NET: Registered protocol family 16
+[    0.133557] cpuidle: using governor ladder
+[    0.145558] cpuidle: using governor menu
+[    0.145561] PCCT header not found.
+[    0.145606] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+[    0.145607] ACPI: bus type PCI registered
+[    0.145608] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.145655] PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
+[    0.145657] PCI: MMCONFIG at [mem 0xe0000000-0xefffffff] reserved in E820
+[    0.145666] PCI: Using configuration type 1 for base access
+[    0.157754] ACPI: Added _OSI(Module Device)
+[    0.157755] ACPI: Added _OSI(Processor Device)
+[    0.157756] ACPI: Added _OSI(3.0 _SCP Extensions)
+[    0.157757] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.162933] ACPI: Executed 21 blocks of module-level executable AML code
+[    0.167125] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+[    0.169373] ACPI: Dynamic OEM Table Load:
+[    0.169380] ACPI: SSDT 0xFFFF8810270E3000 0006C3 (v02 PmRef  Cpu0Ist  00003000 INTL 20120913)
+[    0.170002] ACPI: \_PR_.CPU0: _OSC native thermal LVT Acked
+[    0.171082] ACPI: Dynamic OEM Table Load:
+[    0.171085] ACPI: SSDT 0xFFFF88102712D800 00037F (v02 PmRef  Cpu0Cst  00003001 INTL 20120913)
+[    0.172179] ACPI: Dynamic OEM Table Load:
+[    0.172183] ACPI: SSDT 0xFFFF8810270E3800 0005AA (v02 PmRef  ApIst    00003000 INTL 20120913)
+[    0.172929] ACPI: Dynamic OEM Table Load:
+[    0.172931] ACPI: SSDT 0xFFFF881027159600 000119 (v02 PmRef  ApCst    00003000 INTL 20120913)
+[    0.174998] ACPI: Interpreter enabled
+[    0.175005] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S1_] (20150930/hwxface-580)
+[    0.175011] ACPI Exception: AE_NOT_FOUND, While evaluating Sleep State [\_S2_] (20150930/hwxface-580)
+[    0.175026] ACPI: (supports S0 S3 S4 S5)
+[    0.175027] ACPI: Using IOAPIC for interrupt routing
+[    0.175050] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    0.176455] ACPI: Power Resource [PG00] (on)
+[    0.176728] ACPI: Power Resource [PG01] (on)
+[    0.176971] ACPI: Power Resource [PG02] (on)
+[    0.178034] ACPI: Power Resource [WRST] (off)
+[    0.178247] ACPI: Power Resource [WRST] (off)
+[    0.178467] ACPI: Power Resource [WRST] (off)
+[    0.178678] ACPI: Power Resource [WRST] (off)
+[    0.178890] ACPI: Power Resource [WRST] (off)
+[    0.179104] ACPI: Power Resource [WRST] (off)
+[    0.179320] ACPI: Power Resource [WRST] (off)
+[    0.179533] ACPI: Power Resource [WRST] (off)
+[    0.179746] ACPI: Power Resource [WRST] (off)
+[    0.179957] ACPI: Power Resource [WRST] (off)
+[    0.180170] ACPI: Power Resource [WRST] (off)
+[    0.180381] ACPI: Power Resource [WRST] (off)
+[    0.180594] ACPI: Power Resource [WRST] (off)
+[    0.180867] ACPI: Power Resource [WRST] (off)
+[    0.181081] ACPI: Power Resource [WRST] (off)
+[    0.181294] ACPI: Power Resource [WRST] (off)
+[    0.181508] ACPI: Power Resource [WRST] (off)
+[    0.181727] ACPI: Power Resource [WRST] (off)
+[    0.181947] ACPI: Power Resource [WRST] (off)
+[    0.182158] ACPI: Power Resource [WRST] (off)
+[    0.186915] ACPI: Power Resource [FN00] (off)
+[    0.186963] ACPI: Power Resource [FN01] (off)
+[    0.187009] ACPI: Power Resource [FN02] (off)
+[    0.187054] ACPI: Power Resource [FN03] (off)
+[    0.187098] ACPI: Power Resource [FN04] (off)
+[    0.187877] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-fe])
+[    0.187882] acpi PNP0A08:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI]
+[    0.187902] \_SB_.PCI0:_OSC invalid UUID
+[    0.187903] _OSC request data:1 1f 0 
+[    0.187905] acpi PNP0A08:00: _OSC failed (AE_ERROR); disabling ASPM
+[    0.188386] PCI host bridge to bus 0000:00
+[    0.188388] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    0.188389] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    0.188390] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    0.188391] pci_bus 0000:00: root bus resource [mem 0x91000000-0xdfffffff window]
+[    0.188392] pci_bus 0000:00: root bus resource [mem 0xfd000000-0xfe7fffff window]
+[    0.188393] pci_bus 0000:00: root bus resource [bus 00-fe]
+[    0.188398] pci 0000:00:00.0: [8086:191f] type 00 class 0x060000
+[    0.188611] pci 0000:00:02.0: [8086:1912] type 00 class 0x030000
+[    0.188621] pci 0000:00:02.0: reg 0x10: [mem 0xde000000-0xdeffffff 64bit]
+[    0.188626] pci 0000:00:02.0: reg 0x18: [mem 0xc0000000-0xcfffffff 64bit pref]
+[    0.188629] pci 0000:00:02.0: reg 0x20: [io  0xf000-0xf03f]
+[    0.188728] pci 0000:00:08.0: [8086:1911] type 00 class 0x088000
+[    0.188738] pci 0000:00:08.0: reg 0x10: [mem 0xdf152000-0xdf152fff 64bit]
+[    0.188848] pci 0000:00:14.0: [8086:a12f] type 00 class 0x0c0330
+[    0.188871] pci 0000:00:14.0: reg 0x10: [mem 0xdf130000-0xdf13ffff 64bit]
+[    0.188917] pci 0000:00:14.0: PME# supported from D3hot D3cold
+[    0.188990] pci 0000:00:14.0: System wakeup disabled by ACPI
+[    0.189017] pci 0000:00:14.2: [8086:a131] type 00 class 0x118000
+[    0.189039] pci 0000:00:14.2: reg 0x10: [mem 0xdf151000-0xdf151fff 64bit]
+[    0.189193] pci 0000:00:15.0: [8086:a160] type 00 class 0x118000
+[    0.189248] pci 0000:00:15.0: reg 0x10: [mem 0xdf150000-0xdf150fff 64bit]
+[    0.189458] pci 0000:00:15.1: [8086:a161] type 00 class 0x118000
+[    0.189513] pci 0000:00:15.1: reg 0x10: [mem 0xdf14f000-0xdf14ffff 64bit]
+[    0.189713] pci 0000:00:16.0: [8086:a13a] type 00 class 0x078000
+[    0.189762] pci 0000:00:16.0: reg 0x10: [mem 0xdf14e000-0xdf14efff 64bit]
+[    0.189849] pci 0000:00:16.0: PME# supported from D3hot
+[    0.189961] pci 0000:00:17.0: [8086:a102] type 00 class 0x010601
+[    0.189980] pci 0000:00:17.0: reg 0x10: [mem 0xdf148000-0xdf149fff]
+[    0.189986] pci 0000:00:17.0: reg 0x14: [mem 0xdf14d000-0xdf14d0ff]
+[    0.189992] pci 0000:00:17.0: reg 0x18: [io  0xf090-0xf097]
+[    0.189998] pci 0000:00:17.0: reg 0x1c: [io  0xf080-0xf083]
+[    0.190003] pci 0000:00:17.0: reg 0x20: [io  0xf060-0xf07f]
+[    0.190009] pci 0000:00:17.0: reg 0x24: [mem 0xdf14c000-0xdf14c7ff]
+[    0.190034] pci 0000:00:17.0: PME# supported from D3hot
+[    0.190129] pci 0000:00:1b.0: [8086:a167] type 01 class 0x060400
+[    0.190177] pci 0000:00:1b.0: PME# supported from D0 D3hot D3cold
+[    0.190258] pci 0000:00:1b.0: System wakeup disabled by ACPI
+[    0.190307] pci 0000:00:1d.0: [8086:a118] type 01 class 0x060400
+[    0.190351] pci 0000:00:1d.0: PME# supported from D0 D3hot D3cold
+[    0.190426] pci 0000:00:1d.0: System wakeup disabled by ACPI
+[    0.190452] pci 0000:00:1d.2: [8086:a11a] type 01 class 0x060400
+[    0.190498] pci 0000:00:1d.2: PME# supported from D0 D3hot D3cold
+[    0.190576] pci 0000:00:1d.2: System wakeup disabled by ACPI
+[    0.190654] pci 0000:00:1e.0: [8086:a127] type 00 class 0x118000
+[    0.190708] pci 0000:00:1e.0: reg 0x10: [mem 0xdf14b000-0xdf14bfff 64bit]
+[    0.190931] pci 0000:00:1f.0: [8086:a145] type 00 class 0x060100
+[    0.191103] pci 0000:00:1f.2: [8086:a121] type 00 class 0x058000
+[    0.191113] pci 0000:00:1f.2: reg 0x10: [mem 0xdf144000-0xdf147fff]
+[    0.191228] pci 0000:00:1f.3: [8086:a170] type 00 class 0x040300
+[    0.191256] pci 0000:00:1f.3: reg 0x10: [mem 0xdf140000-0xdf143fff 64bit]
+[    0.191278] pci 0000:00:1f.3: reg 0x20: [mem 0xdf120000-0xdf12ffff 64bit]
+[    0.191307] pci 0000:00:1f.3: PME# supported from D3hot D3cold
+[    0.191411] pci 0000:00:1f.3: System wakeup disabled by ACPI
+[    0.191441] pci 0000:00:1f.4: [8086:a123] type 00 class 0x0c0500
+[    0.191494] pci 0000:00:1f.4: reg 0x10: [mem 0xdf14a000-0xdf14a0ff 64bit]
+[    0.191563] pci 0000:00:1f.4: reg 0x20: [io  0xf040-0xf05f]
+[    0.191714] pci 0000:00:1f.6: [8086:15b8] type 00 class 0x020000
+[    0.191748] pci 0000:00:1f.6: reg 0x10: [mem 0xdf100000-0xdf11ffff]
+[    0.191835] pci 0000:00:1f.6: PME# supported from D0 D3hot D3cold
+[    0.191906] pci 0000:00:1f.6: System wakeup disabled by ACPI
+[    0.191995] pci 0000:01:00.0: [144d:a802] type 00 class 0x010802
+[    0.192021] pci 0000:01:00.0: reg 0x10: [mem 0xdf010000-0xdf013fff 64bit]
+[    0.192026] pci 0000:01:00.0: reg 0x18: [io  0xe000-0xe0ff]
+[    0.192045] pci 0000:01:00.0: reg 0x30: [mem 0xdf000000-0xdf00ffff pref]
+[    0.192137] pci 0000:01:00.0: System wakeup disabled by ACPI
+[    0.197890] pci 0000:00:1b.0: PCI bridge to [bus 01]
+[    0.197892] pci 0000:00:1b.0:   bridge window [io  0xe000-0xefff]
+[    0.197894] pci 0000:00:1b.0:   bridge window [mem 0xdf000000-0xdf0fffff]
+[    0.197960] acpiphp: Slot [1] registered
+[    0.197963] pci 0000:00:1d.0: PCI bridge to [bus 02]
+[    0.198040] pci 0000:03:00.0: [1b21:1080] type 01 class 0x060400
+[    0.198151] pci 0000:03:00.0: supports D1 D2
+[    0.198152] pci 0000:03:00.0: PME# supported from D0 D1 D2 D3hot D3cold
+[    0.198200] pci 0000:03:00.0: System wakeup disabled by ACPI
+[    0.205891] pci 0000:00:1d.2: PCI bridge to [bus 03-04]
+[    0.205995] pci 0000:03:00.0: PCI bridge to [bus 04]
+[    0.207321] ACPI: PCI Interrupt Link [LNKA] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207357] ACPI: PCI Interrupt Link [LNKB] (IRQs 3 4 5 6 *10 11 12 14 15)
+[    0.207392] ACPI: PCI Interrupt Link [LNKC] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207425] ACPI: PCI Interrupt Link [LNKD] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207459] ACPI: PCI Interrupt Link [LNKE] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207492] ACPI: PCI Interrupt Link [LNKF] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207526] ACPI: PCI Interrupt Link [LNKG] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207559] ACPI: PCI Interrupt Link [LNKH] (IRQs 3 4 5 6 10 *11 12 14 15)
+[    0.207836] ACPI: Enabled 5 GPEs in block 00 to 7F
+[    0.207905] vgaarb: setting as boot device: PCI:0000:00:02.0
+[    0.207907] vgaarb: device added: PCI:0000:00:02.0,decodes=io+mem,owns=io+mem,locks=none
+[    0.207909] vgaarb: loaded
+[    0.207909] vgaarb: bridge control possible 0000:00:02.0
+[    0.208041] SCSI subsystem initialized
+[    0.208058] libata version 3.00 loaded.
+[    0.208070] ACPI: bus type USB registered
+[    0.208082] usbcore: registered new interface driver usbfs
+[    0.208086] usbcore: registered new interface driver hub
+[    0.208094] usbcore: registered new device driver usb
+[    0.208202] PCI: Using ACPI for IRQ routing
+[    0.236060] PCI: pci_cache_line_size set to 64 bytes
+[    0.236162] e820: reserve RAM buffer [mem 0x00058000-0x0005ffff]
+[    0.236163] e820: reserve RAM buffer [mem 0x0009f000-0x0009ffff]
+[    0.236164] e820: reserve RAM buffer [mem 0x8277d000-0x83ffffff]
+[    0.236165] e820: reserve RAM buffer [mem 0x827fa000-0x83ffffff]
+[    0.236166] e820: reserve RAM buffer [mem 0x8a2a6000-0x8bffffff]
+[    0.236167] e820: reserve RAM buffer [mem 0x8a74a000-0x8bffffff]
+[    0.236168] e820: reserve RAM buffer [mem 0x8b400000-0x8bffffff]
+[    0.236168] e820: reserve RAM buffer [mem 0x106f000000-0x106fffffff]
+[    0.236236] NetLabel: Initializing
+[    0.236237] NetLabel:  domain hash size = 128
+[    0.236237] NetLabel:  protocols = UNLABELED CIPSOv4
+[    0.236244] NetLabel:  unlabeled traffic allowed by default
+[    0.236318] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0, 0, 0, 0, 0, 0
+[    0.236321] hpet0: 8 comparators, 64-bit 24.000000 MHz counter
+[    0.238354] amd_nb: Cannot enumerate AMD northbridges
+[    0.238365] clocksource: Switched to clocksource hpet
+[    0.242118] AppArmor: AppArmor Filesystem Enabled
+[    0.242148] pnp: PnP ACPI init
+[    0.242329] system 00:00: [io  0x0a00-0x0a0f] has been reserved
+[    0.242330] system 00:00: [io  0x0a10-0x0a1f] has been reserved
+[    0.242332] system 00:00: [io  0x0a20-0x0a2f] has been reserved
+[    0.242333] system 00:00: [io  0x0a30-0x0a3f] has been reserved
+[    0.242335] system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.242482] system 00:01: [io  0x0680-0x069f] has been reserved
+[    0.242484] system 00:01: [io  0xffff] has been reserved
+[    0.242484] system 00:01: [io  0xffff] has been reserved
+[    0.242485] system 00:01: [io  0xffff] has been reserved
+[    0.242487] system 00:01: [io  0x1800-0x18fe] could not be reserved
+[    0.242487] system 00:01: [io  0x164e-0x164f] has been reserved
+[    0.242489] system 00:01: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.242545] system 00:02: [io  0x0800-0x087f] has been reserved
+[    0.242546] system 00:02: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.242560] pnp 00:03: Plug and Play ACPI device, IDs PNP0b00 (active)
+[    0.242584] system 00:04: [io  0x1854-0x1857] has been reserved
+[    0.242585] system 00:04: Plug and Play ACPI device, IDs INT3f0d PNP0c02 (active)
+[    0.242721] system 00:05: [mem 0xfed10000-0xfed17fff] has been reserved
+[    0.242722] system 00:05: [mem 0xfed18000-0xfed18fff] has been reserved
+[    0.242723] system 00:05: [mem 0xfed19000-0xfed19fff] has been reserved
+[    0.242724] system 00:05: [mem 0xe0000000-0xefffffff] has been reserved
+[    0.242725] system 00:05: [mem 0xfed20000-0xfed3ffff] has been reserved
+[    0.242727] system 00:05: [mem 0xfed90000-0xfed93fff] has been reserved
+[    0.242728] system 00:05: [mem 0xfed45000-0xfed8ffff] has been reserved
+[    0.242729] system 00:05: [mem 0xff000000-0xffffffff] has been reserved
+[    0.242730] system 00:05: [mem 0xfee00000-0xfeefffff] could not be reserved
+[    0.242731] system 00:05: [mem 0xdffc0000-0xdffdffff] has been reserved
+[    0.242732] system 00:05: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.242757] system 00:06: [mem 0xfd000000-0xfdabffff] has been reserved
+[    0.242759] system 00:06: [mem 0xfdad0000-0xfdadffff] has been reserved
+[    0.242760] system 00:06: [mem 0xfdb00000-0xfdffffff] has been reserved
+[    0.242761] system 00:06: [mem 0xfe000000-0xfe01ffff] could not be reserved
+[    0.242762] system 00:06: [mem 0xfe036000-0xfe03bfff] has been reserved
+[    0.242763] system 00:06: [mem 0xfe03d000-0xfe3fffff] has been reserved
+[    0.242764] system 00:06: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.242943] system 00:07: [io  0xff00-0xfffe] has been reserved
+[    0.242944] system 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.243555] system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.244099] pnp: PnP ACPI: found 9 devices
+[    0.252045] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    0.252073] pci 0000:00:1b.0: PCI bridge to [bus 01]
+[    0.252075] pci 0000:00:1b.0:   bridge window [io  0xe000-0xefff]
+[    0.252078] pci 0000:00:1b.0:   bridge window [mem 0xdf000000-0xdf0fffff]
+[    0.252082] pci 0000:00:1d.0: PCI bridge to [bus 02]
+[    0.252089] pci 0000:03:00.0: PCI bridge to [bus 04]
+[    0.252102] pci 0000:00:1d.2: PCI bridge to [bus 03-04]
+[    0.252109] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    0.252110] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    0.252111] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    0.252112] pci_bus 0000:00: resource 7 [mem 0x91000000-0xdfffffff window]
+[    0.252113] pci_bus 0000:00: resource 8 [mem 0xfd000000-0xfe7fffff window]
+[    0.252114] pci_bus 0000:01: resource 0 [io  0xe000-0xefff]
+[    0.252115] pci_bus 0000:01: resource 1 [mem 0xdf000000-0xdf0fffff]
+[    0.252133] NET: Registered protocol family 2
+[    0.252300] TCP established hash table entries: 524288 (order: 10, 4194304 bytes)
+[    0.252716] TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
+[    0.252799] TCP: Hash tables configured (established 524288 bind 65536)
+[    0.252833] UDP hash table entries: 32768 (order: 8, 1048576 bytes)
+[    0.252945] UDP-Lite hash table entries: 32768 (order: 8, 1048576 bytes)
+[    0.253054] NET: Registered protocol family 1
+[    0.253064] pci 0000:00:02.0: Video device with shadowed ROM
+[    0.253266] PCI: CLS 0 bytes, default 64
+[    0.253295] Trying to unpack rootfs image as initramfs...
+[    0.631688] Freeing initrd memory: 35468K (ffff880033aaa000 - ffff880035d4d000)
+[    0.631711] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    0.631712] software IO TLB [mem 0x7e3ab000-0x823ab000] (64MB) mapped at [ffff88007e3ab000-ffff8800823aafff]
+[    0.631836] Scanning for low memory corruption every 60 seconds
+[    0.632102] futex hash table entries: 1024 (order: 4, 65536 bytes)
+[    0.632122] audit: initializing netlink subsys (disabled)
+[    0.632133] audit: type=2000 audit(1478497727.636:1): initialized
+[    0.632389] Initialise system trusted keyring
+[    0.632526] HugeTLB registered 1 GB page size, pre-allocated 0 pages
+[    0.632527] HugeTLB registered 2 MB page size, pre-allocated 0 pages
+[    0.633449] zbud: loaded
+[    0.633620] VFS: Disk quotas dquot_6.6.0
+[    0.633642] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    0.633803] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    0.634003] fuse init (API version 7.23)
+[    0.634104] Key type big_key registered
+[    0.634125] Allocating IMA MOK and blacklist keyrings.
+[    0.635054] Key type asymmetric registered
+[    0.635056] Asymmetric key parser 'x509' registered
+[    0.635077] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 249)
+[    0.635137] io scheduler noop registered
+[    0.635138] io scheduler deadline registered (default)
+[    0.635156] io scheduler cfq registered
+[    0.635488] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+[    0.635493] pciehp: PCI Express Hot Plug Controller Driver version: 0.4
+[    0.635515] efifb: probing for efifb
+[    0.635524] efifb: framebuffer at 0xc0000000, mapped to 0xffffc90006c00000, using 3072k, total 3072k
+[    0.635525] efifb: mode is 1024x768x32, linelength=4096, pages=1
+[    0.635525] efifb: scrolling: redraw
+[    0.635526] efifb: Truecolor: size=8:8:8:8, shift=24:16:8:0
+[    0.635586] Console: switching to colour frame buffer device 128x48
+[    0.635594] fb0: EFI VGA frame buffer device
+[    0.635600] intel_idle: MWAIT substates: 0x142120
+[    0.635601] intel_idle: v0.4.1 model 0x5E
+[    0.635601] intel_idle: lapic_timer_reliable_states 0xffffffff
+[    0.635786] input: Sleep Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0E:00/input/input0
+[    0.635789] ACPI: Sleep Button [SLPB]
+[    0.635810] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input1
+[    0.635811] ACPI: Power Button [PWRB]
+[    0.635832] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input2
+[    0.635833] ACPI: Power Button [PWRF]
+[    0.636355] thermal LNXTHERM:00: registered as thermal_zone0
+[    0.636356] ACPI: Thermal Zone [TZ00] (28 C)
+[    0.636436] thermal LNXTHERM:01: registered as thermal_zone1
+[    0.636437] ACPI: Thermal Zone [TZ01] (30 C)
+[    0.636466] GHES: HEST is not enabled!
+[    0.636550] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    0.657104] serial8250: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    0.677695] serial8250: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    0.679815] Linux agpgart interface v0.103
+[    0.683415] brd: module loaded
+[    0.685084] loop: module loaded
+[    0.685197] libphy: Fixed MDIO Bus: probed
+[    0.685198] tun: Universal TUN/TAP device driver, 1.6
+[    0.685199] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
+[    0.685248] PPP generic driver version 2.4.2
+[    0.685312] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.685315] ehci-pci: EHCI PCI platform driver
+[    0.685321] ehci-platform: EHCI generic platform driver
+[    0.685327] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    0.685329] ohci-pci: OHCI PCI platform driver
+[    0.685335] ohci-platform: OHCI generic platform driver
+[    0.685340] uhci_hcd: USB Universal Host Controller Interface driver
+[    0.685435] xhci_hcd 0000:00:14.0: xHCI Host Controller
+[    0.685438] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 1
+[    0.686513] xhci_hcd 0000:00:14.0: hcc params 0x200077c1 hci version 0x100 quirks 0x00109810
+[    0.686517] xhci_hcd 0000:00:14.0: cache line size of 64 is not supported
+[    0.686573] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[    0.686574] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    0.686575] usb usb1: Product: xHCI Host Controller
+[    0.686576] usb usb1: Manufacturer: Linux 4.4.0-42-generic xhci-hcd
+[    0.686577] usb usb1: SerialNumber: 0000:00:14.0
+[    0.686664] hub 1-0:1.0: USB hub found
+[    0.686678] hub 1-0:1.0: 16 ports detected
+[    0.694059] xhci_hcd 0000:00:14.0: xHCI Host Controller
+[    0.694061] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 2
+[    0.694079] usb usb2: New USB device found, idVendor=1d6b, idProduct=0003
+[    0.694080] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    0.694080] usb usb2: Product: xHCI Host Controller
+[    0.694081] usb usb2: Manufacturer: Linux 4.4.0-42-generic xhci-hcd
+[    0.694082] usb usb2: SerialNumber: 0000:00:14.0
+[    0.694184] hub 2-0:1.0: USB hub found
+[    0.694194] hub 2-0:1.0: 10 ports detected
+[    0.698905] i8042: PNP: No PS/2 controller found. Probing ports directly.
+[    0.702032] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    0.702034] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    0.702201] mousedev: PS/2 mouse device common for all mice
+[    0.702506] rtc_cmos 00:03: RTC can wake from S4
+[    0.702921] rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
+[    0.703001] rtc_cmos 00:03: alarms up to one month, y3k, 242 bytes nvram, hpet irqs
+[    0.703006] i2c /dev entries driver
+[    0.703035] device-mapper: uevent: version 1.0.3
+[    0.703151] device-mapper: ioctl: 4.34.0-ioctl (2015-10-28) initialised: dm-devel@redhat.com
+[    0.703164] Intel P-state driver initializing.
+[    0.703165] intel_pstate: HWP enabled
+[    0.704049] ledtrig-cpu: registered to indicate activity on CPUs
+[    0.704052] EFI Variables Facility v0.08 2004-May-17
+[    0.709771] NET: Registered protocol family 10
+[    0.710110] NET: Registered protocol family 17
+[    0.710119] Key type dns_resolver registered
+[    0.710373] microcode: CPU0 sig=0x506e3, pf=0x2, revision=0x33
+[    0.710470] microcode: CPU1 sig=0x506e3, pf=0x2, revision=0x33
+[    0.710484] microcode: CPU2 sig=0x506e3, pf=0x2, revision=0x33
+[    0.710487] microcode: CPU3 sig=0x506e3, pf=0x2, revision=0x33
+[    0.710525] microcode: Microcode Update Driver: v2.01 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
+[    0.711039] registered taskstats version 1
+[    0.711049] Loading compiled-in X.509 certificates
+[    0.711477] Loaded X.509 cert 'Build time autogenerated kernel key: e837129128998c98ce5a834cc756a195b6db2f40'
+[    0.711489] zswap: loaded using pool lzo/zbud
+[    0.713315] Key type trusted registered
+[    0.716985] Key type encrypted registered
+[    0.716989] AppArmor: AppArmor sha1 policy hashing enabled
+[    0.716991] ima: No TPM chip found, activating TPM-bypass!
+[    0.717002] evm: HMAC attrs: 0x1
+[    0.717855]   Magic number: 8:870:819
+[    0.718189] rtc_cmos 00:03: setting system clock to 2016-11-07 05:48:48 UTC (1478497728)
+[    0.718335] BIOS EDD facility v0.16 2004-Jun-25, 0 devices found
+[    0.718336] EDD information not available.
+[    0.718424] PM: Hibernation image not present or could not be loaded.
+[    0.719312] Freeing unused kernel memory: 1480K (ffffffff81f42000 - ffffffff820b4000)
+[    0.719313] Write protecting the kernel read-only data: 14336k
+[    0.719935] Freeing unused kernel memory: 1820K (ffff880002839000 - ffff880002a00000)
+[    0.720263] Freeing unused kernel memory: 152K (ffff880002dda000 - ffff880002e00000)
+[    0.727499] random: systemd-udevd: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727541] random: systemd-udevd: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727548] random: systemd-udevd: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727810] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727836] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727971] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.727998] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.728023] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.728045] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.728072] random: udevadm: uninitialized urandom read (16 bytes read, 1 bits of entropy available)
+[    0.750592] FUJITSU Extended Socket Network Device Driver - version 1.0 - Copyright (c) 2015 FUJITSU LIMITED
+[    0.757920] wmi: Mapper loaded
+[    0.771240] hidraw: raw HID events driver (C) Jiri Kosina
+[    0.776605] ahci 0000:00:17.0: version 3.0
+[    0.777407] [drm] Initialized drm 1.1.0 20060810
+[    0.777514] pps_core: LinuxPPS API ver. 1 registered
+[    0.777515] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.778224] PTP clock support registered
+[    0.780511] e1000e: Intel(R) PRO/1000 Network Driver - 3.2.6-k
+[    0.780512] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+[    0.780577] nvme 0000:01:00.0: enabling device (0000 -> 0002)
+[    0.790616] ahci 0000:00:17.0: AHCI 0001.0301 32 slots 4 ports 6 Gbps 0xf impl SATA mode
+[    0.790618] ahci 0000:00:17.0: flags: 64bit ncq sntf led clo only pio slum part ems deso sadm sds apst 
+[    0.819332] scsi host0: ahci
+[    0.819596] scsi host1: ahci
+[    0.819831] scsi host2: ahci
+[    0.820096] scsi host3: ahci
+[    0.820131] ata1: SATA max UDMA/133 abar m2048@0xdf14c000 port 0xdf14c100 irq 313
+[    0.820135] ata2: SATA max UDMA/133 abar m2048@0xdf14c000 port 0xdf14c180 irq 313
+[    0.820140] ata3: SATA max UDMA/133 abar m2048@0xdf14c000 port 0xdf14c200 irq 313
+[    0.820144] ata4: SATA max UDMA/133 abar m2048@0xdf14c000 port 0xdf14c280 irq 313
+[    0.820412] e1000e 0000:00:1f.6: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+[    1.002519] usb 1-1: new low-speed USB device number 2 using xhci_hcd
+[    1.138661] ata4: SATA link down (SStatus 4 SControl 300)
+[    1.138691] ata2: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+[    1.138718] ata3: SATA link down (SStatus 4 SControl 300)
+[    1.138769] ata1: SATA link down (SStatus 4 SControl 300)
+[    1.139439] ata2.00: ATA-9: WDC WD10EZEX-00BN5A0, 01.01A01, max UDMA/133
+[    1.139441] ata2.00: 1953525168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
+[    1.140352] ata2.00: configured for UDMA/133
+[    1.140848] scsi 1:0:0:0: Direct-Access     ATA      WDC WD10EZEX-00B 1A01 PQ: 0 ANSI: 5
+[    1.141354] sd 1:0:0:0: [sda] 1953525168 512-byte logical blocks: (1.00 TB/932 GiB)
+[    1.141355] sd 1:0:0:0: [sda] 4096-byte physical blocks
+[    1.141376] sd 1:0:0:0: Attached scsi generic sg0 type 0
+[    1.141916] sd 1:0:0:0: [sda] Write Protect is off
+[    1.141918] sd 1:0:0:0: [sda] Mode Sense: 00 3a 00 00
+[    1.142111] sd 1:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+[    1.192566] usb 1-1: New USB device found, idVendor=046d, idProduct=c31c
+[    1.192567] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[    1.192568] usb 1-1: Product: USB Keyboard
+[    1.192569] usb 1-1: Manufacturer: Logitech
+[    1.192743] usb 1-1: ep 0x81 - rounding interval to 64 microframes, ep desc says 80 microframes
+[    1.192745] usb 1-1: ep 0x82 - rounding interval to 1024 microframes, ep desc says 2040 microframes
+[    1.203996]  sda: sda1 sda2 sda3
+[    1.204715] sd 1:0:0:0: [sda] Attached SCSI disk
+[    1.204820] usbcore: registered new interface driver usbhid
+[    1.204821] usbhid: USB HID core driver
+[    1.206298] input: Logitech USB Keyboard as /devices/pci0000:00/0000:00:14.0/usb1/1-1/1-1:1.0/0003:046D:C31C.0001/input/input6
+[    1.258885] hid-generic 0003:046D:C31C.0001: input,hidraw0: USB HID v1.10 Keyboard [Logitech USB Keyboard] on usb-0000:00:14.0-1/input0
+[    1.260276] input: Logitech USB Keyboard as /devices/pci0000:00/0000:00:14.0/usb1/1-1/1-1:1.1/0003:046D:C31C.0002/input/input7
+[    1.314820] hid-generic 0003:046D:C31C.0002: input,hidraw1: USB HID v1.10 Device [Logitech USB Keyboard] on usb-0000:00:14.0-1/input1
+[    1.315043] e1000e 0000:00:1f.6 eth0: registered PHC clock
+[    1.315044] e1000e 0000:00:1f.6 eth0: (PCI Express:2.5GT/s:Width x1) d8:cb:8a:c4:3a:78
+[    1.315045] e1000e 0000:00:1f.6 eth0: Intel(R) PRO/1000 Network Connection
+[    1.315119] e1000e 0000:00:1f.6 eth0: MAC: 12, PHY: 12, PBA No: FFFFFF-0FF
+[    1.315824] e1000e 0000:00:1f.6 enp0s31f6: renamed from eth0
+[    1.316014] [drm] Memory usable by graphics device = 4096M
+[    1.316016] checking generic (c0000000 300000) vs hw (c0000000 10000000)
+[    1.316017] fb: switching to inteldrmfb from EFI VGA
+[    1.316031] Console: switching to colour dummy device 80x25
+[    1.316162] [drm] Replacing VGA console driver
+[    1.322347] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+[    1.322348] [drm] Driver supports precise vblank timestamp query.
+[    1.329078] [drm] Finished loading i915/skl_dmc_ver1.bin (v1.26)
+[    1.331645] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+[    1.340844] [drm] failed to retrieve link info, disabling eDP
+[    1.345582] ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
+[    1.345910] acpi device:0f: registered as cooling_device9
+[    1.345958] input: Video Bus as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/input/input8
+[    1.346150] [drm] Initialized i915_bpo 1.6.0 20160425 for 0000:00:02.0 on minor 0
+[    1.366557] usb 1-2: new full-speed USB device number 3 using xhci_hcd
+[    1.484566] fbcon: inteldrmfb (fb0) is primary device
+[    1.484612] Console: switching to colour frame buffer device 160x64
+[    1.484635] i915_bpo 0000:00:02.0: fb0: inteldrmfb frame buffer device
+[    1.496879] usb 1-2: New USB device found, idVendor=046d, idProduct=c247
+[    1.496880] usb 1-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[    1.496881] usb 1-2: Product: G100s Optical Gaming Mouse
+[    1.496882] usb 1-2: Manufacturer: Logitech
+[    1.498669] input: Logitech G100s Optical Gaming Mouse as /devices/pci0000:00/0000:00:14.0/usb1/1-2/1-2:1.0/0003:046D:C247.0003/input/input9
+[    1.499035] hid-generic 0003:046D:C247.0003: input,hidraw2: USB HID v1.10 Mouse [Logitech G100s Optical Gaming Mouse] on usb-0000:00:14.0-2/input0
+[    1.630599] tsc: Refined TSC clocksource calibration: 3311.992 MHz
+[    1.630601] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x2fbd8cbe157, max_idle_ns: 440795320157 ns
+[    2.029158] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+[    2.630952] clocksource: Switched to clocksource tsc
+[    2.662430] random: nonblocking pool is initialized
+[    2.790854] [drm] RC6 on
+[    2.913361] systemd[1]: systemd 229 running in system mode. (+PAM +AUDIT +SELINUX +IMA +APPARMOR +SMACK +SYSVINIT +UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ -LZ4 +SECCOMP +BLKID +ELFUTILS +KMOD -IDN)
+[    2.913436] systemd[1]: Detected architecture x86-64.
+[    2.921671] systemd[1]: Set hostname to <j200>.
+[    4.413881] systemd[1]: Listening on fsck to fsckd communication Socket.
+[    4.413922] systemd[1]: Listening on Journal Socket.
+[    4.413938] systemd[1]: Listening on /dev/initctl Compatibility Named Pipe.
+[    4.413983] systemd[1]: Created slice System Slice.
+[    4.426596] systemd[1]: Mounting Huge Pages File System...
+[    4.428097] systemd[1]: Starting Load Kernel Modules...
+[    4.428154] systemd[1]: Created slice system-systemd\x2dfsck.slice.
+[    4.428173] systemd[1]: Reached target Encrypted Volumes.
+[    4.428195] systemd[1]: Listening on Journal Socket (/dev/log).
+[    4.428413] systemd[1]: Started Read required files in advance.
+[    4.428559] systemd[1]: Listening on udev Kernel Socket.
+[    4.428852] systemd[1]: Starting Uncomplicated firewall...
+[    4.428883] systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+[    4.429108] systemd[1]: Mounting POSIX Message Queue File System...
+[    4.429177] systemd[1]: Created slice system-getty.slice.
+[    4.429218] systemd[1]: Created slice User and Session Slice.
+[    4.429228] systemd[1]: Reached target User and Group Name Lookups.
+[    4.429239] systemd[1]: Reached target Slices.
+[    4.429257] systemd[1]: Listening on Syslog Socket.
+[    4.429262] systemd[1]: Reached target Remote File Systems (Pre).
+[    4.429531] systemd[1]: Starting Create list of required static device nodes for the current kernel...
+[    4.429642] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.
+[    4.641503] systemd[1]: Reached target Remote File Systems.
+[    4.641562] systemd[1]: Listening on Journal Audit Socket.
+[    4.650721] systemd[1]: Starting Journal Service...
+[    4.650756] systemd[1]: Listening on udev Control Socket.
+[    4.651027] systemd[1]: Mounting Debug File System...
+[    4.651240] systemd[1]: Starting Braille Device Support...
+[    4.652109] systemd[1]: Started Uncomplicated firewall.
+[    4.652259] systemd[1]: Started Create list of required static device nodes for the current kernel.
+[    4.661956] systemd[1]: Starting Create Static Device Nodes in /dev...
+[    5.002917] lp: driver loaded but no devices found
+[    5.034274] ppdev: user-space parallel port driver
+[    5.072695] systemd[1]: Started Journal Service.
+[    5.076269] parport0: PC-style at 0x378 (0x778) [PCSPP,TRISTATE,EPP]
+[    5.076901] parport0: irq 7 detected
+[    5.170810] lp0: using parport0 (polling).
+[    9.264316] EXT4-fs (sda2): re-mounted. Opts: errors=remount-ro
+[    9.419063] systemd-journald[235]: Received request to flush runtime journal from PID 1
+[    9.758450] mei_me 0000:00:16.0: enabling device (0000 -> 0002)
+[    9.785562] shpchp: Standard Hot Plug PCI Controller Driver version: 0.4
+[    9.802626] intel-lpss 0000:00:15.0: enabling device (0000 -> 0002)
+[    9.870894] idma64 idma64.0: Found Intel integrated DMA 64-bit
+[    9.902566] intel-lpss 0000:00:15.1: enabling device (0000 -> 0002)
+[    9.902763] idma64 idma64.1: Found Intel integrated DMA 64-bit
+[    9.934567] intel-lpss 0000:00:1e.0: enabling device (0000 -> 0002)
+[    9.934762] idma64 idma64.2: Found Intel integrated DMA 64-bit
+[    9.971878] Bluetooth: Core ver 2.21
+[    9.971886] NET: Registered protocol family 31
+[    9.971887] Bluetooth: HCI device and connection manager initialized
+[    9.971889] Bluetooth: HCI socket layer initialized
+[    9.971891] Bluetooth: L2CAP socket layer initialized
+[    9.971893] Bluetooth: SCO socket layer initialized
+[   10.190441] Bluetooth: HCI UART driver ver 2.3
+[   10.190443] Bluetooth: HCI UART protocol H4 registered
+[   10.190443] Bluetooth: HCI UART protocol BCSP registered
+[   10.190444] Bluetooth: HCI UART protocol LL registered
+[   10.190444] Bluetooth: HCI UART protocol ATH3K registered
+[   10.190445] Bluetooth: HCI UART protocol Three-wire (H5) registered
+[   10.190463] Bluetooth: HCI UART protocol Intel registered
+[   10.190469] Bluetooth: HCI UART protocol BCM registered
+[   10.190470] Bluetooth: HCI UART protocol QCA registered
+[   10.253741] AVX2 version of gcm_enc/dec engaged.
+[   10.253742] AES CTR mode by8 optimization enabled
+[   10.502714] dw-apb-uart.2: ttyS4 at MMIO 0xdf14b000 (irq = 20, base_baud = 115200) is a 16550A
+[   10.620393] snd_hda_intel 0000:00:1f.3: enabling device (0000 -> 0002)
+[   10.620497] snd_hda_intel 0000:00:1f.3: bound 0000:00:02.0 (ops i915_audio_component_bind_ops [i915_bpo])
+[   10.716741] snd_hda_codec_realtek hdaudioC0D0: ALC1150: SKU not ready 0x00000000
+[   10.717223] snd_hda_codec_realtek hdaudioC0D0: autoconfig for ALC1150: line_outs=3 (0x14/0x15/0x16/0x0/0x0) type:line
+[   10.717224] snd_hda_codec_realtek hdaudioC0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[   10.717225] snd_hda_codec_realtek hdaudioC0D0:    hp_outs=1 (0x1b/0x0/0x0/0x0/0x0)
+[   10.717226] snd_hda_codec_realtek hdaudioC0D0:    mono: mono_out=0x0
+[   10.717227] snd_hda_codec_realtek hdaudioC0D0:    dig-out=0x1e/0x0
+[   10.717228] snd_hda_codec_realtek hdaudioC0D0:    inputs:
+[   10.717229] snd_hda_codec_realtek hdaudioC0D0:      Front Mic=0x19
+[   10.717230] snd_hda_codec_realtek hdaudioC0D0:      Rear Mic=0x18
+[   10.717230] snd_hda_codec_realtek hdaudioC0D0:      Line=0x1a
+[   10.755617] input: HDA Intel PCH Front Mic as /devices/pci0000:00/0000:00:1f.3/sound/card0/input10
+[   10.755651] input: HDA Intel PCH Rear Mic as /devices/pci0000:00/0000:00:1f.3/sound/card0/input11
+[   10.755678] input: HDA Intel PCH Line as /devices/pci0000:00/0000:00:1f.3/sound/card0/input12
+[   10.755705] input: HDA Intel PCH Line Out Front as /devices/pci0000:00/0000:00:1f.3/sound/card0/input13
+[   10.755732] input: HDA Intel PCH Line Out Surround as /devices/pci0000:00/0000:00:1f.3/sound/card0/input14
+[   10.755759] input: HDA Intel PCH Line Out CLFE as /devices/pci0000:00/0000:00:1f.3/sound/card0/input15
+[   10.755785] input: HDA Intel PCH Front Headphone as /devices/pci0000:00/0000:00:1f.3/sound/card0/input16
+[   10.755812] input: HDA Intel PCH HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:1f.3/sound/card0/input17
+[   10.755839] input: HDA Intel PCH HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:1f.3/sound/card0/input18
+[   10.755868] input: HDA Intel PCH HDMI/DP,pcm=8 as /devices/pci0000:00/0000:00:1f.3/sound/card0/input19
+[   10.898309] intel_rapl: Found RAPL domain package
+[   10.898310] intel_rapl: Found RAPL domain core
+[   10.898311] intel_rapl: Found RAPL domain uncore
+[   10.898312] intel_rapl: Found RAPL domain dram
+[   11.595395] Adding 8268796k swap on /dev/sda3.  Priority:-1 extents:1 across:8268796k FS
+[   18.860473] audit: type=1400 audit(1478497746.636:2): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/bin/ubuntu-core-launcher" pid=581 comm="apparmor_parser"
+[   18.861195] audit: type=1400 audit(1478497746.636:3): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/sbin/dhclient" pid=578 comm="apparmor_parser"
+[   18.861199] audit: type=1400 audit(1478497746.636:4): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/NetworkManager/nm-dhcp-client.action" pid=578 comm="apparmor_parser"
+[   18.861201] audit: type=1400 audit(1478497746.636:5): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/NetworkManager/nm-dhcp-helper" pid=578 comm="apparmor_parser"
+[   18.861218] audit: type=1400 audit(1478497746.636:6): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/connman/scripts/dhclient-script" pid=578 comm="apparmor_parser"
+[   18.861444] audit: type=1400 audit(1478497746.636:7): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/lightdm/lightdm-guest-session" pid=577 comm="apparmor_parser"
+[   18.861448] audit: type=1400 audit(1478497746.636:8): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/lightdm/lightdm-guest-session//chromium" pid=577 comm="apparmor_parser"
+[   18.862049] audit: type=1400 audit(1478497746.636:9): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/sbin/cups-browsed" pid=583 comm="apparmor_parser"
+[   18.862532] audit: type=1400 audit(1478497746.636:10): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/sbin/ippusbxd" pid=585 comm="apparmor_parser"
+[   18.862920] audit: type=1400 audit(1478497746.640:11): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/cups/backend/cups-pdf" pid=584 comm="apparmor_parser"
+[   21.632541] IPv6: ADDRCONF(NETDEV_UP): enp0s31f6: link is not ready
+[   21.839070] IPv6: ADDRCONF(NETDEV_UP): enp0s31f6: link is not ready
+[   24.388841] e1000e: enp0s31f6 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+[   24.388848] e1000e 0000:00:1f.6 enp0s31f6: 10/100 speed: disabling TSO
+[   24.388896] IPv6: ADDRCONF(NETDEV_CHANGE): enp0s31f6: link becomes ready
+[   31.331711] Bluetooth: BNEP (Ethernet Emulation) ver 1.3
+[   31.331712] Bluetooth: BNEP filters: protocol multicast
+[   31.331715] Bluetooth: BNEP socket layer initialized
+[  201.164830] risa_dev_ramdrive_timing: module verification failed: signature and/or required key missing - tainting kernel
+[  201.166005] bdbm: bdbm_dm_stub is installed: /dev/bdbm_dm_stub (major:241 minor:0)
+[  201.179129] bdbm: =====================================================================
+[  201.179134] bdbm: DEVICE PARAMETERS
+[  201.179137] bdbm: =====================================================================
+[  201.179139] bdbm: # of channels = 8
+[  201.179142] bdbm: # of chips per channel = 16
+[  201.179144] bdbm: # of blocks per chip = 256
+[  201.179146] bdbm: # of pages per block = 128
+[  201.179148] bdbm: # of subpages per page = 1
+[  201.179150] bdbm: page main size  = 4096 bytes
+[  201.179153] bdbm: page oob size = 64 bytes
+[  201.179156] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[  201.179158] bdbm: 
+[  201.179161] bdbm: =====================================================================
+[  201.179163] bdbm: RAM DISK INFO
+[  201.179165] bdbm: =====================================================================
+[  201.179168] bdbm: the SSD capacity: 17179869184 (B), 16777216 (KB), 16384 (MB)
+[  202.774307] bdbm: ramssd addr = ffffc90050001000
+[  202.774310] bdbm: 
+[  202.774310] bdbm: *** building ptr_ramssd_data begins for data curruption checks...
+[  204.335386] bdbm: *** building ptr_ramssd_data done
+[  204.335622] bdbm: [dm_ramdrive_probe] probe done!
+[  204.335624] bdbm: [dm_ramdrive_open] open done!
+[  204.385624] bdbm: nvm cache addr = ffffc90870003000
+[  204.386642] bdbm: ==========================================================
+[  204.386643] bdbm: NVM CONFIGURATION
+[  204.386644] bdbm: ==========================================================
+[  204.386645] bdbm: total size = 536870912, nr_nvm_pages = 131072, nvm_page_size	= 4096
+[  204.544637] bdbm: TRIM is disabled
+[  204.544769] bdbm: =====================================================================
+[  204.544770] bdbm: DEVICE PARAMETERS
+[  204.544770] bdbm: =====================================================================
+[  204.544771] bdbm: # of channels = 8
+[  204.544771] bdbm: # of chips per channel = 16
+[  204.544772] bdbm: # of blocks per chip = 256
+[  204.544772] bdbm: # of pages per block = 128
+[  204.544772] bdbm: # of subpages per page = 1
+[  204.544774] bdbm: page main size  = 4096 bytes
+[  204.544775] bdbm: page oob size = 64 bytes
+[  204.544775] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[  204.544776] bdbm: 
+[  204.544776] bdbm: =====================================================================
+[  204.544777] bdbm: FTL CONFIGURATION
+[  204.544777] bdbm: =====================================================================
+[  204.544778] bdbm: mapping type = 4 (1: no ftl, 2: block-mapping, 3: RSD, 4: page-mapping, 5: dftl)
+[  204.544778] bdbm: gc policy = 3 (1: merge 2: random, 3: greedy, 4: cost-benefit)
+[  204.544780] bdbm: wl policy = 1 (1: none, 2: swap)
+[  204.544780] bdbm: trim mode = 2 (1: enable, 2: disable)
+[  204.544781] bdbm: kernel sector = 512 bytes
+[  204.544781] bdbm: 
+[  204.544783] bdbm: [bdbm_drv_main] bdbm_drv is registered!
+[  204.614242] bdbm: llm_make_req: 0, 1
+[  205.039138] bdbm: llm_make_req: 50000, 96
+[  205.186154] EXT4-fs (robusta): mounting with "discard" option, but the device does not support discard
+[  205.186157] EXT4-fs (robusta): mounted filesystem with ordered data mode. Opts: discard
+[  210.266040] bdbm: llm_make_req: 100000, 95
+[  221.656156] bdbm: llm_make_req: 150000, 96
+[  221.901463] bdbm: llm_make_req: 200000, 96
+[  222.146440] bdbm: llm_make_req: 250000, 96
+[  222.392132] bdbm: llm_make_req: 300000, 96
+[  222.637308] bdbm: llm_make_req: 350000, 96
+[  222.881605] bdbm: llm_make_req: 400000, 96
+[  223.129922] bdbm: llm_make_req: 450000, 96
+[  223.374084] bdbm: llm_make_req: 500000, 96
+[  223.618766] bdbm: llm_make_req: 550000, 96
+[  223.862906] bdbm: llm_make_req: 600000, 96
+[  224.111674] bdbm: llm_make_req: 650000, 96
+[  224.355987] bdbm: llm_make_req: 700000, 96
+[  224.599779] bdbm: llm_make_req: 750000, 94
+[  224.842620] bdbm: llm_make_req: 800000, 96
+[  225.085519] bdbm: llm_make_req: 850000, 96
+[  225.328288] bdbm: llm_make_req: 900000, 96
+[  225.571774] bdbm: llm_make_req: 950000, 96
+[  225.815612] bdbm: llm_make_req: 1000000, 96
+[  226.058492] bdbm: llm_make_req: 1050000, 96
+[  226.301717] bdbm: llm_make_req: 1100000, 96
+[  226.554982] bdbm: llm_make_req: 1150000, 96
+[  226.798877] bdbm: llm_make_req: 1200000, 96
+[  227.041770] bdbm: llm_make_req: 1250000, 96
+[  227.285225] bdbm: llm_make_req: 1300000, 96
+[  227.527897] bdbm: llm_make_req: 1350000, 96
+[  227.770621] bdbm: llm_make_req: 1400000, 96
+[  228.013155] bdbm: llm_make_req: 1450000, 96
+[  228.255755] bdbm: llm_make_req: 1500000, 96
+[  228.504349] bdbm: llm_make_req: 1550000, 96
+[  228.749987] bdbm: llm_make_req: 1600000, 96
+[  228.996107] bdbm: llm_make_req: 1650000, 96
+[  229.243641] bdbm: llm_make_req: 1700000, 96
+[  229.490537] bdbm: llm_make_req: 1750000, 96
+[  229.737032] bdbm: llm_make_req: 1800000, 96
+[  229.983577] bdbm: llm_make_req: 1850000, 95
+[  230.229291] bdbm: llm_make_req: 1900000, 96
+[  230.475663] bdbm: llm_make_req: 1950000, 78
+[  230.721034] bdbm: llm_make_req: 2000000, 96
+[  230.967432] bdbm: llm_make_req: 2050000, 96
+[  231.214258] bdbm: llm_make_req: 2100000, 96
+[  231.458001] bdbm: llm_make_req: 2150000, 96
+[  231.700608] bdbm: llm_make_req: 2200000, 96
+[  231.943900] bdbm: llm_make_req: 2250000, 96
+[  232.186359] bdbm: llm_make_req: 2300000, 96
+[  232.429009] bdbm: llm_make_req: 2350000, 96
+[  232.671224] bdbm: llm_make_req: 2400000, 96
+[  232.913611] bdbm: llm_make_req: 2450000, 96
+[  233.155616] bdbm: llm_make_req: 2500000, 96
+[  233.398179] bdbm: llm_make_req: 2550000, 95
+[  233.641571] bdbm: llm_make_req: 2600000, 96
+[  233.884897] bdbm: llm_make_req: 2650000, 96
+[  234.128019] bdbm: llm_make_req: 2700000, 95
+[  235.140299] bdbm: llm_make_req: 2750000, 94
+[  235.338086] bdbm: llm_make_req: 2800000, 89
+[  235.537758] bdbm: llm_make_req: 2850000, 95
+[  235.738426] bdbm: llm_make_req: 2900000, 96
+[  235.938552] bdbm: llm_make_req: 2950000, 91
+[  236.138003] bdbm: llm_make_req: 3000000, 95
+[  236.336530] bdbm: llm_make_req: 3050000, 92
+[  236.534261] bdbm: llm_make_req: 3100000, 94
+[  236.734500] bdbm: llm_make_req: 3150000, 95
+[  236.932780] bdbm: llm_make_req: 3200000, 96
+[  237.132222] bdbm: llm_make_req: 3250000, 95
+[  237.331569] bdbm: llm_make_req: 3300000, 83
+[  237.530720] bdbm: llm_make_req: 3350000, 96
+[  237.731338] bdbm: llm_make_req: 3400000, 96
+[  237.929979] bdbm: llm_make_req: 3450000, 96
+[  238.128180] bdbm: llm_make_req: 3500000, 96
+[  238.327188] bdbm: llm_make_req: 3550000, 96
+[  238.526338] bdbm: llm_make_req: 3600000, 96
+[  238.724756] bdbm: llm_make_req: 3650000, 95
+[  238.923889] bdbm: llm_make_req: 3700000, 96
+[  239.123168] bdbm: llm_make_req: 3750000, 85
+[  239.323025] bdbm: llm_make_req: 3800000, 93
+[  239.522488] bdbm: llm_make_req: 3850000, 96
+[  239.720887] bdbm: llm_make_req: 3900000, 95
+[  239.920058] bdbm: llm_make_req: 3950000, 96
+[  240.120300] bdbm: llm_make_req: 4000000, 96
+[  240.319086] bdbm: llm_make_req: 4050000, 95
+[  240.517112] bdbm: llm_make_req: 4100000, 95
+[  240.714603] bdbm: llm_make_req: 4150000, 95
+[  240.914436] bdbm: llm_make_req: 4200000, 96
+[  241.113846] bdbm: llm_make_req: 4250000, 96
+[  241.313106] bdbm: llm_make_req: 4300000, 92
+[  241.512986] bdbm: llm_make_req: 4350000, 91
+[  241.711582] bdbm: llm_make_req: 4400000, 96
+[  241.909202] bdbm: llm_make_req: 4450000, 96
+[  242.108501] bdbm: llm_make_req: 4500000, 96
+[  242.306706] bdbm: llm_make_req: 4550000, 96
+[  242.505194] bdbm: llm_make_req: 4600000, 95
+[  242.703368] bdbm: llm_make_req: 4650000, 96
+[  242.901631] bdbm: llm_make_req: 4700000, 96
+[  243.100489] bdbm: llm_make_req: 4750000, 95
+[  243.299840] bdbm: llm_make_req: 4800000, 96
+[  243.498800] bdbm: llm_make_req: 4850000, 96
+[  243.697887] bdbm: llm_make_req: 4900000, 94
+[  244.262378] bdbm: llm_make_req: 4950000, 96
+[  245.203313] bdbm: llm_make_req: 5000000, 96
+[  246.361698] bdbm: llm_make_req: 5050000, 96
+[  248.227744] bdbm: llm_make_req: 5100000, 92
+[  249.827652] bdbm: llm_make_req: 5150000, 96
+[  251.541004] bdbm: llm_make_req: 5200000, 96
+[  253.597251] bdbm: llm_make_req: 5250000, 96
+[  255.781240] bdbm: llm_make_req: 5300000, 96
+[  257.618401] bdbm: llm_make_req: 5350000, 96
+[  259.858078] bdbm: llm_make_req: 5400000, 93
+[  262.006318] bdbm: llm_make_req: 5450000, 96
+[  263.866201] bdbm: llm_make_req: 5500000, 96
+[  266.282530] bdbm: llm_make_req: 5550000, 96
+[  268.619633] bdbm: llm_make_req: 5600000, 96
+[  270.468954] bdbm: llm_make_req: 5650000, 96
+[  273.175339] bdbm: llm_make_req: 5700000, 96
+[  275.532183] bdbm: llm_make_req: 5750000, 96
+[  277.329108] bdbm: llm_make_req: 5800000, 95
+[  279.807165] bdbm: llm_make_req: 5850000, 96
+[  282.330197] bdbm: llm_make_req: 5900000, 96
+[  284.593995] bdbm: llm_make_req: 5950000, 96
+[  287.177560] bdbm: llm_make_req: 6000000, 96
+[  289.355869] bdbm: llm_make_req: 6050000, 96
+[  291.985928] bdbm: llm_make_req: 6100000, 96
+[  294.560538] bdbm: llm_make_req: 6150000, 96
+[  296.509470] bdbm: llm_make_req: 6200000, 96
+[  299.171818] bdbm: llm_make_req: 6250000, 96
+[  301.798241] bdbm: llm_make_req: 6300000, 96
+[  304.096547] bdbm: llm_make_req: 6350000, 93
+[  306.702625] bdbm: llm_make_req: 6400000, 96
+[  308.908055] bdbm: llm_make_req: 6450000, 96
+[  311.727119] bdbm: llm_make_req: 6500000, 32
+[  314.293999] bdbm: llm_make_req: 6550000, 96
+[  316.331564] bdbm: llm_make_req: 6600000, 96
+[  319.043634] bdbm: llm_make_req: 6650000, 96
+[  321.502084] bdbm: llm_make_req: 6700000, 96
+[  324.258749] bdbm: llm_make_req: 6750000, 95
+[  327.025064] bdbm: llm_make_req: 6800000, 96
+[  329.120779] bdbm: llm_make_req: 6850000, 96
+[  332.014897] bdbm: llm_make_req: 6900000, 96
+[  334.549682] bdbm: llm_make_req: 6950000, 96
+[  337.143361] bdbm: llm_make_req: 7000000, 96
+[  340.296449] bdbm: llm_make_req: 7050000, 96
+[  342.600292] bdbm: llm_make_req: 7100000, 95
+[  345.535470] bdbm: llm_make_req: 7150000, 96
+[  348.044884] bdbm: llm_make_req: 7200000, 96
+[  350.618577] bdbm: llm_make_req: 7250000, 96
+[  353.757609] bdbm: llm_make_req: 7300000, 96
+[  356.148928] bdbm: llm_make_req: 7350000, 96
+[  359.216706] bdbm: llm_make_req: 7400000, 96
+[  361.626726] bdbm: llm_make_req: 7450000, 96
+[  364.501103] bdbm: llm_make_req: 7500000, 95
+[  367.500019] bdbm: llm_make_req: 7550000, 96
+[  370.274734] bdbm: llm_make_req: 7600000, 96
+[  373.361624] bdbm: llm_make_req: 7650000, 96
+[  375.633550] bdbm: llm_make_req: 7700000, 88
+[  378.705761] bdbm: llm_make_req: 7750000, 95
+[  381.325732] bdbm: llm_make_req: 7800000, 96
+[  384.002692] bdbm: llm_make_req: 7850000, 96
+[  387.103504] bdbm: llm_make_req: 7900000, 96
+[  389.598918] bdbm: llm_make_req: 7950000, 79
+[  392.648276] bdbm: llm_make_req: 8000000, 95
+[  394.972355] bdbm: llm_make_req: 8050000, 96
+[  397.896511] bdbm: llm_make_req: 8100000, 96
+[  400.738839] bdbm: llm_make_req: 8150000, 96
+[  403.237549] bdbm: llm_make_req: 8200000, 96
+[  406.510201] bdbm: llm_make_req: 8250000, 96
+[  408.967336] bdbm: llm_make_req: 8300000, 96
+[  412.044499] bdbm: llm_make_req: 8350000, 96
+[  414.443778] bdbm: llm_make_req: 8400000, 96
+[  417.362853] bdbm: llm_make_req: 8450000, 96
+[  420.305143] bdbm: llm_make_req: 8500000, 96
+[  422.749583] bdbm: llm_make_req: 8550000, 95
+[  426.055212] bdbm: llm_make_req: 8600000, 96
+[  428.415057] bdbm: llm_make_req: 8650000, 96
+[  431.586515] bdbm: llm_make_req: 8700000, 96
+[  434.092372] bdbm: llm_make_req: 8750000, 96
+[  436.951925] bdbm: llm_make_req: 8800000, 96
+[  439.963240] bdbm: llm_make_req: 8850000, 96
+[  442.613082] bdbm: llm_make_req: 8900000, 94
+[  445.624892] bdbm: llm_make_req: 8950000, 96
+[  447.814728] bdbm: llm_make_req: 9000000, 96
+[  450.768162] bdbm: llm_make_req: 9050000, 96
+[  453.427122] bdbm: llm_make_req: 9100000, 96
+[  456.203081] bdbm: llm_make_req: 9150000, 96
+[  459.095193] bdbm: llm_make_req: 9200000, 96
+[  461.352915] bdbm: llm_make_req: 9250000, 92
+[  464.347346] bdbm: llm_make_req: 9300000, 96
+[  466.881884] bdbm: llm_make_req: 9350000, 96
+[  469.432553] bdbm: llm_make_req: 9400000, 96
+[  472.471076] bdbm: llm_make_req: 9450000, 96
+[  474.770441] bdbm: llm_make_req: 9500000, 96
+[  477.660217] bdbm: llm_make_req: 9550000, 96
+[  480.058891] bdbm: llm_make_req: 9600000, 96
+[  482.719745] bdbm: llm_make_req: 9650000, 96
+[  485.687242] bdbm: llm_make_req: 9700000, 96
+[  488.003533] bdbm: llm_make_req: 9750000, 96
+[  490.764676] bdbm: llm_make_req: 9800000, 96
+[  493.101724] bdbm: llm_make_req: 9850000, 96
+[  495.624300] bdbm: llm_make_req: 9900000, 96
+[  498.571196] bdbm: llm_make_req: 9950000, 96
+[  500.723782] bdbm: llm_make_req: 10000000, 96
+[  503.362873] bdbm: llm_make_req: 10050000, 96
+[  505.891213] bdbm: llm_make_req: 10100000, 96
+[  508.367461] bdbm: llm_make_req: 10150000, 96
+[  510.859033] bdbm: llm_make_req: 10200000, 96
+[  512.875896] bdbm: llm_make_req: 10250000, 96
+[  515.528765] bdbm: llm_make_req: 10300000, 96
+[  517.796255] bdbm: llm_make_req: 10350000, 96
+[  519.583320] bdbm: llm_make_req: 10400000, 94
+[  522.112638] bdbm: llm_make_req: 10450000, 94
+[  524.176712] bdbm: llm_make_req: 10500000, 96
+[  525.869177] bdbm: llm_make_req: 10550000, 96
+[  528.054248] bdbm: llm_make_req: 10600000, 94
+[  529.819268] bdbm: llm_make_req: 10650000, 96
+[  531.474200] bdbm: llm_make_req: 10700000, 96
+[  533.395905] bdbm: llm_make_req: 10750000, 95
+[  535.344286] bdbm: llm_make_req: 10800000, 96
+[  536.913559] bdbm: llm_make_req: 10850000, 96
+[  538.308890] bdbm: llm_make_req: 10900000, 93
+[  540.060481] bdbm: llm_make_req: 10950000, 95
+[  541.805470] bdbm: llm_make_req: 11000000, 95
+[  543.069033] bdbm: llm_make_req: 11050000, 96
+[  544.469768] bdbm: llm_make_req: 11100000, 96
+[  546.148145] bdbm: llm_make_req: 11150000, 96
+[  547.847593] bdbm: llm_make_req: 11200000, 93
+[  548.973972] bdbm: llm_make_req: 11250000, 96
+[  550.504478] bdbm: llm_make_req: 11300000, 96
+[  552.226897] bdbm: llm_make_req: 11350000, 96
+[  553.562940] bdbm: llm_make_req: 11400000, 96
+[  554.887879] bdbm: llm_make_req: 11450000, 96
+[  556.595483] bdbm: llm_make_req: 11500000, 96
+[  558.322996] bdbm: llm_make_req: 11550000, 95
+[  559.652525] bdbm: llm_make_req: 11600000, 96
+[  560.967344] bdbm: llm_make_req: 11650000, 96
+[  562.669621] bdbm: llm_make_req: 11700000, 96
+[  564.351260] bdbm: llm_make_req: 11750000, 92
+[  565.692940] bdbm: llm_make_req: 11800000, 95
+[  566.980850] bdbm: llm_make_req: 11850000, 96
+[  568.668540] bdbm: llm_make_req: 11900000, 96
+[  570.365368] bdbm: llm_make_req: 11950000, 96
+[  571.733207] bdbm: llm_make_req: 12000000, 94
+[  573.058497] bdbm: llm_make_req: 12050000, 88
+[  574.782891] bdbm: llm_make_req: 12100000, 96
+[  576.500224] bdbm: llm_make_req: 12150000, 96
+[  577.721657] bdbm: llm_make_req: 12200000, 96
+[  579.150671] bdbm: llm_make_req: 12250000, 96
+[  580.926699] bdbm: llm_make_req: 12300000, 96
+[  582.699336] bdbm: llm_make_req: 12350000, 96
+[  583.818186] bdbm: llm_make_req: 12400000, 96
+[  585.683170] bdbm: llm_make_req: 12450000, 90
+[  587.795552] bdbm: llm_make_req: 12500000, 96
+[  589.381448] bdbm: llm_make_req: 12550000, 96
+[  591.259697] bdbm: llm_make_req: 12600000, 93
+[  593.534836] bdbm: llm_make_req: 12650000, 96
+[  595.307871] bdbm: llm_make_req: 12700000, 96
+[  597.203129] bdbm: llm_make_req: 12750000, 96
+[  599.226624] bdbm: llm_make_req: 12800000, 96
+[  601.292379] bdbm: llm_make_req: 12850000, 96
+[  603.260673] bdbm: llm_make_req: 12900000, 96
+[  605.308290] bdbm: llm_make_req: 12950000, 96
+[  607.441487] bdbm: llm_make_req: 13000000, 96
+[  609.416070] bdbm: llm_make_req: 13050000, 96
+[  611.537479] bdbm: llm_make_req: 13100000, 96
+[  613.675423] bdbm: llm_make_req: 13150000, 96
+[  615.769390] bdbm: llm_make_req: 13200000, 90
+[  617.958838] bdbm: llm_make_req: 13250000, 95
+[  620.050179] bdbm: llm_make_req: 13300000, 96
+[  622.372563] bdbm: llm_make_req: 13350000, 96
+[  624.686290] bdbm: llm_make_req: 13400000, 96
+[  626.569784] bdbm: llm_make_req: 13450000, 96
+[  629.156648] bdbm: llm_make_req: 13500000, 95
+[  631.498905] bdbm: llm_make_req: 13550000, 96
+[  633.298713] bdbm: llm_make_req: 13600000, 94
+[  635.651791] bdbm: llm_make_req: 13650000, 96
+[  638.153701] bdbm: llm_make_req: 13700000, 96
+[  640.221419] bdbm: llm_make_req: 13750000, 94
+[  642.632220] bdbm: llm_make_req: 13800000, 96
+[  644.886739] bdbm: llm_make_req: 13850000, 96
+[  647.234697] bdbm: llm_make_req: 13900000, 95
+[  649.675524] bdbm: llm_make_req: 13950000, 96
+[  651.691675] bdbm: llm_make_req: 14000000, 96
+[  654.345878] bdbm: llm_make_req: 14050000, 95
+[  656.911662] bdbm: llm_make_req: 14100000, 96
+[  658.841216] bdbm: llm_make_req: 14150000, 92
+[  661.483398] bdbm: llm_make_req: 14200000, 96
+[  664.087358] bdbm: llm_make_req: 14250000, 96
+[  666.427651] bdbm: llm_make_req: 14300000, 96
+[  669.133103] bdbm: llm_make_req: 14350000, 96
+[  671.303958] bdbm: llm_make_req: 14400000, 96
+[  673.855542] bdbm: llm_make_req: 14450000, 96
+[  676.776821] bdbm: llm_make_req: 14500000, 96
+[  678.988975] bdbm: llm_make_req: 14550000, 96
+[  681.712767] bdbm: llm_make_req: 14600000, 96
+[  684.087130] bdbm: llm_make_req: 14650000, 96
+[  686.776235] bdbm: llm_make_req: 14700000, 95
+[  689.417925] bdbm: llm_make_req: 14750000, 96
+[  691.532511] bdbm: llm_make_req: 14800000, 95
+[  694.296593] bdbm: llm_make_req: 14850000, 96
+[  696.793824] bdbm: llm_make_req: 14900000, 96
+[  699.564918] bdbm: llm_make_req: 14950000, 90
+[  702.386407] bdbm: llm_make_req: 15000000, 96
+[  704.505684] bdbm: llm_make_req: 15050000, 96
+[  707.382962] bdbm: llm_make_req: 15100000, 96
+[  709.914429] bdbm: llm_make_req: 15150000, 96
+[  712.679289] bdbm: llm_make_req: 15200000, 95
+[  715.506695] bdbm: llm_make_req: 15250000, 96
+[  717.613619] bdbm: llm_make_req: 15300000, 96
+[  720.437621] bdbm: llm_make_req: 15350000, 96
+[  723.046525] bdbm: llm_make_req: 15400000, 96
+[  725.757361] bdbm: llm_make_req: 15450000, 96
+[  728.601973] bdbm: llm_make_req: 15500000, 96
+[  730.739266] bdbm: llm_make_req: 15550000, 96
+[  733.586833] bdbm: llm_make_req: 15600000, 96
+[  736.075221] bdbm: llm_make_req: 15650000, 96
+[  738.853875] bdbm: llm_make_req: 15700000, 96
+[  741.726354] bdbm: llm_make_req: 15750000, 96
+[  743.770837] bdbm: llm_make_req: 15800000, 96
+[  746.597093] bdbm: llm_make_req: 15850000, 96
+[  749.167747] bdbm: llm_make_req: 15900000, 96
+[  751.831554] bdbm: llm_make_req: 15950000, 96
+[  754.680467] bdbm: llm_make_req: 16000000, 96
+[  756.775950] bdbm: llm_make_req: 16050000, 96
+[  759.650773] bdbm: llm_make_req: 16100000, 95
+[  762.241261] bdbm: llm_make_req: 16150000, 96
+[  764.954648] bdbm: llm_make_req: 16200000, 96
+[  767.764600] bdbm: llm_make_req: 16250000, 78
+[  769.850016] bdbm: llm_make_req: 16300000, 92
+[  772.710733] bdbm: llm_make_req: 16350000, 96
+[  775.339036] bdbm: llm_make_req: 16400000, 96
+[  777.927050] bdbm: llm_make_req: 16450000, 96
+[  780.700524] bdbm: llm_make_req: 16500000, 96
+[  782.777149] bdbm: llm_make_req: 16550000, 96
+[  785.468723] bdbm: llm_make_req: 16600000, 96
+[  788.165198] bdbm: llm_make_req: 16650000, 96
+[  790.578227] bdbm: llm_make_req: 16700000, 96
+[  793.318965] bdbm: llm_make_req: 16750000, 96
+[  795.455501] bdbm: llm_make_req: 16800000, 96
+[  798.097038] bdbm: llm_make_req: 16850000, 96
+[  800.994822] bdbm: llm_make_req: 16900000, 96
+[  803.262234] bdbm: llm_make_req: 16950000, 96
+[  805.984086] bdbm: llm_make_req: 17000000, 95
+[  808.333939] bdbm: llm_make_req: 17050000, 96
+[  811.016979] bdbm: llm_make_req: 17100000, 95
+[  813.658153] bdbm: llm_make_req: 17150000, 96
+[  815.662260] bdbm: llm_make_req: 17200000, 92
+[  818.298221] bdbm: llm_make_req: 17250000, 96
+[  820.928330] bdbm: llm_make_req: 17300000, 96
+[  823.200946] bdbm: llm_make_req: 17350000, 93
+[  825.766215] bdbm: llm_make_req: 17400000, 96
+[  827.961875] bdbm: llm_make_req: 17450000, 96
+[  830.568125] bdbm: llm_make_req: 17500000, 96
+[  833.124537] bdbm: llm_make_req: 17550000, 96
+[  835.057069] bdbm: llm_make_req: 17600000, 96
+[  837.739938] bdbm: llm_make_req: 17650000, 96
+[  840.063749] bdbm: llm_make_req: 17700000, 96
+[  841.875868] bdbm: llm_make_req: 17750000, 96
+[  844.499381] bdbm: llm_make_req: 17800000, 24
+[  846.671470] bdbm: llm_make_req: 17850000, 94
+[  848.404506] bdbm: llm_make_req: 17900000, 95
+[  850.843021] bdbm: llm_make_req: 17950000, 96
+[  852.865212] bdbm: llm_make_req: 18000000, 96
+[  854.464659] bdbm: llm_make_req: 18050000, 96
+[  856.799006] bdbm: llm_make_req: 18100000, 96
+[  858.674418] bdbm: llm_make_req: 18150000, 96
+[  860.311504] bdbm: llm_make_req: 18200000, 96
+[  862.414257] bdbm: llm_make_req: 18250000, 96
+[  864.528815] bdbm: llm_make_req: 18300000, 93
+[  866.113422] bdbm: llm_make_req: 18350000, 96
+[  867.756478] bdbm: llm_make_req: 18400000, 86
+[  869.802358] bdbm: llm_make_req: 18450000, 96
+[  871.488698] bdbm: llm_make_req: 18500000, 96
+[  872.975192] bdbm: llm_make_req: 18550000, 87
+[  874.972364] bdbm: llm_make_req: 18600000, 96
+[  876.679027] bdbm: llm_make_req: 18650000, 96
+[  878.364709] bdbm: llm_make_req: 18700000, 96
+[  880.218703] bdbm: llm_make_req: 18750000, 96
+[  882.264468] bdbm: llm_make_req: 18800000, 95
+[  883.924440] bdbm: llm_make_req: 18850000, 96
+[  885.459701] bdbm: llm_make_req: 18900000, 93
+[  887.517535] bdbm: llm_make_req: 18950000, 96
+[  889.250898] bdbm: llm_make_req: 19000000, 96
+[  890.874357] bdbm: llm_make_req: 19050000, 96
+[  892.769542] bdbm: llm_make_req: 19100000, 94
+[  894.792923] bdbm: llm_make_req: 19150000, 96
+[  896.432877] bdbm: llm_make_req: 19200000, 96
+[  897.939600] bdbm: llm_make_req: 19250000, 96
+[  899.954273] bdbm: llm_make_req: 19300000, 96
+[  901.634361] bdbm: llm_make_req: 19350000, 96
+[  903.307181] bdbm: llm_make_req: 19400000, 96
+[  905.147896] bdbm: llm_make_req: 19450000, 96
+[  907.180658] bdbm: llm_make_req: 19500000, 96
+[  908.857362] bdbm: llm_make_req: 19550000, 96
+[  910.361492] bdbm: llm_make_req: 19600000, 92
+[  912.367679] bdbm: llm_make_req: 19650000, 96
+[  914.052745] bdbm: llm_make_req: 19700000, 95
+[  915.569218] bdbm: llm_make_req: 19750000, 96
+[  917.694603] bdbm: llm_make_req: 19800000, 96
+[  919.560649] bdbm: llm_make_req: 19850000, 96
+[  921.364986] bdbm: llm_make_req: 19900000, 96
+[  923.536612] bdbm: llm_make_req: 19950000, 96
+[  925.626838] bdbm: llm_make_req: 20000000, 96
+[  927.535716] bdbm: llm_make_req: 20050000, 96
+[  929.820923] bdbm: llm_make_req: 20100000, 96
+[  931.912598] bdbm: llm_make_req: 20150000, 96
+[  933.730627] bdbm: llm_make_req: 20200000, 96
+[  935.981809] bdbm: llm_make_req: 20250000, 96
+[  938.063434] bdbm: llm_make_req: 20300000, 96
+[  939.964391] bdbm: llm_make_req: 20350000, 96
+[  942.188190] bdbm: llm_make_req: 20400000, 94
+[  944.340132] bdbm: llm_make_req: 20450000, 96
+[  946.225362] bdbm: llm_make_req: 20500000, 96
+[  948.534124] bdbm: llm_make_req: 20550000, 35
+[  950.728902] bdbm: llm_make_req: 20600000, 96
+[  952.581970] bdbm: llm_make_req: 20650000, 96
+[  955.052930] bdbm: llm_make_req: 20700000, 96
+[  957.291202] bdbm: llm_make_req: 20750000, 96
+[  959.052652] bdbm: llm_make_req: 20800000, 96
+[  961.678031] bdbm: llm_make_req: 20850000, 96
+[  963.939429] bdbm: llm_make_req: 20900000, 96
+[  965.751944] bdbm: llm_make_req: 20950000, 96
+[  968.044500] bdbm: llm_make_req: 21000000, 96
+[  970.511669] bdbm: llm_make_req: 21050000, 96
+[  972.633966] bdbm: llm_make_req: 21100000, 96
+[  975.018109] bdbm: llm_make_req: 21150000, 96
+[  977.266454] bdbm: llm_make_req: 21200000, 96
+[  979.581088] bdbm: llm_make_req: 21250000, 96
+[  981.963867] bdbm: llm_make_req: 21300000, 96
+[  984.004174] bdbm: llm_make_req: 21350000, 96
+[  986.530572] bdbm: llm_make_req: 21400000, 96
+[  988.908490] bdbm: llm_make_req: 21450000, 96
+[  990.777452] bdbm: llm_make_req: 21500000, 96
+[  993.186457] bdbm: llm_make_req: 21550000, 96
+[  995.852629] bdbm: llm_make_req: 21600000, 96
+[  997.979062] bdbm: llm_make_req: 21650000, 94
+[ 1000.531001] bdbm: llm_make_req: 21700000, 96
+[ 1002.825582] bdbm: llm_make_req: 21750000, 96
+[ 1005.363225] bdbm: llm_make_req: 21800000, 48
+[ 1007.934134] bdbm: llm_make_req: 21850000, 96
+[ 1009.874032] bdbm: llm_make_req: 21900000, 96
+[ 1012.440622] bdbm: llm_make_req: 21950000, 96
+[ 1015.108627] bdbm: llm_make_req: 22000000, 96
+[ 1017.349052] bdbm: llm_make_req: 22050000, 95
+[ 1019.948243] bdbm: llm_make_req: 22100000, 96
+[ 1022.250064] bdbm: llm_make_req: 22150000, 96
+[ 1024.882620] bdbm: llm_make_req: 22200000, 94
+[ 1027.462212] bdbm: llm_make_req: 22250000, 94
+[ 1029.421569] bdbm: llm_make_req: 22300000, 95
+[ 1032.036924] bdbm: llm_make_req: 22350000, 96
+[ 1034.527576] bdbm: llm_make_req: 22400000, 96
+[ 1037.032505] bdbm: llm_make_req: 22450000, 95
+[ 1039.717767] bdbm: llm_make_req: 22500000, 96
+[ 1041.764288] bdbm: llm_make_req: 22550000, 96
+[ 1044.428194] bdbm: llm_make_req: 22600000, 95
+[ 1047.253781] bdbm: llm_make_req: 22650000, 96
+[ 1049.440927] bdbm: llm_make_req: 22700000, 96
+[ 1052.108954] bdbm: llm_make_req: 22750000, 96
+[ 1054.517900] bdbm: llm_make_req: 22800000, 96
+[ 1057.207401] bdbm: llm_make_req: 22850000, 96
+[ 1059.920103] bdbm: llm_make_req: 22900000, 96
+[ 1061.913899] bdbm: llm_make_req: 22950000, 95
+[ 1064.617592] bdbm: llm_make_req: 23000000, 96
+[ 1067.297377] bdbm: llm_make_req: 23050000, 96
+[ 1069.641900] bdbm: llm_make_req: 23100000, 93
+[ 1072.287878] bdbm: llm_make_req: 23150000, 96
+[ 1074.479317] bdbm: llm_make_req: 23200000, 96
+[ 1077.030799] bdbm: llm_make_req: 23250000, 96
+[ 1079.899466] bdbm: llm_make_req: 23300000, 96
+[ 1082.007026] bdbm: llm_make_req: 23350000, 93
+[ 1084.693103] bdbm: llm_make_req: 23400000, 95
+[ 1087.127281] bdbm: llm_make_req: 23450000, 96
+[ 1089.609595] bdbm: llm_make_req: 23500000, 96
+[ 1092.263352] bdbm: llm_make_req: 23550000, 96
+[ 1094.267879] bdbm: llm_make_req: 23600000, 96
+[ 1096.895139] bdbm: llm_make_req: 23650000, 96
+[ 1099.638237] bdbm: llm_make_req: 23700000, 96
+[ 1101.893132] bdbm: llm_make_req: 23750000, 92
+[ 1104.480325] bdbm: llm_make_req: 23800000, 96
+[ 1106.633248] bdbm: llm_make_req: 23850000, 96
+[ 1109.383580] bdbm: llm_make_req: 23900000, 84
+[ 1111.953416] bdbm: llm_make_req: 23950000, 96
+[ 1113.975691] bdbm: llm_make_req: 24000000, 95
+[ 1116.561842] bdbm: llm_make_req: 24050000, 96
+[ 1119.043919] bdbm: llm_make_req: 24100000, 96
+[ 1121.463187] bdbm: llm_make_req: 24150000, 96
+[ 1124.019250] bdbm: llm_make_req: 24200000, 96
+[ 1126.164204] bdbm: llm_make_req: 24250000, 96
+[ 1128.909700] bdbm: llm_make_req: 24300000, 96
+[ 1131.390590] bdbm: llm_make_req: 24350000, 96
+[ 1133.416554] bdbm: llm_make_req: 24400000, 96
+[ 1136.019775] bdbm: llm_make_req: 24450000, 96
+[ 1138.487052] bdbm: llm_make_req: 24500000, 96
+[ 1140.905735] bdbm: llm_make_req: 24550000, 96
+[ 1143.490370] bdbm: llm_make_req: 24600000, 96
+[ 1145.515730] bdbm: llm_make_req: 24650000, 96
+[ 1148.330722] bdbm: llm_make_req: 24700000, 96
+[ 1150.746030] bdbm: llm_make_req: 24750000, 96
+[ 1152.692383] bdbm: llm_make_req: 24800000, 90
+[ 1155.170325] bdbm: llm_make_req: 24850000, 96
+[ 1157.649534] bdbm: llm_make_req: 24900000, 96
+[ 1159.896568] bdbm: llm_make_req: 24950000, 94
+[ 1162.321110] bdbm: llm_make_req: 25000000, 96
+[ 1164.603986] bdbm: llm_make_req: 25050000, 96
+[ 1166.907378] bdbm: llm_make_req: 25100000, 96
+[ 1169.217464] bdbm: llm_make_req: 25150000, 96
+[ 1171.235460] bdbm: llm_make_req: 25200000, 96
+[ 1173.555108] bdbm: llm_make_req: 25250000, 92
+[ 1175.752545] bdbm: llm_make_req: 25300000, 96
+[ 1177.584922] bdbm: llm_make_req: 25350000, 96
+[ 1179.936214] bdbm: llm_make_req: 25400000, 92
+[ 1181.986248] bdbm: llm_make_req: 25450000, 96
+[ 1183.832613] bdbm: llm_make_req: 25500000, 96
+[ 1185.928516] bdbm: llm_make_req: 25550000, 93
+[ 1187.874957] bdbm: llm_make_req: 25600000, 96
+[ 1189.725385] bdbm: llm_make_req: 25650000, 96
+[ 1191.754060] bdbm: llm_make_req: 25700000, 96
+[ 1193.651505] bdbm: llm_make_req: 25750000, 96
+[ 1195.535726] bdbm: llm_make_req: 25800000, 96
+[ 1197.467036] bdbm: llm_make_req: 25850000, 96
+[ 1199.672395] bdbm: llm_make_req: 25900000, 89
+[ 1201.309931] bdbm: llm_make_req: 25950000, 96
+[ 1203.104748] bdbm: llm_make_req: 26000000, 96
+[ 1205.300452] bdbm: llm_make_req: 26050000, 96
+[ 1207.034694] bdbm: llm_make_req: 26100000, 96
+[ 1208.731167] bdbm: llm_make_req: 26150000, 88
+[ 1755.127772] bdbm: -----------------------------------------------
+[ 1755.127773] bdbm: < PERFORMANCE SUMMARY >
+[ 1755.127774] bdbm: [0] Execution Time (us): 1550.520673
+[ 1755.127775] bdbm: 
+[ 1755.127775] bdbm: [1] Total I/Os
+[ 1755.127776] bdbm: # of page reads: 10602848
+[ 1755.127776] bdbm: # of page writes: 15507069
+[ 1755.127777] bdbm: # of block erase: 89472
+[ 1755.127777] bdbm: 
+[ 1755.127777] bdbm: [2] Normal I/Os
+[ 1755.127778] bdbm: # of page reads: 4333928
+[ 1755.127778] bdbm: # of page writes: 9237450
+[ 1755.127779] bdbm: # of page rmw reads: 0
+[ 1755.127779] bdbm: # of page rmw writes: 0
+[ 1755.127780] bdbm: 
+[ 1755.127780] bdbm: [3] GC I/Os
+[ 1755.127781] bdbm: # of GC invocation: 0
+[ 1755.127781] bdbm: # of page reads: 6268920
+[ 1755.127782] bdbm: # of page writes: 6269619
+[ 1755.127782] bdbm: # of block erase: 89472
+[ 1755.127782] bdbm: 
+[ 1755.127783] bdbm: [4] Meta I/Os
+[ 1755.127783] bdbm: # of meta page reads: 0
+[ 1755.127784] bdbm: # of meta page writes: 0
+[ 1755.127784] bdbm: 
+[ 1755.127785] bdbm: [5] Elapsed Time
+[ 1755.127785] bdbm: page read (us): 93 (S:0 + Q:0 + D:93)
+[ 1755.127786] bdbm: page write (us): 451 (S:0 + Q:0 + D:451)
+[ 1755.127787] bdbm: rmw (us): 0 (S:0 + Q:0 + D:0)
+[ 1755.127787] bdbm: 
+[ 1755.127787] bdbm: [6] Utilization (R)
+[ 1755.127789] bdbm:    82755    83065    82600    83275    82616    83080    83082    83271 
+[ 1755.127791] bdbm:    82607    83204    82658    82459    82904    82583    82401    83025 
+[ 1755.127792] bdbm:    82581    82650    82635    83204    82736    83036    82784    83123 
+[ 1755.127793] bdbm:    82676    82734    82869    83277    82510    83065    82935    82969 
+[ 1755.127794] bdbm:    82342    82621    82638    83453    82778    83135    82671    82484 
+[ 1755.127795] bdbm:    82153    82638    82891    83307    82377    82945    82665    83044 
+[ 1755.127796] bdbm:    82874    82660    82661    82859    82781    82730    82498    82510 
+[ 1755.127797] bdbm:    82985    82912    82199    83004    82778    82989    82784    83021 
+[ 1755.127799] bdbm:    83000    82771    82889    83154    83060    83006    83076    82932 
+[ 1755.127800] bdbm:    82570    82858    82624    82960    82793    82908    82784    83074 
+[ 1755.127801] bdbm:    82228    83070    82827    82743    82321    83286    82955    82971 
+[ 1755.127802] bdbm:    82575    82891    82534    82743    82903    83010    82771    82879 
+[ 1755.127803] bdbm:    82693    83007    83075    83093    83009    82776    82330    82918 
+[ 1755.127804] bdbm:    82846    83089    82922    83491    82904    82851    82675    83209 
+[ 1755.127805] bdbm:    82724    83144    83161    83317    83091    82570    82003    82827 
+[ 1755.127807] bdbm:    82695    82931    82283    82504    82775    83008    83054    82951 
+[ 1755.127807] bdbm: 
+[ 1755.127807] bdbm: [7] Utilization (W)
+[ 1755.127809] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127810] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127811] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127812] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127813] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127815] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127816] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127817] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127818] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127819] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127820] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127821] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127822] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127824] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127825] bdbm:   121149   121149   121149   121149   121149   121149   121149   121149 
+[ 1755.127826] bdbm:   121149   121149   121149   121149   121149   121148   121148   121148 
+[ 1755.127826] bdbm: [8] NVM I/Os
+[ 1755.127827] bdbm: #_of_nvm_total_accesses: 0
+[ 1755.127827] bdbm: #_of_nvm_total_write_requests: 0
+[ 1755.127828] bdbm: #_of_nvm_total_read_requests: 0
+[ 1755.127828] bdbm: #_of_nvm_write_requests_serviced_by_nvm: 0
+[ 1755.127829] bdbm: #_of_nvm_read_requests_serviced_by_nvm: 0
+[ 1755.127829] bdbm: #_of_nvm_total_requests_serviced_by_nvm: 0
+[ 1755.127830] bdbm: #_of_nvm_evict_from_nvm: 0
+[ 1755.127830] bdbm: #_of_nvm_write_amplification: 0 : 6269619
+[ 1755.127831] bdbm: 
+[ 1755.127831] bdbm: -----------------------------------------------
+[ 1755.127831] bdbm: -----------------------------------------------
+[ 1755.261820] bdbm: done
+[ 1755.261838] bdbm: [dm_ramdrive_close] closed!
+[ 1755.649620] bdbm: [bdbm_drv_main] bdbm_drv is closed
+[ 1755.649622] bdbm: [bdbm_drv_main] bdbm_drv is removed
+[ 1755.666008] bdbm: bdbm_dm_stub is removed: /dev/bdbm_dm_stub (241 0)
+[ 1755.683293] bdbm: bdbm_dm_stub is installed: /dev/bdbm_dm_stub (major:241 minor:0)
+[ 1755.687242] bdbm: =====================================================================
+[ 1755.687258] bdbm: DEVICE PARAMETERS
+[ 1755.687258] bdbm: =====================================================================
+[ 1755.687259] bdbm: # of channels = 8
+[ 1755.687259] bdbm: # of chips per channel = 16
+[ 1755.687260] bdbm: # of blocks per chip = 256
+[ 1755.687260] bdbm: # of pages per block = 128
+[ 1755.687261] bdbm: # of subpages per page = 1
+[ 1755.687261] bdbm: page main size  = 4096 bytes
+[ 1755.687262] bdbm: page oob size = 64 bytes
+[ 1755.687262] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[ 1755.687263] bdbm: 
+[ 1755.687264] bdbm: =====================================================================
+[ 1755.687264] bdbm: RAM DISK INFO
+[ 1755.687264] bdbm: =====================================================================
+[ 1755.687265] bdbm: the SSD capacity: 17179869184 (B), 16777216 (KB), 16384 (MB)
+[ 1757.226946] bdbm: ramssd addr = ffffc90050001000
+[ 1757.226948] bdbm: 
+[ 1757.226949] bdbm: *** building ptr_ramssd_data begins for data curruption checks...
+[ 1758.752756] bdbm: *** building ptr_ramssd_data done
+[ 1758.752941] bdbm: [dm_ramdrive_probe] probe done!
+[ 1758.752943] bdbm: [dm_ramdrive_open] open done!
+[ 1758.815285] bdbm: nvm cache addr = ffffc90870003000
+[ 1758.816513] bdbm: ==========================================================
+[ 1758.816516] bdbm: NVM CONFIGURATION
+[ 1758.816517] bdbm: ==========================================================
+[ 1758.816518] bdbm: total size = 536870912, nr_nvm_pages = 131072, nvm_page_size	= 4096
+[ 1758.971348] bdbm: TRIM is disabled
+[ 1758.971509] bdbm: =====================================================================
+[ 1758.971510] bdbm: DEVICE PARAMETERS
+[ 1758.971510] bdbm: =====================================================================
+[ 1758.971511] bdbm: # of channels = 8
+[ 1758.971511] bdbm: # of chips per channel = 16
+[ 1758.971512] bdbm: # of blocks per chip = 256
+[ 1758.971512] bdbm: # of pages per block = 128
+[ 1758.971513] bdbm: # of subpages per page = 1
+[ 1758.971513] bdbm: page main size  = 4096 bytes
+[ 1758.971514] bdbm: page oob size = 64 bytes
+[ 1758.971514] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[ 1758.971515] bdbm: 
+[ 1758.971515] bdbm: =====================================================================
+[ 1758.971516] bdbm: FTL CONFIGURATION
+[ 1758.971516] bdbm: =====================================================================
+[ 1758.971517] bdbm: mapping type = 4 (1: no ftl, 2: block-mapping, 3: RSD, 4: page-mapping, 5: dftl)
+[ 1758.971517] bdbm: gc policy = 3 (1: merge 2: random, 3: greedy, 4: cost-benefit)
+[ 1758.971518] bdbm: wl policy = 1 (1: none, 2: swap)
+[ 1758.971518] bdbm: trim mode = 2 (1: enable, 2: disable)
+[ 1758.971519] bdbm: kernel sector = 512 bytes
+[ 1758.971519] bdbm: 
+[ 1758.971521] bdbm: [bdbm_drv_main] bdbm_drv is registered!
+[ 1758.988443] bdbm: llm_make_req: 0, 1
+[ 1759.393744] bdbm: llm_make_req: 50000, 96
+[ 1759.538277] EXT4-fs (robusta): mounting with "discard" option, but the device does not support discard
+[ 1759.538278] EXT4-fs (robusta): mounted filesystem with ordered data mode. Opts: discard
+[ 1764.688546] bdbm: llm_make_req: 100000, 96

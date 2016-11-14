@@ -140,6 +140,26 @@ static void* __nvm_alloc_nvmram_tbl (bdbm_device_params_t* np)
 	return me;
 }
 
+static void* __nvm_alloc_nvmram_lookup_tbl (bdbm_device_params_t* np) 
+{
+	bdbm_nvm_lookup_tbl_entry_t* me; 
+	uint64_t i, j;
+
+	/* allocate mapping entries */
+	if ((me = (bdbm_nvm_lookup_tbl_entry_t*) bdbm_zmalloc 
+		(sizeof (bdbm_nvm_lookup_tbl_entry_t) * np->nr_subpages_per_ssd)) == NULL) {
+		return NULL;
+	}
+
+	/* initialize a mapping table */
+	for (i = 0; i < np->nr_subpages_per_ssd; i++){
+		// index 
+		me[i].tbl_idx = -1;
+	}
+
+	return me;
+}
+
 
 
 
@@ -186,6 +206,13 @@ uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){
 
 	/* alloc page table: ptr_nvm_tbl */	
 	if((p->ptr_nvm_tbl = __nvm_alloc_nvmram_tbl (np)) == NULL) {
+		bdbm_error ("__alloc_nvmram table failed");
+		bdbm_nvm_destroy(bdi);
+		return 1;
+	}
+
+	/* alloc lookup page tabl: ptr_nvm_lookup_tbl */
+	if((p->ptr_nvm_lookup_tbl = __nvm_alloc_nvmram_lookup_tbl (np)) == NULL) {
 		bdbm_error ("__alloc_nvmram table failed");
 		bdbm_nvm_destroy(bdi);
 		return 1;
@@ -256,12 +283,16 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* search nvm cache */
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
 	bdbm_nvm_page_t* nvm_tbl = p->ptr_nvm_tbl;
+	bdbm_nvm_lookup_tbl_entry_t* nvm_lookup_tbl = p->ptr_nvm_lookup_tbl;
 	uint64_t i = 0;
 	int64_t found = -1;
 	int64_t lpa;
 
 	lpa = lr->logaddr.lpa[0];
 
+	found = nvm_lookup_tbl[lpa].tbl_idx; 
+
+#if 0
 	for(i = 0; i < p->nr_total_pages; i++){
 //		bdbm_msg("nvm_tbl[%llu] lpa = %d, tlpa = %d", i, nvm_tbl[i].logaddr.lpa[0], lpa);
 		if(nvm_tbl[i].logaddr.lpa[0] == lpa){
@@ -272,7 +303,7 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 			break;
 		}
 	}
-
+#endif
 	return found;
 }
 
@@ -296,7 +327,7 @@ uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	}
 
 	p->nr_read++;
-	atomic64_inc(&bdi->pm.nvm_r_cnt);
+	atomic64_inc(&bdi->pm.nvm_rh_cnt);
 
 	/* get data addr */
 	bdbm_bug_on(np->nr_subpages_per_page != 1);	
@@ -327,6 +358,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_blkio_private_t* bp = (bdbm_blkio_private_t*) BDBM_HOST_PRIV(bdi);
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
+	bdbm_nvm_lookup_tbl_entry_t* nvm_lookup_tbl = p->ptr_nvm_lookup_tbl;
 
 	bdbm_nvm_page_t* npage = NULL;
 	bdbm_nvm_page_t* epage = NULL;
@@ -334,9 +366,14 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	bdbm_hlm_req_t* hr = NULL;
 	int64_t nindex = -1;
 	int64_t eindex = -1;
+	int64_t elpa = -1;
+	int64_t lpa = -1;
 #ifdef NVM_CACHE_DEBUG
 	uint8_t* ptr_ramssd_data = NULL; 
 #endif
+
+	lpa = lr->logaddr.lpa[0];
+
 	/* get a free page */
 //	if(p->nr_free_pages > LOW_WATERMARK){
 	if(p->nr_free_pages > 0){
@@ -360,6 +397,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		bdbm_bug_on(epage == NULL);
 		eindex = epage->index;
 		edata_ptr = p->ptr_nvmram + (eindex * np->nvm_page_size); 
+		elpa = epage->logaddr.lpa[0];
 
 		bdbm_bug_on(!edata_ptr);
 	
@@ -410,9 +448,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 //		bdbm_sema_lock (&hr->done);
 // 		bdbm_sema_unlock (&hr->done);
 
-	
-
 //		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // moved to hlm_end_wb_req
+
+		nvm_lookup_tbl[elpa].tbl_idx = -1;
 
 		/* set new page index */
 		nindex = eindex;
@@ -426,6 +464,8 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	list_del(&npage->list);
 	list_add(&npage->list, p->lru_list);
 //	bdbm_msg("new nvm_buffer is added to lru_list");
+
+	nvm_lookup_tbl[lpa].tbl_idx = nindex;
 	
 	bdbm_bug_on(p->nr_free_pages + p->nr_inuse_pages != p->nr_total_pages);
 
