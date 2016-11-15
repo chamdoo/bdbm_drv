@@ -143,7 +143,7 @@ static void* __nvm_alloc_nvmram_tbl (bdbm_device_params_t* np)
 static void* __nvm_alloc_nvmram_lookup_tbl (bdbm_device_params_t* np) 
 {
 	bdbm_nvm_lookup_tbl_entry_t* me; 
-	uint64_t i, j;
+	uint64_t i;
 
 	/* allocate mapping entries */
 	if ((me = (bdbm_nvm_lookup_tbl_entry_t*) bdbm_zmalloc 
@@ -192,7 +192,9 @@ uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi){
 	p->nr_total_write = 0;
 	p->nr_total_read = 0;
 	p->nr_write = 0;
+	p->nr_nh_write = 0;
 	p->nr_read = 0;	
+	p->nr_nh_read = 0;	
 	p->nr_total_hit = 0;
 	p->nr_evict = 0;
 
@@ -306,6 +308,63 @@ int64_t bdbm_nvm_find_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 #endif
 	return found;
 }
+
+#ifdef	FLUSH
+uint64_t bdbm_nvm_flush_data (bdbm_drv_info_t* bdi)
+{ 
+	/* find nvm cache */
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_blkio_private_t* bp = (bdbm_blkio_private_t*) BDBM_HOST_PRIV(bdi);
+	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;	// have lists lru_list and free_list
+	bdbm_nvm_lookup_tbl_entry_t* nvm_lookup_tbl = p->ptr_nvm_lookup_tbl;
+	bdbm_hlm_req_t* hr = NULL;
+	bdbm_nvm_page_t* fpage = NULL;
+	uint8_t* fdata_ptr = NULL;
+	int64_t findex = -1;
+	int64_t flpa = -1;
+
+	while (!list_empty(p->lru_list)) {
+		bdbm_bug_on(list_empty(p->lru_list));
+		fpage = list_last_entry(p->lru_list, bdbm_nvm_page_t, list);
+		bdbm_bug_on(fpage == NULL);
+		findex = fpage->index;
+		fdata_ptr = p->ptr_nvmram + (findex * np->nvm_page_size);
+		flpa = fpage->logaddr.lpa[0];
+
+		/* get a free hlm_req from the hlm_reqs_pool */
+		if ((hr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL) {
+			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
+			goto fail;
+		}
+	
+		/* build hlm_req with nvm_info */
+		if (bdbm_hlm_reqs_pool_build_wb_req (hr, &fpage->logaddr, fdata_ptr) != 0) {
+			bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+			goto fail;
+		}
+
+		if(bdi->ptr_hlm_inf->make_wb_req (bdi, hr) != 0) {
+			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+		}
+	
+		nvm_lookup_tbl[flpa].tbl_idx = -1;
+	
+		list_del(&fpage->list);
+		p->nr_inuse_pages--;
+		list_add(&fpage->list, p->free_list);
+		p->nr_free_pages++;
+	}
+
+	return 1; 
+
+fail:
+	if (hr)
+		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr);
+	bdbm_bug_on(1);
+
+	return -1;
+}
+#endif
 
 uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 { 
@@ -461,6 +520,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	// add new node into lru list 
 
+	// del links of prev and next  
 	list_del(&npage->list);
 	list_add(&npage->list, p->lru_list);
 //	bdbm_msg("new nvm_buffer is added to lru_list");
@@ -500,12 +560,15 @@ uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	/* write miss */
 	if(nvm_idx < 0){
+		p->nr_nh_write++;
 //		bdbm_msg("alloc nvm for data write");
 		if((nvm_idx = bdbm_nvm_alloc_slot(bdi, lr)) < 0)
 			return 0;
+	} else {	// hit
+		p->nr_write++;
 	}
 
-	p->nr_write++;
+//	p->nr_write++;
 	atomic64_inc (&bdi->pm.nvm_wh_cnt);
 
 	/* get data addr */
@@ -572,7 +635,7 @@ fail:
 }
 
 
-int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
+uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 
 	/* find nvm cache */
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
@@ -591,28 +654,34 @@ int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 		atomic64_inc(&bdi->pm.nvm_a_cnt);
 	
 		if ((p->nr_total_access % 100000) == 0){
-			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, total_write = %llu, write hit = %llu, hit = %llu, evict = %llu", 
-				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_total_write, p->nr_write, p->nr_total_hit, p->nr_evict);
+//			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, total_write = %llu, write hit = %llu, hit = %llu, evict = %llu", 
+//				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_total_write, p->nr_write, p->nr_total_hit, p->nr_evict);
+			bdbm_msg("nvm: total access = %llu, total read = %llu, read hit = %llu, read no hit = %llu, total_write = %llu, write hit = %llu, write no hit = %llu, evict = %llu", 
+				p->nr_total_access, p->nr_total_read, p->nr_read, p->nr_nh_read, p->nr_total_write, p->nr_write, p->nr_nh_write, p->nr_evict);
 		}
 
 		lr = &hr->llm_reqs[n];
 
-		if(lr->req_type == REQTYPE_READ){
+		if (lr->req_type == REQTYPE_READ) {
 			if(bdbm_nvm_read_data (bdi, &hr->llm_reqs[n]))
 				nr_remains --; 	
 
-		}else if(lr->req_type == REQTYPE_WRITE){
+		} else if (lr->req_type == REQTYPE_WRITE) {
 			if(bdbm_nvm_write_data(bdi, &hr->llm_reqs[n]))
 				nr_remains --;
 		}
-	}	
+	}
 
+#ifdef	FLUSH
+	if (bdbm_is_flush (hr->req_type)) {
+		bdbm_nvm_flush_data (bdi);
+	}
+#endif
 	bdbm_sema_unlock (&p->nvm_lock);
 
 	//bdbm_bug_on((hr->req_type == REQTYPE_WRITE) && (nr_remains != 0));
 
 	return nr_remains;
-
 }
 
 

@@ -53,8 +53,10 @@ bdbm_dm_inf_t _bdbm_dm_inf = {
 	.end_req = dm_ramdrive_end_req,
 	.load = dm_ramdrive_load,
 	.store = dm_ramdrive_store,
+#if defined (DATA_CHECK)
 #ifdef NVM_CACHE_DEBUG
 	.get_data = dm_ramdrive_get_data,
+#endif
 #endif
 };
 
@@ -189,6 +191,7 @@ uint32_t dm_ramdrive_store (bdbm_drv_info_t* bdi, const char* fn)
 	return dev_ramssd_store (p->ramssd, fn);
 }
 
+#if defined (DATA_CHECK)
 #ifdef NVM_CACHE_DEBUG
 uint8_t* dm_ramdrive_get_data (bdbm_drv_info_t* bdi, int64_t lpa)
 {
@@ -196,4 +199,5 @@ uint8_t* dm_ramdrive_get_data (bdbm_drv_info_t* bdi, int64_t lpa)
 	
 	return dev_ramssd_get_data(ri, lpa);	
 }
+#endif
 #endif

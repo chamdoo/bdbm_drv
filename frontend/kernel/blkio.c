@@ -75,6 +75,10 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 	/* get the type of the bio request */
 	if (bio->bi_rw & REQ_DISCARD)
 		br->bi_rw = REQTYPE_TRIM;
+#ifdef FLUSH
+	else if (bio->bi_flags & REQ_FLUSH)
+		br->bi_rw = REQTYPE_FLUSH;
+#endif
 	else if (bio_data_dir (bio) == READ || bio_data_dir (bio) == READA)
 		br->bi_rw = REQTYPE_READ;
 	else if (bio_data_dir (bio) == WRITE)

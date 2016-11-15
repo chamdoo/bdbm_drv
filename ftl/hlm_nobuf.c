@@ -219,12 +219,20 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		uint32_t loop;
 		/* see if foreground GC is needed or not */
 		for (loop = 0; loop < 10; loop++) {
+			
 			if (hr->req_type == REQTYPE_WRITE && 
 				ftl->is_gc_needed != NULL && 
 				ftl->is_gc_needed (bdi, 0)) {
 				/* perform GC before sending requests */ 
 				//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
 				ftl->do_gc (bdi, 0);
+#ifdef	FLUSH
+			} else if (bdbm_is_write(hr->req_type) &&
+					ftl->is_gc_needed != NULL && 
+					ftl->is_gc_needed (bdi, 0)) {
+					/* perform GC before sending requests */ 
+					ftl->do_gc (bdi, 0);
+#endif
 			} else
 				break;
 		}
@@ -243,6 +251,20 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				}
 			}
 		}
+#ifdef FLUSH
+		else if (bdbm_is_write(hr->req_type) && ftl->is_gc_needed != NULL) {
+			bdbm_llm_req_t* lr = NULL;
+			uint64_t i = 0;
+			bdbm_hlm_for_each_llm_req (lr, hr, i) {
+				/* NOTE: segment-level ftl does not support fine-grain rmw */
+				if (ftl->is_gc_needed (bdi, lr->logaddr.lpa[0])) {
+					/* perform GC before sending requests */ 
+					//bdbm_msg ("[hlm_nobuf_make_req] trigger GC");
+					ftl->do_gc (bdi, lr->logaddr.lpa[0]);
+				}
+			}
+		}
+#endif
 	} else {
 		/* do nothing */
 	}

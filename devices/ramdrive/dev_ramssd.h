@@ -171,8 +171,10 @@ uint8_t dev_ramssd_is_init (dev_ramssd_info_t* ptr_ramssd_info) {
 		return 1;
 }
 
+#if defined (DATA_CHECK)
 #ifdef NVM_CACHE_DEBUG
 uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ptr_ramssd_info, int64_t lpa);
+#endif
 #endif
 
 #endif /* _BLUEDBM_DEV_RAMSSD_H */

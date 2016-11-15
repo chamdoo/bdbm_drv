@@ -399,7 +399,102 @@ static int __hlm_reqs_pool_create_wb_req (
 }
 #endif
 
+#ifdef FLUSH
+static int __hlm_reqs_pool_create_flush_req (
+	bdbm_hlm_reqs_pool_t* pool, 
+	bdbm_hlm_req_t* hr,
+	bdbm_blkio_req_t* br)
+{
+	int64_t sec_start, sec_end, pg_start, pg_end;
+	int64_t i = 0, j = 0, k = 0;
+	int64_t hole = 0, bvec_cnt = 0, nr_llm_reqs;
+	bdbm_flash_page_main_t* ptr_fm = NULL;
+	bdbm_llm_req_t* ptr_lr = NULL;
 
+	/* expand boundary sectors */
+	sec_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(pool->map_unit));
+	sec_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(pool->map_unit));
+	bdbm_bug_on (sec_start >= sec_end);
+
+	pg_start = BDBM_ALIGN_DOWN (br->bi_offset, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
+	pg_end = BDBM_ALIGN_UP (br->bi_offset + br->bi_size, NR_KSECTORS_IN(KPAGE_SIZE)) / NR_KSECTORS_IN(KPAGE_SIZE);
+	bdbm_bug_on (pg_start >= pg_end);
+
+	/* build llm_reqs */
+	nr_llm_reqs = BDBM_ALIGN_UP ((sec_end - sec_start), NR_KSECTORS_IN(pool->io_unit)) / NR_KSECTORS_IN(pool->io_unit);
+	bdbm_bug_on (nr_llm_reqs > BDBM_BLKIO_MAX_VECS);
+
+	ptr_lr = &hr->llm_reqs[0];
+	for (i = 0; i < nr_llm_reqs; i++) {
+		int fm_ofs = 0;
+
+		ptr_fm = &ptr_lr->fmain;
+		hlm_reqs_pool_reset_fmain (ptr_fm);
+		hlm_reqs_pool_reset_logaddr (&ptr_lr->logaddr);
+
+		/* build mapping-units */
+		for (j = 0, hole = 0; j < pool->io_unit / pool->map_unit; j++) {
+			/* build kernel-pages */
+			ptr_lr->logaddr.lpa[j] = sec_start / NR_KSECTORS_IN(pool->map_unit);
+			for (k = 0; k < NR_KPAGES_IN(pool->map_unit); k++) {
+				uint64_t pg_off = sec_start / NR_KSECTORS_IN(KPAGE_SIZE);
+
+				if (pg_off >= pg_start && pg_off < pg_end) {
+					bdbm_bug_on (bvec_cnt >= br->bi_bvec_cnt);
+					if (bvec_cnt >= br->bi_bvec_cnt) {
+						bdbm_msg ("%lld %lld", bvec_cnt, br->bi_bvec_cnt);
+					}
+					ptr_fm->kp_stt[fm_ofs] = KP_STT_DATA;
+					ptr_fm->kp_ptr[fm_ofs] = br->bi_bvec_ptr[bvec_cnt++]; /* assign actual data */
+				} else {
+					hole = 1;
+				}
+
+				/* go to the next */
+				sec_start += NR_KSECTORS_IN(KPAGE_SIZE);
+				fm_ofs++;
+			}
+
+			if (sec_start >= sec_end)
+				break;
+		}
+
+		/* decide the reqtype for llm_req */
+		if (bdbm_is_write (br->bi_rw))
+			ptr_lr->req_type = REQTYPE_WRITE;
+		else if (bdbm_is_read (br->bi_rw))
+			ptr_lr->req_type = REQTYPE_READ;
+		else
+			ptr_lr->req_type = br->bi_rw;
+
+		if (hole == 1 && pool->in_place_rmw && br->bi_rw == REQTYPE_WRITE) {
+			/* NOTE: if there are holes and map-unit is equal to io-unit, we
+			 * should perform old-fashioned RMW operations */
+			ptr_lr->req_type = REQTYPE_RMW_READ;
+		}
+
+#ifdef NVM_CACHE
+		ptr_lr->serviced_by_nvm = 0;
+#endif
+		/* go to the next */
+		ptr_lr->ptr_hlm_req = (void*)hr;
+		ptr_lr++;
+	}
+
+	bdbm_bug_on (bvec_cnt != br->bi_bvec_cnt);
+
+	/* intialize hlm_req */
+	hr->req_type = br->bi_rw;
+	bdbm_stopwatch_start (&hr->sw);
+	hr->nr_llm_reqs = nr_llm_reqs;
+	atomic64_set (&hr->nr_llm_reqs_done, 0);
+	bdbm_sema_lock (&hr->done);
+	hr->blkio_req = (void*)br;
+	hr->ret = 0;
+
+	return 0;
+}
+#endif
 
 
 static int __hlm_reqs_pool_create_write_req (
@@ -596,6 +691,10 @@ int bdbm_hlm_reqs_pool_build_req (
 	/* create a hlm_req using a bio */
 	if (br->bi_rw == REQTYPE_TRIM) {
 		ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);
+#ifdef	FLUSH
+	} else if (br->bi_rw == REQTYPE_FLUSH) {
+		ret = __hlm_reqs_pool_create_flush_req (pool, hr, br);
+#endif
 	} else if (br->bi_rw == REQTYPE_WRITE) {
 		ret = __hlm_reqs_pool_create_write_req (pool, hr, br);
 	} else if (br->bi_rw == REQTYPE_READ) {

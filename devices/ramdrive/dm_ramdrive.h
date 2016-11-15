@@ -41,9 +41,11 @@ uint32_t dm_ramdrive_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t dm_ramdrive_store (bdbm_drv_info_t* bdi, const char* fn);
 
 
+#if defined (DATA_CHECK)
 #ifdef NVM_CACHE_DEBUG
 uint8_t* dm_ramdrive_get_data (bdbm_drv_info_t* bdi, int64_t lpa);
 void* __ptr_ramssd_data_to_nvm = NULL;
+#endif
 #endif
 
 #endif

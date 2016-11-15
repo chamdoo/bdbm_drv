@@ -1,0 +1,3 @@
+0xf7d15482	bdbm_dm_get_inf	/home/minseong/github/bdbm_drv/bdbm_drv/devices/ramdrive_timing/risa_dev_ramdrive_timing	EXPORT_SYMBOL
+0x34015c38	bdbm_dm_exit	/home/minseong/github/bdbm_drv/bdbm_drv/devices/ramdrive_timing/risa_dev_ramdrive_timing	EXPORT_SYMBOL
+0x60bdde33	bdbm_dm_init	/home/minseong/github/bdbm_drv/bdbm_drv/devices/ramdrive_timing/risa_dev_ramdrive_timing	EXPORT_SYMBOL

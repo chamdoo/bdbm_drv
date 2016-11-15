@@ -52,15 +52,18 @@ typedef struct {
 	uint64_t nr_total_access;
 	uint64_t nr_total_write;
 	uint64_t nr_total_read;
-	uint64_t nr_write;
-	uint64_t nr_read;	
+	uint64_t nr_write; //count of hit
+	uint64_t nr_nh_write; //count of no hit
+	uint64_t nr_read;
+	uint64_t nr_nh_read;
 	uint64_t nr_total_hit;
 	uint64_t nr_evict;
 
 	void* ptr_nvmram; /* DRAM memory for nvm */
 //	bdbm_nvm_page_t* ptr_nvm_rb_tree;
 	bdbm_nvm_page_t* ptr_nvm_tbl;
-	bdbm_nvm_page_t* ptr_nvm_lookup_tbl;
+	//bdbm_nvm_page_t* ptr_nvm_lookup_tbl;
+	bdbm_nvm_lookup_tbl_entry_t* ptr_nvm_lookup_tbl;
 
 	bdbm_sema_t nvm_lock;
 	struct list_head* lru_list;
@@ -72,7 +75,7 @@ typedef struct {
 
 uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi);
 void bdbm_nvm_destroy (bdbm_drv_info_t* bdi);
-int64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
 //#endif
 
 

@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+//#define DATA_CHECK
 
 #if defined (DATA_CHECK)
 
@@ -814,6 +814,7 @@ uint32_t dev_ramssd_store (dev_ramssd_info_t* ri, const char* fn)
 }
 
 
+#if defined (DATA_CHECK)
 #ifdef NVM_CACHE_DEBUG
 uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ri, int64_t lpa)
 {
@@ -824,4 +825,5 @@ uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ri, int64_t lpa)
 		ramssd_addr = KPAGE_SIZE * lpa;
 	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
 }
+#endif
 #endif

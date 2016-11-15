@@ -1,14 +1,15 @@
-cmd_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o := gcc -Wp,-MD,/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/.bdbm_main.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/5/include  -I./arch/x86/include -Iarch/x86/include/generated/uapi -Iarch/x86/include/generated  -Iinclude -I./arch/x86/include/uapi -Iarch/x86/include/generated/uapi -I./include/uapi -Iinclude/generated/uapi -include ./include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -fno-pie -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-pie -no-pie -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_X86_X32_ABI -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_SSSE3=1 -DCONFIG_AS_CRC32=1 -DCONFIG_AS_AVX=1 -DCONFIG_AS_AVX2=1 -DCONFIG_AS_SHA1_NI=1 -DCONFIG_AS_SHA256_NI=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -pg -mfentry -DCC_USING_FENTRY -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -DCC_HAVE_ASM_GOTO -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/3rd -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl -I/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../devices/common -D HASH_BLOOM=20 -D CONFIG_ENABLE_MSG -D CONFIG_ENABLE_DEBUG -D USE_PMU -D KERNEL_MODE -D USE_NEW_RMW  -DMODULE  -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(bdbm_main)"  -D"KBUILD_MODNAME=KBUILD_STR(robusta_drv)" -c -o /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/.tmp_bdbm_main.o /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.c
+cmd_/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o := gcc -Wp,-MD,/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/.bdbm_main.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/5/include -I./arch/x86/include -Iarch/x86/include/generated/uapi -Iarch/x86/include/generated  -Iinclude -I./arch/x86/include/uapi -Iarch/x86/include/generated/uapi -I./include/uapi -Iinclude/generated/uapi -include ./include/linux/kconfig.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_X86_X32_ABI -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_SSSE3=1 -DCONFIG_AS_CRC32=1 -DCONFIG_AS_AVX=1 -DCONFIG_AS_AVX2=1 -DCONFIG_AS_SHA1_NI=1 -DCONFIG_AS_SHA256_NI=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -g -gdwarf-4 -pg -mfentry -DCC_USING_FENTRY -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -DCC_HAVE_ASM_GOTO -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/utils -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/3rd -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl -I/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../devices/common -D HASH_BLOOM=20 -D CONFIG_ENABLE_MSG -D CONFIG_ENABLE_DEBUG -D USE_PMU -D KERNEL_MODE -D USE_NEW_RMW  -DMODULE  -DKBUILD_BASENAME='"bdbm_main"'  -DKBUILD_MODNAME='"robusta_drv"' -c -o /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/.tmp_bdbm_main.o /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.c
 
-source_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o := /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.c
+source_/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o := /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.c
 
-deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o := \
+deps_/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o := \
   include/linux/module.h \
     $(wildcard include/config/modules.h) \
     $(wildcard include/config/sysfs.h) \
-    $(wildcard include/config/module/sig.h) \
     $(wildcard include/config/modules/tree/lookup.h) \
+    $(wildcard include/config/livepatch.h) \
     $(wildcard include/config/unused/symbols.h) \
+    $(wildcard include/config/module/sig.h) \
     $(wildcard include/config/generic/bug.h) \
     $(wildcard include/config/kallsyms.h) \
     $(wildcard include/config/smp.h) \
@@ -16,7 +17,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/tracing.h) \
     $(wildcard include/config/event/tracing.h) \
     $(wildcard include/config/ftrace/mcount/record.h) \
-    $(wildcard include/config/livepatch.h) \
     $(wildcard include/config/module/unload.h) \
     $(wildcard include/config/constructors.h) \
     $(wildcard include/config/debug/set/module/ronx.h) \
@@ -59,6 +59,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/uapi/asm-generic/posix_types.h \
   include/linux/poison.h \
     $(wildcard include/config/illegal/pointer/value.h) \
+    $(wildcard include/config/page/poisoning/zero.h) \
   include/uapi/linux/const.h \
   include/linux/kernel.h \
     $(wildcard include/config/preempt/voluntary.h) \
@@ -72,6 +73,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/export.h \
     $(wildcard include/config/have/underscore/symbol/prefix.h) \
     $(wildcard include/config/modversions.h) \
+    $(wildcard include/config/trim/unused/ksyms.h) \
   arch/x86/include/asm/linkage.h \
     $(wildcard include/config/x86/64.h) \
     $(wildcard include/config/x86/alignment/16.h) \
@@ -79,51 +81,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/asm/bitops.h \
     $(wildcard include/config/x86/cmov.h) \
   arch/x86/include/asm/alternative.h \
-    $(wildcard include/config/paravirt.h) \
   arch/x86/include/asm/asm.h \
-  arch/x86/include/asm/ptrace.h \
-    $(wildcard include/config/x86/debugctlmsr.h) \
-  arch/x86/include/asm/segment.h \
-    $(wildcard include/config/cc/stackprotector.h) \
-    $(wildcard include/config/x86/32/lazy/gs.h) \
-  arch/x86/include/asm/cache.h \
-    $(wildcard include/config/x86/l1/cache/shift.h) \
-    $(wildcard include/config/x86/internode/cache/shift.h) \
-    $(wildcard include/config/x86/vsmp.h) \
-  arch/x86/include/asm/page_types.h \
-    $(wildcard include/config/physical/start.h) \
-    $(wildcard include/config/physical/align.h) \
-  arch/x86/include/asm/page_64_types.h \
-    $(wildcard include/config/randomize/base.h) \
-    $(wildcard include/config/randomize/base/max/offset.h) \
-  arch/x86/include/uapi/asm/ptrace.h \
-  arch/x86/include/uapi/asm/ptrace-abi.h \
-  arch/x86/include/asm/processor-flags.h \
-    $(wildcard include/config/vm86.h) \
-  arch/x86/include/uapi/asm/processor-flags.h \
-  arch/x86/include/asm/paravirt_types.h \
-    $(wildcard include/config/x86/local/apic.h) \
-    $(wildcard include/config/pgtable/levels.h) \
-    $(wildcard include/config/x86/pae.h) \
-    $(wildcard include/config/queued/spinlocks.h) \
-    $(wildcard include/config/paravirt/debug.h) \
-  arch/x86/include/asm/desc_defs.h \
-  arch/x86/include/asm/kmap_types.h \
-    $(wildcard include/config/debug/highmem.h) \
-  include/asm-generic/kmap_types.h \
-  arch/x86/include/asm/pgtable_types.h \
-    $(wildcard include/config/kmemcheck.h) \
-    $(wildcard include/config/mem/soft/dirty.h) \
-    $(wildcard include/config/proc/fs.h) \
-  arch/x86/include/asm/pgtable_64_types.h \
-  arch/x86/include/asm/sparsemem.h \
-    $(wildcard include/config/sparsemem.h) \
-  arch/x86/include/asm/spinlock_types.h \
-    $(wildcard include/config/paravirt/spinlocks.h) \
-    $(wildcard include/config/nr/cpus.h) \
-  include/asm-generic/qspinlock_types.h \
-  include/asm-generic/qrwlock_types.h \
-  include/asm-generic/ptrace.h \
   arch/x86/include/asm/rmwcc.h \
   arch/x86/include/asm/barrier.h \
     $(wildcard include/config/x86/ppro/fence.h) \
@@ -139,11 +97,14 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/asm/required-features.h \
     $(wildcard include/config/x86/minimum/cpu/family.h) \
     $(wildcard include/config/math/emulation.h) \
+    $(wildcard include/config/x86/pae.h) \
     $(wildcard include/config/x86/cmpxchg64.h) \
     $(wildcard include/config/x86/use/3dnow.h) \
     $(wildcard include/config/matom.h) \
+    $(wildcard include/config/paravirt.h) \
   arch/x86/include/asm/disabled-features.h \
     $(wildcard include/config/x86/intel/mpx.h) \
+    $(wildcard include/config/x86/intel/memory/protection/keys.h) \
   include/asm-generic/bitops/const_hweight.h \
   include/asm-generic/bitops/le.h \
   arch/x86/include/uapi/asm/byteorder.h \
@@ -161,16 +122,22 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/printk.h \
     $(wildcard include/config/message/loglevel/default.h) \
     $(wildcard include/config/early/printk.h) \
+    $(wildcard include/config/printk/nmi.h) \
     $(wildcard include/config/printk.h) \
     $(wildcard include/config/dynamic/debug.h) \
   include/linux/init.h \
     $(wildcard include/config/broken/rodata.h) \
+    $(wildcard include/config/debug/rodata.h) \
     $(wildcard include/config/lto.h) \
   include/linux/kern_levels.h \
   include/linux/cache.h \
     $(wildcard include/config/arch/has/cache/line/size.h) \
   include/uapi/linux/kernel.h \
   include/uapi/linux/sysinfo.h \
+  arch/x86/include/asm/cache.h \
+    $(wildcard include/config/x86/l1/cache/shift.h) \
+    $(wildcard include/config/x86/internode/cache/shift.h) \
+    $(wildcard include/config/x86/vsmp.h) \
   include/linux/dynamic_debug.h \
   include/linux/stat.h \
   arch/x86/include/uapi/asm/stat.h \
@@ -194,6 +161,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/asm-generic/percpu.h \
     $(wildcard include/config/have/setup/per/cpu/area.h) \
   include/linux/threads.h \
+    $(wildcard include/config/nr/cpus.h) \
     $(wildcard include/config/base/small.h) \
   include/linux/percpu-defs.h \
     $(wildcard include/config/debug/force/weak/per/cpu.h) \
@@ -207,8 +175,14 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/bug.h) \
     $(wildcard include/config/generic/bug/relative/pointers.h) \
   arch/x86/include/asm/thread_info.h \
+    $(wildcard include/config/vm86.h) \
     $(wildcard include/config/ia32/emulation.h) \
   arch/x86/include/asm/page.h \
+  arch/x86/include/asm/page_types.h \
+    $(wildcard include/config/physical/start.h) \
+    $(wildcard include/config/physical/align.h) \
+  arch/x86/include/asm/page_64_types.h \
+    $(wildcard include/config/randomize/base.h) \
   arch/x86/include/asm/page_64.h \
     $(wildcard include/config/debug/virtual.h) \
     $(wildcard include/config/flatmem.h) \
@@ -217,14 +191,44 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/asm-generic/memory_model.h \
     $(wildcard include/config/discontigmem.h) \
     $(wildcard include/config/sparsemem/vmemmap.h) \
+    $(wildcard include/config/sparsemem.h) \
+  include/linux/pfn.h \
   include/asm-generic/getorder.h \
   arch/x86/include/asm/cpufeature.h \
     $(wildcard include/config/x86/feature/names.h) \
-    $(wildcard include/config/x86/debug/static/cpu/has.h) \
+    $(wildcard include/config/x86/fast/feature/tests.h) \
   arch/x86/include/asm/processor.h \
+    $(wildcard include/config/cc/stackprotector.h) \
     $(wildcard include/config/m486.h) \
+    $(wildcard include/config/x86/debugctlmsr.h) \
     $(wildcard include/config/xen.h) \
+  arch/x86/include/asm/processor-flags.h \
+  arch/x86/include/uapi/asm/processor-flags.h \
   arch/x86/include/asm/math_emu.h \
+  arch/x86/include/asm/ptrace.h \
+  arch/x86/include/asm/segment.h \
+    $(wildcard include/config/x86/32/lazy/gs.h) \
+  arch/x86/include/uapi/asm/ptrace.h \
+  arch/x86/include/uapi/asm/ptrace-abi.h \
+  arch/x86/include/asm/paravirt_types.h \
+    $(wildcard include/config/pgtable/levels.h) \
+    $(wildcard include/config/queued/spinlocks.h) \
+    $(wildcard include/config/paravirt/debug.h) \
+  arch/x86/include/asm/desc_defs.h \
+  arch/x86/include/asm/kmap_types.h \
+    $(wildcard include/config/debug/highmem.h) \
+  include/asm-generic/kmap_types.h \
+  arch/x86/include/asm/pgtable_types.h \
+    $(wildcard include/config/kmemcheck.h) \
+    $(wildcard include/config/mem/soft/dirty.h) \
+    $(wildcard include/config/proc/fs.h) \
+  arch/x86/include/asm/pgtable_64_types.h \
+  arch/x86/include/asm/sparsemem.h \
+  arch/x86/include/asm/spinlock_types.h \
+    $(wildcard include/config/paravirt/spinlocks.h) \
+  include/asm-generic/qspinlock_types.h \
+  include/asm-generic/qrwlock_types.h \
+  include/asm-generic/ptrace.h \
   arch/x86/include/uapi/asm/sigcontext.h \
   arch/x86/include/asm/current.h \
   arch/x86/include/asm/msr.h \
@@ -233,8 +237,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/tdp/level/1.h) \
     $(wildcard include/config/tdp/level/2.h) \
     $(wildcard include/config/tdp/control.h) \
-    $(wildcard include/config/tdp/level1.h) \
-    $(wildcard include/config/tdp/level2.h) \
   arch/x86/include/uapi/asm/errno.h \
   include/uapi/asm-generic/errno.h \
   include/uapi/asm-generic/errno-base.h \
@@ -254,7 +256,21 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/uapi/asm/ioctl.h \
   include/asm-generic/ioctl.h \
   include/uapi/asm-generic/ioctl.h \
+  arch/x86/include/asm/atomic.h \
+  arch/x86/include/asm/cmpxchg.h \
+  arch/x86/include/asm/cmpxchg_64.h \
+  arch/x86/include/asm/atomic64_64.h \
+  include/linux/tracepoint-defs.h \
+  include/linux/atomic.h \
+    $(wildcard include/config/generic/atomic64.h) \
+  include/asm-generic/atomic-long.h \
+  include/linux/static_key.h \
+  include/linux/jump_label.h \
+    $(wildcard include/config/jump/label.h) \
+  arch/x86/include/asm/jump_label.h \
   arch/x86/include/asm/paravirt.h \
+  arch/x86/include/asm/frame.h \
+    $(wildcard include/config/frame/pointer.h) \
   arch/x86/include/asm/special_insns.h \
   arch/x86/include/asm/fpu/types.h \
   include/linux/personality.h \
@@ -269,13 +285,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/irqsoff/tracer.h) \
     $(wildcard include/config/trace/irqflags/support.h) \
   arch/x86/include/asm/irqflags.h \
-  include/linux/atomic.h \
-    $(wildcard include/config/generic/atomic64.h) \
-  arch/x86/include/asm/atomic.h \
-  arch/x86/include/asm/cmpxchg.h \
-  arch/x86/include/asm/cmpxchg_64.h \
-  arch/x86/include/asm/atomic64_64.h \
-  include/asm-generic/atomic-long.h \
   include/linux/bottom_half.h \
   include/linux/spinlock_types.h \
   include/linux/lockdep.h \
@@ -283,9 +292,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/lock/stat.h) \
   include/linux/rwlock_types.h \
   arch/x86/include/asm/spinlock.h \
-  include/linux/jump_label.h \
-    $(wildcard include/config/jump/label.h) \
-  arch/x86/include/asm/jump_label.h \
   arch/x86/include/asm/qspinlock.h \
   include/asm-generic/qspinlock.h \
   arch/x86/include/asm/qrwlock.h \
@@ -334,21 +340,23 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/zone/dma32.h) \
     $(wildcard include/config/zone/device.h) \
     $(wildcard include/config/numa.h) \
-    $(wildcard include/config/deferred/struct/page/init.h) \
     $(wildcard include/config/pm/sleep.h) \
+    $(wildcard include/config/memory/isolation.h) \
+    $(wildcard include/config/compaction.h) \
     $(wildcard include/config/cma.h) \
   include/linux/mmdebug.h \
     $(wildcard include/config/debug/vm.h) \
+    $(wildcard include/config/debug/vm/pgflags.h) \
   include/linux/mmzone.h \
     $(wildcard include/config/force/max/zoneorder.h) \
-    $(wildcard include/config/memory/isolation.h) \
     $(wildcard include/config/memcg.h) \
     $(wildcard include/config/memory/hotplug.h) \
-    $(wildcard include/config/compaction.h) \
     $(wildcard include/config/flat/node/mem/map.h) \
     $(wildcard include/config/page/extension.h) \
     $(wildcard include/config/no/bootmem.h) \
     $(wildcard include/config/numa/balancing.h) \
+    $(wildcard include/config/deferred/struct/page/init.h) \
+    $(wildcard include/config/transparent/hugepage.h) \
     $(wildcard include/config/have/memory/present.h) \
     $(wildcard include/config/have/memoryless/nodes.h) \
     $(wildcard include/config/need/node/memmap/size.h) \
@@ -422,6 +430,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/workqueue.h \
     $(wildcard include/config/debug/objects/work.h) \
     $(wildcard include/config/freezer.h) \
+    $(wildcard include/config/wq/watchdog.h) \
   include/linux/timer.h \
     $(wildcard include/config/timer/stats.h) \
     $(wildcard include/config/debug/objects/timers.h) \
@@ -433,6 +442,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/asm/mmzone.h \
   arch/x86/include/asm/mmzone_64.h \
   arch/x86/include/asm/smp.h \
+    $(wildcard include/config/x86/local/apic.h) \
     $(wildcard include/config/x86/io/apic.h) \
     $(wildcard include/config/x86/32/smp.h) \
     $(wildcard include/config/debug/nmi/selftest.h) \
@@ -469,7 +479,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/pm/clk.h) \
     $(wildcard include/config/pm/generic/domains.h) \
   arch/x86/include/asm/fixmap.h \
-    $(wildcard include/config/paravirt/clock.h) \
     $(wildcard include/config/provide/ohci1394/dma/init.h) \
     $(wildcard include/config/pci/mmconfig.h) \
     $(wildcard include/config/x86/intel/mid.h) \
@@ -508,12 +517,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/asm/xen/hypervisor.h \
   include/xen/features.h \
   include/xen/interface/features.h \
-  arch/x86/include/asm/pvclock.h \
-  include/linux/clocksource.h \
-    $(wildcard include/config/arch/clocksource/data.h) \
-    $(wildcard include/config/clocksource/watchdog.h) \
-    $(wildcard include/config/clksrc/probe.h) \
-  arch/x86/include/asm/clocksource.h \
   arch/x86/include/uapi/asm/vsyscall.h \
   include/asm-generic/fixmap.h \
   arch/x86/include/asm/idle.h \
@@ -531,7 +534,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/percpu.h \
     $(wildcard include/config/need/per/cpu/embed/first/chunk.h) \
     $(wildcard include/config/need/per/cpu/page/first/chunk.h) \
-  include/linux/pfn.h \
   include/linux/elf.h \
   arch/x86/include/asm/elf.h \
     $(wildcard include/config/x86/x32/abi.h) \
@@ -545,7 +547,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/arch/enable/split/pmd/ptlock.h) \
     $(wildcard include/config/have/cmpxchg/double.h) \
     $(wildcard include/config/have/aligned/struct/page.h) \
-    $(wildcard include/config/transparent/hugepage.h) \
     $(wildcard include/config/userfaultfd.h) \
     $(wildcard include/config/aio.h) \
     $(wildcard include/config/mmu/notifier.h) \
@@ -628,12 +629,13 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/fair/group/sched.h) \
     $(wildcard include/config/rt/group/sched.h) \
     $(wildcard include/config/cgroup/sched.h) \
-    $(wildcard include/config/memcg/kmem.h) \
+    $(wildcard include/config/slob.h) \
     $(wildcard include/config/compat/brk.h) \
     $(wildcard include/config/virt/cpu/accounting/gen.h) \
     $(wildcard include/config/sysvipc.h) \
     $(wildcard include/config/auditsyscall.h) \
     $(wildcard include/config/rt/mutexes.h) \
+    $(wildcard include/config/ubsan.h) \
     $(wildcard include/config/task/xacct.h) \
     $(wildcard include/config/cpusets.h) \
     $(wildcard include/config/cgroups.h) \
@@ -642,12 +644,15 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/fault/injection.h) \
     $(wildcard include/config/latencytop.h) \
     $(wildcard include/config/function/graph/tracer.h) \
+    $(wildcard include/config/kcov.h) \
     $(wildcard include/config/bcache.h) \
     $(wildcard include/config/arch/wants/dynamic/task/struct.h) \
     $(wildcard include/config/have/unstable/sched/clock.h) \
     $(wildcard include/config/irq/time/accounting.h) \
     $(wildcard include/config/stack/growsup.h) \
     $(wildcard include/config/have/copy/thread/tls.h) \
+    $(wildcard include/config/have/exit/thread.h) \
+    $(wildcard include/config/cpu/freq.h) \
   include/uapi/linux/sched.h \
   include/linux/sched/prio.h \
   include/linux/capability.h \
@@ -681,8 +686,6 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/asm-generic/siginfo.h \
   include/uapi/asm-generic/siginfo.h \
   include/linux/pid.h \
-  include/linux/proportions.h \
-  include/linux/percpu_counter.h \
   include/linux/seccomp.h \
     $(wildcard include/config/seccomp.h) \
     $(wildcard include/config/have/arch/seccomp/filter.h) \
@@ -711,6 +714,8 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/time/low/res.h) \
     $(wildcard include/config/timerfd.h) \
   include/linux/timerqueue.h \
+  include/linux/kcov.h \
+  include/uapi/linux/kcov.h \
   include/linux/task_io_accounting.h \
     $(wildcard include/config/task/io/accounting.h) \
   include/linux/latencytop.h \
@@ -724,6 +729,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/security/selinux.h) \
   include/uapi/linux/magic.h \
   include/linux/cgroup-defs.h \
+    $(wildcard include/config/sock/cgroup/data.h) \
   include/uapi/linux/limits.h \
   include/linux/percpu-refcount.h \
   include/linux/percpu-rwsem.h \
@@ -752,10 +758,11 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/failslab.h) \
     $(wildcard include/config/slab.h) \
     $(wildcard include/config/slub.h) \
-    $(wildcard include/config/slob.h) \
   include/linux/kmemleak.h \
     $(wildcard include/config/debug/kmemleak.h) \
   include/linux/kasan.h \
+  include/linux/uuid.h \
+  include/uapi/linux/uuid.h \
   include/linux/device.h \
     $(wildcard include/config/debug/devres.h) \
     $(wildcard include/config/generic/msi/irq/domain.h) \
@@ -769,22 +776,16 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/pinctrl/devinfo.h \
   include/linux/pinctrl/consumer.h \
   include/linux/seq_file.h \
-  include/linux/pinctrl/pinctrl-state.h \
-  include/linux/ratelimit.h \
-  arch/x86/include/asm/device.h \
-    $(wildcard include/config/x86/dev/dma/ops.h) \
-    $(wildcard include/config/intel/iommu.h) \
-    $(wildcard include/config/amd/iommu.h) \
-  include/linux/pm_wakeup.h \
   include/linux/fs.h \
     $(wildcard include/config/fs/posix/acl.h) \
     $(wildcard include/config/cgroup/writeback.h) \
     $(wildcard include/config/ima.h) \
     $(wildcard include/config/fsnotify.h) \
+    $(wildcard include/config/fs/encryption.h) \
     $(wildcard include/config/file/locking.h) \
     $(wildcard include/config/quota.h) \
-    $(wildcard include/config/blk/dev/loop.h) \
     $(wildcard include/config/fs/dax.h) \
+    $(wildcard include/config/mandatory/file/locking.h) \
     $(wildcard include/config/migration.h) \
   include/linux/dcache.h \
   include/linux/rculist_bl.h \
@@ -792,17 +793,22 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/bit_spinlock.h \
   include/linux/lockref.h \
     $(wildcard include/config/arch/use/cmpxchg/lockref.h) \
+  include/linux/stringhash.h \
+    $(wildcard include/config/dcache/word/access.h) \
   include/linux/path.h \
   include/linux/list_lru.h \
   include/linux/shrinker.h \
   include/linux/radix-tree.h \
+    $(wildcard include/config/radix/tree/multiorder.h) \
   include/linux/semaphore.h \
   include/uapi/linux/fiemap.h \
   include/linux/migrate_mode.h \
   include/linux/blk_types.h \
+  include/linux/delayed_call.h \
   include/uapi/linux/fs.h \
   include/linux/quota.h \
     $(wildcard include/config/quota/netlink/interface.h) \
+  include/linux/percpu_counter.h \
   include/uapi/linux/dqblk_xfs.h \
   include/linux/dqblk_v1.h \
   include/linux/dqblk_v2.h \
@@ -814,13 +820,25 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/uapi/linux/fcntl.h \
   arch/x86/include/uapi/asm/fcntl.h \
   include/uapi/asm-generic/fcntl.h \
+  include/linux/pinctrl/pinctrl-state.h \
+  include/linux/ratelimit.h \
+  arch/x86/include/asm/device.h \
+    $(wildcard include/config/x86/dev/dma/ops.h) \
+    $(wildcard include/config/intel/iommu.h) \
+    $(wildcard include/config/amd/iommu.h) \
+    $(wildcard include/config/pci/domains.h) \
+  include/linux/pm_wakeup.h \
   include/linux/pagemap.h \
   include/linux/mm.h \
+    $(wildcard include/config/have/arch/mmap/rnd/bits.h) \
+    $(wildcard include/config/have/arch/mmap/rnd/compat/bits.h) \
+    $(wildcard include/config/arch/uses/high/vma/flags.h) \
     $(wildcard include/config/ppc.h) \
     $(wildcard include/config/parisc.h) \
     $(wildcard include/config/metag.h) \
     $(wildcard include/config/shmem.h) \
     $(wildcard include/config/debug/vm/rb.h) \
+    $(wildcard include/config/page/poisoning.h) \
     $(wildcard include/config/debug/pagealloc.h) \
     $(wildcard include/config/hugetlbfs.h) \
   include/linux/debug_locks.h \
@@ -831,17 +849,19 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/stacktrace.h \
     $(wildcard include/config/stacktrace.h) \
     $(wildcard include/config/user/stacktrace/support.h) \
+  include/linux/page_ref.h \
+    $(wildcard include/config/debug/page/ref.h) \
+  include/linux/page-flags.h \
+    $(wildcard include/config/arch/uses/pg/uncached.h) \
+    $(wildcard include/config/memory/failure.h) \
+    $(wildcard include/config/swap.h) \
+    $(wildcard include/config/ksm.h) \
   arch/x86/include/asm/pgtable.h \
     $(wildcard include/config/debug/wx.h) \
     $(wildcard include/config/have/arch/soft/dirty.h) \
   arch/x86/include/asm/pgtable_64.h \
   include/asm-generic/pgtable.h \
     $(wildcard include/config/have/arch/huge/vmap.h) \
-  include/linux/page-flags.h \
-    $(wildcard include/config/arch/uses/pg/uncached.h) \
-    $(wildcard include/config/memory/failure.h) \
-    $(wildcard include/config/swap.h) \
-    $(wildcard include/config/ksm.h) \
   include/linux/huge_mm.h \
   include/linux/vmstat.h \
     $(wildcard include/config/vm/event/counters.h) \
@@ -855,6 +875,7 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   arch/x86/include/asm/uaccess.h \
     $(wildcard include/config/x86/intel/usercopy.h) \
     $(wildcard include/config/debug/strict/user/copy/checks.h) \
+  include/linux/kasan-checks.h \
   arch/x86/include/asm/smap.h \
     $(wildcard include/config/x86/smap.h) \
   arch/x86/include/asm/uaccess_64.h \
@@ -864,13 +885,13 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/vtime.h \
   include/linux/context_tracking_state.h \
     $(wildcard include/config/context/tracking.h) \
-  include/linux/static_key.h \
   arch/x86/include/asm/hardirq.h \
     $(wildcard include/config/x86/thermal/vector.h) \
     $(wildcard include/config/x86/mce/threshold.h) \
     $(wildcard include/config/x86/mce/amd.h) \
     $(wildcard include/config/hyperv.h) \
   include/linux/irq.h \
+    $(wildcard include/config/generic/irq/ipi.h) \
     $(wildcard include/config/irq/domain/hierarchy.h) \
     $(wildcard include/config/generic/pending/irq.h) \
     $(wildcard include/config/hardirqs/sw/resend.h) \
@@ -892,10 +913,10 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
     $(wildcard include/config/dmar/table.h) \
     $(wildcard include/config/ht/irq.h) \
     $(wildcard include/config/x86/uv.h) \
+    $(wildcard include/config/vmd.h) \
   include/linux/profile.h \
     $(wildcard include/config/profiling.h) \
   arch/x86/include/asm/sections.h \
-    $(wildcard include/config/debug/rodata.h) \
   include/asm-generic/sections.h \
   arch/x86/include/asm/cacheflush.h \
     $(wildcard include/config/debug/rodata/test.h) \
@@ -913,38 +934,41 @@ deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_m
   include/linux/scatterlist.h \
     $(wildcard include/config/debug/sg.h) \
     $(wildcard include/config/need/sg/dma/length.h) \
+    $(wildcard include/config/arch/has/sg/chain.h) \
+    $(wildcard include/config/sg/pool.h) \
   include/linux/elevator.h \
   include/linux/hashtable.h \
   include/linux/hash.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/bdbm_drv.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/params.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils/utime.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils/usync.h \
+    $(wildcard include/config/have/arch/hash.h) \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/bdbm_drv.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/params.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/utils/utime.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/utils/usync.h \
   include/generated/uapi/linux/version.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils/umemory.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/params.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/debug.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/utils/umemory.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/params.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/debug.h \
     $(wildcard include/config/enable/msg.h) \
     $(wildcard include/config/enable/debug.h) \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/ftl_params.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/../devices/common/dev_params.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/llm_noq.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/llm_mq.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/hlm_nobuf.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/hlm_buf.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/hlm_dftl.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/hlm_rsd.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/devices.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../include/bdbm_drv.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/pmu.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/no_ftl.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/block_ftl.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/page_ftl.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../ftl/algo/dftl.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/../frontend/kernel/nvm_cache.h \
-  /home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/utils/ufile.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/ftl_params.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/../devices/common/dev_params.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/llm_noq.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/llm_mq.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/hlm_nobuf.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/hlm_buf.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/hlm_dftl.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/hlm_rsd.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/devices.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../include/bdbm_drv.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/pmu.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/algo/no_ftl.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/algo/block_ftl.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/algo/page_ftl.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../ftl/algo/dftl.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/../frontend/kernel/nvm_cache.h \
+  /home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/utils/ufile.h \
   include/linux/buffer_head.h \
 
-/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o: $(deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o)
+/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o: $(deps_/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o)
 
-$(deps_/home/ejlee/cooperate/bdbm_drv_dummy_gc/frontend/kernel/../../common/bdbm_main.o):
+$(deps_/home/minseong/github/bdbm_drv/bdbm_drv/frontend/kernel/../../common/bdbm_main.o):
