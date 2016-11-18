@@ -23,14 +23,10 @@ THE SOFTWARE.
 */
 
 #include <linux/module.h> /* uint64_t */
-//#include <linux/blkdev.h> /* bio */
 //#include <linux/hdreg.h>
 //#include <linux/kthread.h>
 //#include <linux/delay.h> /* mdelay */
 
-#ifdef	RFLUSH
-#include <linux/bio.h>
-#endif
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "params.h"
@@ -39,6 +35,10 @@ THE SOFTWARE.
 #include "blkio.h"
 //#include "blkdev.h"
 //#include "blkdev_ioctl.h"
+
+#ifdef RFLUSH
+#include <linux/bio.h>
+#endif
 
 #include "nvm_cache.h"
 
