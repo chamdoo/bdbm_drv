@@ -4,7 +4,7 @@
 #define NVM_CACHE_DEBUG
 #define NVM_CACHE_TRIM
 #define FLUSH
-//#define RFLUSH
+#define RFLUSH
 
 /*
 The MIT License (MIT)

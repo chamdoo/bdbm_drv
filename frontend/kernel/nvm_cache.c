@@ -28,6 +28,9 @@ THE SOFTWARE.
 //#include <linux/kthread.h>
 //#include <linux/delay.h> /* mdelay */
 
+#ifdef	RFLUSH
+#include <linux/bio.h>
+#endif
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "params.h"
@@ -664,7 +667,7 @@ uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr) {
 	int64_t findex = -1;
 	sector_t i = 0;
 	
-	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*) req->blkio_req;
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*) hr->blkio_req;
 	struct bio* bi = (struct bio*) br->bio;
 	sector_t lpamin = bi->bi_min;
 	sector_t lpamax = bi->bi_max;
