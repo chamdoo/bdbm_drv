@@ -731,6 +731,11 @@ uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 
 	bdbm_sema_lock (&p->nvm_lock);
 
+#ifdef	FLUSH
+	if (bdbm_is_flush (hr->req_type)) {
+		bdbm_nvm_flush_data (bdi);
+	}
+#endif
 
 	/* for nr_llm_reqs */	
 	for (n = 0; n < hr->nr_llm_reqs; n++) {
@@ -760,11 +765,6 @@ uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 #ifdef	RFLUSH
 	if (bdbm_is_rflush (hr->req_type)) {
 		bdbm_nvm_rflush_data (bdi, hr);
-	}
-#endif
-#ifdef	FLUSH
-	if (bdbm_is_flush (hr->req_type)) {
-		bdbm_nvm_flush_data (bdi);
 	}
 #endif
 	bdbm_sema_unlock (&p->nvm_lock);
