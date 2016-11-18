@@ -40,7 +40,10 @@ typedef struct {
 } bdbm_nvm_page_t;
 
 typedef struct {
-	int64_t tbl_idx; 
+	int64_t tbl_idx;
+#ifdef	RFLUSH
+	bdbm_nvm_page_t* ptr_page;
+#endif
 } bdbm_nvm_lookup_tbl_entry_t;
 
 typedef struct {
@@ -76,6 +79,9 @@ typedef struct {
 uint32_t bdbm_nvm_create (bdbm_drv_info_t* bdi);
 void bdbm_nvm_destroy (bdbm_drv_info_t* bdi);
 uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+uint64_t bdbm_nvm_flush_data (bdbm_drv_info_t* bdi);
+
 //#endif
 
 

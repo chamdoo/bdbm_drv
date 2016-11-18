@@ -823,7 +823,6 @@ RESERVED_FIELD	tools/nvme/scsi.c	108;"	d	file:
 RESERVED_FIELD	tools/nvmedrv-v4.5.3/scsi.c	108;"	d	file:
 RESTRICTED_LUNS_RETURNED	tools/nvme/scsi.c	74;"	d	file:
 RESTRICTED_LUNS_RETURNED	tools/nvmedrv-v4.5.3/scsi.c	74;"	d	file:
-RFLUSH	include/bdbm_drv.h	7;"	d
 RP_MEM_PHY	ftl/hlm_reqs_pool.h	/^	RP_MEM_PHY = 1,$/;"	e	enum:__anon58
 RP_MEM_VIRT	ftl/hlm_reqs_pool.h	/^	RP_MEM_VIRT = 0,$/;"	e	enum:__anon58
 RRPC_EXPOSED_PAGE_SIZE	tools/lightnvm-v4.5.3/rrpc.h	34;"	d
@@ -1109,6 +1108,7 @@ __hlm_nobuf_make_wb_req	ftl/hlm_nobuf.c	/^uint32_t __hlm_nobuf_make_wb_req (bdbm
 __hlm_reqs_pool_create_flush_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_flush_req ($/;"	f	file:
 __hlm_reqs_pool_create_int_trim_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_int_trim_req  ($/;"	f	file:
 __hlm_reqs_pool_create_read_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_read_req ($/;"	f	file:
+__hlm_reqs_pool_create_rflush_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_rflush_req ($/;"	f	file:
 __hlm_reqs_pool_create_trim_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_trim_req  ($/;"	f	file:
 __hlm_reqs_pool_create_wb_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_wb_req ($/;"	f	file:
 __hlm_reqs_pool_create_write_req	ftl/hlm_reqs_pool.c	/^static int __hlm_reqs_pool_create_write_req ($/;"	f	file:
@@ -1588,6 +1588,7 @@ bdbm_nvm_lookup_tbl_entry_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_lookup_tbl_
 bdbm_nvm_make_req	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){$/;"	f
 bdbm_nvm_page_t	frontend/kernel/nvm_cache.h	/^} bdbm_nvm_page_t;$/;"	t	typeref:struct:__anon94
 bdbm_nvm_read_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_read_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
+bdbm_nvm_rflush_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr) {$/;"	f
 bdbm_nvm_write_data	frontend/kernel/nvm_cache.c	/^uint64_t bdbm_nvm_write_data (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)$/;"	f
 bdbm_page_badblock_scan	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)$/;"	f
 bdbm_page_ftl_create	ftl/algo/page_ftl.c	/^uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)$/;"	f
@@ -2716,6 +2717,8 @@ nr_luns	tools/lightnvm-v4.5.3/gennvm.h	/^	int nr_luns;$/;"	m	struct:gen_nvm
 nr_luns	tools/lightnvm-v4.5.3/rrpc.h	/^	int nr_luns;$/;"	m	struct:rrpc
 nr_luns	tools/lightnvm/gennvm.h	/^	int nr_luns;$/;"	m	struct:gen_nvm
 nr_luns	tools/lightnvm/rrpc.h	/^	int nr_luns;$/;"	m	struct:rrpc
+nr_nh_read	frontend/kernel/nvm_cache.h	/^	uint64_t nr_nh_read;$/;"	m	struct:__anon96
+nr_nh_write	frontend/kernel/nvm_cache.h	/^	uint64_t nr_nh_write; \/\/count of no hit$/;"	m	struct:__anon96
 nr_nvm_pages	include/params.h	/^	uint64_t nr_nvm_pages;$/;"	m	struct:__anon28
 nr_out_reqs	frontend/hybrid/blkio_proxy.c	/^	atomic_t nr_out_reqs; \/* # of outstanding requests *\/$/;"	m	struct:__anon91	file:
 nr_pages	tools/lightnvm-v4.5.3/rrpc.h	/^	unsigned long long nr_pages;$/;"	m	struct:rrpc
@@ -2735,7 +2738,7 @@ nr_punits_pages	ftl/algo/page_ftl.c	/^	uint64_t nr_punits_pages;$/;"	m	struct:__
 nr_queues	ftl/queue/prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon79
 nr_queues	ftl/queue/queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon76
 nr_queues	ftl/queue/rd_prior_queue.h	/^	uint64_t nr_queues;$/;"	m	struct:__anon74
-nr_read	frontend/kernel/nvm_cache.h	/^	uint64_t nr_read;	$/;"	m	struct:__anon96
+nr_read	frontend/kernel/nvm_cache.h	/^	uint64_t nr_read;$/;"	m	struct:__anon96
 nr_reqs	frontend/hybrid/blkio_proxy_reqs_pool.h	/^	int64_t nr_reqs;$/;"	m	struct:__anon85
 nr_rows	tools/lightnvm-v4.5.3/sysblk.c	/^	int nr_rows;$/;"	m	struct:sysblk_scan	file:
 nr_rows	tools/lightnvm/sysblk.c	/^	int nr_rows;$/;"	m	struct:sysblk_scan	file:
@@ -2752,7 +2755,7 @@ nr_total_read	frontend/kernel/nvm_cache.h	/^	uint64_t nr_total_read;$/;"	m	struc
 nr_total_write	frontend/kernel/nvm_cache.h	/^	uint64_t nr_total_write;$/;"	m	struct:__anon96
 nr_trim_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_trim_pgs;$/;"	m	struct:__anon63	file:
 nr_valid_pgs	ftl/algo/block_ftl.c	/^	uint64_t* nr_valid_pgs;$/;"	m	struct:__anon63	file:
-nr_write	frontend/kernel/nvm_cache.h	/^	uint64_t nr_write;$/;"	m	struct:__anon96
+nr_write	frontend/kernel/nvm_cache.h	/^	uint64_t nr_write; \/\/count of hit$/;"	m	struct:__anon96
 ns_cmp	tools/nvme/core.c	/^static int ns_cmp(void *priv, struct list_head *a, struct list_head *b)$/;"	f	file:
 ns_cmp	tools/nvmedrv-v4.5.3/core.c	/^static int ns_cmp(void *priv, struct list_head *a, struct list_head *b)$/;"	f	file:
 ns_id	tools/nvme/nvme.h	/^	unsigned ns_id;$/;"	m	struct:nvme_ns

@@ -155,6 +155,9 @@ static void* __nvm_alloc_nvmram_lookup_tbl (bdbm_device_params_t* np)
 	for (i = 0; i < np->nr_subpages_per_ssd; i++){
 		// index 
 		me[i].tbl_idx = -1;
+#ifdef	RFLUSH
+		me[i].ptr_page = NULL;
+#endif
 	}
 
 	return me;
@@ -343,11 +346,19 @@ uint64_t bdbm_nvm_flush_data (bdbm_drv_info_t* bdi)
 			goto fail;
 		}
 
+		/* send req */
+		bdbm_sema_lock (&bp->host_lock);
+
 		if(bdi->ptr_hlm_inf->make_wb_req (bdi, hr) != 0) {
 			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
 		}
+
+		bdbm_sema_unlock (&bp->host_lock);
 	
 		nvm_lookup_tbl[flpa].tbl_idx = -1;
+#ifdef	RFLUSH
+		nvm_lookup_tbl[flpa].ptr_page = NULL;
+#endif
 	
 		list_del(&fpage->list);
 		p->nr_inuse_pages--;
@@ -510,6 +521,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 //		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, hr); // moved to hlm_end_wb_req
 
 		nvm_lookup_tbl[elpa].tbl_idx = -1;
+#ifdef	RFLUSH
+		nvm_lookup_tbl[elpa].ptr_page = NULL;
+#endif
 
 		/* set new page index */
 		nindex = eindex;
@@ -526,6 +540,9 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 //	bdbm_msg("new nvm_buffer is added to lru_list");
 
 	nvm_lookup_tbl[lpa].tbl_idx = nindex;
+#ifdef	RFLUSH
+	nvm_lookup_tbl[lpa].ptr_page = NULL;
+#endif
 	
 	bdbm_bug_on(p->nr_free_pages + p->nr_inuse_pages != p->nr_total_pages);
 
@@ -634,9 +651,74 @@ fail:
 
 }
 
+#ifdef	RFLUSH
+uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr) {
+	/* find nvm cache */
+	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
+	bdbm_blkio_private_t* bp = (bdbm_blkio_private_t*) BDBM_HOST_PRIV(bdi);
+	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;	// have lists lru_list and free_list
+	bdbm_nvm_lookup_tbl_entry_t* nvm_lookup_tbl = p->ptr_nvm_lookup_tbl;
+	bdbm_hlm_req_t* lhr = NULL;
+	bdbm_nvm_page_t* fpage = NULL;
+	uint8_t* fdata_ptr = NULL;
+	int64_t findex = -1;
+	sector_t i = 0;
+	
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*) req->blkio_req;
+	struct bio* bi = (struct bio*) br->bio;
+	sector_t lpamin = bi->bi_min;
+	sector_t lpamax = bi->bi_max;
+
+	for (i = lpamin; i <= lpamax; i++) {
+		if (nvm_lookup_tbl[i].tbl_idx == -1)
+			continue;
+	
+		fpage = nvm_lookup_tbl[i].ptr_page;
+		bdbm_bug_on(fpage == NULL);
+		findex = fpage->index;
+		fdata_ptr = p->ptr_nvmram + (findex * np->nvm_page_size);
+		/* get a free hlm_req from the hlm_reqs_pool */
+        if ((lhr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL) {
+			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
+            goto fail;
+        }
+				    
+        /* build hlm_req with nvm_info */
+        if (bdbm_hlm_reqs_pool_build_wb_req (lhr, &fpage->logaddr, fdata_ptr) != 0) {
+            bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+            goto fail;
+        }
+
+        /* send req */
+        bdbm_sema_lock (&bp->host_lock);
+
+		if(bdi->ptr_hlm_inf->make_wb_req (bdi, lhr) != 0) {
+            bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+        }
+
+        bdbm_sema_unlock (&bp->host_lock);
+        
+		nvm_lookup_tbl[i].tbl_idx = -1; 
+        nvm_lookup_tbl[i].ptr_page = NULL;
+        
+		list_del(&fpage->list);
+        p->nr_inuse_pages--;
+        list_add(&fpage->list, p->free_list);
+        p->nr_free_pages++;
+	}
+
+	return 1;
+
+fail:
+	if (lhr)
+		bdbm_hlm_reqs_pool_free_item (bp->hlm_reqs_pool, lhr);
+	bdbm_bug_on(1);
+
+	return -1;
+}
+#endif
 
 uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
-
 	/* find nvm cache */
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
 	bdbm_llm_req_t* lr; 
@@ -672,6 +754,11 @@ uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 		}
 	}
 
+#ifdef	RFLUSH
+	if (bdbm_is_rflush (hr->req_type)) {
+		bdbm_nvm_rflush_data (bdi, hr);
+	}
+#endif
 #ifdef	FLUSH
 	if (bdbm_is_flush (hr->req_type)) {
 		bdbm_nvm_flush_data (bdi);

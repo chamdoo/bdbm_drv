@@ -399,6 +399,25 @@ static int __hlm_reqs_pool_create_wb_req (
 }
 #endif
 
+#ifdef RFLUSH
+static int __hlm_reqs_pool_create_rflush_req (
+	bdbm_hlm_reqs_pool_t* pool, 
+	bdbm_hlm_req_t* hr,
+	bdbm_blkio_req_t* br)
+{
+	/* intialize hlm_req */
+	hr->req_type = br->bi_rw;
+	bdbm_stopwatch_start (&hr->sw);
+	hr->nr_llm_reqs = 0;
+	atomic64_set (&hr->nr_llm_reqs_done, 0);
+	bdbm_sema_lock (&hr->done);
+	hr->blkio_req = (void*)br;
+	hr->ret = 0;
+
+	return 0;
+}
+#endif
+
 #ifdef FLUSH
 static int __hlm_reqs_pool_create_flush_req (
 	bdbm_hlm_reqs_pool_t* pool, 
@@ -691,6 +710,10 @@ int bdbm_hlm_reqs_pool_build_req (
 	/* create a hlm_req using a bio */
 	if (br->bi_rw == REQTYPE_TRIM) {
 		ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);
+#ifdef	RFLUSH
+	} else if (br->bi_rw == REQTYPE_RFLUSH) {
+		ret = __hlm_reqs_pool_create_rflush_req (pool, hr, br);
+#endif
 #ifdef	FLUSH
 	} else if (br->bi_rw == REQTYPE_FLUSH) {
 		ret = __hlm_reqs_pool_create_flush_req (pool, hr, br);
