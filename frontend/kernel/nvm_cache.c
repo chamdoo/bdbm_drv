@@ -544,7 +544,7 @@ static int64_t bdbm_nvm_alloc_slot (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 
 	nvm_lookup_tbl[lpa].tbl_idx = nindex;
 #ifdef	RFLUSH
-	nvm_lookup_tbl[lpa].ptr_page = NULL;
+	nvm_lookup_tbl[lpa].ptr_page = npage;
 #endif
 	
 	bdbm_bug_on(p->nr_free_pages + p->nr_inuse_pages != p->nr_total_pages);
@@ -672,10 +672,13 @@ uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr) {
 	sector_t lpamin = bi->bi_min;
 	sector_t lpamax = bi->bi_max;
 
+	bdbm_msg("lpamin: %lld, lpamax: %lld, max_index_of_tbl: %lld", lpamin, lpamax, np->nr_subpages_per_ssd );
+
 	for (i = lpamin; i <= lpamax; i++) {
 		if (nvm_lookup_tbl[i].tbl_idx == -1)
 			continue;
-	
+		
+		
 		fpage = nvm_lookup_tbl[i].ptr_page;
 		bdbm_bug_on(fpage == NULL);
 		findex = fpage->index;
@@ -725,7 +728,7 @@ uint64_t bdbm_nvm_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr){
 	/* find nvm cache */
 	bdbm_nvm_dev_private_t* p = _nvm_dev.ptr_private;
 	bdbm_llm_req_t* lr; 
-	int64_t n, nr_remains;
+	int64_t n, nr_remains = 0;
 
 	nr_remains = hr->nr_llm_reqs;
 

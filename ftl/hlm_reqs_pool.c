@@ -210,6 +210,7 @@ again:
 	list_add_tail (&item->list, &pool->used_list);
 
 	bdbm_spin_unlock (&pool->lock);
+
 	return item;
 
 fail:
@@ -405,6 +406,7 @@ static int __hlm_reqs_pool_create_rflush_req (
 	bdbm_hlm_req_t* hr,
 	bdbm_blkio_req_t* br)
 {
+
 	/* intialize hlm_req */
 	hr->req_type = br->bi_rw;
 	bdbm_stopwatch_start (&hr->sw);
@@ -432,6 +434,7 @@ static int __hlm_reqs_pool_create_flush_req (
 
 	if (br->bi_size < 1) {
 		nr_llm_reqs = 0;
+		bdbm_msg("flush no data");
 	} else {
 
 		/* expand boundary sectors */

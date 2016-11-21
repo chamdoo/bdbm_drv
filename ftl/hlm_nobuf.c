@@ -115,6 +115,12 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	/* perform mapping with the FTL */
 //	bdbm_msg("[EUNJI] __hlm_nobuf_make_rw_req");
 
+#ifdef	RFLUSH
+	if (bdbm_is_rflush (hr->req_type) || hr->nr_llm_reqs == 0) {
+		bdi->ptr_host_inf->end_req (bdi, hr);
+	} else {
+#endif
+
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
 #ifdef NVM_CACHE_SKIP
@@ -202,6 +208,9 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	}
 
 	bdbm_bug_on (hr->nr_llm_reqs != i);
+#ifdef	RFLUSH
+	}
+#endif
 
 	return 0;
 
@@ -214,6 +223,12 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_ftl_params* dp = BDBM_GET_DRIVER_PARAMS (bdi);
 	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
+
+#ifdef	RFLUSH
+	if (bdbm_is_rflush (hr->req_type) || hr->nr_llm_reqs == 0) {
+		/* nothing */
+	} else 
+#endif
 
 	if (dp->mapping_type == MAPPING_POLICY_PAGE) {
 		uint32_t loop;
@@ -344,7 +359,6 @@ uint32_t hlm_nobuf_make_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	return ret;
 }
 #endif
-
 
 uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
