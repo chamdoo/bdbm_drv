@@ -169,7 +169,7 @@ uint8_t bdbm_prior_queue_enqueue (
 			bdbm_error ("bdbm_malloc_atomic failed");
 			bdbm_bug_on (1);
 		} else {
-			q->tag = get_new_priority_tag (mq, lpa);;
+			q->tag = get_new_priority_tag (mq, lpa);
 			q->lpa = lpa;
 			q->lock = 0;
 			q->ptr_req = (void*)req;

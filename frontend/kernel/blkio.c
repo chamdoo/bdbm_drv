@@ -41,6 +41,9 @@ THE SOFTWARE.
 /*#define ENABLE_DISPLAY*/
 
 extern bdbm_drv_info_t* _bdi;
+uint64_t global_req_cnt = 0;
+uint64_t sync_req_cnt = 0;
+uint64_t fua_req_cnt = 0;
 
 bdbm_host_inf_t _blkio_inf = {
 	.ptr_private = NULL,
@@ -68,13 +71,31 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 	if (br == NULL)
 		goto fail;
 
+/*    global_req_cnt++;
+    if(bio->bi_rw & REQ_SYNC){
+        sync_req_cnt++;
+        printk("REQ_SYNC(%llu/%llu)\n", sync_req_cnt, global_req_cnt);
+    }
+    if(bio->bi_rw & REQ_FUA){
+        fua_req_cnt++;
+        printk("REQ_FUA(%llu/%llu)\n", fua_req_cnt, global_req_cnt);
+    }*/
 	/* get the type of the bio request */
 	if (bio->bi_rw & REQ_DISCARD)
 		br->bi_rw = REQTYPE_TRIM;
 	else if (bio_data_dir (bio) == READ || bio_data_dir (bio) == READA)
 		br->bi_rw = REQTYPE_READ;
-	else if (bio_data_dir (bio) == WRITE)
+	else if (bio_data_dir (bio) == WRITE){
 		br->bi_rw = REQTYPE_WRITE;
+        
+        if (bio->bi_rw & REQ_FUA){
+            br->bi_rw = br->bi_rw | REQTYPE_FUA;
+        }
+        if (bio->bi_rw & REQ_SYNC){
+            br->bi_rw = br->bi_rw | REQTYPE_SYNC;
+        }
+        
+    }
 	else {
 		bdbm_error ("oops! invalid request type (bi->bi_rw = %lx)", bio->bi_rw);
 		goto fail;
@@ -220,6 +241,9 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 
 	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
 	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
+
+    //bdbm_stopwatch_t sw;
+    //bdbm_stopwatch_start (&sw);
 	if (bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
 		/* oops! something wrong */
 		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
@@ -231,6 +255,9 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	/* ulock a global mutex */
 	bdbm_sema_unlock (&p->host_lock);
 
+
+   // printk("BIO_ELAPSED_TIME(%llu):%llu\n",
+    //        hr->nr_llm_reqs, bdbm_stopwatch_get_elapsed_time_us (&sw));
 	return;
 
 fail:

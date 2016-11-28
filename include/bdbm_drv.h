@@ -100,7 +100,12 @@ enum BDBM_REQTYPE {
 	REQTYPE_GC 				= 0x000400,
 	REQTYPE_META 			= 0x000800,
 	REQTYPE_4KB 			= 0x001000,
+	REQTYPE_FUA 			= 0x002000,
+	REQTYPE_SYNC 			= 0x004000,
+	REQTYPE_NCNT 			= 0x008000,
+	REQTYPE_COLD 			= 0x010000,
 
+	REQTYPE_GCREC_WRITE		= REQTYPE_GC 	| REQTYPE_IO_WRITE | REQTYPE_COLD,
 	REQTYPE_REC_WRITE		= REQTYPE_4KB 	|  REQTYPE_GC 	| REQTYPE_IO_WRITE,
 	REQTYPE_REC_READ		= REQTYPE_4KB 	|  REQTYPE_GC 	| REQTYPE_IO_READ,
 	REQTYPE_SUB_WRITE		= REQTYPE_4KB 	| REQTYPE_IO_WRITE,
@@ -326,6 +331,7 @@ typedef struct {
 	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
 	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
 	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
+	uint32_t (*invalidate_lpa_4kb) (bdbm_drv_info_t* bdi, int64_t lpa);
 	uint32_t (*do_gc) (bdbm_drv_info_t* bdi, int64_t lpa);
 	uint8_t (*is_gc_needed) (bdbm_drv_info_t* bdi, int64_t lpa);
 
@@ -361,6 +367,7 @@ typedef struct {
 	atomic64_t gc_write_cnt;
 	atomic64_t rec_read_cnt; // for recycle 4kb read
 	atomic64_t rec_write_cnt; // for recycle 4kb write
+	atomic64_t gcrec_write_cnt; // for recycle 4kb write
 	atomic64_t meta_read_cnt;
 	atomic64_t meta_write_cnt;
 	uint64_t time_r_sw;

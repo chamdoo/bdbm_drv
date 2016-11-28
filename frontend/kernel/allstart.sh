@@ -22,5 +22,6 @@ sudo mount -B /media/robusta/mysql /var/lib/mysql
 sudo /etc/init.d/mysql start
 
 #cd ycsb
-cd tpcc
-. start_all.sh
+#cd tpcc
+#. start_all.sh
+#. start_load.sh

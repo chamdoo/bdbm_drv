@@ -40,7 +40,6 @@ THE SOFTWARE.
 extern bdbm_dm_inf_t _bdbm_dm_inf; /* exported by the device implementation module */
 bdbm_drv_info_t* _bdi_dm = NULL; /* for Connectal & RAMSSD */
 
-
 #if defined (KERNEL_MODE)
 static int __init risa_dev_init (void)
 {

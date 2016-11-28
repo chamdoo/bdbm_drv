@@ -44,7 +44,6 @@ THE SOFTWARE.
 #include "pmu.h"
 #include "utime.h"
 
-
 #ifdef USE_PMU
 void pmu_create (bdbm_drv_info_t* bdi)
 {
@@ -68,6 +67,7 @@ void pmu_create (bdbm_drv_info_t* bdi)
 	atomic64_set (&bdi->pm.subpage_write_cnt, 0);
 	atomic64_set (&bdi->pm.rec_read_cnt, 0);
 	atomic64_set (&bdi->pm.rec_write_cnt, 0);
+	atomic64_set (&bdi->pm.gcrec_write_cnt, 0);
 
 	/* elapsed times taken to handle normal I/Os */
 	bdi->pm.time_r_sw = 0;
@@ -161,6 +161,10 @@ void pmu_inc (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
         pmu_inc_recread (bdi);
         pmu_inc_util_r (bdi, pid);
         break;
+    case REQTYPE_GCREC_WRITE:
+        pmu_inc_gcrecwrite (bdi);
+        pmu_inc_util_w (bdi, pid);
+        break;
     case REQTYPE_REC_WRITE:
         pmu_inc_recwrite (bdi);
         pmu_inc_util_w (bdi, pid);
@@ -189,6 +193,12 @@ void pmu_inc_recwrite (bdbm_drv_info_t* bdi)
 {
     atomic64_inc (&bdi->pm.rec_write_cnt);
 }
+
+void pmu_inc_gcrecwrite (bdbm_drv_info_t* bdi) 
+{
+    atomic64_inc (&bdi->pm.gcrec_write_cnt);
+}
+
 // for 4kb write and recycle 4kb R/W
 
 void pmu_inc_read (bdbm_drv_info_t* bdi) 
@@ -489,6 +499,7 @@ void pmu_display (bdbm_drv_info_t* bdi)
             atomic64_read (&bdi->pm.page_write_cnt) +
             atomic64_read (&bdi->pm.subpage_write_cnt) +
             atomic64_read (&bdi->pm.rec_write_cnt) +
+            atomic64_read (&bdi->pm.gcrec_write_cnt) +
             atomic64_read (&bdi->pm.rmw_write_cnt) +
             atomic64_read (&bdi->pm.gc_write_cnt) +
             atomic64_read (&bdi->pm.meta_write_cnt)
@@ -516,6 +527,8 @@ void pmu_display (bdbm_drv_info_t* bdi)
             atomic64_read (&bdi->pm.rec_read_cnt));
     bdbm_msg ("# of rec page writes: %ld",
             atomic64_read (&bdi->pm.rec_write_cnt));
+    bdbm_msg ("# of gcrec page writes: %ld",
+            atomic64_read (&bdi->pm.gcrec_write_cnt));
     bdbm_msg ("");
 
     bdbm_msg ("[3] GC I/Os");

@@ -261,69 +261,87 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 		}
 	} else if (bdbm_is_rmw (r->req_type) && bdbm_is_read (r->req_type)) {
 		bdbm_bug_on (1);
-	} else {
-		if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, r->logaddr.lpa[0], (void*)r))) {
-			bdbm_msg ("bdbm_prior_queue_enqueue failed");
-		}
-	}
+    } else {
+        uint64_t curlpa = -1, i = 0;
+        if(bdbm_is_write(r->req_type)){
+            if(r->logaddr.lpa_cg >= 0)
+                curlpa = r->logaddr.lpa_cg;
+            else{
+                for(i = 0; i < 4; i++){
+                    if(r->fmain.kp_stt[i] == KP_STT_DATA) break;
+                }
+                if(i == 4){
+                    bdi->ptr_hlm_inf->end_req (bdi, r);
+                    return 0;
+                }
+                curlpa = r->logaddr.lpa[i];
+            }
+        }
+        //if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, r->logaddr.lpa[0], (void*)r)))
+        if ((ret = bdbm_prior_queue_enqueue (p->q, r->phyaddr.punit_id, curlpa, (void*)r))) {
+            bdbm_msg ("bdbm_prior_queue_enqueue failed");
+        }
+    }
 
-	/* wake up thread if it sleeps */
-	bdbm_thread_wakeup (p->llm_thread);
+    /* wake up thread if it sleeps */
+    bdbm_thread_wakeup (p->llm_thread);
 
-	return ret;
+    return ret;
 }
 
 void llm_mq_flush (bdbm_drv_info_t* bdi)
 {
-	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+    struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
 
-	while (bdbm_prior_queue_is_all_empty (p->q) != 1) {
-		/*cond_resched ();*/
-		bdbm_thread_yield ();
-	}
+    while (bdbm_prior_queue_is_all_empty (p->q) != 1) {
+        /*cond_resched ();*/
+        bdbm_thread_yield ();
+    }
 }
 
 void llm_mq_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 {
-	struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
-	bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)r->ptr_qitem;
+    struct bdbm_llm_mq_private* p = (struct bdbm_llm_mq_private*)BDBM_LLM_PRIV(bdi);
+    bdbm_prior_queue_item_t* qitem = (bdbm_prior_queue_item_t*)r->ptr_qitem;
 
-	if (bdbm_is_rmw (r->req_type) && bdbm_is_read(r->req_type)) {
-		/* get a parallel unit ID */
-		/*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
-		bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
+    if (bdbm_is_rmw (r->req_type) && bdbm_is_read(r->req_type)) {
+        /* get a parallel unit ID */
+        /*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
+        bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
-		/*bdbm_msg ("LLM Done: lpa=%llu", r->logaddr.lpa[0]);*/
+        /*bdbm_msg ("LLM Done: lpa=%llu", r->logaddr.lpa[0]);*/
 
-		pmu_inc (bdi, r);
+        pmu_inc (bdi, r);
 
-		/* change its type to WRITE if req_type is RMW */
-		r->req_type = REQTYPE_RMW_WRITE;
-		r->phyaddr = r->phyaddr_dst;
+        /* change its type to WRITE if req_type is RMW */
+        r->req_type = REQTYPE_RMW_WRITE;
+        r->phyaddr = r->phyaddr_dst;
 
-		/* remove it from the Q; this automatically triggers another request to be sent to NAND flash */
-		bdbm_prior_queue_remove (p->q, qitem);
+        /* remove it from the Q; this automatically triggers another request to be sent to NAND flash */
+        bdbm_prior_queue_remove (p->q, qitem);
 
-		/* wake up thread if it sleeps */
-		bdbm_thread_wakeup (p->llm_thread);
-	} else {
-		/* get a parallel unit ID */
-		bdbm_prior_queue_remove (p->q, qitem);
+        /* wake up thread if it sleeps */
+        bdbm_thread_wakeup (p->llm_thread);
+    } else {
+        /* get a parallel unit ID */
+        bdbm_prior_queue_remove (p->q, qitem);
 
-		/* complete a lock */
-		/*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
-		bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
+        /* complete a lock */
+        /*bdbm_msg ("unlock: %lld", r->phyaddr.punit_id);*/
+        bdbm_sema_unlock (&p->punit_locks[r->phyaddr.punit_id]);
 
-		/* update the elapsed time taken by NAND devices */
-		pmu_update_tot (bdi, r);
-		pmu_inc (bdi, r);
+        /* update the elapsed time taken by NAND devices */
+        if((r-> req_type & REQTYPE_NCNT) != REQTYPE_NCNT){
+            pmu_update_tot (bdi, r);
+            pmu_inc (bdi, r);
+        }
 
-		/* finish a request */
-		bdi->ptr_hlm_inf->end_req (bdi, r);
+        /* finish a request */
+        bdi->ptr_hlm_inf->end_req (bdi, r);
 
 
 #if defined(ENABLE_SEQ_DBG)
-		bdbm_sema_unlock (&p->dbg_seq);
+        bdbm_sema_unlock (&p->dbg_seq);
 #endif
-	}
+    }
 }

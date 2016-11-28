@@ -388,7 +388,7 @@ static int __hlm_reqs_pool_create_write_req (
                     ptr_lr->logaddr.ofs = l;
                     ptr_lr->logaddr.lpa_cg = -1;
                     ptr_lr->ptr_hlm_req = (void*)hr;
-                    ptr_lr->req_type = br->bi_rw;
+                    ptr_lr->req_type = REQTYPE_WRITE;
                     ptr_lr_prev = ptr_lr;
                     //printk("REQ:llm[%lld]:: lpa_cg=%lld ", i, ptr_lr->logaddr.lpa_cg);
                     /*printk("REQ:lpa[0]=%lld, lpa[1]=%lld, lpa[2]=%lld, lpa[3]=%lld\n ",
@@ -422,21 +422,21 @@ static int __hlm_reqs_pool_create_write_req (
                         ptr_lr->logaddr.lpa[1],
                         ptr_lr->logaddr.lpa[2],
                         ptr_lr->logaddr.lpa[3]);*/
-                ptr_lr->req_type = br->bi_rw;
+                ptr_lr->req_type = REQTYPE_WRITE;
                 ptr_lr->ptr_hlm_req = (void*)hr;
                 ptr_lr++;
             }
         }else{
-            ptr_lr->req_type = br->bi_rw;
+            ptr_lr->req_type = REQTYPE_WRITE;
             if (hole == 3) ptr_lr->logaddr.lpa_cg = -1;
             ptr_lr->ptr_hlm_req = (void*)hr;
 
             //printk("REQ:llm[%lld]:: lpa_cg=%lld ", i, ptr_lr->logaddr.lpa_cg);
             /*printk("REQ:lpa[0]=%lld, lpa[1]=%lld, lpa[2]=%lld, lpa[3]=%lld\n ",
-                    ptr_lr->logaddr.lpa[0],
-                    ptr_lr->logaddr.lpa[1],
-                    ptr_lr->logaddr.lpa[2],
-                    ptr_lr->logaddr.lpa[3]);*/
+              ptr_lr->logaddr.lpa[0],
+              ptr_lr->logaddr.lpa[1],
+              ptr_lr->logaddr.lpa[2],
+              ptr_lr->logaddr.lpa[3]);*/
 
 
             ptr_lr++;
@@ -489,10 +489,10 @@ static int __hlm_reqs_pool_create_read_req (
         ptr_lr->req_type = br->bi_rw;
         ptr_lr->logaddr.lpa_cg = pg_start / NR_KPAGES_IN(pool->map_unit);
         ptr_lr->logaddr.lpa[offset] = pg_start;
-       // if (pool->in_place_rmw == 1) 
-       //     ptr_lr->logaddr.ofs = 0;		/* offset in llm is already decided */
-       // else
-            ptr_lr->logaddr.ofs = offset;	/* it must be adjusted after getting physical locations */
+        // if (pool->in_place_rmw == 1) 
+        //     ptr_lr->logaddr.ofs = 0;		/* offset in llm is already decided */
+        // else
+        ptr_lr->logaddr.ofs = offset;	/* it must be adjusted after getting physical locations */
 
         ptr_lr->ptr_hlm_req = (void*)hr;
 
@@ -523,11 +523,11 @@ int bdbm_hlm_reqs_pool_build_req (
     int ret = 1;
 
     /* create a hlm_req using a bio */
-    if (br->bi_rw == REQTYPE_TRIM) {
+    if (bdbm_is_trim(br->bi_rw)) {
         ret = __hlm_reqs_pool_create_trim_req (pool, hr, br);
-    } else if (br->bi_rw == REQTYPE_WRITE) {
+    } else if (bdbm_is_write(br->bi_rw)) {
         ret = __hlm_reqs_pool_create_write_req (pool, hr, br);
-    } else if (br->bi_rw == REQTYPE_READ) {
+    } else if (bdbm_is_read(br->bi_rw)) {
         ret = __hlm_reqs_pool_create_read_req (pool, hr, br);
     }
 
@@ -571,25 +571,31 @@ void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs)
     }
 }
 
-void hlm_reqs_pool_write_compaction (
+int hlm_reqs_pool_write_compaction (
         bdbm_hlm_req_gc_t* dst, 
         bdbm_hlm_req_gc_t* src, 
         bdbm_device_params_t* np)
 {
     uint64_t dst_loop = 0, dst_kp = 0, src_kp = 0, i = 0;
     uint64_t nr_punits = np->nr_chips_per_channel * np->nr_channels;
+    uint64_t limit = src->nr_llm_reqs + 4 > nr_punits * np->nr_pages_per_block ?
+        nr_punits * np->nr_pages_per_block : src->nr_llm_reqs + 4;
 
     bdbm_llm_req_t* dst_r = NULL;
     bdbm_llm_req_t* src_r = NULL;
 
     dst->nr_llm_reqs = 0;
-    for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+    //for (i = 0; i < nr_punits * np->nr_pages_per_block; i++)
+    for (i = 0; i < limit; i++) {
         hlm_reqs_pool_reset_fmain (&dst->llm_reqs[i].fmain);
+        hlm_reqs_pool_reset_logaddr (&dst->llm_reqs[i].logaddr);
     }
 
     dst_r = &dst->llm_reqs[0];
+    dst_r->logaddr.lpa_cg = -2;
     dst->nr_llm_reqs = 1;
-    for (i = 0; i < nr_punits * np->nr_pages_per_block; i++) {
+    //for (i = 0; i < nr_punits * np->nr_pages_per_block; i++)
+    for (i = 0; i < src->nr_llm_reqs; i++) {
         src_r = &src->llm_reqs[i];
 
         for (src_kp = 0; src_kp < np->nr_subpages_per_page; src_kp++) {
@@ -610,9 +616,12 @@ void hlm_reqs_pool_write_compaction (
                 dst_kp = 0;
                 dst_loop++;
                 dst_r++;
+                dst_r->logaddr.lpa_cg = -2;
                 dst->nr_llm_reqs++;
             }
         }
     }
+    if(dst_kp == 0) dst->nr_llm_reqs--;
+    return dst_kp;
 }
 

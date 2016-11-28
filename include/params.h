@@ -121,6 +121,7 @@ typedef struct {
 	uint32_t device_type;
 	uint64_t device_capacity_in_byte;
 	uint64_t page_prog_time_us;
+	uint64_t subpage_prog_time_us;
 	uint64_t page_read_time_us;
 	uint64_t block_erase_time_us;
 

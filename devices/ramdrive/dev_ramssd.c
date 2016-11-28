@@ -41,7 +41,7 @@
 #include "bdbm_drv.h"
 #include "ufile.h"
 #include "dev_ramssd.h"
-#include "file_function.h"
+//#include "file_function.h"
 
 //#define DATA_CHECK
 /* for debug
@@ -145,10 +145,10 @@ static void* __ramssd_alloc_ssdram (bdbm_device_params_t* ptr_np)
         nr_pages_in_ssd * 
         page_size_in_bytes;
 
-    /*for debug
-	resultw = file_open("/home/hoon/datawrite.txt", O_CREAT | O_TRUNC | O_WRONLY, 0644);
-	resultr = file_open("/home/hoon/dataread.txt", O_CREAT | O_TRUNC | O_WRONLY, 0644);
-    */
+    //for debug
+//	resultw = file_open("/home/hoon/datawrite.txt", O_CREAT | O_TRUNC | O_WRONLY, 0644);
+//	resultr = file_open("/home/hoon/dataread.txt", O_CREAT | O_TRUNC | O_WRONLY, 0644);
+    
 
     bdbm_msg ("=====================================================================");
     bdbm_msg ("RAM DISK INFO");
@@ -240,12 +240,13 @@ static uint8_t __ramssd_read_page (
                 bdbm_memcpy((((int64_t*)oob_data) + loop),
                         ptr_ramssd_addr + ri->np->page_main_size + (ri->np->page_oob_size/nr_kpages)*loop,
                         ri->np->page_oob_size/nr_kpages);
-
-            //    if(((int64_t*)oob_data)[loop]== 557056){
-            //        offr += file_write(resultr, offr, ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
-            //        printk("557056:: read_address: %p\n", ptr_ramssd_addr + KPAGE_SIZE * loop);
-            //    }
 /*
+                if(((int64_t*)oob_data)[loop]== 9100){
+                    offr += file_write(resultr, offr, ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
+                    printk("9100:: read_address: %p\n", ptr_ramssd_addr + KPAGE_SIZE * loop);
+                }
+*/
+               /* 
                 printk("RAM:START_RAMDISK_READ: \n");
                 printk("RAM:memcpy(oob_p=%llu, start=%llu, size=%llu\n",
                         *(((int64_t*)oob_data) + loop),
@@ -255,10 +256,7 @@ static uint8_t __ramssd_read_page (
                         ((int64_t*)oob_data)[loop], channel_no, chip_no, block_no, page_no,
                         loop, kp_ptr[loop]);
                 printk("RAM:END_RAMDISK_READ: \n");
- */              
-                
-                
-
+            */ 
             }
         }
     }
@@ -338,21 +336,20 @@ static uint8_t __ramssd_prog_page (
             int64_t lpa = ((int64_t*)oob_data)[loop];
             if (lpa < 0 || lpa == 0xffffffffffffffff) continue;
             if (kp_stt[loop] != KP_STT_DATA) continue;
-            is_cs++;
             bdbm_memcpy (ptr_ramssd_addr + KPAGE_SIZE * loop, kp_ptr[loop], KPAGE_SIZE);
-/*
-            if(lpa == 557056){
-                offw += file_write(resultw, offw, kp_ptr[loop], KPAGE_SIZE);
-                printk("557056:: write_address: %p\n", ptr_ramssd_addr + KPAGE_SIZE * loop);
-            }
-            */
 
             if (oob && oob_data != NULL) {
                 bdbm_memcpy(ptr_ramssd_addr + ri->np->page_main_size + (ri->np->page_oob_size/nr_kpages)*loop,
                         (((int64_t*)oob_data)+loop), ri->np->page_oob_size/nr_kpages);
 
             }
-           /* 
+/*                if(((int64_t*)oob_data)[loop]== 9100){
+                    offw += file_write(resultw, offw, ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
+                    printk("9100:: write_address: %p\n", ptr_ramssd_addr + KPAGE_SIZE * loop);
+                }
+*/
+
+       /* 
             printk("RAM:START_RAMDISK_WRITE: \n");
             printk("RAM:memcpy(start=%llu, oop=%llu, size=%llu\n",
                     *((int64_t*)(ptr_ramssd_addr + ri->np->page_main_size + (ri->np->page_oob_size/nr_kpages)*loop)),
@@ -363,23 +360,8 @@ static uint8_t __ramssd_prog_page (
                     channel_no, chip_no, block_no, page_no,
                     loop, kp_ptr[loop]);
             printk("RAM:END_RAMDISK_WRITE: \n");
-           */ 
+        */    
         }
-    }
-    if(is_cs == nr_kpages){
-        //printk("RAM:if(is_cs(%d) == nr_kpages(%d))\n", is_cs, nr_kpages);
-        for (loop = 0; loop < nr_kpages; loop++) {
-            int64_t lpa = ((int64_t*)oob_data)[0] / nr_kpages;
-            //printk("RAM:COARSE: lpa=%lld", lpa);
-            if (oob && oob_data != NULL) {
-                bdbm_memcpy(ptr_ramssd_addr + ri->np->page_main_size + (ri->np->page_oob_size/nr_kpages)*loop,
-                        &lpa, ri->np->page_oob_size/nr_kpages);
-            /*printk("RAM:COARSE:memcpy(start=%llu, oop=%llu, size=%llu\n",
-                    *((int64_t*)(ptr_ramssd_addr + ri->np->page_main_size + (ri->np->page_oob_size/nr_kpages)*loop)),
-                    lpa, ri->np->page_oob_size/nr_kpages);*/
-            }
-        }
-//        printk("\n");
     }
 
 #if defined (DATA_CHECK)
@@ -463,7 +445,9 @@ static uint32_t __ramssd_send_cmd (
         case REQTYPE_META_WRITE:
         case REQTYPE_GC_WRITE:
         case REQTYPE_REC_WRITE:
+        case REQTYPE_GCREC_WRITE:
         case REQTYPE_SUB_WRITE:
+        case REQTYPE_SUB_WRITE | REQTYPE_NCNT:
             ret = __ramssd_prog_page (
                     ri, 
                     ptr_req->phyaddr.channel_no,
@@ -738,10 +722,17 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
                 case REQTYPE_GC_WRITE:
                 case REQTYPE_RMW_WRITE:
                 case REQTYPE_META_WRITE:
+                case REQTYPE_GCREC_WRITE:
                     target_elapsed_time_us = ri->np->page_prog_time_us;
+                    break;
+                case REQTYPE_SUB_WRITE:
+                case REQTYPE_SUB_WRITE | REQTYPE_NCNT:
+                case REQTYPE_REC_WRITE:
+                    target_elapsed_time_us = ri->np->subpage_prog_time_us;
                     break;
                 case REQTYPE_READ:
                 case REQTYPE_GC_READ:
+                case REQTYPE_REC_READ:
                 case REQTYPE_RMW_READ:
                 case REQTYPE_META_READ:
                     target_elapsed_time_us = ri->np->page_read_time_us;

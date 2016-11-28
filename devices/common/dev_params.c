@@ -51,9 +51,10 @@ enum BDBM_DEFAULT_NAND_PARAMS {
 	NR_CHANNELS = 8,
 	NAND_HOST_BUS_TRANS_TIME_US = 0,	/* assume to be 0 */
 	NAND_CHIP_BUS_TRANS_TIME_US = 100,	/* 100us */
-	NAND_PAGE_PROG_TIME_US = 500,		/* 1.3ms */	
+	NAND_PAGE_PROG_TIME_US = 1300,		/* 1.3ms */	
+	NAND_SUBPAGE_PROG_TIME_US = 900,		/* 900us */	
 	NAND_PAGE_READ_TIME_US = 100,		/* 100us */
-	NAND_BLOCK_ERASE_TIME_US = 3000,	/* 3ms */
+	NAND_BLOCK_ERASE_TIME_US = 5000,	/* 5ms */
 };
 
 int _param_nr_channels 				= NR_CHANNELS;
@@ -65,6 +66,7 @@ int _param_page_oob_size 			= NAND_PAGE_OOB_SIZE;
 int _param_host_bus_trans_time_us	= NAND_HOST_BUS_TRANS_TIME_US;
 int _param_chip_bus_trans_time_us	= NAND_CHIP_BUS_TRANS_TIME_US;
 int _param_page_prog_time_us		= NAND_PAGE_PROG_TIME_US; 		
+int _param_subpage_prog_time_us		= NAND_SUBPAGE_PROG_TIME_US; 		
 int _param_page_read_time_us		= NAND_PAGE_READ_TIME_US;
 int _param_block_erase_time_us		= NAND_BLOCK_ERASE_TIME_US;
 
@@ -127,6 +129,7 @@ bdbm_device_params_t get_default_device_params (void)
  	p.page_oob_size = _param_page_oob_size;
 	p.device_type = _param_device_type;
  	p.page_prog_time_us = _param_page_prog_time_us;
+ 	p.subpage_prog_time_us = _param_subpage_prog_time_us;
  	p.page_read_time_us = _param_page_read_time_us;
  	p.block_erase_time_us = _param_block_erase_time_us;
  
