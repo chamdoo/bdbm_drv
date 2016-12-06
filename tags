@@ -3765,6 +3765,7 @@ ptr_nvm_inf	include/bdbm_drv.h	/^	bdbm_nvm_inf_t* ptr_nvm_inf;$/;"	m	struct:_bdb
 ptr_nvm_lookup_tbl	frontend/kernel/nvm_cache.h	/^	bdbm_nvm_lookup_tbl_entry_t* ptr_nvm_lookup_tbl;$/;"	m	struct:__anon96
 ptr_nvm_tbl	frontend/kernel/nvm_cache.h	/^	bdbm_nvm_page_t* ptr_nvm_tbl;$/;"	m	struct:__anon96
 ptr_nvmram	frontend/kernel/nvm_cache.h	/^	void* ptr_nvmram; \/* DRAM memory for nvm *\/$/;"	m	struct:__anon96
+ptr_page	frontend/kernel/nvm_cache.h	/^	bdbm_nvm_page_t* ptr_page;$/;"	m	struct:__anon95
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon42
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon43
 ptr_private	include/bdbm_drv.h	/^	void* ptr_private;$/;"	m	struct:__anon44
@@ -4226,7 +4227,7 @@ tbem	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32			tbem;$/;"	m	struct:nvme_nvm_id_
 tbet	tools/nvme/lightnvm.c	/^	__le32			tbet;$/;"	m	struct:nvme_nvm_id_group	file:
 tbet	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__le32			tbet;$/;"	m	struct:nvme_nvm_id_group	file:
 tbl	common/3rd/uthash.h	/^   struct UT_hash_table *tbl;$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_table
-tbl_idx	frontend/kernel/nvm_cache.h	/^	int64_t tbl_idx; $/;"	m	struct:__anon95
+tbl_idx	frontend/kernel/nvm_cache.h	/^	int64_t tbl_idx;$/;"	m	struct:__anon95
 tblid	tools/nvme/lightnvm.c	/^	__u8	tblid[4];$/;"	m	struct:nvme_nvm_bb_tbl	file:
 tblid	tools/nvmedrv-v4.5.3/lightnvm.c	/^	__u8	tblid[4];$/;"	m	struct:nvme_nvm_bb_tbl	file:
 tblks	tools/nvme/lightnvm.c	/^	__le32	tblks;$/;"	m	struct:nvme_nvm_bb_tbl	file:

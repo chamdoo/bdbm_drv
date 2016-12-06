@@ -115,8 +115,13 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	/* perform mapping with the FTL */
 //	bdbm_msg("[EUNJI] __hlm_nobuf_make_rw_req");
 
+#ifdef	RFLUSH_FLUSH
+	if (hr->nr_llm_reqs < 1) {
+		bdi->ptr_host_inf->end_req (bdi, hr);
+	} else { 
+#endif
 #ifdef	RFLUSH
-	if (bdbm_is_rflush (hr->req_type) || hr->nr_llm_reqs == 0) {
+	if (bdbm_is_rflush (hr->req_type)) {
 		bdi->ptr_host_inf->end_req (bdi, hr);
 	} else {
 #endif
@@ -211,6 +216,9 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 #ifdef	RFLUSH
 	}
 #endif
+#ifdef	RFLUSH_FLUSH
+	}
+#endif
 
 	return 0;
 
@@ -229,7 +237,6 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		/* nothing */
 	} else 
 #endif
-
 	if (dp->mapping_type == MAPPING_POLICY_PAGE) {
 		uint32_t loop;
 		/* see if foreground GC is needed or not */
@@ -243,10 +250,10 @@ void __hlm_nobuf_check_ondemand_gc (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 				ftl->do_gc (bdi, 0);
 #ifdef	FLUSH
 			} else if (bdbm_is_write(hr->req_type) &&
-					ftl->is_gc_needed != NULL && 
-					ftl->is_gc_needed (bdi, 0)) {
-					/* perform GC before sending requests */ 
-					ftl->do_gc (bdi, 0);
+				ftl->is_gc_needed != NULL && 
+				ftl->is_gc_needed (bdi, 0)) {
+				/* perform GC before sending requests */ 
+				ftl->do_gc (bdi, 0);
 #endif
 			} else
 				break;

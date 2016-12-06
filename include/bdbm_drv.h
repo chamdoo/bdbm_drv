@@ -4,7 +4,10 @@
 #define NVM_CACHE_DEBUG
 #define NVM_CACHE_TRIM
 #define FLUSH
+#define	RFLUSH_FLUSH // set flush functions on rflush version
+#define NOT_ONLY_RFLUSH	// is this off? only rflush not flush
 #define RFLUSH
+//#define RW_DEBUG
 
 /*
 The MIT License (MIT)
@@ -432,6 +435,12 @@ typedef struct {
 	atomic64_t nvm_rh_cnt; // read hit 
 	atomic64_t nvm_h_cnt; // rh_cnt + real wh 
 	atomic64_t nvm_ev_cnt; // evict 
+#endif
+#ifdef	FLUSH
+	atomic64_t nvm_f_cnt;	//flush 
+#endif
+#ifdef	RFLUSH
+	atomic64_t nvm_rf_cnt;	//rflush
 #endif
 	uint64_t time_r_sw;
 	uint64_t time_r_q;

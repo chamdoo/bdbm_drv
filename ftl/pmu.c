@@ -74,7 +74,12 @@ void pmu_create (bdbm_drv_info_t* bdi)
 	atomic64_set (&bdi->pm.nvm_h_cnt, 0);
 	atomic64_set (&bdi->pm.nvm_ev_cnt, 0);
 #endif
-
+#ifdef	FLUSH
+	atomic64_set (&bdi->pm.nvm_f_cnt, 0);
+#endif
+#ifdef	RFLUSH
+	atomic64_set (&bdi->pm.nvm_rf_cnt, 0);
+#endif
 	/* elapsed times taken to handle normal I/Os */
 	bdi->pm.time_r_sw = 0;
 	bdi->pm.time_r_q = 0;
@@ -562,6 +567,23 @@ void pmu_display (bdbm_drv_info_t* bdi)
 
 	bdbm_msg ("");
 #endif
+
+#ifdef	FLUSH
+	bdbm_msg ("[9] FLUSH I/Os");
+	bdbm_msg ("#_of_nvm_flushing_requests: %ld",
+		atomic64_read (&bdi->pm.nvm_f_cnt));
+	bdbm_msg ("#_of_nvm_evict_requests: %ld",
+		atomic64_read (&bdi->pm.nvm_ev_cnt));
+	bdbm_msg ("");
+#endif
+#ifdef	RFLUSH
+	bdbm_msg ("[10] RFLUSH I/Os");
+	bdbm_msg ("#_of_nvm_rflushing_requests: %ld",
+		atomic64_read (&bdi->pm.nvm_rf_cnt));
+	bdbm_msg ("#_of_nvm_evict_accesses: %ld",
+		atomic64_read (&bdi->pm.nvm_ev_cnt));
+#endif
+
 
 	bdbm_msg ("-----------------------------------------------");
 	bdbm_msg ("-----------------------------------------------");

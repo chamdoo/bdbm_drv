@@ -73,29 +73,39 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 		goto fail;
 
 	/* get the type of the bio request */
-	if (bio->bi_rw & REQ_DISCARD) {
+	if (bio->bi_rw & REQ_DISCARD) { 
 		br->bi_rw = REQTYPE_TRIM;
-		bdbm_msg ("debug: trim in");
+#ifdef	RW_DEBUG
+		bdbm_msg("trim");
+#endif
 	}
 #ifdef RFLUSH
 	else if (bio->bi_rw & REQ_RFLUSH) {
 		br->bi_rw = REQTYPE_RFLUSH;
-		bdbm_msg ("debug: rflush in");
+#ifdef	RW_DEBUG
+		bdbm_msg("rflush");
+#endif
 	}
 #endif
 #ifdef FLUSH
-	else if (bio->bi_rw & REQ_FLUSH) {
+	else if (bio->bi_flags & REQ_FLUSH || bio->bi_rw & REQ_FLUSH) {
 		br->bi_rw = REQTYPE_FLUSH;
-		bdbm_msg ("debug: flush in");
+#ifdef	RW_DEBUG
+		bdbm_msg("flush");
+#endif
 	}
 #endif
 	else if (bio_data_dir (bio) == READ || bio_data_dir (bio) == READA) {
 		br->bi_rw = REQTYPE_READ;
-		bdbm_msg ("debug: read in");
+#ifdef	RW_DEBUG
+		bdbm_msg("read");
+#endif
 	}
 	else if (bio_data_dir (bio) == WRITE) {
 		br->bi_rw = REQTYPE_WRITE;
-		bdbm_msg ("debug: write in");
+#ifdef	RW_DEBUG
+		bdbm_msg("write");
+#endif
 	}
 	else {
 		bdbm_error ("oops! invalid request type (bi->bi_rw = %lx)", bio->bi_rw);
@@ -262,8 +272,6 @@ void blkio_make_req (bdbm_drv_info_t* bdi, void* bio)
 	/* ulock a global mutex */
 	bdbm_sema_unlock (&p->host_lock);
 	
-	bdbm_msg ("debug: blkio end");
-
 	return;
 
 fail:
