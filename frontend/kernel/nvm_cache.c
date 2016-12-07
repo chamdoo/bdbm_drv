@@ -361,31 +361,6 @@ uint64_t bdbm_nvm_flush_data (bdbm_drv_info_t* bdi)
 
 		bdbm_sema_unlock (&bp->host_lock);
 
-#ifdef NVM_CACHE_TRIM
-#if 0
-		/* get a free hlm_req from the hlm_reqs_pool */
-		if((nhr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL) {
-			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
-			goto fail;
-		}
-
-		/* build trim hr with lpa, len */
-		/* hr->done is locked in pool_build_wb_req() */
-		if (bdbm_hlm_reqs_pool_build_int_trim_req (nhr, fpage->logaddr.lpa[0], 1) != 0) {
-			bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
-			goto fail;
-		}
-
-		/* send req */
-		bdbm_sema_lock (&bp->host_lock);
-	
-		if(bdi->ptr_hlm_inf->make_req (bdi, nhr) != 0) {
-			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
-		}
-		bdbm_sema_unlock (&bp->host_lock);
-#endif
-#endif
-
 		nvm_lookup_tbl[flpa].tbl_idx = -1;
 #ifdef	RFLUSH
 		nvm_lookup_tbl[flpa].ptr_page = NULL;
@@ -737,31 +712,6 @@ uint64_t bdbm_nvm_rflush_data (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr) {
         }
 
         bdbm_sema_unlock (&bp->host_lock);
-
-#ifdef NVM_CACHE_TRIM
-#if 0
-		/* get a free hlm_req from the hlm_reqs_pool */
-		if((nhr = bdbm_hlm_reqs_pool_get_item(bp->hlm_reqs_pool)) == NULL) {
-			bdbm_error("bdbm_hlm_reqs_pool_get_item () failed");
-			goto fail;
-		}
-
-		/* build trim hr with lpa, len */
-		/* hr->done is locked in pool_build_wb_req() */
-		if (bdbm_hlm_reqs_pool_build_int_trim_req (nhr, fpage->logaddr.lpa[0], 1) != 0) {
-			bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
-			goto fail;
-		}
-
-		/* send req */
-		bdbm_sema_lock (&bp->host_lock);
-	
-		if(bdi->ptr_hlm_inf->make_req (bdi, nhr) != 0) {
-			bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
-		}
-		bdbm_sema_unlock (&bp->host_lock);
-#endif
-#endif
 
 		nvm_lookup_tbl[i].tbl_idx = -1; 
         nvm_lookup_tbl[i].ptr_page = NULL;
