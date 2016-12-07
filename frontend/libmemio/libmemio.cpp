@@ -27,6 +27,8 @@ THE SOFTWARE.
 #include <unistd.h>
 #include <time.h>
 
+#include <queue> 
+
 #include "libmemio.h"
 
 static void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
@@ -58,15 +60,18 @@ static int __memio_init_llm_reqs (memio_t* mio)
 {
 	int ret = 0;
 	if ((mio->rr = (bdbm_llm_req_t*)bdbm_zmalloc (
-			sizeof (bdbm_llm_req_t) * mio->nr_punits)) == NULL) {
+			sizeof (bdbm_llm_req_t) * mio->nr_tags)) == NULL) {
 		bdbm_error ("bdbm_zmalloc () failed");
 		ret = -1;
 	} else {
 		int i = 0;
-		for (i = 0; i < mio->nr_punits; i++) {
+		for (i = 0; i < mio->nr_tags; i++) {
 			mio->rr[i].done = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
 			bdbm_sema_init (mio->rr[i].done); /* start with unlock */
+			mio->tagQ->push(i);
 		}
+		bdbm_sema_init2 (&mio->tagSem, mio->nr_tags);
+		bdbm_mutex_init (&mio->tagQMutex);
 	}
 	return ret;
 }
@@ -104,10 +109,13 @@ memio_t* memio_open ()
 			dm->probe, ret);
 		goto fail;
 	}
-	mio->nr_punits = 64; /* FIXME: it must be set according to device parameters */
+	mio->nr_punits = 64; /* # of blocks that comprise one segment */
+	mio->nr_tags = 128; /* # of request outstanding to HW possible */
 	mio->io_size = 8192;
 	mio->trim_lbas = (1 << 14);
 	mio->trim_size = mio->trim_lbas * mio->io_size;
+
+	mio->tagQ = new std::queue<int>;
 
 	/* setup some internal values according to 
 	 * the device's organization */
@@ -143,26 +151,43 @@ static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio)
 {
 	int i = 0;
 	bdbm_llm_req_t* r = NULL;
-
-	/* get available llm_req */
+	
 	do {
-		for (i = 0; i < mio->nr_punits; i++) { /* <= FIXME: use the linked-list instead of loop! */
-			if (!bdbm_sema_try_lock (mio->rr[i].done))
-				continue;
+		bdbm_mutex_lock(&mio->tagQMutex);
+		if (!mio->tagQ->empty()) {
+			i = mio->tagQ->front();
+			mio->tagQ->pop();
 			r = (bdbm_llm_req_t*)&mio->rr[i];
 			r->tag = i;
-			break;
 		}
-	} while (!r); /* <= FIXME: use the event instead of loop! */
+		bdbm_mutex_unlock(&mio->tagQMutex);
+	} while (!r);
+	
+
+//	/* get available llm_req */
+//	do {
+//		for (i = 0; i < mio->nr_tags; i++) { /* <= FIXME: use the linked-list instead of loop! */
+//			if (!bdbm_sema_try_lock (mio->rr[i].done))
+//				continue;
+//			r = (bdbm_llm_req_t*)&mio->rr[i];
+//			r->tag = i;
+//			break;
+//		}
+//	} while (!r); /* <= FIXME: use the event instead of loop! */
 
 	return r;
 }
 
 static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 {
-	/* release semaphore */
+	bdbm_mutex_lock(&mio->tagQMutex);
+	mio->tagQ->push(r->tag);
+	bdbm_mutex_unlock(&mio->tagQMutex);
 	r->tag = -1;
-	bdbm_sema_unlock (r->done);
+
+//	/* release semaphore */
+//	r->tag = -1;
+//	bdbm_sema_unlock (r->done);
 }
 
 static void __memio_check_alignment (uint64_t length, uint64_t alignment)
@@ -189,7 +214,7 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 
 	/* fill up logaddr; note that phyaddr is not used here */
 	while (cur_lba < lba + (len/mio->io_size)) {
-		if((++cnt)%64 == 0) bdbm_thread_nanosleep(100);
+//		if((++cnt)%32 == 0) bdbm_thread_nanosleep(200);
 		/* get an empty llm_req */
 		r = __memio_alloc_llm_req (mio);
 
@@ -212,26 +237,35 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 		sent += mio->io_size;
 	}
 
+	//FIXME: if write, just return. if read, wait until my read request finishes
+
 	/* return the length of bytes transferred */
 	return sent;
 }
 
+// Below should not be used by external functions
 void memio_wait (memio_t* mio)
 {
-	int i, j=0;
-	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
-	for (i = 0; i < mio->nr_punits; ) {
-		if (!bdbm_sema_try_lock (mio->rr[i].done)){
-			if ( ++j == 500000 ) {
-				bdbm_msg ("timeout at tag:%d, reissue command", mio->rr[i].tag);
-				dm->make_req (&mio->bdi, mio->rr + i);
-				j=0;
-			}
-			continue;
-		}
-		bdbm_sema_unlock (mio->rr[i].done);
-		i++;
-	}
+	int i = 0;
+	do {
+		bdbm_mutex_lock(&mio->tagQMutex);
+		i = mio->tagQ->size();
+		bdbm_mutex_unlock(&mio->tagQMutex);
+	} while ( i == mio->nr_tags );
+//	int i, j=0;
+//	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
+//	for (i = 0; i < mio->nr_tags; ) {
+//		if (!bdbm_sema_try_lock (mio->rr[i].done)){
+////			if ( ++j == 500000 ) {
+////				bdbm_msg ("timeout at tag:%d, reissue command", mio->rr[i].tag);
+////				dm->make_req (&mio->bdi, mio->rr + i);
+////				j=0;
+////			}
+//			continue;
+//		}
+//		bdbm_sema_unlock (mio->rr[i].done);
+//		i++;
+//	}
 }
 
 int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data)
@@ -301,6 +335,8 @@ void memio_close (memio_t* mio)
 	/* mio is available? */
 	if (!mio) return;
 
+	delete mio->tagQ;
+
 	/* get pointers for dm and bdi */
 	bdi = &mio->bdi;
 	dm = bdi->ptr_dm_inf;
@@ -308,7 +344,7 @@ void memio_close (memio_t* mio)
 	/* wait for all the on-going jobs to finish */
 	bdbm_msg ("Wait for all the on-going jobs to finish...");
 	if (mio->rr) {
-		for (i = 0; i < mio->nr_punits; i++)
+		for (i = 0; i < mio->nr_tags; i++)
 			if (mio->rr[i].done)
 				bdbm_sema_lock (mio->rr[i].done);
 	}
@@ -321,7 +357,7 @@ void memio_close (memio_t* mio)
 
 	/* free allocated memory */
 	if (mio->rr) {
-		for (i = 0; i < mio->nr_punits; i++)
+		for (i = 0; i < mio->nr_tags; i++)
 			if (mio->rr[i].done)
 				bdbm_free (mio->rr[i].done);
 		bdbm_free (mio->rr);

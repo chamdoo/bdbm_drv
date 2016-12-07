@@ -334,7 +334,7 @@ uint32_t dm_nohost_probe (
 	bdbm_sema_init (&ftl_table_lock);
 	bdbm_sema_lock (&ftl_table_lock); // initially lock=0 to be used for waiting
 
-	nr_punit = 64;
+	nr_punit = 128;
 	if ((p->llm_reqs = (bdbm_llm_req_t**)bdbm_zmalloc (
 			sizeof (bdbm_llm_req_t*) * nr_punit)) == NULL) {
 		bdbm_warning ("bdbm_zmalloc failed");

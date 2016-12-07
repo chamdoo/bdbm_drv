@@ -92,6 +92,8 @@ THE SOFTWARE.
 #include <semaphore.h>  /* Semaphore */
 #define bdbm_sema_t sem_t 
 #define bdbm_sema_init(a) sem_init(a, 0, 1)
+#define bdbm_sema_init2(a,b) sem_init(a, 0, b)
+#define bdbm_sema_wait(a) sem_wait(a)
 #define bdbm_sema_lock(a) sem_wait(a)
 #define bdbm_sema_lock_interruptible(a) sem_wait(a)
 #define bdbm_sema_unlock(a) sem_post(a)

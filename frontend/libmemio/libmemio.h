@@ -3,14 +3,19 @@
 #include "uthread.h" /* bdbm_thread_nanosleep */
 #include "devices.h" /* bdbm_dm_get_inf */
 #include "debug.h" /* bdbm_msg */
+#include <queue>
 
 typedef struct memio {
 	bdbm_drv_info_t bdi;
 	bdbm_llm_req_t* rr;
 	int nr_punits;
+	int nr_tags;
 	uint64_t io_size; /* bytes */
 	uint64_t trim_size;
 	uint64_t trim_lbas;
+	std::queue<int>* tagQ;
+	bdbm_sema_t tagSem;
+	bdbm_mutex_t tagQMutex;
 } memio_t;
 
 memio_t* memio_open ();
