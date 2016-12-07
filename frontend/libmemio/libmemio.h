@@ -14,8 +14,8 @@ typedef struct memio {
 	uint64_t trim_size;
 	uint64_t trim_lbas;
 	std::queue<int>* tagQ;
-	bdbm_sema_t tagSem;
 	bdbm_mutex_t tagQMutex;
+	bdbm_cond_t  tagQCond;
 } memio_t;
 
 memio_t* memio_open ();

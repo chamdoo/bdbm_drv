@@ -94,6 +94,7 @@ THE SOFTWARE.
 #define bdbm_sema_init(a) sem_init(a, 0, 1)
 #define bdbm_sema_init2(a,b) sem_init(a, 0, b)
 #define bdbm_sema_wait(a) sem_wait(a)
+#define bdbm_sema_post(a) sem_post(a)
 #define bdbm_sema_lock(a) sem_wait(a)
 #define bdbm_sema_lock_interruptible(a) sem_wait(a)
 #define bdbm_sema_unlock(a) sem_post(a)
@@ -116,6 +117,14 @@ THE SOFTWARE.
 	else ret = 0; \
 	ret; })
 #define bdbm_mutex_free(a) pthread_mutex_destroy(a)
+
+/* condition */
+#define bdbm_cond_t pthread_cond_t
+#define bdbm_cond_init(a) pthread_cond_init(a,0)
+#define bdbm_cond_signal(a) pthread_cond_signal(a)
+#define bdbm_cond_broadcast(a) pthread_cond_broadcast(a)
+#define bdbm_cond_wait(a,b) pthread_cond_wait(a,b)
+#define bdbm_cond_free(a) pthread_cond_destroy(a)
 
 #else
 /* ERROR CASE */

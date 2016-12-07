@@ -66,12 +66,13 @@ static int __memio_init_llm_reqs (memio_t* mio)
 	} else {
 		int i = 0;
 		for (i = 0; i < mio->nr_tags; i++) {
-			mio->rr[i].done = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
-			bdbm_sema_init (mio->rr[i].done); /* start with unlock */
+//			mio->rr[i].done = (bdbm_sema_t*)bdbm_malloc (sizeof (bdbm_sema_t));
+//			bdbm_sema_init (mio->rr[i].done); /* start with unlock */
 			mio->tagQ->push(i);
+			mio->rr[i].tag = i;
 		}
-		bdbm_sema_init2 (&mio->tagSem, mio->nr_tags);
 		bdbm_mutex_init (&mio->tagQMutex);
+		bdbm_cond_init (&mio->tagQCond);
 	}
 	return ret;
 }
@@ -151,18 +152,26 @@ static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio)
 {
 	int i = 0;
 	bdbm_llm_req_t* r = NULL;
-	
-	do {
-		bdbm_mutex_lock(&mio->tagQMutex);
-		if (!mio->tagQ->empty()) {
-			i = mio->tagQ->front();
-			mio->tagQ->pop();
-			r = (bdbm_llm_req_t*)&mio->rr[i];
-			r->tag = i;
-		}
-		bdbm_mutex_unlock(&mio->tagQMutex);
-	} while (!r);
-	
+
+	// using std::queue & event
+	bdbm_mutex_lock(&mio->tagQMutex);
+	while (mio->tagQ->empty()) {
+		bdbm_cond_wait(&mio->tagQCond, &mio->tagQMutex);
+	}
+	r = (bdbm_llm_req_t*)&mio->rr[mio->tagQ->front()];
+	mio->tagQ->pop();
+	bdbm_mutex_unlock(&mio->tagQMutex);
+
+//	do {
+//		bdbm_mutex_lock(&mio->tagQMutex);
+//		if (!mio->tagQ->empty()) {
+//			i = mio->tagQ->front();
+//			mio->tagQ->pop();
+//			r = (bdbm_llm_req_t*)&mio->rr[i];
+//		}
+//		bdbm_mutex_unlock(&mio->tagQMutex);
+//	} while (!r);
+//	
 
 //	/* get available llm_req */
 //	do {
@@ -181,9 +190,13 @@ static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio)
 static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 {
 	bdbm_mutex_lock(&mio->tagQMutex);
+	if ( r->req_type == REQTYPE_READ ) {
+		if( ++(*r->counter) >= r->num_reqs )
+			bdbm_cond_broadcast(r->cond);
+	}
 	mio->tagQ->push(r->tag);
+	bdbm_cond_broadcast(&mio->tagQCond); // wakes up threads waiting for a tag
 	bdbm_mutex_unlock(&mio->tagQMutex);
-	r->tag = -1;
 
 //	/* release semaphore */
 //	r->tag = -1;
@@ -206,24 +219,32 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 	uint8_t* cur_buf = data;
 	uint64_t cur_lba = lba;
 	uint64_t sent = 0;
-	int ret;
-	int cnt=0;
-	
+	int ret, num_lbas;
+
+	/* read wait variables */
+	int counter = 0;
+	bdbm_cond_t readCond = PTHREAD_COND_INITIALIZER;
+
 	/* see if LBA alignment is correct */
 	__memio_check_alignment (len, mio->io_size);
 
+	num_lbas = (int)(len/mio->io_size);
+
 	/* fill up logaddr; note that phyaddr is not used here */
 	while (cur_lba < lba + (len/mio->io_size)) {
-//		if((++cnt)%32 == 0) bdbm_thread_nanosleep(200);
 		/* get an empty llm_req */
 		r = __memio_alloc_llm_req (mio);
-
 		bdbm_bug_on (!r);
 
 		/* setup llm_req */
 		r->req_type = (dir == 0) ? REQTYPE_READ : REQTYPE_WRITE;
 		r->logaddr.lpa[0] = cur_lba;
 		r->fmain.kp_ptr[0] = cur_buf;
+		if (dir==0) {
+			r->cond = &readCond;
+			r->counter = &counter;
+			r->num_reqs = num_lbas;
+		}
 
 		/* send I/O requets to the device */
 		if ((ret = dm->make_req (&mio->bdi, r)) != 0) {
@@ -237,7 +258,17 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 		sent += mio->io_size;
 	}
 
-	//FIXME: if write, just return. if read, wait until my read request finishes
+	//FIXME: if write, just return. if read, wait until my read request finishes	
+	
+	if ( dir == 0 ) {
+
+		bdbm_mutex_lock(&mio->tagQMutex);
+		while (counter < num_lbas) {
+			bdbm_cond_wait(&readCond, &mio->tagQMutex);
+		}
+		bdbm_mutex_unlock(&mio->tagQMutex);
+	}
+	bdbm_cond_free(&readCond);
 
 	/* return the length of bytes transferred */
 	return sent;
@@ -251,7 +282,8 @@ void memio_wait (memio_t* mio)
 		bdbm_mutex_lock(&mio->tagQMutex);
 		i = mio->tagQ->size();
 		bdbm_mutex_unlock(&mio->tagQMutex);
-	} while ( i == mio->nr_tags );
+	} while ( i != mio->nr_tags );
+
 //	int i, j=0;
 //	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
 //	for (i = 0; i < mio->nr_tags; ) {
