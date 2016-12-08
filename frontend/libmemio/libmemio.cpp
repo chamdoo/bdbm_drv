@@ -191,7 +191,7 @@ static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 {
 	bdbm_mutex_lock(&mio->tagQMutex);
 	if ( r->req_type == REQTYPE_READ ) {
-		if( ++(*r->counter) >= r->num_reqs )
+		if( --(*r->counter) <= 0 )
 			bdbm_cond_broadcast(r->cond);
 	}
 	mio->tagQ->push(r->tag);
@@ -222,13 +222,11 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 	int ret, num_lbas;
 
 	/* read wait variables */
-	int counter = 0;
+	int counter = (int)(len/mio->io_size);
 	bdbm_cond_t readCond = PTHREAD_COND_INITIALIZER;
 
 	/* see if LBA alignment is correct */
 	__memio_check_alignment (len, mio->io_size);
-
-	num_lbas = (int)(len/mio->io_size);
 
 	/* fill up logaddr; note that phyaddr is not used here */
 	while (cur_lba < lba + (len/mio->io_size)) {
@@ -243,7 +241,6 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 		if (dir==0) {
 			r->cond = &readCond;
 			r->counter = &counter;
-			r->num_reqs = num_lbas;
 		}
 
 		/* send I/O requets to the device */
@@ -263,7 +260,7 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 	if ( dir == 0 ) {
 
 		bdbm_mutex_lock(&mio->tagQMutex);
-		while (counter < num_lbas) {
+		while (counter > 0) {
 			bdbm_cond_wait(&readCond, &mio->tagQMutex);
 		}
 		bdbm_mutex_unlock(&mio->tagQMutex);

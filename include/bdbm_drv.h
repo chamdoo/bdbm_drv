@@ -200,7 +200,6 @@ typedef struct {
 	int tag;
 	bdbm_cond_t* cond;
 	int* counter;
-	int num_reqs;
 } bdbm_llm_req_t;
 
 typedef struct {
