@@ -138,10 +138,10 @@ class FlashIndication: public FlashIndicationWrapper {
 
 		virtual void readDone (unsigned int tag, unsigned int status) {
 			//printf ("LOG: readdone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
-			bdbm_sema_lock (&global_lock);
+//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
-			bdbm_sema_unlock (&global_lock);
+//			bdbm_sema_unlock (&global_lock);
 			if( r == NULL ){ printf("readDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			//else {  printf("readDone: Ack  with tag=%d, status=%d\n", tag, status); fflush(stdout); }
 			dm_nohost_end_req (_bdi_dm, r);
@@ -149,20 +149,20 @@ class FlashIndication: public FlashIndicationWrapper {
 
 		virtual void writeDone (unsigned int tag, unsigned int status) {
 			//printf ("LOG: writedone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
-			bdbm_sema_lock (&global_lock);
+//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
-			bdbm_sema_unlock (&global_lock);
+//			bdbm_sema_unlock (&global_lock);
 			if( r == NULL ) { printf("writeDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
 		virtual void eraseDone (unsigned int tag, unsigned int status) {
 			//printf ("LOG: eraseDone, tag=%d/%d, status=%d\n", tag, r->tag, status); fflush(stdout);
-			bdbm_sema_lock (&global_lock);
+//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
-			bdbm_sema_unlock (&global_lock);
+//			bdbm_sema_unlock (&global_lock);
 			if( r == NULL ) { printf("eraseDone: Ack Duplicate with tag=%d, status=%d\n", tag, status); fflush(stdout); return; }
 			dm_nohost_end_req (_bdi_dm, r);
 		}
@@ -402,20 +402,20 @@ uint32_t dm_nohost_make_req (
 	uint32_t punit_id, ret, i;
 	dm_nohost_private_t* priv = (dm_nohost_private_t*)BDBM_DM_PRIV (bdi);
 
-	bdbm_sema_lock (&global_lock);
+//	bdbm_sema_lock (&global_lock);
 	if (priv->llm_reqs[r->tag] == r) {
 		// timeout & send the request again
 	} 
 	else if (priv->llm_reqs[r->tag] != NULL) {
 		// busy tag error
-		bdbm_sema_unlock (&global_lock);
+//		bdbm_sema_unlock (&global_lock);
 		bdbm_error ("tag (%u) is busy...", r->tag);
 		bdbm_bug_on (1);
 		return -1;
 	} else {
 		priv->llm_reqs[r->tag] = r;
 	}
-	bdbm_sema_unlock (&global_lock);
+//	bdbm_sema_unlock (&global_lock);
 
 	/* submit reqs to the device */
 	switch (r->req_type) {
@@ -444,7 +444,7 @@ uint32_t dm_nohost_make_req (
 		break;
 
 	default:
-		bdbm_sema_unlock (&global_lock);
+//		bdbm_sema_unlock (&global_lock);
 		break;
 	}
 
