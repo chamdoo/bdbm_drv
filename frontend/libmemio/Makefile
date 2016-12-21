@@ -53,6 +53,7 @@ SRCS := \
 	$(PWD)/connectal/cpp/portalPrintf.c \
 	$(PWD)/connectal/cpp/transportHardware.c \
 	$(PWD)/connectal/cpp/poller.cpp \
+	$(PWD)/connectal/cpp/DmaBuffer.cpp \
 	$(PWD)/connectal/cpp/dmaManager.c \
 	$(PWD)/connectal/cpp/platformMemory.cpp \
 	$(PWD)/connectal/cpp/timer.c \

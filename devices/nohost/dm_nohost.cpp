@@ -45,6 +45,7 @@ THE SOFTWARE.
 #include "FlashIndication.h"
 #include "FlashRequest.h"
 #include "dmaManager.h"
+#include "DmaBuffer.h"
 
 #define FPAGE_SIZE (8192)
 #define FPAGE_SIZE_VALID (8192)
@@ -225,6 +226,7 @@ int __writeFTLtoFile (const char* path, void* ptr) {
 
 
 FlashIndication *indication;
+DmaBuffer *srcDmaBuffer, *dstDmaBuffer, *blkmapDmaBuffer;
 
 uint32_t __dm_nohost_init_device (
 	bdbm_drv_info_t* bdi, 
@@ -234,33 +236,55 @@ uint32_t __dm_nohost_init_device (
 
 	device = new FlashRequestProxy(IfcNames_FlashRequestS2H);
 	indication = new FlashIndication(IfcNames_FlashIndicationH2S);
-    DmaManager *dma = platformInit();
+//    DmaManager *dma = platformInit();
 
 	fprintf(stderr, "Main::allocating memory...\n");
 	
 	// Memory for DMA
-	srcAlloc = portalAlloc(srcAlloc_sz, 0);
-	dstAlloc = portalAlloc(dstAlloc_sz, 0);
-	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz); // Host->Flash Write
-	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz); // Flash->Host Read
+//	srcAlloc = portalAlloc(srcAlloc_sz, 0);
+//	dstAlloc = portalAlloc(dstAlloc_sz, 0);
+//	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz); // Host->Flash Write
+//	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz); // Flash->Host Read
+#if defined(USE_ACP)
+	srcDmaBuffer = new DmaBuffer(srcAlloc_sz);
+	dstDmaBuffer = new DmaBuffer(dstAlloc_sz);
+#else
+	srcDmaBuffer = new DmaBuffer(srcAlloc_sz, false);
+	dstDmaBuffer = new DmaBuffer(dstAlloc_sz, false);
+#endif
+	srcBuffer = (unsigned int*)srcDmaBuffer->buffer();
+	dstBuffer = (unsigned int*)dstDmaBuffer->buffer();
+
 
 	// Memory for FTL
-	blkmapAlloc = portalAlloc(blkmapAlloc_sz * 2, 0);
-	ftlPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz * 2);
+//	blkmapAlloc = portalAlloc(blkmapAlloc_sz * 2, 0);
+//	ftlPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz * 2);
+//	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
+//	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
+#if defined(USE_ACP)
+	blkmapDmaBuffer = new DmaBuffer(blkmapAlloc_sz * 2);
+#else
+	blkmapDmaBuffer = new DmaBuffer(blkmapAlloc_sz * 2, false);
+#endif
+	ftlPtr = blkmapDmaBuffer->buffer();
 	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
 	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
+	
 
 	fprintf(stderr, "dstAlloc = %x\n", dstAlloc); 
 	fprintf(stderr, "srcAlloc = %x\n", srcAlloc); 
 	fprintf(stderr, "blkmapAlloc = %x\n", blkmapAlloc); 
 	
-	portalCacheFlush(dstAlloc, dstBuffer, dstAlloc_sz, 1);
-	portalCacheFlush(srcAlloc, srcBuffer, srcAlloc_sz, 1);
-	portalCacheFlush(blkmapAlloc, blkmap, blkmapAlloc_sz*2, 1);
+//	portalCacheFlush(dstAlloc, dstBuffer, dstAlloc_sz, 1);
+//	portalCacheFlush(srcAlloc, srcBuffer, srcAlloc_sz, 1);
+//	portalCacheFlush(blkmapAlloc, blkmap, blkmapAlloc_sz*2, 1);
+	dstDmaBuffer->cacheInvalidate(0, 1);
+	srcDmaBuffer->cacheInvalidate(0, 1);
+	blkmapDmaBuffer->cacheInvalidate(0, 1);
 
-	ref_dstAlloc = dma->reference(dstAlloc);
-	ref_srcAlloc = dma->reference(srcAlloc);
-	ref_blkmapAlloc = dma->reference(blkmapAlloc);
+	ref_dstAlloc = dstDmaBuffer->reference();
+	ref_srcAlloc = srcDmaBuffer->reference();
+	ref_blkmapAlloc = blkmapDmaBuffer->reference();
 
 	device->setDmaWriteRef(ref_dstAlloc);
 	device->setDmaReadRef(ref_srcAlloc);
@@ -393,6 +417,14 @@ void dm_nohost_close (bdbm_drv_info_t* bdi)
 	bdbm_msg ("[dm_nohost_close] closed!");
 
 	bdbm_free (p);
+
+	bdbm_sema_free(&global_lock);
+	bdbm_sema_free(&ftl_table_lock);
+
+	delete device;
+	delete srcDmaBuffer;
+	delete dstDmaBuffer;
+	delete blkmapDmaBuffer;
 }
 
 uint32_t dm_nohost_make_req (

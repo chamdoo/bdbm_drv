@@ -52,6 +52,7 @@ LIBSRC := \
 	$(PWD)/connectal/cpp/portalPrintf.c \
 	$(PWD)/connectal/cpp/transportHardware.c \
 	$(PWD)/connectal/cpp/poller.cpp \
+	$(PWD)/connectal/cpp/DmaBuffer.cpp \
 	$(PWD)/connectal/cpp/dmaManager.c \
 	$(PWD)/connectal/cpp/platformMemory.cpp \
 	$(PWD)/connectal/cpp/timer.c \
@@ -71,6 +72,7 @@ LIBOBJ := \
 	$(PWD)/connectal/cpp/portalPrintf.o \
 	$(PWD)/connectal/cpp/transportHardware.o \
 	$(PWD)/connectal/cpp/poller.o \
+	$(PWD)/connectal/cpp/DmaBuffer.o \
 	$(PWD)/connectal/cpp/dmaManager.o \
 	$(PWD)/connectal/cpp/platformMemory.o \
 	$(PWD)/connectal/cpp/timer.o \
