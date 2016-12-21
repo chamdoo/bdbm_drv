@@ -44,7 +44,6 @@ THE SOFTWARE.
 /***/
 #include "FlashIndication.h"
 #include "FlashRequest.h"
-#include "dmaManager.h"
 #include "DmaBuffer.h"
 
 #define FPAGE_SIZE (8192)
@@ -246,9 +245,11 @@ uint32_t __dm_nohost_init_device (
 //	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz); // Host->Flash Write
 //	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz); // Flash->Host Read
 #if defined(USE_ACP)
+	fprintf(stderr, "!!!!! USE_ACP\n");
 	srcDmaBuffer = new DmaBuffer(srcAlloc_sz);
 	dstDmaBuffer = new DmaBuffer(dstAlloc_sz);
 #else
+	fprintf(stderr, "!!!!! NO USE_ACP\n");
 	srcDmaBuffer = new DmaBuffer(srcAlloc_sz, false);
 	dstDmaBuffer = new DmaBuffer(dstAlloc_sz, false);
 #endif
@@ -270,14 +271,12 @@ uint32_t __dm_nohost_init_device (
 	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
 	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
 	
-
-	fprintf(stderr, "dstAlloc = %x\n", dstAlloc); 
-	fprintf(stderr, "srcAlloc = %x\n", srcAlloc); 
-	fprintf(stderr, "blkmapAlloc = %x\n", blkmapAlloc); 
+	fprintf(stderr, "Main::allocating memory finished!\n");
 	
 //	portalCacheFlush(dstAlloc, dstBuffer, dstAlloc_sz, 1);
 //	portalCacheFlush(srcAlloc, srcBuffer, srcAlloc_sz, 1);
 //	portalCacheFlush(blkmapAlloc, blkmap, blkmapAlloc_sz*2, 1);
+
 	dstDmaBuffer->cacheInvalidate(0, 1);
 	srcDmaBuffer->cacheInvalidate(0, 1);
 	blkmapDmaBuffer->cacheInvalidate(0, 1);
