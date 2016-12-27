@@ -1,3 +1,4 @@
+//#include "bdbm_drv.h"
 /*
 The MIT License (MIT)
 
@@ -130,6 +131,10 @@ typedef struct {
 	uint64_t nr_subpages_per_block;
 	uint64_t nr_subpages_per_page;
 	uint64_t nr_subpages_per_ssd; /* subpage size must be4 KB */
+//#ifdef NVM_CACHE
+	uint64_t nr_nvm_pages;
+	uint64_t nvm_page_size;
+//#endif
 } bdbm_device_params_t;
 
 #endif /* _BLUEDBM_PARAMS_H */

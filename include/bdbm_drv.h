@@ -1,3 +1,14 @@
+#define NVM_CACHE
+#define NVM_CACHE_WB
+#define NVM_CACHE_SKIP
+#define NVM_CACHE_DEBUG
+#define NVM_CACHE_TRIM
+#define FLUSH
+#define	RFLUSH_FLUSH // set flush functions on rflush version
+#define NOT_ONLY_RFLUSH	// is this off? only rflush not flush
+#define RFLUSH
+//#define RW_DEBUG
+
 /*
 The MIT License (MIT)
 
@@ -99,6 +110,15 @@ enum BDBM_REQTYPE {
 	REQTYPE_RMW 			= 0x000200,
 	REQTYPE_GC 				= 0x000400,
 	REQTYPE_META 			= 0x000800,
+#ifdef NVM_CACHE
+	REQTYPE_INTERNAL		= 0x001000,
+#endif
+#ifdef FLUSH
+	REQTYPE_IO_FLUSH		= 0x002000,
+#endif
+#ifdef RFLUSH
+	REQTYPE_IO_RFLUSH		= 0x004000,
+#endif
 
 	REQTYPE_READ 			= REQTYPE_NORNAL 	| REQTYPE_IO_READ,
 	REQTYPE_READ_DUMMY 		= REQTYPE_NORNAL 	| REQTYPE_IO_READ_DUMMY,
@@ -111,6 +131,17 @@ enum BDBM_REQTYPE {
 	REQTYPE_GC_ERASE 		= REQTYPE_GC 		| REQTYPE_IO_ERASE,
 	REQTYPE_META_READ 		= REQTYPE_META 		| REQTYPE_IO_READ,
 	REQTYPE_META_WRITE 		= REQTYPE_META 		| REQTYPE_IO_WRITE,
+#ifdef NVM_CACHE
+	REQTYPE_WRITE_BACK		= REQTYPE_NORNAL	| REQTYPE_IO_WRITE 	| REQTYPE_INTERNAL,
+	REQTYPE_INT_TRIM		= REQTYPE_NORNAL	| REQTYPE_IO_TRIM 	| REQTYPE_INTERNAL,
+#endif
+#ifdef FLUSH
+	REQTYPE_FLUSH			= REQTYPE_NORNAL	| REQTYPE_IO_WRITE 	| REQTYPE_IO_FLUSH,
+#endif
+#ifdef RFLUSH
+	REQTYPE_RFLUSH			= REQTYPE_NORNAL	| REQTYPE_IO_RFLUSH,
+#endif
+
 };
 
 #define bdbm_is_normal(type) (((type & REQTYPE_NORNAL) == REQTYPE_NORNAL) ? 1 : 0)
@@ -121,6 +152,17 @@ enum BDBM_REQTYPE {
 #define bdbm_is_write(type) (((type & REQTYPE_IO_WRITE) == REQTYPE_IO_WRITE) ? 1 : 0)
 #define bdbm_is_erase(type) (((type & REQTYPE_IO_ERASE) == REQTYPE_IO_ERASE) ? 1 : 0)
 #define bdbm_is_trim(type) (((type & REQTYPE_IO_TRIM) == REQTYPE_IO_TRIM) ? 1 : 0)
+
+#ifdef NVM_CACHE
+#define bdbm_is_writeback(type) (((type & REQTYPE_WRITE_BACK) == REQTYPE_WRITE_BACK) ? 1 : 0)
+#define bdbm_is_internal(type) (((type & REQTYPE_INTERNAL) == REQTYPE_INTERNAL) ? 1 : 0)
+#endif
+#ifdef FLUSH
+#define bdbm_is_flush(type) (((type & REQTYPE_IO_FLUSH) == REQTYPE_IO_FLUSH) ? 1 : 0)
+#endif
+#ifdef RFLUSH
+#define bdbm_is_rflush(type) (((type & REQTYPE_IO_RFLUSH) == REQTYPE_IO_RFLUSH) ? 1 : 0)
+#endif
 
 
 /* a physical address */
@@ -136,7 +178,7 @@ typedef struct {
 #define BDBM_MAX_PAGES 1
 
 /* a bluedbm blockio request */
-#define BDBM_BLKIO_MAX_VECS 256
+#define BDBM_BLKIO_MAX_VECS 512
 
 typedef struct {
 	uint64_t bi_rw; /* REQTYPE_WRITE or REQTYPE_READ */
@@ -174,6 +216,7 @@ typedef struct {
 	uint8_t* kp_pad[BDBM_MAX_PAGES];
 } bdbm_flash_page_main_t;
 
+
 typedef struct {
 	uint8_t* data;
 } bdbm_flash_page_oob_t;
@@ -194,6 +237,11 @@ typedef struct {
 	/* physical layout */
 	bdbm_flash_page_main_t fmain;
 	bdbm_flash_page_oob_t foob;
+
+#ifdef NVM_CACHE
+	uint8_t serviced_by_nvm;
+#endif
+
 } bdbm_llm_req_t;
 
 typedef struct {
@@ -246,7 +294,27 @@ typedef struct {
 	void (*close) (bdbm_drv_info_t* bdi);
 	void (*make_req) (bdbm_drv_info_t* bdi, void* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#ifdef NVM_CACHE
+	void (*end_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#endif
 } bdbm_host_inf_t;
+
+#ifdef NVM_CACHE
+typedef struct {
+	void* ptr_private;
+	uint32_t (*create) (bdbm_drv_info_t* bdi);
+	void (*destroy) (bdbm_drv_info_t* bdi);
+	uint64_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#if 0
+	uint32_t (*get_free_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa);
+	uint32_t (*get_ppa) (bdbm_drv_info_t* bdi, int64_t lpa, bdbm_phyaddr_t* ppa, uint64_t* sp_off);
+	uint32_t (*map_lpa_to_ppa) (bdbm_drv_info_t* bdi, bdbm_logaddr_t* logaddr, bdbm_phyaddr_t* ppa);
+	uint32_t (*invalidate_lpa) (bdbm_drv_info_t* bdi, int64_t lpa, uint64_t len);
+	
+	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+#endif
+} bdbm_nvm_inf_t;
+#endif
 
 /* a generic high-level memory manager interface */
 typedef struct {
@@ -255,6 +323,9 @@ typedef struct {
 	void (*destroy) (bdbm_drv_info_t* bdi);
 	uint32_t (*make_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
+#ifdef NVM_CACHE
+	uint32_t (*make_wb_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+#endif
 } bdbm_hlm_inf_t;
 
 /* a generic low-level memory manager interface */
@@ -279,6 +350,9 @@ typedef struct {
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_llm_req_t* req);
 	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
 	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
+#ifdef NVM_CACHE_DEBUG
+	uint8_t* (*get_data) (bdbm_drv_info_t* bdi, int64_t lpa);
+#endif
 } bdbm_dm_inf_t;
 
 /* a generic FTL interface */
@@ -353,6 +427,21 @@ typedef struct {
 	atomic64_t gc_write_cnt;
 	atomic64_t meta_read_cnt;
 	atomic64_t meta_write_cnt;
+#ifdef NVM_CACHE
+	atomic64_t nvm_a_cnt; // all
+	atomic64_t nvm_w_cnt; // all write
+	atomic64_t nvm_r_cnt; // all read 
+	atomic64_t nvm_wh_cnt; // write hit (include miss + alloc)  
+	atomic64_t nvm_rh_cnt; // read hit 
+	atomic64_t nvm_h_cnt; // rh_cnt + real wh 
+	atomic64_t nvm_ev_cnt; // evict 
+#endif
+#ifdef	FLUSH
+	atomic64_t nvm_f_cnt;	//flush 
+#endif
+#ifdef	RFLUSH
+	atomic64_t nvm_rf_cnt;	//rflush
+#endif
 	uint64_t time_r_sw;
 	uint64_t time_r_q;
 	uint64_t time_r_tot;
@@ -379,8 +468,13 @@ struct _bdbm_drv_info_t {
 	bdbm_hlm_inf_t* ptr_hlm_inf;
 	bdbm_llm_inf_t* ptr_llm_inf;
 	bdbm_ftl_inf_t* ptr_ftl_inf;
+#ifdef NVM_CACHE
+//	bdbm_nvm_params_t parm_nvm;
+	bdbm_nvm_inf_t* ptr_nvm_inf;
+#endif
 	bdbm_perf_monitor_t pm;
 };
+
 
 /* functions for bdi creation, setup, run, and remove */
 bdbm_drv_info_t* bdbm_drv_create (void);

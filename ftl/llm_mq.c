@@ -244,7 +244,7 @@ uint32_t llm_mq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r)
 	pmu_update_sw (bdi, r);
 
 	/* wait until there are enough free slots in Q */
-	while (bdbm_prior_queue_get_nr_items (p->q) >= 96) {
+	while (bdbm_prior_queue_get_nr_items (p->q) >= 128) {
 		bdbm_thread_yield ();
 	}
 

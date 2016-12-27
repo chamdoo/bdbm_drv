@@ -42,10 +42,12 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+//#define DATA_CHECK
 
 #if defined (DATA_CHECK)
+
 static void* __ptr_ramssd_data = NULL;
+
 static uint8_t* __get_ramssd_data_addr (dev_ramssd_info_t* ri, uint64_t lpa)
 {
 	uint64_t ramssd_addr = -1;
@@ -55,6 +57,7 @@ static uint8_t* __get_ramssd_data_addr (dev_ramssd_info_t* ri, uint64_t lpa)
 		ramssd_addr = KPAGE_SIZE * lpa;
 	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
 }
+
 static void __display_hex_values (uint8_t* host, uint8_t* back)
 {
 	bdbm_msg (" * HOST: %x %x %x %x %x != FLASH: %x %x %x %x %x", 
@@ -62,6 +65,8 @@ static void __display_hex_values (uint8_t* host, uint8_t* back)
 		back[0], back[1], back[2], back[3], back[4]);
 }
 #if 0
+#ifdef NVM_CACHE_DEBUG
+
 static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 {
 	int i = 0;
@@ -71,7 +76,35 @@ static void __display_hex_values_all (uint8_t* host, uint8_t* back)
 			back[i+0], back[i+1], back[i+2], back[i+3]);
 	}
 }
+
+static void __display_hex_values_all_host (uint8_t* host)
+{
+	int i = 0;
+	for (i = 0; i < KPAGE_SIZE; i+=4) {
+		bdbm_msg (" * FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3]);
+	}
+}
+static void __display_hex_values_all_range (uint8_t* host, uint8_t* back, int size)
+{
+	int i = 0;
+	for (i = 0; i < size; i+=4) {
+		bdbm_msg (" * HOST: %x %x %x %x != FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3],
+			back[i+0], back[i+1], back[i+2], back[i+3]);
+	}
+}
+static void __display_hex_values_all_host_range (uint8_t* host, int size)
+{
+	int i = 0;
+	for (i = 0; i < size; i+=4) {
+		bdbm_msg (" * FLASH: %x %x %x %x", 
+			host[i+0], host[i+1], host[i+2], host[i+3]);
+	}
+}
+#endif // NVM_CACHE_DEBUG
 #endif
+
 #endif
 
 /* Functions for Managing DRAM SSD */
@@ -395,7 +428,9 @@ static uint32_t __ramssd_send_cmd (
 			use_oob,
 			use_partial);
 		break;
-
+#ifdef NVM_CACHE
+	case REQTYPE_WRITE_BACK:
+#endif
 	case REQTYPE_RMW_WRITE:
 	case REQTYPE_WRITE:
 	case REQTYPE_META_WRITE:
@@ -432,6 +467,7 @@ static uint32_t __ramssd_send_cmd (
 
 	default:
 		bdbm_error ("invalid command");
+		bdbm_msg("%x", ptr_req->req_type);
 		ret = 1;
 		break;
 	}
@@ -651,7 +687,6 @@ void dev_ramssd_destroy (dev_ramssd_info_t* ri)
 uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 {
 	uint32_t ret;
-
 	if ((ret = __ramssd_send_cmd (ri, r)) == 0) {
 		int64_t target_elapsed_time_us = 0;
 		uint64_t punit_id = r->phyaddr.punit_id;
@@ -659,6 +694,10 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		/* get the target elapsed time depending on the type of req */
 		if (ri->emul_mode == DEVICE_TYPE_RAMDRIVE_TIMING) {
 			switch (r->req_type) {
+#ifdef NVM_CACHE
+			case REQTYPE_WRITE_BACK:
+//				bdbm_msg("REQTYPE_WRITE_BACK timing: logaddr = %d", r->logaddr.lpa[0]);
+#endif
 			case REQTYPE_WRITE:
 			case REQTYPE_GC_WRITE:
 			case REQTYPE_RMW_WRITE:
@@ -774,3 +813,17 @@ uint32_t dev_ramssd_store (dev_ramssd_info_t* ri, const char* fn)
 	return 0;
 }
 
+
+#if defined (DATA_CHECK)
+#ifdef NVM_CACHE_DEBUG
+uint8_t* dev_ramssd_get_data (dev_ramssd_info_t* ri, int64_t lpa)
+{
+	int64_t ramssd_addr = -1;
+	if (ri->np->nr_subpages_per_page == 1)
+		ramssd_addr = ri->np->page_main_size * lpa;
+	else
+		ramssd_addr = KPAGE_SIZE * lpa;
+	return ((uint8_t*)__ptr_ramssd_data) + ramssd_addr;
+}
+#endif
+#endif

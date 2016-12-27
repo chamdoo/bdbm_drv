@@ -1,0 +1,136 @@
+[331746.627948] bdbm: -----------------------------------------------
+[331746.627950] bdbm: < PERFORMANCE SUMMARY >
+[331746.627950] bdbm: [0] Execution Time (us): 12400.513227
+[331746.627951] bdbm: 
+[331746.627952] bdbm: [1] Total I/Os
+[331746.627952] bdbm: # of page reads: 2777349
+[331746.627953] bdbm: # of page writes: 895341
+[331746.627953] bdbm: # of block erase: 14336
+[331746.627954] bdbm: 
+[331746.627954] bdbm: [2] Normal I/Os
+[331746.627954] bdbm: # of page reads: 1882120
+[331746.627955] bdbm: # of page writes: 0
+[331746.627955] bdbm: # of page rmw reads: 0
+[331746.627956] bdbm: # of page rmw writes: 0
+[331746.627956] bdbm: 
+[331746.627957] bdbm: [3] GC I/Os
+[331746.627957] bdbm: # of GC invocation: 0
+[331746.627958] bdbm: # of page reads: 895229
+[331746.627958] bdbm: # of page writes: 895341
+[331746.627959] bdbm: # of block erase: 14336
+[331746.627959] bdbm: 
+[331746.627960] bdbm: [4] Meta I/Os
+[331746.627960] bdbm: # of meta page reads: 0
+[331746.627960] bdbm: # of meta page writes: 0
+[331746.627961] bdbm: 
+[331746.627961] bdbm: [5] Elapsed Time
+[331746.627962] bdbm: page read (us): 1068 (S:956 + Q:7 + D:105)
+[331746.627963] bdbm: page write (us): 0 (S:0 + Q:0 + D:0)
+[331746.627963] bdbm: rmw (us): 0 (S:0 + Q:0 + D:0)
+[331746.627964] bdbm: 
+[331746.627964] bdbm: [6] Utilization (R)
+[331746.627966] bdbm:    21470    21632    21560    21802    21611    21576    21577    21750 
+[331746.627967] bdbm:    21863    21556    21856    21869    21649    21691    21428    21650 
+[331746.627968] bdbm:    21522    21731    21674    21800    21696    21521    21553    21875 
+[331746.627970] bdbm:    21798    21474    21841    21593    21537    21595    21505    21533 
+[331746.627971] bdbm:    21399    21704    21437    21695    21809    21615    21413    21824 
+[331746.627972] bdbm:    21920    21633    21822    21744    21834    21580    21872    21848 
+[331746.627973] bdbm:    21789    21738    21616    21643    21894    21812    21732    21741 
+[331746.627974] bdbm:    21974    21870    21738    21718    21854    21723    21884    21717 
+[331746.627975] bdbm:    21565    21720    21781    21795    21401    21440    21417    21475 
+[331746.627976] bdbm:    21396    21524    21396    21648    21641    21652    21788    21890 
+[331746.627978] bdbm:    21688    21992    21699    21391    21841    21632    21783    21763 
+[331746.627979] bdbm:    22032    21798    21954    22008    21648    21649    21667    21693 
+[331746.627980] bdbm:    21649    21760    21726    21837    21722    21830    21699    21968 
+[331746.627981] bdbm:    21818    21847    21863    21694    21714    22028    21582    21741 
+[331746.627982] bdbm:    21701    21874    21551    21747    21476    21546    21702    21335 
+[331746.627983] bdbm:    21604    21713    21762    21679    21652    21876    21849    21657 
+[331746.627984] bdbm: 
+[331746.627984] bdbm: [7] Utilization (W)
+[331746.627986] bdbm:     7005     7019     7023     7032     7034     7035     7035     7037 
+[331746.627987] bdbm:     7039     7039     7039     7039     7040     7040     7038     7038 
+[331746.627988] bdbm:     7037     7037     7036     7034     7033     7032     7032     7032 
+[331746.627989] bdbm:     7029     7029     7029     7029     7028     7026     7026     7026 
+[331746.627990] bdbm:     7026     7026     7024     7022     7021     7021     7021     7020 
+[331746.627991] bdbm:     7018     7015     7015     7012     7010     7008     7008     7008 
+[331746.627992] bdbm:     7004     7004     7004     7003     7001     7001     7001     6999 
+[331746.627994] bdbm:     6999     6998     6998     6998     6998     6997     6997     6997 
+[331746.627995] bdbm:     6996     6996     6995     6995     6993     6990     6989     6989 
+[331746.627996] bdbm:     6988     6988     6987     6987     6986     6984     6982     6981 
+[331746.627997] bdbm:     6980     6980     6979     6979     6978     6978     6976     6975 
+[331746.627998] bdbm:     6975     6975     6974     6970     6969     6968     6968     6967 
+[331746.627999] bdbm:     6967     6967     6967     6965     6965     6963     6963     6963 
+[331746.628000] bdbm:     6963     6963     6962     6961     6961     6960     6960     6959 
+[331746.628001] bdbm:     6958     6958     6956     6954     6954     6952     6951     6951 
+[331746.628003] bdbm:     6950     6949     6949     6948     6946     6946     6946     6946 
+[331746.628003] bdbm: [8] NVM I/Os
+[331746.628004] bdbm: #_of_nvm_total_accesses: 13577339
+[331746.628004] bdbm: #_of_nvm_total_write_requests: 9233759
+[331746.628005] bdbm: #_of_nvm_total_read_requests: 4343580
+[331746.628005] bdbm: #_of_nvm_write_requests_serviced_by_nvm: 9233759
+[331746.628006] bdbm: #_of_nvm_read_requests_serviced_by_nvm: 2461432
+[331746.628006] bdbm: #_of_nvm_total_requests_serviced_by_nvm: 6170610
+[331746.628007] bdbm: #_of_nvm_evict_from_nvm: 5000293
+[331746.628007] bdbm: #_of_nvm_write_amplification: 5000293 : 5895634
+[331746.628008] bdbm: 
+[331746.628008] bdbm: -----------------------------------------------
+[331746.628009] bdbm: -----------------------------------------------
+[331746.789728] bdbm: done
+[331746.789731] bdbm: [dm_ramdrive_close] closed!
+[331747.178601] bdbm: [bdbm_drv_main] bdbm_drv is closed
+[331747.178603] bdbm: [bdbm_drv_main] bdbm_drv is removed
+[331747.207050] bdbm: bdbm_dm_stub is removed: /dev/bdbm_dm_stub (241 0)
+[331747.224383] bdbm: bdbm_dm_stub is installed: /dev/bdbm_dm_stub (major:241 minor:0)
+[331747.227771] bdbm: =====================================================================
+[331747.227772] bdbm: DEVICE PARAMETERS
+[331747.227773] bdbm: =====================================================================
+[331747.227773] bdbm: # of channels = 8
+[331747.227774] bdbm: # of chips per channel = 16
+[331747.227774] bdbm: # of blocks per chip = 256
+[331747.227775] bdbm: # of pages per block = 128
+[331747.227775] bdbm: # of subpages per page = 1
+[331747.227776] bdbm: page main size  = 4096 bytes
+[331747.227776] bdbm: page oob size = 64 bytes
+[331747.227777] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[331747.227778] bdbm: 
+[331747.227778] bdbm: =====================================================================
+[331747.227779] bdbm: RAM DISK INFO
+[331747.227779] bdbm: =====================================================================
+[331747.227780] bdbm: the SSD capacity: 17179869184 (B), 16777216 (KB), 16384 (MB)
+[331748.781042] bdbm: ramssd addr = ffffc90050001000
+[331748.781044] bdbm: 
+[331748.781044] bdbm: *** building ptr_ramssd_data begins for data curruption checks...
+[331750.332816] bdbm: *** building ptr_ramssd_data done
+[331750.333001] bdbm: [dm_ramdrive_probe] probe done!
+[331750.333003] bdbm: [dm_ramdrive_open] open done!
+[331750.530166] bdbm: nvm cache addr = ffffc908d1385000
+[331750.535443] bdbm: ==========================================================
+[331750.535444] bdbm: NVM CONFIGURATION
+[331750.535444] bdbm: ==========================================================
+[331750.535445] bdbm: total size = 2147483648, nr_nvm_pages = 524288, nvm_page_size	= 4096
+[331750.693720] bdbm: TRIM is disabled
+[331750.693827] bdbm: =====================================================================
+[331750.693828] bdbm: DEVICE PARAMETERS
+[331750.693829] bdbm: =====================================================================
+[331750.693829] bdbm: # of channels = 8
+[331750.693830] bdbm: # of chips per channel = 16
+[331750.693830] bdbm: # of blocks per chip = 256
+[331750.693831] bdbm: # of pages per block = 128
+[331750.693831] bdbm: # of subpages per page = 1
+[331750.693832] bdbm: page main size  = 4096 bytes
+[331750.693832] bdbm: page oob size = 64 bytes
+[331750.693833] bdbm: device type = 3 (1: ramdrv, 2: ramdrive (intr), 3: ramdrive (timing), 4: BlueDBM, 5: libdummy, 6: libramdrive)
+[331750.693833] bdbm: 
+[331750.693834] bdbm: =====================================================================
+[331750.693834] bdbm: FTL CONFIGURATION
+[331750.693835] bdbm: =====================================================================
+[331750.693836] bdbm: mapping type = 4 (1: no ftl, 2: block-mapping, 3: RSD, 4: page-mapping, 5: dftl)
+[331750.693836] bdbm: gc policy = 3 (1: merge 2: random, 3: greedy, 4: cost-benefit)
+[331750.693837] bdbm: wl policy = 1 (1: none, 2: swap)
+[331750.693837] bdbm: trim mode = 2 (1: enable, 2: disable)
+[331750.693838] bdbm: kernel sector = 512 bytes
+[331750.693838] bdbm: 
+[331750.693839] bdbm: [bdbm_drv_main] bdbm_drv is registered!
+[331750.712838] bdbm: llm_make_req: 0, 1
+[331786.504094] EXT4-fs (robusta): mounting with "discard" option, but the device does not support discard
+[331786.504096] EXT4-fs (robusta): mounted filesystem with ordered data mode. Opts: discard

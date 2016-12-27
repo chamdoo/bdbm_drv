@@ -206,7 +206,6 @@ void __bdbm_page_ftl_destroy_active_blocks (
 
 uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 {
-	uint32_t i = 0, j = 0;
 	bdbm_page_ftl_private_t* p = NULL;
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 
@@ -820,13 +819,11 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			}
 		}
 	}
-
-	/*
+#if 0
 	bdbm_msg ("----------------------------------------------");
 	bdbm_msg ("gc-victim: %llu pages, %llu blocks, %llu us", 
 		nr_llm_reqs, nr_gc_blks, bdbm_stopwatch_get_elapsed_time_us (&sw));
-	*/
-
+#endif
 	/* wait until Q in llm becomes empty 
 	 * TODO: it might be possible to further optimize this */
 	bdi->ptr_llm_inf->flush (bdi);

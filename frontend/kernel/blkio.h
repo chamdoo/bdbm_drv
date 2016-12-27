@@ -31,6 +31,16 @@ uint32_t blkio_open (bdbm_drv_info_t* bdi);
 void blkio_close (bdbm_drv_info_t* bdi);
 void blkio_make_req (bdbm_drv_info_t* bdi, void* req);
 void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+void blkio_end_wb_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr);
+
+#ifdef NVM_CACHE
+#include "hlm_reqs_pool.h"
+typedef struct {
+	bdbm_sema_t host_lock;
+	atomic_t nr_host_reqs;
+	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
+} bdbm_blkio_private_t;
+#endif
 
 #endif
 
