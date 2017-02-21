@@ -50,6 +50,7 @@ void hlm_reqs_pool_allocate_llm_reqs (bdbm_llm_req_t* llm_reqs, int32_t nr_llm_r
 void hlm_reqs_pool_release_llm_reqs (bdbm_llm_req_t* llm_reqs, int32_t nr_llm_reqs, bdbm_rp_mem flag);
 
 void hlm_reqs_pool_reset_fmain (bdbm_flash_page_main_t* fmain);
+void hlm_reqs_pool_alloc_fmain_pad (bdbm_flash_page_main_t* fmain);
 void hlm_reqs_pool_reset_logaddr (bdbm_logaddr_t* logaddr);
 void hlm_reqs_pool_relocate_kp (bdbm_llm_req_t* lr, uint64_t new_sp_ofs);
 void hlm_reqs_pool_write_compaction (bdbm_hlm_req_gc_t* dst, bdbm_hlm_req_gc_t* src, bdbm_device_params_t* np);

@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include "ufile.h"
 #include "dev_ramssd.h"
 
-#define DATA_CHECK
+/* #define DATA_CHECK */
 
 #if defined (DATA_CHECK)
 static void* __ptr_ramssd_data = NULL;
@@ -431,7 +431,13 @@ static uint32_t __ramssd_send_cmd (
 		break;
 
 	default:
-		bdbm_error ("invalid command");
+		bdbm_error ("invalid command: %p (%x - %llu %llu %llu %llu)", 
+			ptr_req,
+			ptr_req->req_type,
+			ptr_req->phyaddr.channel_no, 
+			ptr_req->phyaddr.chip_no, 
+			ptr_req->phyaddr.block_no,
+			ptr_req->phyaddr.page_no);
 		ret = 1;
 		break;
 	}
@@ -707,7 +713,7 @@ uint32_t dev_ramssd_send_cmd (dev_ramssd_info_t* ri, bdbm_llm_req_t* r)
 		/* register reqs for callback */
 		__ramssd_timing_register_schedule (ri);
 	}
-
+		
 fail:
 	return ret;
 }

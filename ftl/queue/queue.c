@@ -194,6 +194,30 @@ void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid)
 	return req;
 }
 
+void* bdbm_queue_top (bdbm_queue_t* mq, uint64_t qid)
+{
+	unsigned long flags;
+	struct list_head* pos = NULL;
+	bdbm_queue_item_t* q = NULL;
+	void* req = NULL;
+
+	bdbm_spin_lock_irqsave (&mq->lock, flags);
+	if (mq->qic > 0) {
+		list_for_each (pos, &mq->qlh[qid]) {
+			q = list_entry (pos, bdbm_queue_item_t, list);
+			break;
+		}
+		if (q) {
+			req = q->ptr_req;
+		}
+	}
+	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
+
+	return req;
+}
+
+
+
 uint8_t bdbm_queue_is_full (bdbm_queue_t* mq)
 {
 	uint8_t ret = 0;

@@ -185,6 +185,8 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
 	}
 
+
+    
 	bdbm_bug_on (hr->nr_llm_reqs != i);
 
 	return 0;
@@ -283,6 +285,10 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
+
+    //Don
+    pr_info("[DATAHEX] %x\n",**(hr->llm_reqs->fmain.kp_ptr)); 
+
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */
