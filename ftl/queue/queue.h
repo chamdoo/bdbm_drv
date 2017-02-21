@@ -52,5 +52,5 @@ uint8_t bdbm_queue_is_full (bdbm_queue_t* mq);
 uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid);
 uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq);
 uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq);
-
+void* bdbm_queue_top (bdbm_queue_t* mq, uint64_t qid);
 #endif
