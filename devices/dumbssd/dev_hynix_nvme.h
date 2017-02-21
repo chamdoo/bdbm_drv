@@ -22,35 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_QUEUE_MQ_H
-#define _BLUEDBM_QUEUE_MQ_H
+#ifndef _BLUEDBM_DEV_HYNIX_NVME_H
+#define _BLUEDBM_DEV_HYNIX_NVME_H
 
-enum BDBM_QUEUE_SIZE {
-	INFINITE_QUEUE = -1,
-};
+#include "bdbm_drv.h"
 
 typedef struct {
-	void* ptr_req;
-	struct list_head list;
-} bdbm_queue_item_t;
+	struct request_queue *q;
+	struct request_queue *queue;
+	struct gendisk *gd;
+} dumb_ssd_dev_t;
 
 typedef struct {
-	uint64_t nr_queues;
-	int64_t max_size;
-	int64_t qic;			/* queue item count */
-	bdbm_spinlock_t lock;	/* queue lock */
+	dumb_ssd_dev_t* dev;
+	bdbm_llm_req_t* req;
+	int rw;
+	uint64_t die;
+	uint64_t block;
+	uint64_t wu;
+	uint8_t* kp_ptr;
+	uint8_t* buffer;
+	void (*done)(void*);
+} hd_req_t;
 
-	struct list_head* qlh;	/* queue list header */
-} bdbm_queue_t;
-
-bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t size);
-void bdbm_queue_destroy (bdbm_queue_t* mq);
-uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req);
-uint8_t bdbm_queue_enqueue_top (bdbm_queue_t* mq, uint64_t qid, void* req);
-void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_full (bdbm_queue_t* mq);
-uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq);
-uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq);
+uint32_t dev_hynix_nvme_submit_io (dumb_ssd_dev_t* dev, bdbm_llm_req_t* r, void (*intr_handler)(void*));
+int simple_write (dumb_ssd_dev_t* dev, hd_req_t* hdr);
+int simple_read (dumb_ssd_dev_t* dev, hd_req_t* hdr);
+int simple_erase (dumb_ssd_dev_t* dev, hd_req_t* hdr);
 
 #endif

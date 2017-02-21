@@ -195,7 +195,8 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	blk_queue_logical_block_size (bdbm_device.queue, bdi->parm_ftl.kernel_sector_size);
 	blk_queue_io_min (bdbm_device.queue, bdi->parm_dev.page_main_size);
 	blk_queue_io_opt (bdbm_device.queue, bdi->parm_dev.page_main_size);
-	/*blk_limits_max_hw_sectors (&bdbm_device.queue->limits, 16);*/
+	blk_queue_max_segment_size (bdbm_device.queue, 4096);
+	/*blk_queue_max_hw_sectors (bdbm_device.queue, 16);*/
 
 	/* see if a TRIM command is used or not */
 	if (bdi->parm_ftl.trim == TRIM_ENABLE) {
@@ -209,13 +210,13 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	}
 
 	/* register a blk device */
-	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "blueDBM")) < 0) {
+	if ((bdbm_device_major_num = register_blkdev (bdbm_device_major_num, "robusta")) < 0) {
 		bdbm_msg ("register_blkdev failed (%d)", bdbm_device_major_num);
 		return bdbm_device_major_num;
 	}
 	if (!(bdbm_device.gd = alloc_disk (1))) {
 		bdbm_msg ("alloc_disk failed");
-		unregister_blkdev (bdbm_device_major_num, "blueDBM");
+		unregister_blkdev (bdbm_device_major_num, "robusta");
 		return -ENOMEM;
 	}
 	bdbm_device.gd->major = bdbm_device_major_num;
@@ -223,13 +224,14 @@ uint32_t host_blkdev_register_device (bdbm_drv_info_t* bdi, make_request_fn* fn)
 	bdbm_device.gd->fops = &bdops;
 	bdbm_device.gd->queue = bdbm_device.queue;
 	bdbm_device.gd->private_data = NULL;
-	strcpy (bdbm_device.gd->disk_name, "blueDBM");
+	strcpy (bdbm_device.gd->disk_name, "robusta");
 
 	{
 		uint64_t capacity;
 		//capacity = bdi->parm_dev.device_capacity_in_byte * 0.9;
-		/*capacity = bdi->parm_dev.device_capacity_in_byte;*/
-	//	capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		capacity = bdi->parm_dev.device_capacity_in_byte;
+		capacity = (capacity / KERNEL_PAGE_SIZE) * KERNEL_PAGE_SIZE;
+		capacity = capacity - capacity / 10;
 		set_capacity (bdbm_device.gd, capacity / KERNEL_SECTOR_SIZE);
 	}
 	add_disk (bdbm_device.gd);
@@ -241,8 +243,8 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 {
 	/* unregister a BlueDBM device driver */
 	del_gendisk (bdbm_device.gd);
+	blk_cleanup_queue (bdbm_device.gd->queue);
 	put_disk (bdbm_device.gd);
-	unregister_blkdev (bdbm_device_major_num, "blueDBM");
-	blk_cleanup_queue (bdbm_device.queue);
+	unregister_blkdev (bdbm_device_major_num, "robusta");
 }
 

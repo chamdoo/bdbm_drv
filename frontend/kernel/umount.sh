@@ -1,4 +1,5 @@
-sudo umount /media/blueDBM
-sudo rmmod bdbm_drv
-sudo rmmod risa_dev_*
-sudo rmmod f2fs
+sudo umount /media/robusta
+sudo rmmod robusta_drv
+sudo rmmod nvme
+sudo rmmod dumbssd
+sudo rmmod risa*

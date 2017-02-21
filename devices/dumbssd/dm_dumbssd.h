@@ -22,35 +22,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _BLUEDBM_QUEUE_MQ_H
-#define _BLUEDBM_QUEUE_MQ_H
+#ifndef _BLUEDBM_DEV_RAMDRV_H
+#define _BLUEDBM_DEV_RAMDRV_H
 
-enum BDBM_QUEUE_SIZE {
-	INFINITE_QUEUE = -1,
-};
+#if defined (KERNEL_MODE)
+#include "bdbm_drv.h"
+#include "params.h"
+
+uint32_t dm_dumbssd_probe (bdbm_drv_info_t* bdi, bdbm_device_params_t* param);
+uint32_t dm_dumbssd_open (bdbm_drv_info_t* bdi);
+void dm_dumbssd_close (bdbm_drv_info_t* bdi);
+uint32_t dm_dumbssd_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+uint32_t dm_dumbssd_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hlm_req);
+void dm_dumbssd_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* ptr_llm_req);
+#endif
 
 typedef struct {
-	void* ptr_req;
-	struct list_head list;
-} bdbm_queue_item_t;
+	int die;
+	int block;
+	int wu;
+} dumbssd_user_cmd_t;
 
-typedef struct {
-	uint64_t nr_queues;
-	int64_t max_size;
-	int64_t qic;			/* queue item count */
-	bdbm_spinlock_t lock;	/* queue lock */
-
-	struct list_head* qlh;	/* queue list header */
-} bdbm_queue_t;
-
-bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t size);
-void bdbm_queue_destroy (bdbm_queue_t* mq);
-uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req);
-uint8_t bdbm_queue_enqueue_top (bdbm_queue_t* mq, uint64_t qid, void* req);
-void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_full (bdbm_queue_t* mq);
-uint8_t bdbm_queue_is_empty (bdbm_queue_t* mq, uint64_t qid);
-uint8_t bdbm_queue_is_all_empty (bdbm_queue_t* mq);
-uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq);
+#define TEST_IOCTL_READ 	_IO('N', 0x01)
+#define TEST_IOCTL_WRITE 	_IO('N', 0x02)
+#define TEST_IOCTL_ERASE 	_IO('N', 0x03)
 
 #endif

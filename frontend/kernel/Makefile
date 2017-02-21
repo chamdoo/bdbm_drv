@@ -6,9 +6,10 @@ INCLUDE := ../../include
 COMMON := ../../common
 DM_COMMON := ../../devices/common
 
-#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/dumbssd/Module.symvers
+KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive/Module.symvers
 #KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/ramdrive_timing/Module.symvers
-KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
+#KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/bluedbm/Module.symvers
 
 EXTRA_CFLAGS := \
 	-I$(PWD)/$(INCLUDE) \
@@ -53,9 +54,9 @@ EXTRA_CFLAGS += -D USE_NEW_RMW
 	$(COMMON)/utils/utime.o \
 	$(COMMON)/utils/ufile.o \
 	$(COMMON)/utils/uthread.o \
-	$(COMMON)/bdbm_main.o \
+	$(COMMON)/bm_main.o \
 
-bdbm_drv-y := \
+robusta_drv-y := \
 	kmain.o \
 	blkdev.o \
 	blkio.o \
@@ -78,7 +79,7 @@ bdbm_drv-y := \
 	$(COMMON)/bdbm_main.o \
 
 
-obj-m := bdbm_drv.o
+obj-m := robusta_drv.o
 
 ccflags-y := -I$(src)
 

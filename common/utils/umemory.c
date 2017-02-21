@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 #include <linux/types.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 
 void* bdbm_malloc (size_t size) { return vzalloc (size); }
 void* bdbm_malloc_phy (size_t size) { return vzalloc (size); }	/* for compatibility */

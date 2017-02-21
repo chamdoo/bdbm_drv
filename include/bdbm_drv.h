@@ -136,7 +136,7 @@ typedef struct {
 #define BDBM_MAX_PAGES 1
 
 /* a bluedbm blockio request */
-#define BDBM_BLKIO_MAX_VECS 256
+#define BDBM_BLKIO_MAX_VECS 512
 
 typedef struct {
 	uint64_t bi_rw; /* REQTYPE_WRITE or REQTYPE_READ */
@@ -175,7 +175,8 @@ typedef struct {
 } bdbm_flash_page_main_t;
 
 typedef struct {
-	uint8_t* data;
+	//uint8_t* data;
+	uint8_t data[BDBM_MAX_PAGES*64]; /* FIXME: OOB is fixed to 64 bytes :( */
 } bdbm_flash_page_oob_t;
 
 typedef struct {

@@ -7,7 +7,7 @@ sudo insmod dumbssd.ko
 sleep 1
 sudo insmod nvme.ko
 sleep 1
-sudo insmod robusta_drv.ko
+sudo insmod bdbm_drv.ko
 sleep 1
-sudo mkfs -t ext4 -b 4096 /dev/robusta
-sudo mount -t ext4 -o discard /dev/robusta /media/robusta
+sudo mkfs.f2fs -a 0 -s 2 /dev/robusta
+sudo mount -t f2fs -o discard /dev/robusta /media/robusta

@@ -202,7 +202,7 @@ int bdbm_drv_run (bdbm_drv_info_t* bdi)
 	if (bdi->ptr_llm_inf) {
 		llm = bdi->ptr_llm_inf;
 		if (llm->create == NULL || llm->create (bdi) != 0) {
-			bdbm_error ("[bdbm_drv_main] failed to create llm");
+			bdbm_error ("[bdbm_drv_main] failed to create llm (%p)", llm->create);
 			goto fail;
 		}
 	}
