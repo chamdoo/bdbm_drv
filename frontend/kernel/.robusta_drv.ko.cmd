@@ -1,0 +1,1 @@
+cmd_/home/ch/workspace/bdbm_drv/frontend/kernel/robusta_drv.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/ch/workspace/bdbm_drv/frontend/kernel/robusta_drv.ko /home/ch/workspace/bdbm_drv/frontend/kernel/robusta_drv.o /home/ch/workspace/bdbm_drv/frontend/kernel/robusta_drv.mod.o ;  true
