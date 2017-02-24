@@ -1146,6 +1146,7 @@ void __bdbm_block_ftl_badblock_scan_eraseblks (bdbm_drv_info_t* bdi, uint64_t bl
 	/* measure gc elapsed time */
 }
 
+/*
 static void __bdbm_block_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
@@ -1167,6 +1168,8 @@ static void __bdbm_block_mark_it_dead (
 		}
 	}
 }
+
+*/
 
 uint32_t bdbm_block_ftl_badblock_scan (bdbm_drv_info_t* bdi)
 {

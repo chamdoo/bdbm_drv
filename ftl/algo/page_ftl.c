@@ -1164,6 +1164,7 @@ void __bdbm_page_badblock_scan_eraseblks (
 	/* measure gc elapsed time */
 }
 
+/*
 static void __bdbm_page_mark_it_dead (
 	bdbm_drv_info_t* bdi,
 	uint64_t block_no)
@@ -1185,6 +1186,7 @@ static void __bdbm_page_mark_it_dead (
 		}
 	}
 }
+*/
 
 uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 {
