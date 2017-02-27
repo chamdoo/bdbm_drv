@@ -1,3 +1,3 @@
 0x444c8bbb	bdbm_dm_get_inf	/home/ch/workspace/bdbm_drv/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
-0x76cebecb	bdbm_dm_init	/home/ch/workspace/bdbm_drv/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
 0xf25467f2	bdbm_dm_exit	/home/ch/workspace/bdbm_drv/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
+0x76cebecb	bdbm_dm_init	/home/ch/workspace/bdbm_drv/devices/ramdrive/risa_dev_ramdrive	EXPORT_SYMBOL
