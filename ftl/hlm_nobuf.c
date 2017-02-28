@@ -94,7 +94,7 @@ uint32_t __hlm_nobuf_make_trim_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* ptr_hl
 {
 	bdbm_ftl_inf_t* ftl = (bdbm_ftl_inf_t*)BDBM_GET_FTL_INF(bdi);
 	uint64_t i;
-
+    
 	for (i = 0; i < ptr_hlm_req->len; i++) {
 		ftl->invalidate_lpa (bdi, ptr_hlm_req->lpa + i, 1);
 	}
@@ -166,7 +166,9 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		for (j = 0; j < np->nr_subpages_per_page; j++) {
 			((int64_t*)lr->foob.data)[j] = lr->logaddr.lpa[j];
 		}
-	}
+        
+    }
+
 
 	/* (3) send llm_req to llm */
 	if (bdi->ptr_llm_inf->make_reqs == NULL) {
@@ -285,10 +287,6 @@ void __hlm_nobuf_end_blkio_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 	/* increase # of reqs finished */
 	atomic64_inc (&hr->nr_llm_reqs_done);
 	lr->req_type |= REQTYPE_DONE;
-
-    //Don
-    pr_info("[DATAHEX] %x\n",**(hr->llm_reqs->fmain.kp_ptr)); 
-
 
 	if (atomic64_read (&hr->nr_llm_reqs_done) == hr->nr_llm_reqs) {
 		/* finish the host request */

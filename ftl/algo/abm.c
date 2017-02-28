@@ -518,6 +518,17 @@ void bdbm_abm_invalidate_page (
 	bdbm_bug_on (b->block_no != block_no);
 	bdbm_bug_on (subpage_no >= bai->np->nr_subpages_per_page);
 
+
+
+
+    //Don
+    pr_info("[INV] (%lld, %lld, %lld, %lld)\n"
+            ,channel_no, chip_no,
+            block_no, page_no);
+
+
+
+
 	/* get a subpage offst in pst */
  	pst_off = (page_no * bai->np->nr_subpages_per_page) + subpage_no;
 	bdbm_bug_on (pst_off >= bai->np->nr_subpages_per_block);
