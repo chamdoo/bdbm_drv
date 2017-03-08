@@ -91,4 +91,4 @@ __attribute__((section(".modinfo"))) =
 "depends=risa_dev_ramdrive";
 
 
-MODULE_INFO(srcversion, "81571CF2BED86B0F61BFFC7");
+MODULE_INFO(srcversion, "515841DAECAD60901DF7563");
