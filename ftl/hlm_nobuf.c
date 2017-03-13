@@ -47,6 +47,9 @@ THE SOFTWARE.
 #include "algo/page_ftl.h"
 
 
+//Don
+#include <linux/string.h>
+
 /* interface for hlm_nobuf */
 bdbm_hlm_inf_t _hlm_nobuf_inf = {
 	.ptr_private = NULL,
@@ -131,6 +134,7 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 					bdbm_error ("`ftl->map_lpa_to_ppa' failed");
 					goto fail;
 				}
+                
 			} else {
 				bdbm_error ("oops! invalid type (%x)", lr->req_type);
 				bdbm_bug_on (1);

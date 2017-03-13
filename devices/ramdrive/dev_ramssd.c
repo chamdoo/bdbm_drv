@@ -214,9 +214,12 @@ static uint8_t __ramssd_read_page (
 
 	/* copy the main page data to a buffer */
 	if (ri->np->nr_subpages_per_page == 1) {
-		for (loop = 0; loop < nr_kpages; loop++) {
-			if (partial == 1 && kp_stt[loop] == KP_STT_DATA) continue;
+		for (loop = 0; loop < nr_kpages; loop++) {			
+            if (partial == 1 && kp_stt[loop] == KP_STT_DATA) continue;
 			bdbm_memcpy (kp_ptr[loop], ptr_ramssd_addr + KPAGE_SIZE * loop, KPAGE_SIZE);
+            //Don 
+            pr_info("[READRAM] %s\n",kp_ptr[loop]);
+
 		}
 	} else {
 		for (loop = 0; loop < nr_kpages; loop++) {
@@ -300,8 +303,12 @@ static uint8_t __ramssd_prog_page (
 
 	/* copy the main page data to a buffer */
 	if (ri->np->nr_subpages_per_page == 1) {
-		for (loop = 0; loop < nr_kpages; loop++) {
-			bdbm_memcpy (ptr_ramssd_addr + KPAGE_SIZE * loop, kp_ptr[loop], KPAGE_SIZE);
+		for (loop = 0; loop < nr_kpages; loop++) {	
+            bdbm_memcpy (ptr_ramssd_addr + KPAGE_SIZE * loop, kp_ptr[loop], KPAGE_SIZE);
+            
+            //Don
+            pr_info("[WRITERAM] %s\n",kp_ptr[loop]);
+
 		}
 	} else {
 		for (loop = 0; loop < nr_kpages; loop++) {

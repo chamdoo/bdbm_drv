@@ -108,6 +108,18 @@ int bdbm_blk_ioctl (
 	int ret;
 
 	switch (cmd) {
+		case 0:
+		{
+			bdbm_ftl_inf_t* ftl = NULL;
+			if((ftl = _bdi->ptr_ftl_inf) == NULL){
+				bdbm_warning("ftl is not created");
+				return 0;
+			}
+
+			ftl->recovery(_bdi);
+
+			break;
+		}
 	case HDIO_GETGEO:
 	case HDIO_GETGEO_BIG:
 	case HDIO_GETGEO_BIG_RAW:

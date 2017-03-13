@@ -606,7 +606,8 @@ static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table)
 
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)filp->private_data;
+	
+    bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)filp->private_data;
 	int ret = 0;
 
 	/* see if bdbm_dm_study is valid or not */

@@ -327,7 +327,11 @@ typedef struct {
 	uint32_t (*scan_badblocks) (bdbm_drv_info_t* bdi);
 	uint32_t (*load) (bdbm_drv_info_t* bdi, const char* fn);
 	uint32_t (*store) (bdbm_drv_info_t* bdi, const char* fn);
-	
+
+	/* recovery */
+	void (*recovery) (bdbm_drv_info_t* bdi);
+
+
 	/* interfaces for RSD */
 	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);
 

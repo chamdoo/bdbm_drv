@@ -36,6 +36,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x45bceac0, __VMLINUX_SYMBOL_STR(blk_mq_tags_cpumask) },
 	{ 0x4ca851a1, __VMLINUX_SYMBOL_STR(blk_queue_max_hw_sectors) },
 	{ 0x43a53735, __VMLINUX_SYMBOL_STR(__alloc_workqueue_key) },
+	{ 0x2fc24b32, __VMLINUX_SYMBOL_STR(bdbm_register) },
 	{ 0x83e35ee8, __VMLINUX_SYMBOL_STR(pci_stop_and_remove_bus_device_locked) },
 	{ 0xa90ac519, __VMLINUX_SYMBOL_STR(pci_disable_device) },
 	{ 0xff015a62, __VMLINUX_SYMBOL_STR(blk_mq_start_request) },
@@ -69,6 +70,7 @@ __attribute__((section("__versions"))) = {
 	{ 0xd11bfd7a, __VMLINUX_SYMBOL_STR(blk_mq_init_queue) },
 	{ 0x9e88526, __VMLINUX_SYMBOL_STR(__init_waitqueue_head) },
 	{ 0x4f8b5ddb, __VMLINUX_SYMBOL_STR(_copy_to_user) },
+	{ 0x1316cdf9, __VMLINUX_SYMBOL_STR(bdbm_unregister) },
 	{ 0x7634e5ef, __VMLINUX_SYMBOL_STR(blk_queue_max_segments) },
 	{ 0x5c21b4f8, __VMLINUX_SYMBOL_STR(pci_set_master) },
 	{ 0xfb578fc5, __VMLINUX_SYMBOL_STR(memset) },
@@ -198,7 +200,7 @@ __attribute__((section("__versions"))) = {
 static const char __module_depends[]
 __used
 __attribute__((section(".modinfo"))) =
-"depends=";
+"depends=dumbssd";
 
 MODULE_ALIAS("pci:v00008086d00000953sv*sd*bc*sc*i*");
 MODULE_ALIAS("pci:v00008086d00005845sv*sd*bc*sc*i*");

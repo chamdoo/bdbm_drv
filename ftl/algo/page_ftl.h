@@ -53,6 +53,7 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi);
 uint32_t bdbm_page_ftl_load (bdbm_drv_info_t* bdi, const char* fn);
 uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
 
+void recovery (bdbm_drv_info_t* bdi);
 
 #endif /* _BLUEDBM_FTL_BLOCKFTL_H */
 

@@ -52,6 +52,7 @@ THE SOFTWARE.
 #include "queue/queue.h"
 #include <linux/ktime.h>
 
+
 /* FTL interface */
 bdbm_ftl_inf_t _ftl_page_ftl = {
 	.ptr_private = NULL,
@@ -67,8 +68,10 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	/*.load = bdbm_page_ftl_load,*/
 	/*.store = bdbm_page_ftl_store,*/
 	/*.get_segno = NULL,*/
-};
 
+	/* recovery interface */
+	 .recovery = recovery,
+};
 
 /* data structures for block-level FTL */
 enum BDBM_PFTL_PAGE_STATUS {
@@ -108,14 +111,18 @@ typedef struct {
 
 //Don
 bdbm_queue_t *fifo;
-
+int count;
 int tmp;
 int destroy_c;
+int flag;
 #define QUEUE_SIZE 10000 
 #define QID 0
-#define RECOVERY_TIME 80
 //15 Seconds
-#define STANDARD_T 20
+#define STANDARD_T 15
+enum RECOVERY_FLAGS{
+	OFF = 0,
+	ON
+};
 
 struct info{
     bdbm_logaddr_t logaddr;
@@ -133,16 +140,18 @@ struct info *item;
 struct info *check;
 struct info *tmp_p;
 
-void recovery(bdbm_queue_t *queue){
-    bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+
+void recovery(bdbm_drv_info_t* bdi){
+  	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
     bdbm_page_mapping_entry_t* me = NULL;
     struct info* log = NULL;
     int size_c;
-    int queue_size = bdbm_queue_get_nr_items(queue);
+    int queue_size = bdbm_queue_get_nr_items(fifo);
     //pr_info("[QUEUE_SIZE] %d \n",queue_size);
-    if(queue_size != 0){
+    flag = ON;
+	if(queue_size != 0){
         for(size_c = 0; size_c < queue_size; size_c++){
-            log = bdbm_queue_dequeue(queue,QID);
+            log = bdbm_queue_dequeue(fifo,QID);
             me = &p->ptr_mapping_table[log->logaddr.lpa[log->sp_off]];
 
             bdbm_abm_invalidate_page(
@@ -405,7 +414,8 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
     //Don
     fifo = bdbm_queue_create(1, QUEUE_SIZE);
     timestamp = ktime_get();
-    return 0;
+    flag = OFF;
+	return 0;
 }
 
 void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
@@ -435,8 +445,6 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 
     //Don
-    int count;
-     destroy_c = bdbm_queue_get_nr_items(fifo);
      pr_info("Destroy : %d\n",destroy_c);
      for(count = 0; count < destroy_c; count++){
          check = bdbm_queue_dequeue(fifo,QID);
@@ -510,13 +518,18 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	int k;
 
     //Don
-    long test;
-    timestamp_e = ktime_get();
-    test = ktime_to_timespec(ktime_sub(timestamp_e, timestamp)).tv_sec;
-    if(test > RECOVERY_TIME){
-        recovery(fifo);
-        return 0;
-    }
+    //long test;
+    //timestamp_e = ktime_get();
+    //test = ktime_to_timespec(ktime_sub(timestamp_e, timestamp)).tv_sec;
+    //if(test > RECOVERY_TIME){
+    //    recovery(fifo);
+    //    return 0;
+    //}
+	if(flag == ON){
+		pr_info("ON!!!\n");
+		return 0;
+	}	
+
 
 
 	/* is it a valid logical address */
@@ -568,7 +581,6 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
             
             check_t(fifo);   
- //           test(fifo); 
  //            bdbm_abm_invalidate_page (
  //				p->bai, 
  //				me->phyaddr.channel_no, 
@@ -1498,3 +1510,6 @@ uint32_t bdbm_page_badblock_scan (bdbm_drv_info_t* bdi)
 	return 0;
 
 }
+
+
+
