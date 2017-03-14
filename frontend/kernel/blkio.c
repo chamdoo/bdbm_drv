@@ -70,14 +70,14 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 
 	/* get the type of the bio request */
 	if (bio_op(bio) == REQ_OP_DISCARD) {
+		printk(KERN_INFO "mizno, TRIM in __get_blkio_req()");
 		br->bi_rw = REQTYPE_TRIM;
-		// bdbm_msg ("TRIM");
 	} else if (bio_op(bio) == READ) {
+		printk(KERN_INFO "mizno, READ in __get_blkio_req()");
 		br->bi_rw = REQTYPE_READ;
-		// bdbm_msg ("READ");
 	} else if (bio_op(bio) == WRITE) {
+		printk(KERN_INFO "mizno, WRITE in __get_blkio_req()");
 		br->bi_rw = REQTYPE_WRITE;
-		// bdbm_msg ("WRITE");
 	} else {
 		bdbm_error ("oops! invalid request type");
 		goto fail;
