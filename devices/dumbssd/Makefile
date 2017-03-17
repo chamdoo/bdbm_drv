@@ -29,7 +29,7 @@ dumbssd-y := \
 
 obj-m := dumbssd.o
 
-export KROOT=/lib/modules/$(shell uname -r)/build
+export KROOT=/lib/modules/4.5.7-040507-generic/build
 
 .PHONY: default
 default: modules

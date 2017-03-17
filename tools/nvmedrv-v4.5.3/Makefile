@@ -8,7 +8,7 @@ ccflags-y := -I$(src)
 
 KBUILD_EXTRA_SYMBOLS := $(PWD)/../../devices/dumbssd/Module.symvers
 
-export KROOT=/lib/modules/$(shell uname -r)/build
+export KROOT=/lib/modules/4.5.7-040507-generic/build
 
 .PHONY: default
 default: modules

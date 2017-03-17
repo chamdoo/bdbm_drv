@@ -83,7 +83,7 @@ obj-m := robusta_drv.o
 
 ccflags-y := -I$(src)
 
-export KROOT=/lib/modules/$(shell uname -r)/build
+export KROOT=/lib/modules/4.5.7-040507-generic/build
 
 .PHONY: default
 default: modules

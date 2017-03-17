@@ -53,7 +53,7 @@ obj-m := risa_dev_bluedbm.o
 
 ccflags-y := -I$(src)/$(CPPDIR) -I$(src)/$(BOARDDIR) $(HARDWARE_FLAGS) -DBOARD_$(BOARD)
 
-export KROOT=/lib/modules/$(shell uname -r)/build
+export KROOT=/lib/modules/4.5.7-040507-generic/build
 
 .PHONY: default
 default: modules

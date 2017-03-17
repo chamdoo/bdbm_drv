@@ -31,7 +31,7 @@ risa_dev_ramdrive_timing-y := \
 
 obj-m := risa_dev_ramdrive_timing.o
 
-export KROOT=/lib/modules/$(shell uname -r)/build
+export KROOT=/lib/modules/4.5.7-040507-generic/build
 
 .PHONY: default
 default: modules
