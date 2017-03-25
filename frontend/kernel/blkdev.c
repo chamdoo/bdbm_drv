@@ -98,99 +98,113 @@ int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo)
 }
 
 int bdbm_blk_ioctl (
-	struct block_device *bdev, 
-	fmode_t mode, 
-	unsigned cmd, 
-	unsigned long arg)
+		struct block_device *bdev, 
+		fmode_t mode, 
+		unsigned cmd, 
+		unsigned long arg)
 {
 	struct hd_geometry geo;
 	struct gendisk *disk = bdev->bd_disk;
 	int ret;
 
+
+	bdbm_ftl_inf_t* ftl = NULL;
 	switch (cmd) {
+		/*
+		   case 0 : Do Recovery
+		   case 1 : Status change
+		*/
 		case 0:
-		{
-			bdbm_ftl_inf_t* ftl = NULL;
-			if((ftl = _bdi->ptr_ftl_inf) == NULL){
-				bdbm_warning("ftl is not created");
-				return 0;
+			{
+				if((ftl = _bdi->ptr_ftl_inf) == NULL){
+					bdbm_warning("ftl is not created");
+					return 0;
+				}
+
+				ftl->recovery(_bdi);
+
+				break;
+			}
+		case 1:
+			{
+				if((ftl = _bdi->ptr_ftl_inf) == NULL){
+					bdbm_warning("ftl is not created");
+					return 0;
+				}
+				ftl->status(_bdi);
+				break;
+			}
+		case HDIO_GETGEO:
+		case HDIO_GETGEO_BIG:
+		case HDIO_GETGEO_BIG_RAW:
+			if (!arg) {
+				bdbm_warning ("invalid argument");
+				return -EINVAL;
+			}
+			if (!disk->fops->getgeo) {
+				bdbm_warning ("disk->fops->getgeo is NULL");
+				return -ENOTTY;
 			}
 
-			ftl->recovery(_bdi);
-
+			bdbm_memset(&geo, 0, sizeof(geo));
+			geo.start = get_start_sect(bdev);
+			ret = disk->fops->getgeo(bdev, &geo);
+			if (ret) {
+				bdbm_warning ("disk->fops->getgeo returns (%d)", ret);
+				return ret;
+			}
+			if (copy_to_user((struct hd_geometry __user *)arg, &geo, sizeof(geo))) {
+				bdbm_warning ("copy_to_user failed");
+				return -EFAULT;
+			}
 			break;
-		}
-	case HDIO_GETGEO:
-	case HDIO_GETGEO_BIG:
-	case HDIO_GETGEO_BIG_RAW:
-		if (!arg) {
-			bdbm_warning ("invalid argument");
-			return -EINVAL;
-		}
-		if (!disk->fops->getgeo) {
-			bdbm_warning ("disk->fops->getgeo is NULL");
-			return -ENOTTY;
-		}
 
-		bdbm_memset(&geo, 0, sizeof(geo));
-		geo.start = get_start_sect(bdev);
-		ret = disk->fops->getgeo(bdev, &geo);
-		if (ret) {
-			bdbm_warning ("disk->fops->getgeo returns (%d)", ret);
-			return ret;
-		}
-		if (copy_to_user((struct hd_geometry __user *)arg, &geo, sizeof(geo))) {
-			bdbm_warning ("copy_to_user failed");
-			return -EFAULT;
-		}
-		break;
+		case BDBM_BADBLOCK_SCAN:
+			bdbm_msg ("Get a BDBM_BADBLOCK_SCAN command: %u (%X)", cmd, cmd);
 
-	case BDBM_BADBLOCK_SCAN:
-		bdbm_msg ("Get a BDBM_BADBLOCK_SCAN command: %u (%X)", cmd, cmd);
-
-		if (task != NULL) {
-			bdbm_msg ("badblock_scan_thread is running");
-		} else {
-			/* create thread */
-			if ((task = kthread_create (badblock_scan_thread_fn, NULL, "badblock_scan_thread")) == NULL) {
-				bdbm_msg ("badblock_scan_thread failed to create");
+			if (task != NULL) {
+				bdbm_msg ("badblock_scan_thread is running");
 			} else {
-				wake_up_process (task);
+				/* create thread */
+				if ((task = kthread_create (badblock_scan_thread_fn, NULL, "badblock_scan_thread")) == NULL) {
+					bdbm_msg ("badblock_scan_thread failed to create");
+				} else {
+					wake_up_process (task);
+				}
 			}
-		}
-		break;
+			break;
 
-	case BDBM_BADBLOCK_SCAN_CHECK:
-		/* check the status of the thread */
-		if (task == NULL) {
-			bdbm_msg ("badblock_scan_thread is not created...");
+		case BDBM_BADBLOCK_SCAN_CHECK:
+			/* check the status of the thread */
+			if (task == NULL) {
+				bdbm_msg ("badblock_scan_thread is not created...");
+				ret = 1; /* done */
+				copy_to_user ((int*)arg, &ret, sizeof (int));
+				break;
+			}
+
+			/* is it still running? */
+			if (!bdbm_try_wait_for_completion (task_completion)) {
+				ret = 0; /* still running */
+				copy_to_user ((int*)arg, &ret, sizeof (int));
+				break;
+			}
 			ret = 1; /* done */
-			copy_to_user ((int*)arg, &ret, sizeof (int));
-			break;
-		}
 
-		/* is it still running? */
-		if (!bdbm_try_wait_for_completion (task_completion)) {
-			ret = 0; /* still running */
+			/* reinit some variables */
+			task = NULL;
 			copy_to_user ((int*)arg, &ret, sizeof (int));
+			bdbm_reinit_completion (task_completion);
 			break;
-		}
-		ret = 1; /* done */
-		
-		/* reinit some variables */
-		task = NULL;
-		copy_to_user ((int*)arg, &ret, sizeof (int));
-		bdbm_reinit_completion (task_completion);
-		break;
 
 #if 0
-	case BDBM_GET_PHYADDR:
-		break;
+		case BDBM_GET_PHYADDR:
+			break;
 #endif
 
-	default:
-		/*bdbm_msg ("unknown bdm_blk_ioctl: %u (%X)", cmd, cmd);*/
-		break;
+		default:
+			/*bdbm_msg ("unknown bdm_blk_ioctl: %u (%X)", cmd, cmd);*/
+			break;
 	}
 
 	return 0;

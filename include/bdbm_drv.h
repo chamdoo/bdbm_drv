@@ -330,7 +330,7 @@ typedef struct {
 
 	/* recovery */
 	void (*recovery) (bdbm_drv_info_t* bdi);
-
+	void (*status) (bdbm_drv_info_t* bdi);
 
 	/* interfaces for RSD */
 	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);

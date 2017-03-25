@@ -47,9 +47,6 @@ THE SOFTWARE.
 #include "algo/page_ftl.h"
 
 
-//Don
-#include <linux/string.h>
-
 /* interface for hlm_nobuf */
 bdbm_hlm_inf_t _hlm_nobuf_inf = {
 	.ptr_private = NULL,

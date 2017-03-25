@@ -71,6 +71,7 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 
 	/* recovery interface */
 	 .recovery = recovery,
+	 .status = status,
 };
 
 /* data structures for block-level FTL */
@@ -115,7 +116,7 @@ int count;
 int tmp;
 int destroy_c;
 int flag;
-#define QUEUE_SIZE 10000 
+#define QUEUE_SIZE 1000
 #define QID 0
 //15 Seconds
 #define STANDARD_T 15
@@ -140,20 +141,32 @@ struct info *item;
 struct info *check;
 struct info *tmp_p;
 
+/* change status use ioctl */
+void status(bdbm_drv_info_t* bdi){
+	if(flag == ON){
+		flag = OFF;
+	}else{
+		flag = ON;
+	}
+	pr_info("Status change\n");
+}
 
+/* Recovery items */
 void recovery(bdbm_drv_info_t* bdi){
   	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
     bdbm_page_mapping_entry_t* me = NULL;
     struct info* log = NULL;
-    int size_c;
+    int loop;
     int queue_size = bdbm_queue_get_nr_items(fifo);
     //pr_info("[QUEUE_SIZE] %d \n",queue_size);
     flag = ON;
+	
 	if(queue_size != 0){
-        for(size_c = 0; size_c < queue_size; size_c++){
+        for(loop = 0; loop < queue_size; loop++){
             log = bdbm_queue_dequeue(fifo,QID);
             me = &p->ptr_mapping_table[log->logaddr.lpa[log->sp_off]];
 
+			
             bdbm_abm_invalidate_page(
                     p->bai,
                     me->phyaddr.channel_no,
@@ -163,12 +176,12 @@ void recovery(bdbm_drv_info_t* bdi){
                     me->sp_off
                     );
 
-            pr_info("[RCY] LPA=%lld => (%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
-                    log->logaddr.lpa[log->sp_off], me->phyaddr.channel_no, me->phyaddr.chip_no,
-                    me->phyaddr.block_no, me->phyaddr.page_no,
-                    log->me.phyaddr.channel_no, log->me.phyaddr.chip_no,
-                    log->me.phyaddr.block_no, log->me.phyaddr.page_no);
-
+ //            pr_info("[RCY] LPA=%lld => (%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
+ //                    log->logaddr.lpa[log->sp_off], me->phyaddr.channel_no, me->phyaddr.chip_no,
+ //                    me->phyaddr.block_no, me->phyaddr.page_no,
+ //                    log->me.phyaddr.channel_no, log->me.phyaddr.chip_no,
+ //                    log->me.phyaddr.block_no, log->me.phyaddr.page_no);
+ //
 
             me->status = PFTL_PAGE_VALID;
             me->phyaddr.channel_no = log->me.phyaddr.channel_no;
@@ -182,68 +195,69 @@ void recovery(bdbm_drv_info_t* bdi){
     }
 }
 
+/* Check queue items, timeout or full */
+void check_queue(bdbm_queue_t *queue){
+	int queue_size;
+	int loop;
+	long cal_t;
+	struct info *q_item; 
+	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
+	
+	queue_size = bdbm_queue_get_nr_items(queue);
+	
 
-void check_t(bdbm_queue_t *queue){
-    int size_c;
-    ktime_t current_t;
-    long time;
-    bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
-    current_t = ktime_get(); 
-    
-    if(bdbm_queue_is_full(queue)){
-        for(size_c = 0; size_c < QUEUE_SIZE; size_c++){
-            check = bdbm_queue_dequeue(queue, QID);
-           
- //            pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n",
- //                    check->logaddr->lpa[check->sp_off], check->me.phyaddr.channel_no, 
- //                    check->me.phyaddr.chip_no,
- //                    check->me.phyaddr.block_no, check->me.phyaddr.page_no);
+	for(loop = 0; loop < queue_size; loop++){
+		q_item = bdbm_queue_top(queue, QID);
+	
+		cal_t = ktime_to_timespec(ktime_sub(ktime_get(),
+					q_item->time)).tv_sec;
 
-            bdbm_abm_invalidate_page(
-                    p->bai,
-                    check->me.phyaddr.channel_no,
-                    check->me.phyaddr.chip_no,
-                    check->me.phyaddr.block_no,
-                    check->me.phyaddr.page_no,
-                    check->me.sp_off
-                    );
-            kfree(check);
-        }
-    }else{
-        int queue_size = bdbm_queue_get_nr_items(queue);
-        for(size_c = 0; size_c < queue_size; size_c++){ 
-            tmp_p = bdbm_queue_top(queue, QID);
-            
-            time = ktime_to_timespec(ktime_sub(current_t, 
-                        tmp_p->time)).tv_sec;
-            if(time > STANDARD_T){
-                tmp_p = bdbm_queue_dequeue(queue,QID);
-               
- //                pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n",
- //                        tmp_p->logaddr->lpa[check->sp_off], tmp_p->me.phyaddr.channel_no, 
- //                        tmp_p->me.phyaddr.chip_no,
- //                        tmp_p->me.phyaddr.block_no, tmp_p->me.phyaddr.page_no);
- //
+		/* if OVER 15seconds dequeue */
+		if(cal_t > STANDARD_T){
+			q_item = bdbm_queue_dequeue(queue, QID);
 
+			bdbm_abm_invalidate_page(
+					p->bai,
+					q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no,
+					q_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no,
+					q_item->me.sp_off);
+		
+			pr_info("[Timeout]\n");
+			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no, a_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no);
+			
+			kfree(q_item);
 
-                bdbm_abm_invalidate_page(
-                        p->bai,
-                        tmp_p->me.phyaddr.channel_no,
-                        tmp_p->me.phyaddr.chip_no,
-                        tmp_p->me.phyaddr.block_no,
-                        tmp_p->me.phyaddr.page_no,
-                        tmp_p->me.sp_off
-                        );
-                kfree(tmp_p);
-            }else{
-                tmp = 0;
-                break;
-            }
-        } 
-    }
+		}else if(bdbm_queue_is_full(queue)){
+		/* Not over 15seconds but queue is full,
+			So dequeue 1item */
+			q_item = bdbm_queue_dequeue(queue, QID);
+
+			pr_info("[FULL]\n");
+			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no, a_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no);
+			
+			bdbm_abm_invalidate_page(
+					p->bai,
+					q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no,
+					q_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no,
+					q_item->me.sp_off);
+						
+			kfree(q_item);
+		}else{
+		/* Not over 15seconds and queue is not full */
+			break;
+		}
+	}
 }
-
-
 
 bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (
 	bdbm_device_params_t* np)
@@ -412,6 +426,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	hlm_reqs_pool_allocate_llm_reqs (p->gc_hlm_w.llm_reqs, p->nr_punits_pages, RP_MEM_PHY);
 
     //Don
+	/* Create queue */
     fifo = bdbm_queue_create(1, QUEUE_SIZE);
     timestamp = ktime_get();
     flag = OFF;
@@ -445,6 +460,8 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
 	bdbm_free (p);
 
     //Don
+	/* Destroy queue */
+	 destroy_c = bdbm_queue_get_nr_items(fifo);
      pr_info("Destroy : %d\n",destroy_c);
      for(count = 0; count < destroy_c; count++){
          check = bdbm_queue_dequeue(fifo,QID);
@@ -518,15 +535,8 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	int k;
 
     //Don
-    //long test;
-    //timestamp_e = ktime_get();
-    //test = ktime_to_timespec(ktime_sub(timestamp_e, timestamp)).tv_sec;
-    //if(test > RECOVERY_TIME){
-    //    recovery(fifo);
-    //    return 0;
-    //}
-	if(flag == ON){
-		pr_info("ON!!!\n");
+  	if(flag == ON){
+		pr_info("Recovery ON!!!\n");
 		return 0;
 	}	
 
@@ -565,22 +575,23 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 
             //Don
             item->time = ktime_get();
-            item->logaddr = *logaddr;
-            
-            
+            item->logaddr = *logaddr; 
             item->me = *me;
-
             item->sp_off = k;
-            bdbm_queue_enqueue(fifo, QID, item);
             
-            pr_info("[OVERWRITE] LPA=%lld => (%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
-                    logaddr->lpa[k], me->phyaddr.channel_no, me->phyaddr.chip_no,
-                    me->phyaddr.block_no, me->phyaddr.page_no,
-                    phyaddr->channel_no, phyaddr->chip_no,
-                    phyaddr->block_no, phyaddr->page_no);
+			check_queue(fifo);
+			bdbm_queue_enqueue(fifo, QID, item);
+            
+ //            pr_info("[OVERWRITE] LPA=%lld => 
+ //			(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
+ //                    logaddr->lpa[k], me->phyaddr.channel_no, me->phyaddr.chip_no,
+ //                    me->phyaddr.block_no, me->phyaddr.page_no,
+ //                    phyaddr->channel_no, phyaddr->chip_no,
+ //                    phyaddr->block_no, phyaddr->page_no);
+ //
+            
+/* Original Code-------------------------------------------------- 
 
-            
-            check_t(fifo);   
  //            bdbm_abm_invalidate_page (
  //				p->bai, 
  //				me->phyaddr.channel_no, 
@@ -589,12 +600,15 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
  //				me->phyaddr.page_no,
  //				me->sp_off
  //			);
-		}else{
-            pr_info("[NEW] LPA=%lld => (%lld, %lld, %lld, %lld)\n"
-                    ,logaddr->lpa[k],
-                    phyaddr->channel_no, phyaddr->chip_no,
-                    phyaddr->block_no, phyaddr->page_no);
+			 
+-------------------------------------------------Original Code */
 
+		}else{
+ //            pr_info("[NEW] LPA=%lld => (%lld, %lld, %lld, %lld)\n"
+ //                    ,logaddr->lpa[k],
+ //                    phyaddr->channel_no, phyaddr->chip_no,
+ //                    phyaddr->block_no, phyaddr->page_no);
+ //
             
 
 
@@ -637,10 +651,10 @@ uint32_t bdbm_page_ftl_get_ppa (
 
 
     //Don
-    pr_info("[REA] LPA=%lld <= (%lld, %lld, %lld, %lld)\n",
-            lpa,me->phyaddr.channel_no, me->phyaddr.chip_no,
-            me->phyaddr.block_no, me->phyaddr.page_no);
-
+ //    pr_info("[REA] LPA=%lld <= (%lld, %lld, %lld, %lld)\n",
+ //            lpa,me->phyaddr.channel_no, me->phyaddr.chip_no,
+ //            me->phyaddr.block_no, me->phyaddr.page_no);
+ //
 
 
 
@@ -977,6 +991,8 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	bdbm_stopwatch_t sw;
 
 	nr_punits = np->nr_channels * np->nr_chips_per_channel;
+
+	pr_info("DO_GC!!!\n");
 
 	/* choose victim blocks for individual parallel units */
 	bdbm_memset (p->gc_bab, 0x00, sizeof (bdbm_abm_block_t*) * nr_punits);
