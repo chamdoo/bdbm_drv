@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 #ifndef _BLUEDBM_QUEUE_MQ_H
 #define _BLUEDBM_QUEUE_MQ_H
+#include "bdbm_drv.h"
+#include "../3rd/uthash.h"
 
 enum BDBM_QUEUE_SIZE {
 	INFINITE_QUEUE = -1,
@@ -32,6 +34,9 @@ enum BDBM_QUEUE_SIZE {
 typedef struct {
 	void* ptr_req;
 	struct list_head list;
+
+	bdbm_phyaddr_t phyaddr;
+	UT_hash_handle hh;
 } bdbm_queue_item_t;
 
 typedef struct {
@@ -41,11 +46,14 @@ typedef struct {
 	bdbm_spinlock_t lock;	/* queue lock */
 
 	struct list_head* qlh;	/* queue list header */
+
+	bdbm_queue_item_t* hash;
+
 } bdbm_queue_t;
 
 bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t size);
 void bdbm_queue_destroy (bdbm_queue_t* mq);
-uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req);
+uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req, bdbm_phyaddr_t phyaddr);
 uint8_t bdbm_queue_enqueue_top (bdbm_queue_t* mq, uint64_t qid, void* req);
 void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid);
 uint8_t bdbm_queue_is_full (bdbm_queue_t* mq);
@@ -55,4 +63,5 @@ uint64_t bdbm_queue_get_nr_items (bdbm_queue_t* mq);
 void* bdbm_queue_top (bdbm_queue_t* mq, uint64_t qid);
 
 void* bdbm_queue_traversal(bdbm_queue_t* mq, uint64_t qid, int num);
+void* bdbm_queue_hash_find(bdbm_queue_t* mq, bdbm_phyaddr_t phyaddr);
 #endif

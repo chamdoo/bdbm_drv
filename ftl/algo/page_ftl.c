@@ -212,29 +212,35 @@ void check_queue(bdbm_queue_t *queue){
 	long cal_t;
 	struct info *q_item; 
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
-	
+
 	queue_size = bdbm_queue_get_nr_items(queue);
 
- //	if(queue_size > 3){
- //		q_item = bdbm_queue_traversal(queue, QID, 2);
- //
- //		pr_info("[TEST] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
- //				,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
- //				q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
- //				q_item->me.phyaddr.page_no);
- //
- //	}
+	//	if(queue_size > 3){
+	//		q_item = bdbm_queue_traversal(queue, QID, 2);
+	//
+	//		pr_info("[TEST] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+	//				,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+	//				q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
+	//				q_item->me.phyaddr.page_no);
+	//
+	//	}
 
 
 	for(loop = 0; loop < queue_size; loop++){
 		q_item = bdbm_queue_top(queue, QID);
-	
+		
 		cal_t = ktime_to_timespec(ktime_sub(ktime_get(),
 					q_item->time)).tv_sec;
 
 		/* if OVER 15seconds dequeue */
 		if(cal_t > STANDARD_T){
+			
 			q_item = bdbm_queue_dequeue(queue, QID);
+			pr_info("[Timeout]");
+			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no);
 
 			bdbm_abm_invalidate_page(
 					p->bai,
@@ -243,26 +249,21 @@ void check_queue(bdbm_queue_t *queue){
 					q_item->me.phyaddr.block_no,
 					q_item->me.phyaddr.page_no,
 					q_item->me.sp_off);
-	
- //			pr_info("[Timeout]");
- //			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
- //					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
- //					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
- //					q_item->me.phyaddr.page_no);
- //
+
 			kfree(q_item);
 
 		}else if(bdbm_queue_is_full(queue)){
-		/* Not over 15seconds but queue is full,
-			So dequeue 1item */
+			/* Not over 15seconds but queue is full,
+			   So dequeue 1item */
+			
 			q_item = bdbm_queue_dequeue(queue, QID);
 
- //			pr_info("[FULL]");
- //			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
- //					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
- //					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
- //					q_item->me.phyaddr.page_no);
- //
+			pr_info("[FULL]");
+			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
+					q_item->me.phyaddr.page_no);
+
 			bdbm_abm_invalidate_page(
 					p->bai,
 					q_item->me.phyaddr.channel_no,
@@ -270,10 +271,11 @@ void check_queue(bdbm_queue_t *queue){
 					q_item->me.phyaddr.block_no,
 					q_item->me.phyaddr.page_no,
 					q_item->me.sp_off);
-						
+
 			kfree(q_item);
+			break;
 		}else{
-		/* Not over 15seconds and queue is not full */
+			/* Not over 15seconds and queue is not full */
 			break;
 		}
 	}
@@ -478,7 +480,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
     //Don
 	/* Create queue */
     fifo = bdbm_queue_create(1, QUEUE_SIZE);
-    flag = OFF;
+	flag = OFF;
 	return 0;
 }
 
@@ -517,6 +519,7 @@ void bdbm_page_ftl_destroy (bdbm_drv_info_t* bdi)
          kfree(check);
      }
      bdbm_queue_destroy(fifo);
+	 
 }
 
 uint32_t bdbm_page_ftl_get_free_ppa (
@@ -593,6 +596,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
 	int k;
+	int count;
 
     //Don
   	if(flag == ON){
@@ -638,8 +642,14 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
             item->sp_off = k;
             
 			check_queue(fifo);
-			bdbm_queue_enqueue(fifo, QID, item);
-           
+			pr_info("[IN] %lld, %lld, %lld, %lld\n",
+					item->me.phyaddr.channel_no, item->me.phyaddr.chip_no,
+					item->me.phyaddr.block_no, item->me.phyaddr.page_no);
+
+
+			bdbm_queue_enqueue(fifo, QID, item, me->phyaddr);
+			count = bdbm_queue_get_nr_items(fifo);
+			pr_info("[COUNT] %d\n", count);
  //			pr_info("[OVERWRITE] LPA=%lld => "
  //					"(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
  //					logaddr->lpa[k], me->phyaddr.channel_no, me->phyaddr.chip_no,
@@ -689,6 +699,10 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
+	
+	struct info *hash_tmp;
+
+
 	int k;
 
     //Don
@@ -726,8 +740,13 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
         /* update the mapping table */
 		if (me->status == PFTL_PAGE_VALID) {
             //Don
-		/* Update queue data */
-            update_queue(fifo, logaddr, me, k);
+			/* Update queue data */
+			hash_tmp = bdbm_queue_hash_find(fifo, me->phyaddr); 
+//			pr_info("[HASH]  (%lld, %lld, %lld, %lld)",
+//					hash_tmp->me.phyaddr.channel_no, hash_tmp->me.phyaddr.chip_no, 
+//					hash_tmp->me.phyaddr.block_no, hash_tmp->me.phyaddr.page_no);
+			
+			update_queue(fifo, logaddr, me, k);
 
  //			pr_info("[OVERWRITE] LPA=%lld => "
  //					"(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",

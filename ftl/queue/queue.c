@@ -68,6 +68,9 @@ bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
 		INIT_LIST_HEAD (&mq->qlh[loop]);
 	}
 
+	/* create hash */
+	mq->hash = NULL;
+
 	return mq;
 }
 
@@ -76,11 +79,20 @@ bdbm_queue_t* bdbm_queue_create (uint64_t nr_queues, int64_t max_size)
  */
 void bdbm_queue_destroy (bdbm_queue_t* mq)
 {
+	bdbm_queue_item_t *c, *tmp;
+	if (mq == NULL)
+		return;
+
+	HASH_ITER (hh, mq->hash, c, tmp){
+		bdbm_warning("hmm.. there are still some items in the hash table");
+		HASH_DEL (mq->hash, c);
+		bdbm_free (c);
+	}
 	bdbm_free_atomic (mq->qlh);
 	bdbm_free_atomic (mq);
 }
 
-uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req)
+uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req, bdbm_phyaddr_t phyaddr)
 {
 	uint32_t ret = 0;
 	unsigned long flags;
@@ -99,7 +111,11 @@ uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req)
 			bdbm_error ("bdbm_malloc_atomic failed");
 		} else {
 			q->ptr_req = (void*)req;
+
+			q->phyaddr = phyaddr;
 			list_add_tail (&q->list, &mq->qlh[qid]);	/* add to tail */
+			
+			HASH_ADD(hh, mq->hash, phyaddr, sizeof(bdbm_phyaddr_t), q);
 			mq->qic++;
 			ret = 0;
 
@@ -185,6 +201,7 @@ void* bdbm_queue_dequeue (bdbm_queue_t* mq, uint64_t qid)
 		if (q) {
 			req = q->ptr_req;
 			list_del (&q->list); /* remove from q */
+			HASH_DEL(mq->hash, q);
 			bdbm_free_atomic (q); /* free q */
 			mq->qic--;
 		}
@@ -238,11 +255,41 @@ void* bdbm_queue_traversal (bdbm_queue_t* mq, uint64_t qid, int num)
 		}
 	}
 	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
-
+	
 	return req;
 }
 
+void* bdbm_queue_hash_find(bdbm_queue_t* mq, bdbm_phyaddr_t phyaddr){
+	unsigned long flags;
+	bdbm_queue_item_t *q = NULL;
+	bdbm_queue_item_t tmp;
+	void* req = NULL;
 
+	memset(&tmp, 0, sizeof(bdbm_queue_item_t));
+	tmp.phyaddr = phyaddr;
+
+	bdbm_spin_lock_irqsave (&mq->lock, flags);
+	pr_info("Hello\n");	
+	HASH_FIND(hh, mq->hash, &tmp.phyaddr, sizeof(bdbm_phyaddr_t), q);	
+	if (q){
+		pr_info("found \n");
+		pr_info("[FIND] (%lld, %lld, %lld, %lld)",q->phyaddr.channel_no,
+				q->phyaddr.chip_no, q->phyaddr.block_no, q->phyaddr.page_no);
+
+	}else{
+		pr_info("Not found\n");
+		pr_info("[Not] (%lld, %lld, %lld, %lld)",phyaddr.channel_no,
+			phyaddr.chip_no, phyaddr.block_no, phyaddr.page_no);
+	}
+	
+	if (q) {
+		req = q->ptr_req;
+	}
+	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
+	
+	return req;
+
+}
 
 uint8_t bdbm_queue_is_full (bdbm_queue_t* mq)
 {
