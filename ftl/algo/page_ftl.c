@@ -281,35 +281,6 @@ void check_queue(bdbm_queue_t *queue){
 	}
 }
 
-void update_queue(bdbm_queue_t* queue, bdbm_logaddr_t* logaddr, bdbm_page_mapping_entry_t* me,
-		int k)
-{
-	int queue_size;
-	int loop;
-	struct info *q_item;
-	struct info tmp;
-
-	queue_size = bdbm_queue_get_nr_items(queue);
-
-	for(loop = 0; loop < queue_size; loop++){
-		q_item = bdbm_queue_traversal(queue, QID, loop);
-		if(q_item->logaddr.lpa[k] == logaddr->lpa[k]){
-			tmp = *q_item;
-			q_item->me = *me;
-			q_item->sp_off = k;
-
-			pr_info("[GC QUEUE] LPA=%lld => "
-					"(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
-					logaddr->lpa[k], tmp.me.phyaddr.channel_no, tmp.me.phyaddr.chip_no,
-					tmp.me.phyaddr.block_no, tmp.me.phyaddr.page_no,
-					q_item->me.phyaddr.channel_no, q_item->me.phyaddr.chip_no,
-					q_item->me.phyaddr.block_no, q_item->me.phyaddr.page_no
-				   );
-			
-			break;
-		}
-	}
-}
 
 bdbm_page_mapping_entry_t* __bdbm_page_ftl_create_mapping_table (
 	bdbm_device_params_t* np)
@@ -595,6 +566,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
+	bdbm_phyaddr_t key;
 	int k;
 	int count;
 
@@ -641,15 +613,18 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
             item->me = *me;
             item->sp_off = k;
             
+
 			check_queue(fifo);
-			pr_info("[IN] %lld, %lld, %lld, %lld\n",
-					item->me.phyaddr.channel_no, item->me.phyaddr.chip_no,
-					item->me.phyaddr.block_no, item->me.phyaddr.page_no);
+			key = item->me.phyaddr;
+			key.punit_id = 0;
+			pr_info("[IN] punit: %lld (%lld, %lld, %lld, %lld)\n",
+					key.punit_id,
+					key.channel_no, key.chip_no,
+					key.block_no, key.page_no);
 
-
-			bdbm_queue_enqueue(fifo, QID, item, me->phyaddr);
 			count = bdbm_queue_get_nr_items(fifo);
-			pr_info("[COUNT] %d\n", count);
+			bdbm_queue_enqueue(fifo, QID, item, key);
+ 
  //			pr_info("[OVERWRITE] LPA=%lld => "
  //					"(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
  //					logaddr->lpa[k], me->phyaddr.channel_no, me->phyaddr.chip_no,
@@ -694,22 +669,17 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 	bdbm_drv_info_t* bdi, 
 	bdbm_logaddr_t* logaddr,
-	bdbm_phyaddr_t* phyaddr)
+	bdbm_phyaddr_t* phyaddr,
+	struct info* info,
+	int flag
+	)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
 	bdbm_page_ftl_private_t* p = _ftl_page_ftl.ptr_private;
 	bdbm_page_mapping_entry_t* me = NULL;
-	
-	struct info *hash_tmp;
-
-
 	int k;
-
-    //Don
-  	if(flag == ON){
-		pr_info("Recovery ON!!!\n");
-		return 0;
-	}	
+	bdbm_phyaddr_t newkey;
+	bdbm_phyaddr_t oldkey;
 
 	/* is it a valid logical address */
 	for (k = 0; k < np->nr_subpages_per_page; k++) {
@@ -726,65 +696,81 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 			continue;
 		}
 
+		//Don	
+		pr_info("[4.New LPA] : %lld (%lld, %lld, %lld, %lld)\n",
+				logaddr->lpa[k], phyaddr->channel_no, phyaddr->chip_no,
+				phyaddr->block_no, phyaddr->page_no);
+
 		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
 			return 1;
 		}
 
-		/* get the mapping entry for lpa */
-		me = &p->ptr_mapping_table[logaddr->lpa[k]];
-		bdbm_bug_on (me == NULL);
-        
-         
-		        
-        /* update the mapping table */
-		if (me->status == PFTL_PAGE_VALID) {
-            //Don
-			/* Update queue data */
-			hash_tmp = bdbm_queue_hash_find(fifo, me->phyaddr); 
-//			pr_info("[HASH]  (%lld, %lld, %lld, %lld)",
-//					hash_tmp->me.phyaddr.channel_no, hash_tmp->me.phyaddr.chip_no, 
-//					hash_tmp->me.phyaddr.block_no, hash_tmp->me.phyaddr.page_no);
-			
-			update_queue(fifo, logaddr, me, k);
 
- //			pr_info("[OVERWRITE] LPA=%lld => "
- //					"(%lld, %lld, %lld, %lld) => (%lld, %lld, %lld, %lld)\n",
- //					logaddr->lpa[k], me->phyaddr.channel_no, me->phyaddr.chip_no,
- //					me->phyaddr.block_no, me->phyaddr.page_no,
- //					phyaddr->channel_no, phyaddr->chip_no,
- //					phyaddr->block_no, phyaddr->page_no);
- //
-         
-// Original Code-------------------------------------------------- 
- //
- //            bdbm_abm_invalidate_page (
- //				p->bai, 
- //				me->phyaddr.channel_no, 
- //				me->phyaddr.chip_no,
- //				me->phyaddr.block_no,
- //				me->phyaddr.page_no,
- //				me->sp_off
- //			);
- //
-//-------------------------------------------------Original Code */
+		/* get the mapping entry for lpa */
+
+		if(flag == 0){
+			pr_info("Not in Queue\n");
+			me = &p->ptr_mapping_table[logaddr->lpa[k]];
+			bdbm_bug_on (me == NULL);
+
+			/* update the mapping table */
+			if (me->status == PFTL_PAGE_VALID) {
+
+				bdbm_abm_invalidate_page (
+						p->bai, 
+						me->phyaddr.channel_no, 
+						me->phyaddr.chip_no,
+						me->phyaddr.block_no,
+						me->phyaddr.page_no,
+						me->sp_off
+						);
+
+			}
+			me->status = PFTL_PAGE_VALID;
+			me->phyaddr.channel_no = phyaddr->channel_no;
+			me->phyaddr.chip_no = phyaddr->chip_no;
+			me->phyaddr.block_no = phyaddr->block_no;
+			me->phyaddr.page_no = phyaddr->page_no;
+			me->sp_off = k;
 
 		}else{
- //            pr_info("[NEW] LPA=%lld => (%lld, %lld, %lld, %lld)\n"
- //                    ,logaddr->lpa[k],
- //                    phyaddr->channel_no, phyaddr->chip_no,
- //                    phyaddr->block_no, phyaddr->page_no);
- //
-            
-        }
-		me->status = PFTL_PAGE_VALID;
-		me->phyaddr.channel_no = phyaddr->channel_no;
-        me->phyaddr.chip_no = phyaddr->chip_no;
-        me->phyaddr.block_no = phyaddr->block_no;
-        me->phyaddr.page_no = phyaddr->page_no;
-        me->sp_off = k;
+			/* item inside queue */
+			pr_info("In Queue\n");
+			oldkey = info->me.phyaddr;
+			newkey.punit_id = 0;
+			newkey.channel_no = phyaddr->channel_no;
+			newkey.chip_no = phyaddr->chip_no;
+			newkey.block_no = phyaddr->block_no;
+			newkey.page_no = phyaddr->page_no;
+			
+			pr_info("[OLD] (%lld, %lld, %lld, %lld)\n",
+					info->me.phyaddr.channel_no, info->me.phyaddr.chip_no,
+					info->me.phyaddr.block_no, info->me.phyaddr.page_no);
 
-    }
+			bdbm_abm_invalidate_page(
+					p->bai,
+					info->me.phyaddr.channel_no,
+					info->me.phyaddr.chip_no,
+					info->me.phyaddr.block_no,
+					info->me.phyaddr.page_no,
+					info->sp_off
+					);
+
+			info->me.phyaddr.channel_no = phyaddr->channel_no;
+			info->me.phyaddr.chip_no = phyaddr->chip_no;
+			info->me.phyaddr.block_no = phyaddr->block_no;
+			info->me.phyaddr.page_no = phyaddr->page_no;
+			info->me.sp_off = k;
+			pr_info("[NEW] (%lld, %lld, %lld, %lld)\n",
+					info->me.phyaddr.channel_no, info->me.phyaddr.chip_no,
+					info->me.phyaddr.block_no, info->me.phyaddr.page_no);
+
+			bdbm_queue_hash_update(fifo, oldkey, newkey);
+		
+
+		}
+	}
 
 	return 0;
 }
@@ -1208,6 +1194,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			hlm_reqs_pool_alloc_fmain_pad (&r->fmain);
 			/* if it is, selects it as the gc candidates */
 			if (has_valid) {
+				pr_info("[GCREAD] %lld, %lld, %lld, %lld\n",
+						b->channel_no, b->chip_no,
+						b->block_no, j);
 				r->req_type = REQTYPE_GC_READ;
 				r->phyaddr.channel_no = b->channel_no;
 				r->phyaddr.chip_no = b->chip_no;
@@ -1303,6 +1292,13 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 	/* build hlm_req_gc for writes */
 	for (i = 0; i < nr_llm_reqs; i++) {
 		bdbm_llm_req_t* r = &hlm_gc_w->llm_reqs[i];
+		bdbm_llm_req_t* p = &hlm_gc->llm_reqs[i];
+		
+		struct info *i_tmp = NULL;
+		bdbm_phyaddr_t key;	
+		int flag;
+
+		flag = 0;
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
@@ -1316,12 +1312,39 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			}
 		}
 		r->ptr_hlm_req = (void*)hlm_gc_w;
+		
+		//Don
+		pr_info("[1. hlm_gc_w] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
+				r->logaddr.lpa[0],r->phyaddr.punit_id,
+				r->phyaddr.channel_no, r->phyaddr.chip_no,
+				r->phyaddr.block_no, r->phyaddr.page_no);
+
+		pr_info("[1. hlm_gc] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
+				p->logaddr.lpa[0],p->phyaddr.punit_id,
+				p->phyaddr.channel_no, p->phyaddr.chip_no,
+				p->phyaddr.block_no, p->phyaddr.page_no);
+
+		key = p->phyaddr;
+		key.punit_id = 0;
+			
+		i_tmp = bdbm_queue_hash_find(fifo, key);
+		if(i_tmp != NULL){
+			flag = 1;
+		}
+
 		if (bdbm_page_ftl_get_free_ppa (bdi, 0, &r->phyaddr) != 0) {
 			bdbm_error ("bdbm_page_ftl_get_free_ppa failed");
 			bdbm_bug_on (1);
 		}
+
+		pr_info("[3.NEW phyaddr] LPA:%lld (%lld, %lld, %lld, %lld)\n",
+				r->logaddr.lpa[k],
+				r->phyaddr.channel_no, r->phyaddr.chip_no,
+				r->phyaddr.block_no, r->phyaddr.page_no);
+
+
 		/* update queue data */
-		if (bdbm_page_ftl_map_lpa_to_ppa_gc (bdi, &r->logaddr, &r->phyaddr) != 0) {
+		if (bdbm_page_ftl_map_lpa_to_ppa_gc (bdi, &r->logaddr, &r->phyaddr, i_tmp, flag) != 0) {
 			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
 			bdbm_bug_on (1);
 		}

@@ -96,6 +96,7 @@ uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req, bdbm_phya
 {
 	uint32_t ret = 0;
 	unsigned long flags;
+	
 
 	if (qid >= mq->nr_queues) {
 		bdbm_error ("qid is invalid (%llu)", qid);
@@ -114,8 +115,9 @@ uint8_t bdbm_queue_enqueue (bdbm_queue_t* mq, uint64_t qid, void* req, bdbm_phya
 
 			q->phyaddr = phyaddr;
 			list_add_tail (&q->list, &mq->qlh[qid]);	/* add to tail */
-			
+
 			HASH_ADD(hh, mq->hash, phyaddr, sizeof(bdbm_phyaddr_t), q);
+
 			mq->qic++;
 			ret = 0;
 
@@ -261,34 +263,54 @@ void* bdbm_queue_traversal (bdbm_queue_t* mq, uint64_t qid, int num)
 
 void* bdbm_queue_hash_find(bdbm_queue_t* mq, bdbm_phyaddr_t phyaddr){
 	unsigned long flags;
-	bdbm_queue_item_t *q = NULL;
-	bdbm_queue_item_t tmp;
 	void* req = NULL;
-
-	memset(&tmp, 0, sizeof(bdbm_queue_item_t));
-	tmp.phyaddr = phyaddr;
+	bdbm_queue_item_t* q = NULL;
+	bdbm_queue_item_t l;
 
 	bdbm_spin_lock_irqsave (&mq->lock, flags);
-	pr_info("Hello\n");	
-	HASH_FIND(hh, mq->hash, &tmp.phyaddr, sizeof(bdbm_phyaddr_t), q);	
-	if (q){
-		pr_info("found \n");
-		pr_info("[FIND] (%lld, %lld, %lld, %lld)",q->phyaddr.channel_no,
-				q->phyaddr.chip_no, q->phyaddr.block_no, q->phyaddr.page_no);
-
-	}else{
-		pr_info("Not found\n");
-		pr_info("[Not] (%lld, %lld, %lld, %lld)",phyaddr.channel_no,
-			phyaddr.chip_no, phyaddr.block_no, phyaddr.page_no);
-	}
-	
+	memset(&l, 0, sizeof(bdbm_queue_t));
+	l.phyaddr = phyaddr;
+	HASH_FIND(hh, mq->hash, &l.phyaddr, sizeof(bdbm_phyaddr_t), q);
 	if (q) {
+		pr_info("[FOUND] (%lld, %lld, %lld, %lld, %lld)",
+				phyaddr.punit_id,
+				phyaddr.channel_no, phyaddr.chip_no,
+				phyaddr.block_no, phyaddr.page_no);
 		req = q->ptr_req;
+	}else {
+		pr_info("[NOT_F] (%lld, %lld, %lld, %lld, %lld)",
+				phyaddr.punit_id,
+				phyaddr.channel_no, phyaddr.chip_no,
+				phyaddr.block_no, phyaddr.page_no);
 	}
 	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
 	
 	return req;
 
+}
+
+uint8_t bdbm_queue_hash_update(bdbm_queue_t* mq, bdbm_phyaddr_t oldkey, bdbm_phyaddr_t phyaddr)
+{
+	uint8_t ret = 0;
+	unsigned long flags;
+	bdbm_queue_item_t* q = NULL;
+	bdbm_queue_item_t l;
+
+	bdbm_spin_lock_irqsave (&mq->lock, flags);
+	memset(&l, 0, sizeof(bdbm_queue_t));
+	l.phyaddr = oldkey;
+	HASH_FIND(hh, mq->hash, &l.phyaddr, sizeof(bdbm_phyaddr_t), q);
+	if(q){
+		/* HASH UPDATE */
+		HASH_DEL(mq->hash, q);
+		q->phyaddr = phyaddr;
+		HASH_ADD(hh, mq->hash, phyaddr, sizeof(bdbm_phyaddr_t), q);
+	}else{
+		pr_info("Error Key is Wrong\n");
+		ret = 1;
+	}
+	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
+	return ret;
 }
 
 uint8_t bdbm_queue_is_full (bdbm_queue_t* mq)

@@ -64,4 +64,5 @@ void* bdbm_queue_top (bdbm_queue_t* mq, uint64_t qid);
 
 void* bdbm_queue_traversal(bdbm_queue_t* mq, uint64_t qid, int num);
 void* bdbm_queue_hash_find(bdbm_queue_t* mq, bdbm_phyaddr_t phyaddr);
+uint8_t bdbm_queue_hash_update(bdbm_queue_t* mq, bdbm_phyaddr_t oldkey, bdbm_phyaddr_t newkey);
 #endif
