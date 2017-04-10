@@ -671,7 +671,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 	bdbm_logaddr_t* logaddr,
 	bdbm_phyaddr_t* phyaddr,
 	struct info* info,
-	int flag
+	int h_status
 	)
 {
 	bdbm_device_params_t* np = BDBM_GET_DEVICE_PARAMS (bdi);
@@ -708,8 +708,8 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 
 
 		/* get the mapping entry for lpa */
-
-		if(flag == 0){
+		/* Not in queue */
+		if(h_status == 0){
 			pr_info("Not in Queue\n");
 			me = &p->ptr_mapping_table[logaddr->lpa[k]];
 			bdbm_bug_on (me == NULL);
@@ -735,6 +735,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 			me->sp_off = k;
 
 		}else{
+			
 			/* item inside queue */
 			pr_info("In Queue\n");
 			oldkey = info->me.phyaddr;
@@ -765,7 +766,7 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 			pr_info("[NEW] (%lld, %lld, %lld, %lld)\n",
 					info->me.phyaddr.channel_no, info->me.phyaddr.chip_no,
 					info->me.phyaddr.block_no, info->me.phyaddr.page_no);
-
+			/* hash data upate */
 			bdbm_queue_hash_update(fifo, oldkey, newkey);
 		
 
@@ -1296,9 +1297,9 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		
 		struct info *i_tmp = NULL;
 		bdbm_phyaddr_t key;	
-		int flag;
+		int h_status;
 
-		flag = 0;
+		h_status = 0;
 		r->req_type = REQTYPE_GC_WRITE;	/* change to write */
 		for (k = 0; k < np->nr_subpages_per_page; k++) {
 			/* move subpages that contain new data */
@@ -1326,10 +1327,11 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 
 		key = p->phyaddr;
 		key.punit_id = 0;
-			
+		
+		/* Check HASH */
 		i_tmp = bdbm_queue_hash_find(fifo, key);
 		if(i_tmp != NULL){
-			flag = 1;
+			h_status = 1;
 		}
 
 		if (bdbm_page_ftl_get_free_ppa (bdi, 0, &r->phyaddr) != 0) {
@@ -1344,7 +1346,7 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 
 
 		/* update queue data */
-		if (bdbm_page_ftl_map_lpa_to_ppa_gc (bdi, &r->logaddr, &r->phyaddr, i_tmp, flag) != 0) {
+		if (bdbm_page_ftl_map_lpa_to_ppa_gc (bdi, &r->logaddr, &r->phyaddr, i_tmp, h_status) != 0) {
 			bdbm_error ("bdbm_page_ftl_map_lpa_to_ppa failed");
 			bdbm_bug_on (1);
 		}
