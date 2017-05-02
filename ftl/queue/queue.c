@@ -272,16 +272,16 @@ void* bdbm_queue_hash_find(bdbm_queue_t* mq, bdbm_phyaddr_t phyaddr){
 	l.phyaddr = phyaddr;
 	HASH_FIND(hh, mq->hash, &l.phyaddr, sizeof(bdbm_phyaddr_t), q);
 	if (q) {
-		pr_info("[FOUND] (%lld, %lld, %lld, %lld, %lld)",
-				phyaddr.punit_id,
-				phyaddr.channel_no, phyaddr.chip_no,
-				phyaddr.block_no, phyaddr.page_no);
+//		pr_info("[FOUND] (%lld, %lld, %lld, %lld, %lld)",
+//				phyaddr.punit_id,
+//				phyaddr.channel_no, phyaddr.chip_no,
+//				phyaddr.block_no, phyaddr.page_no);
 		req = q->ptr_req;
 	}else {
-		pr_info("[NOT_F] (%lld, %lld, %lld, %lld, %lld)",
-				phyaddr.punit_id,
-				phyaddr.channel_no, phyaddr.chip_no,
-				phyaddr.block_no, phyaddr.page_no);
+//		pr_info("[NOT_F] (%lld, %lld, %lld, %lld, %lld)",
+//				phyaddr.punit_id,
+//				phyaddr.channel_no, phyaddr.chip_no,
+//				phyaddr.block_no, phyaddr.page_no);
 	}
 	bdbm_spin_unlock_irqrestore (&mq->lock, flags);
 	

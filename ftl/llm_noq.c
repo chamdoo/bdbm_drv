@@ -117,7 +117,7 @@ uint32_t llm_noq_make_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* llm_req)
 uint32_t llm_noq_make_reqs (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	uint32_t ret;
-
+	pr_info("here?\n");
 	/* send a request to a device manager */
 	if ((ret = bdi->ptr_dm_inf->make_reqs (bdi, hr)) != 0) {
 		/* handle error cases */

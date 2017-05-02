@@ -78,7 +78,6 @@ robusta_drv-y := \
 	$(COMMON)/utils/umemory.o \
 	$(COMMON)/bdbm_main.o \
 
-
 obj-m := robusta_drv.o
 
 ccflags-y := -I$(src)

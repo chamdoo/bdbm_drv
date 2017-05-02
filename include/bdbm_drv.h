@@ -247,6 +247,7 @@ typedef struct {
 	void (*close) (bdbm_drv_info_t* bdi);
 	void (*make_req) (bdbm_drv_info_t* bdi, void* req);
 	void (*end_req) (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
+	void (*replay_req) (bdbm_drv_info_t* bdi, void* req);
 } bdbm_host_inf_t;
 
 /* a generic high-level memory manager interface */
@@ -331,7 +332,7 @@ typedef struct {
 	/* recovery */
 	void (*recovery) (bdbm_drv_info_t* bdi);
 	void (*status) (bdbm_drv_info_t* bdi);
-
+	int (*check_status) (bdbm_drv_info_t* bdi);
 	/* interfaces for RSD */
 	uint64_t (*get_segno) (bdbm_drv_info_t* bdi, uint64_t lpa);
 

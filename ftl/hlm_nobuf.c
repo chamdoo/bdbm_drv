@@ -46,6 +46,11 @@ THE SOFTWARE.
 #include "algo/block_ftl.h"
 #include "algo/page_ftl.h"
 
+#include "../3rd/uthash.h"
+#include "../3rd/SOFDef.h"
+#include <linux/ktime.h>
+#define DETECT_VALUE 60
+int a;
 
 /* interface for hlm_nobuf */
 bdbm_hlm_inf_t _hlm_nobuf_inf = {
@@ -79,6 +84,10 @@ uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 	/* keep the private structure */
 	bdi->ptr_hlm_inf->ptr_private = (void*)p;
 
+	/* SOF Init */
+	SOF_Init();
+	a = 0;
+	
 	return 0;
 }
 
@@ -108,7 +117,41 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
 	bdbm_llm_req_t* lr = NULL;
 	uint64_t i = 0, j = 0, sp_ofs;
-
+//	WARN_ON(1);
+	/* Detect values */
+	ktime_t get_t;
+	uint64_t time;
+	char iotype;
+	int SOF_Detect;
+	struct BLKInfo *pInfo;
+	pInfo = (struct BLKInfo*)kmalloc(sizeof(struct BLKInfo), GFP_KERNEL);
+	
+	get_t = ktime_get();
+	time = ktime_to_ms(get_t); 
+	if (bdbm_is_read (hr->req_type)){
+		iotype = 'R';
+	}else{
+		iotype = 'W';
+	}
+	pInfo->dTime = time;
+	pInfo->iotype = iotype;	
+	pInfo->nBlockSize = hr->nr_llm_reqs;
+	pr_info("len : %lld\n",hr->len);
+	pr_info("nr_llm_reqs : %lld\n",hr->nr_llm_reqs);
+	pInfo->nLba = hr->llm_reqs[0].logaddr.lpa[0]; 
+	SOF_addIOInfo(pInfo);
+    SOF_Detect = SOF_DetectRansome();
+//	pr_info("Detect : %d\n", SOF_Detect);
+	pr_info("Time : %lld, iotype : %c, B_size : %u, nlba : %lld\n",
+			pInfo->dTime, pInfo->iotype, pInfo->nBlockSize, pInfo->nLba);
+//	pr_info("nr_llm_reqs %lld, lpa[0] %lld\n",
+//			hr->nr_llm_reqs, hr->llm_reqs[0].logaddr.lpa[0]);
+	if(SOF_Detect >= DETECT_VALUE){
+		pr_info("Recovery hlm_nobuf\n");
+		ftl->recovery(bdi);
+	}
+	pr_info("count : %d\n",a);
+	a = a + 1;
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
@@ -169,7 +212,6 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		}
         
     }
-
 
 	/* (3) send llm_req to llm */
 	if (bdi->ptr_llm_inf->make_reqs == NULL) {
@@ -242,7 +284,6 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint32_t ret;
 	bdbm_stopwatch_t sw;
 	bdbm_stopwatch_start (&sw);
-
 	/* is req_type correct? */
 	bdbm_bug_on (!bdbm_is_normal (hr->req_type));
 
@@ -274,7 +315,6 @@ uint32_t hlm_nobuf_make_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	} else {
 		/* do we need to do garbage collection? */
 		__hlm_nobuf_check_ondemand_gc (bdi, hr);
-
 		ret = __hlm_nobuf_make_rw_req (bdi, hr);
 	} 
 

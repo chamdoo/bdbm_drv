@@ -21,15 +21,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef _BLUEDBM_HOST_BLOCKIO_H
-#define _BLUEDBM_HOST_BLOCKIO_H
 
-extern bdbm_host_inf_t _blkio_inf;
+#ifndef _BLUEDBM_DM_PARAMS_H
+#define _BLUEDBM_DM_PARAMS_H
 
-uint32_t blkio_open (bdbm_drv_info_t* bdi);
-void blkio_close (bdbm_drv_info_t* bdi);
-void blkio_make_req (bdbm_drv_info_t* bdi, void* req);
-void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* req);
-void blkio_replay_make_req (bdbm_drv_info_t* bdi, void* req);
+extern int _param_nr_channels;
+extern int _param_nr_chips_per_channel;
+extern int _param_nr_blocks_per_chip;
+extern int _param_nr_pages_per_block;
+extern int _param_page_main_size; 
+extern int _param_page_oob_size;
+extern int _param_device_type; 
+extern int _param_host_bus_trans_time_us;
+extern int _param_chip_bus_trans_time_us;
+extern int _param_page_prog_time_us;
+extern int _param_page_read_time_us;
+extern int _param_block_erase_time_us;
+extern int _param_ramdrv_timing_mode;
+
+bdbm_device_params_t get_default_device_params (void);
+void display_device_params (bdbm_device_params_t* p);
+
 #endif
-

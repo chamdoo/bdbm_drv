@@ -307,7 +307,7 @@ static uint8_t __ramssd_prog_page (
             bdbm_memcpy (ptr_ramssd_addr + KPAGE_SIZE * loop, kp_ptr[loop], KPAGE_SIZE);
             
             //Don
-            //pr_info("[WRITERAM] %s\n",kp_ptr[loop]);
+           //pr_info("[WRITERAM] %s\n",kp_ptr[loop]);
 
 		}
 	} else {

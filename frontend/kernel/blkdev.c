@@ -28,12 +28,14 @@ THE SOFTWARE.
 #include <linux/kthread.h>
 #include <linux/delay.h> /* mdelay */
 
+
 #include "bdbm_drv.h"
 #include "debug.h"
 #include "blkdev.h"
 #include "blkdev_ioctl.h"
 #include "umemory.h"
 
+#include "hlm_reqs_pool.h"
 
 int bdbm_blk_ioctl (struct block_device *bdev, fmode_t mode, unsigned cmd, unsigned long arg);
 int bdbm_blk_getgeo (struct block_device *bdev, struct hd_geometry* geo);
@@ -43,6 +45,12 @@ static struct bdbm_device_t {
 	struct request_queue *queue;
 } bdbm_device;
 
+struct info{
+	int blk_count;
+	int start;
+	char type;
+};
+
 static uint32_t bdbm_device_major_num = 0;
 static struct block_device_operations bdops = {
 	.owner = THIS_MODULE,
@@ -51,6 +59,13 @@ static struct block_device_operations bdops = {
 };
 
 extern bdbm_drv_info_t* _bdi;
+int offset = 0; /* sector (512B) */
+
+typedef struct{
+	bdbm_sema_t host_lock;
+	atomic_t nr_host_reqs;
+	bdbm_hlm_reqs_pool_t* hlm_reqs_pool;
+} bdbm_blkio_private_t;
 
 DECLARE_COMPLETION (task_completion);
 static struct task_struct *task = NULL;
@@ -106,21 +121,23 @@ int bdbm_blk_ioctl (
 	struct hd_geometry geo;
 	struct gendisk *disk = bdev->bd_disk;
 	int ret;
-
-
+	bdbm_hlm_inf_t* hlm = NULL;
 	bdbm_ftl_inf_t* ftl = NULL;
+
+	
 	switch (cmd) {
 		/*
 		   case 0 : Do Recovery
 		   case 1 : Status change
-		*/
+		   case 8 : Replay	
+		 */
 		case 0:
 			{
 				if((ftl = _bdi->ptr_ftl_inf) == NULL){
 					bdbm_warning("ftl is not created");
 					return 0;
 				}
-
+				pr_info("recovery\n");
 				ftl->recovery(_bdi);
 
 				break;
@@ -131,8 +148,59 @@ int bdbm_blk_ioctl (
 					bdbm_warning("ftl is not created");
 					return 0;
 				}
+				pr_info("status change\n");
 				ftl->status(_bdi);
 				break;
+			}
+		case 8:
+			{
+				bdbm_blkio_req_t* blkio_req = NULL;
+				struct info* blkin = NULL;
+				
+				int j = 0;
+				int size = 8; /* 512B * 8 * 32 = 128 KB*/
+
+				if((hlm = _bdi->ptr_hlm_inf) == NULL){
+					bdbm_warning("hlm is not create");
+					return 0;
+				}
+				pr_info("not error\n");
+	
+				blkin = (struct info*)kmalloc(sizeof(struct info),GFP_KERNEL);
+				blkio_req =	(bdbm_blkio_req_t*)bdbm_malloc (sizeof(bdbm_blkio_req_t));
+				
+				ret = copy_from_user(blkin, (void *)arg, sizeof(struct info));
+				if(ret != 0){
+					pr_info("copy_from_user error\n");
+					return 0;
+				}
+				
+				pr_info("info->blk_count %d\n",blkin->blk_count);
+				
+				if(blkin->type == 'R'){
+					blkio_req->bi_rw = REQTYPE_READ;
+				}else{
+					blkio_req->bi_rw = REQTYPE_WRITE;
+				}
+
+				blkio_req->bi_offset = blkin->start * 8;
+				blkio_req->bi_size = blkin->blk_count * 8;
+				blkio_req->bi_bvec_cnt = blkin->blk_count;
+				for(j = 0; j < blkio_req->bi_bvec_cnt; j++){
+					blkio_req->bi_bvec_ptr[j] = (uint8_t*)bdbm_malloc(4096);
+					blkio_req->bi_bvec_ptr[j][0] = 0x0A;
+					blkio_req->bi_bvec_ptr[j][1] = 0x0B;
+					blkio_req->bi_bvec_ptr[j][2] = 0x0C;
+
+				}
+
+				_bdi->ptr_host_inf->replay_req(_bdi, blkio_req);
+				pr_info("offset : %llu\n", blkio_req->bi_offset);
+				pr_info("offset : %d\n", offset );
+				offset += size;
+				pr_info("offset : %d\n", offset );
+				break;
+
 			}
 		case HDIO_GETGEO:
 		case HDIO_GETGEO_BIG:
@@ -273,4 +341,5 @@ void host_blkdev_unregister_block_device (bdbm_drv_info_t* bdi)
 	put_disk (bdbm_device.gd);
 	unregister_blkdev (bdbm_device_major_num, "robusta");
 }
+
 

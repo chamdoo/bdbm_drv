@@ -55,5 +55,6 @@ uint32_t bdbm_page_ftl_store (bdbm_drv_info_t* bdi, const char* fn);
 
 void recovery (bdbm_drv_info_t* bdi);
 void status (bdbm_drv_info_t* bdi);
+int check_status (bdbm_drv_info_t* bdi);
 #endif /* _BLUEDBM_FTL_BLOCKFTL_H */
 

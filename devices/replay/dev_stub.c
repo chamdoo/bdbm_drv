@@ -50,7 +50,6 @@ extern bdbm_dm_inf_t _bdbm_dm_inf;
 extern bdbm_drv_info_t* _bdi_dm; 
 
 void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
-wait_queue_head_t recovery_wait;
 
 typedef struct {
 	wait_queue_head_t pollwq;
@@ -433,8 +432,6 @@ static void mmap_close (struct vm_area_struct *vma);
 static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma);
 static int dm_fops_create (struct inode *inode, struct file *filp);
 static int dm_fops_release (struct inode *inode, struct file *filp);
-/* recovery check poll use minor number 1 */
-static unsigned int dm_replay_poll (struct file *filp, poll_table *poll_table);
 
 /* Linux Device Drivers, 3rd Edition, (CHAP 15 / SEC 2): http://www.makelinux.net/ldd3/chp-15-sect-2 */
 /* arch/powerpc/kernel/proc_powerpc.c */
@@ -454,17 +451,6 @@ static struct file_operations fops = {
 	.compat_ioctl = dm_fops_ioctl,
 };
 
-/* recovery check poll use minor number 1 */
-static struct file_operations frops = {
-	.owner = THIS_MODULE,
-	.mmap = dm_fops_mmap, /* TODO: implement mmap later to avoid usless operations */
-//	.open = dm_fops_create,
-	.release = dm_fops_release,
-	.poll = dm_replay_poll,
-	.unlocked_ioctl = dm_fops_ioctl,
-	.compat_ioctl = dm_fops_ioctl,
-
-};
 
 void mmap_open (struct vm_area_struct *vma)
 {
@@ -518,22 +504,7 @@ static int dm_fops_mmap (struct file *filp, struct vm_area_struct *vma)
 static int dm_fops_create (struct inode *inode, struct file *filp)
 {
 	bdbm_dm_stub_t* s = (bdbm_dm_stub_t*)filp->private_data;
-	pr_info("MINOR(%u)\n",MINOR(inode->i_rdev));
-	/* use minor number 1, check recovery status */
-	if(MINOR(inode->i_rdev) == 1){
-		filp->f_op = &frops ;
-		pr_info("change ops\n");	
-		init_waitqueue_head(&recovery_wait);
-		if(MINOR(inode->i_rdev) != 1){
-			bdbm_error ("bdbm_dm minor number is wrong");
-			return -EBUSY;
-		}
-		
-		if(filp->f_op&&filp->f_op->open){
-			return filp->f_op->open(inode,filp);
-		}
-		return 0;
-	}
+
 	/* see if bdbm_dm is already used by other applications */
 	if (_bdi_dm != NULL) {
 		bdbm_error ("bdbm_dm is already used by other applications (_bdi_dm = %p)", _bdi_dm);
@@ -633,34 +604,6 @@ static unsigned int dm_fops_poll (struct file *filp, poll_table *poll_table)
 	return mask;
 }
 
-/* recovery check poll */
-static unsigned int dm_replay_poll (struct file *filp, poll_table *poll_table)
-{
-	
-	bdbm_ftl_inf_t* ftl;
-	int check_status;
-	unsigned int mask = 0;
-
-	if((ftl = _bdi_dm->ptr_ftl_inf) == NULL){
-		bdbm_warning("ftl is not created");
-		return 0;
-	}
-
-	poll_wait (filp, &recovery_wait, poll_table);
-	/* see recovery status */
-	check_status = ftl->check_status(_bdi_dm);
-	
-	if(check_status == 0){
-	/* recovery off */
-		mask = POLLIN | POLLRDNORM;
-	}else{
-	/* recovery on */
-		mask = POLLERR; 
-	}
-
-	pr_info("CALL POLL function\n");
-	return mask;
-}
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	
@@ -716,7 +659,7 @@ static dev_t devnum = 0;
 static struct cdev c_dev;
 static struct class *cl = NULL;
 static int FIRST_MINOR = 0;
-static int MINOR_CNT = 2;
+static int MINOR_CNT = 1;
 
 /* register a bdbm_dm_stub driver */
 int bdbm_dm_stub_init (void)

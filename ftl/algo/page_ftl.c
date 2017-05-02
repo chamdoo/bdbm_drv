@@ -72,6 +72,7 @@ bdbm_ftl_inf_t _ftl_page_ftl = {
 	/* recovery interface */
 	 .recovery = recovery,
 	 .status = status,
+	 .check_status = check_status,
 };
 
 /* data structures for block-level FTL */
@@ -116,7 +117,7 @@ int count;
 int tmp;
 int destroy_c;
 int flag;
-#define QUEUE_SIZE 1000
+#define QUEUE_SIZE 50000
 #define QID 0
 //15 Seconds
 #define STANDARD_T 15
@@ -147,6 +148,17 @@ void status(bdbm_drv_info_t* bdi){
 		flag = ON;
 	}
 	pr_info("Status change\n");
+}
+
+/* recovery check use poll */
+int check_status(bdbm_drv_info_t* bdi){
+	if(flag == ON){
+		pr_info("status check ON\n");
+		return ON;
+	}else{
+		pr_info("status check OFF\n");
+		return OFF;
+	}
 }
 
 /* Recovery items */
@@ -236,12 +248,12 @@ void check_queue(bdbm_queue_t *queue){
 		if(cal_t > STANDARD_T){
 			
 			q_item = bdbm_queue_dequeue(queue, QID);
-			pr_info("[Timeout]");
-			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
-					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
-					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
-					q_item->me.phyaddr.page_no);
-
+//			pr_info("[Timeout]");
+//			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+//					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+//					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
+//					q_item->me.phyaddr.page_no);
+//
 			bdbm_abm_invalidate_page(
 					p->bai,
 					q_item->me.phyaddr.channel_no,
@@ -258,12 +270,12 @@ void check_queue(bdbm_queue_t *queue){
 			
 			q_item = bdbm_queue_dequeue(queue, QID);
 
-			pr_info("[FULL]");
-			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
-					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
-					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
-					q_item->me.phyaddr.page_no);
-
+//			pr_info("[FULL]");
+//			pr_info("[DEL] LPA=%llx => (%lld, %lld, %lld, %lld)\n"
+//					,q_item->logaddr.lpa[q_item->sp_off],q_item->me.phyaddr.channel_no,
+//					q_item->me.phyaddr.chip_no, q_item->me.phyaddr.block_no,
+//					q_item->me.phyaddr.page_no);
+//
 			bdbm_abm_invalidate_page(
 					p->bai,
 					q_item->me.phyaddr.channel_no,
@@ -452,6 +464,7 @@ uint32_t bdbm_page_ftl_create (bdbm_drv_info_t* bdi)
 	/* Create queue */
     fifo = bdbm_queue_create(1, QUEUE_SIZE);
 	flag = OFF;
+
 	return 0;
 }
 
@@ -503,6 +516,7 @@ uint32_t bdbm_page_ftl_get_free_ppa (
 	bdbm_abm_block_t* b = NULL;
 	uint64_t curr_channel;
 	uint64_t curr_chip;
+
 
 	/* if turn on recovery */
 	if(flag == ON){
@@ -570,7 +584,9 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 	int k;
 	int count;
 
+
     //Don
+	/* Recovery */
   	if(flag == ON){
 		pr_info("Recovery ON!!!\n");
 		return 0;
@@ -617,11 +633,6 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa (
 			check_queue(fifo);
 			key = item->me.phyaddr;
 			key.punit_id = 0;
-			pr_info("[IN] punit: %lld (%lld, %lld, %lld, %lld)\n",
-					key.punit_id,
-					key.channel_no, key.chip_no,
-					key.block_no, key.page_no);
-
 			count = bdbm_queue_get_nr_items(fifo);
 			bdbm_queue_enqueue(fifo, QID, item, key);
  
@@ -697,10 +708,10 @@ uint32_t bdbm_page_ftl_map_lpa_to_ppa_gc (
 		}
 
 		//Don	
-		pr_info("[4.New LPA] : %lld (%lld, %lld, %lld, %lld)\n",
-				logaddr->lpa[k], phyaddr->channel_no, phyaddr->chip_no,
-				phyaddr->block_no, phyaddr->page_no);
-
+//		pr_info("[4.New LPA] : %lld (%lld, %lld, %lld, %lld)\n",
+//				logaddr->lpa[k], phyaddr->channel_no, phyaddr->chip_no,
+//				phyaddr->block_no, phyaddr->page_no);
+//
 		if (logaddr->lpa[k] >= np->nr_subpages_per_ssd) {
 			bdbm_error ("LPA is beyond logical space (%llX)", logaddr->lpa[k]);
 			return 1;
@@ -1195,9 +1206,6 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			hlm_reqs_pool_alloc_fmain_pad (&r->fmain);
 			/* if it is, selects it as the gc candidates */
 			if (has_valid) {
-				pr_info("[GCREAD] %lld, %lld, %lld, %lld\n",
-						b->channel_no, b->chip_no,
-						b->block_no, j);
 				r->req_type = REQTYPE_GC_READ;
 				r->phyaddr.channel_no = b->channel_no;
 				r->phyaddr.chip_no = b->chip_no;
@@ -1315,15 +1323,15 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 		r->ptr_hlm_req = (void*)hlm_gc_w;
 		
 		//Don
-		pr_info("[1. hlm_gc_w] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
-				r->logaddr.lpa[0],r->phyaddr.punit_id,
-				r->phyaddr.channel_no, r->phyaddr.chip_no,
-				r->phyaddr.block_no, r->phyaddr.page_no);
-
-		pr_info("[1. hlm_gc] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
-				p->logaddr.lpa[0],p->phyaddr.punit_id,
-				p->phyaddr.channel_no, p->phyaddr.chip_no,
-				p->phyaddr.block_no, p->phyaddr.page_no);
+//		pr_info("[1. hlm_gc_w] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
+//				r->logaddr.lpa[0],r->phyaddr.punit_id,
+//				r->phyaddr.channel_no, r->phyaddr.chip_no,
+//				r->phyaddr.block_no, r->phyaddr.page_no);
+//
+//		pr_info("[1. hlm_gc] LPA:%lld (%lld, %lld, %lld, %lld, %lld)\n",
+//				p->logaddr.lpa[0],p->phyaddr.punit_id,
+//				p->phyaddr.channel_no, p->phyaddr.chip_no,
+//				p->phyaddr.block_no, p->phyaddr.page_no);
 
 		key = p->phyaddr;
 		key.punit_id = 0;
@@ -1339,11 +1347,11 @@ uint32_t bdbm_page_ftl_do_gc (bdbm_drv_info_t* bdi, int64_t lpa)
 			bdbm_bug_on (1);
 		}
 
-		pr_info("[3.NEW phyaddr] LPA:%lld (%lld, %lld, %lld, %lld)\n",
-				r->logaddr.lpa[k],
-				r->phyaddr.channel_no, r->phyaddr.chip_no,
-				r->phyaddr.block_no, r->phyaddr.page_no);
-
+//		pr_info("[3.NEW phyaddr] LPA:%lld (%lld, %lld, %lld, %lld)\n",
+//				r->logaddr.lpa[k],
+//				r->phyaddr.channel_no, r->phyaddr.chip_no,
+//				r->phyaddr.block_no, r->phyaddr.page_no);
+//
 
 		/* update queue data */
 		if (bdbm_page_ftl_map_lpa_to_ppa_gc (bdi, &r->logaddr, &r->phyaddr, i_tmp, h_status) != 0) {

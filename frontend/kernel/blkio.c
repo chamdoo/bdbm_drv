@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 #include <linux/module.h>
 #include <linux/blkdev.h> /* bio */
+#include <linux/wait.h>
+#include <linux/poll.h>
 
 #include "bdbm_drv.h"
 #include "debug.h"
@@ -48,6 +50,7 @@ bdbm_host_inf_t _blkio_inf = {
 	.close = blkio_close,
 	.make_req = blkio_make_req,
 	.end_req = blkio_end_req,
+	.replay_req = blkio_replay_make_req,
 };
 
 typedef struct {
@@ -63,10 +66,10 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 	struct bio_vec bvec;
 	struct bvec_iter iter;
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bdbm_malloc (sizeof (bdbm_blkio_req_t));
-
 	/* check the pointer */
 	if (br == NULL)
 		goto fail;
+	pr_info("bi_vcnt %hu\n",bio->bi_vcnt);
 
 	/* get the type of the bio request */
 	if (bio->bi_rw & REQ_DISCARD)
@@ -79,19 +82,16 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 		bdbm_error ("oops! invalid request type (bi->bi_rw = %lx)", bio->bi_rw);
 		goto fail;
 	}
-
 	/* get the offset and the length of the bio */
 	br->bi_offset = bio->bi_iter.bi_sector;
 	br->bi_size = bio_sectors (bio);
 	br->bi_bvec_cnt = 0;
 	br->bio = (void*)bio;
-
 	/* get the data from the bio */
 	if (br->bi_rw != REQTYPE_TRIM) {
 		bio_for_each_segment (bvec, bio, iter) {
 			br->bi_bvec_ptr[br->bi_bvec_cnt] = (uint8_t*)page_address (bvec.bv_page);
 			br->bi_bvec_cnt++;
-
 			if (br->bi_bvec_cnt >= BDBM_BLKIO_MAX_VECS) {
 				/* NOTE: this is an impossible case unless kernel parameters are changed */
 				bdbm_error ("oops! # of vectors in bio is larger than %u %llu (type=%llu)", 
@@ -100,7 +100,6 @@ static bdbm_blkio_req_t* __get_blkio_req (struct bio *bio)
 			}
 		}
 	}
-
 	return br;
 
 fail:
@@ -238,11 +237,57 @@ fail:
 		__free_blkio_req (br);
 }
 
+void blkio_replay_make_req (bdbm_drv_info_t* bdi, void* bio)
+{
+	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
+	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)bio;
+	bdbm_hlm_req_t* hr = NULL;
+
+
+	/* get a free hlm_req from the hlm_reqs_pool */
+	if ((hr = bdbm_hlm_reqs_pool_get_item (p->hlm_reqs_pool)) == NULL) {
+		bdbm_error ("bdbm_hlm_reqs_pool_get_item () failed");
+		goto fail;
+	}
+
+	/* build hlm_req with bio */
+	if (bdbm_hlm_reqs_pool_build_req (p->hlm_reqs_pool, hr, br) != 0) {
+		bdbm_error ("bdbm_hlm_reqs_pool_build_req () failed");
+		goto fail;
+	}
+
+	/* lock a global mutex -- this function must be finished as soon as possible */
+	bdbm_sema_lock (&p->host_lock);
+
+	/* if success, increase # of host reqs */
+	atomic_inc (&p->nr_host_reqs);
+
+	/* NOTE: it would be possible that 'hlm_req' becomes NULL 
+	 * if 'bdi->ptr_hlm_inf->make_req' is success. */
+	if (bdi->ptr_hlm_inf->make_req (bdi, hr) != 0) {
+		/* oops! something wrong */
+		bdbm_error ("'bdi->ptr_hlm_inf->make_req' failed");
+
+		/* cancel the request */
+		atomic_dec (&p->nr_host_reqs);
+	}
+
+	/* ulock a global mutex */
+	bdbm_sema_unlock (&p->host_lock);
+
+	return;
+
+fail:
+	if (hr)
+		bdbm_hlm_reqs_pool_free_item (p->hlm_reqs_pool, hr);
+	if (br)
+		__free_blkio_req (br);
+}
+
 void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)hr->blkio_req;
-
 	/* end bio */
 	if (hr->ret == 0)
 		bio_endio ((struct bio*)br->bio);
