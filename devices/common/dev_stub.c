@@ -658,7 +658,7 @@ static unsigned int dm_replay_poll (struct file *filp, poll_table *poll_table)
 		mask = POLLERR; 
 	}
 
-	pr_info("CALL POLL function\n");
+	//pr_info("CALL POLL function\n");
 	return mask;
 }
 static long dm_fops_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)

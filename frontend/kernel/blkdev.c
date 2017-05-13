@@ -158,13 +158,13 @@ int bdbm_blk_ioctl (
 				struct info* blkin = NULL;
 				
 				int j = 0;
-				int size = 8; /* 512B * 8 * 32 = 128 KB*/
+//				int size = 8; /* 512B * 8 * 32 = 128 KB*/
 
 				if((hlm = _bdi->ptr_hlm_inf) == NULL){
 					bdbm_warning("hlm is not create");
 					return 0;
 				}
-				pr_info("not error\n");
+//				pr_info("not error\n");
 	
 				blkin = (struct info*)kmalloc(sizeof(struct info),GFP_KERNEL);
 				blkio_req =	(bdbm_blkio_req_t*)bdbm_malloc (sizeof(bdbm_blkio_req_t));
@@ -193,12 +193,16 @@ int bdbm_blk_ioctl (
 					blkio_req->bi_bvec_ptr[j][2] = 0x0C;
 
 				}
+				pr_info("offset : %d\n", blkin->start);
+				pr_info("offset : %llu\n", blkio_req->bi_offset);
 
 				_bdi->ptr_host_inf->replay_req(_bdi, blkio_req);
-				pr_info("offset : %llu\n", blkio_req->bi_offset);
-				pr_info("offset : %d\n", offset );
-				offset += size;
-				pr_info("offset : %d\n", offset );
+				
+				kfree(blkin);
+				
+//				pr_info("offset : %d\n", offset );
+//				offset += size;
+//				pr_info("offset : %d\n", offset );
 				break;
 
 			}

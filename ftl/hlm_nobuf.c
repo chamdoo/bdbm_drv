@@ -25,7 +25,7 @@ THE SOFTWARE.
 #if defined(KERNEL_MODE)
 #include <linux/module.h>
 #include <linux/blkdev.h>
-
+#include <linux/time.h>
 #elif defined(USER_MODE)
 #include <stdio.h>
 #include <stdint.h>
@@ -48,9 +48,9 @@ THE SOFTWARE.
 
 #include "../3rd/uthash.h"
 #include "../3rd/SOFDef.h"
+#include "../3rd/IOContPare.h"
 #include <linux/ktime.h>
 #define DETECT_VALUE 60
-int a;
 
 /* interface for hlm_nobuf */
 bdbm_hlm_inf_t _hlm_nobuf_inf = {
@@ -68,6 +68,74 @@ typedef struct {
 	bdbm_hlm_req_t tmp_hr;
 } bdbm_hlm_nobuf_private_t;
 
+struct timespec tmp_time;
+
+void SoF_Detect (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
+{
+	bdbm_ftl_inf_t* ftl = BDBM_GET_FTL_INF(bdi);
+	ktime_t get_t;
+	struct timespec sub;
+	struct timespec current_t;
+
+	struct BLKInfo *pInfo;
+	uint64_t time;
+	char iotype;
+	uint32_t detect;
+	uint32_t g_detect;
+
+	pInfo = (struct BLKInfo*)kmalloc(sizeof(struct BLKInfo), GFP_KERNEL);
+
+	get_t = ktime_get();
+	time = ktime_to_ns(get_t);
+
+	if( bdbm_is_read(hr->req_type))
+	{
+		iotype = 'R';
+	}
+	else
+	{
+		iotype = 'W';
+	}
+
+	pInfo->dTime = time;
+	pInfo->iotype = iotype;
+	pInfo->nBlockSize = hr->nr_llm_reqs;
+	pInfo->nLba = hr->llm_reqs[0].logaddr.lpa[0];
+	
+//	pr_info("len : %lld\n", hr->len);
+	pr_info("nr_llm_reqs : %lld\n", hr->nr_llm_reqs);
+	pr_info("Time : %lld, iotype : %c, B_size : %u, nlba : %lld\n",
+			pInfo->dTime, pInfo->iotype, pInfo->nBlockSize, pInfo->nLba);
+
+	SOF_addIOInfo(pInfo);
+	detect = SOF_DetectRansome();
+	pr_info("Detect value : %d\n",detect);
+	if(detect >= 1)
+	{
+		g_detect = SOF_DetectRansome_global();
+		if(g_detect > 20)
+		{
+			pr_info("Ransomware Detect\n");
+			ftl->recovery(bdi);
+		}
+	}
+	getnstimeofday(&current_t);
+	sub = timespec_sub(current_t,tmp_time);
+	pr_info("CAL TIME %lld\n",(long long)sub.tv_sec);
+	if(sub.tv_sec >= 1)
+	{
+		tmp_time = current_t;
+		g_detect = SOF_DetectRansome_global();
+		pr_info("Ransomware check\n");
+		if(g_detect > 20)
+		{
+			pr_info("Global : Ransomware Detect\n");
+			ftl->recovery(bdi);
+		}
+	}
+	
+
+}
 
 /* functions for hlm_nobuf */
 uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
@@ -86,8 +154,7 @@ uint32_t hlm_nobuf_create (bdbm_drv_info_t* bdi)
 
 	/* SOF Init */
 	SOF_Init();
-	a = 0;
-	
+	getnstimeofday(&tmp_time);
 	return 0;
 }
 
@@ -119,39 +186,8 @@ uint32_t __hlm_nobuf_make_rw_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	uint64_t i = 0, j = 0, sp_ofs;
 //	WARN_ON(1);
 	/* Detect values */
-	ktime_t get_t;
-	uint64_t time;
-	char iotype;
-	int SOF_Detect;
-	struct BLKInfo *pInfo;
-	pInfo = (struct BLKInfo*)kmalloc(sizeof(struct BLKInfo), GFP_KERNEL);
-	
-	get_t = ktime_get();
-	time = ktime_to_ms(get_t); 
-	if (bdbm_is_read (hr->req_type)){
-		iotype = 'R';
-	}else{
-		iotype = 'W';
-	}
-	pInfo->dTime = time;
-	pInfo->iotype = iotype;	
-	pInfo->nBlockSize = hr->nr_llm_reqs;
-	pr_info("len : %lld\n",hr->len);
-	pr_info("nr_llm_reqs : %lld\n",hr->nr_llm_reqs);
-	pInfo->nLba = hr->llm_reqs[0].logaddr.lpa[0]; 
-	SOF_addIOInfo(pInfo);
-    SOF_Detect = SOF_DetectRansome();
-//	pr_info("Detect : %d\n", SOF_Detect);
-	pr_info("Time : %lld, iotype : %c, B_size : %u, nlba : %lld\n",
-			pInfo->dTime, pInfo->iotype, pInfo->nBlockSize, pInfo->nLba);
-//	pr_info("nr_llm_reqs %lld, lpa[0] %lld\n",
-//			hr->nr_llm_reqs, hr->llm_reqs[0].logaddr.lpa[0]);
-	if(SOF_Detect >= DETECT_VALUE){
-		pr_info("Recovery hlm_nobuf\n");
-		ftl->recovery(bdi);
-	}
-	pr_info("count : %d\n",a);
-	a = a + 1;
+	SoF_Detect(bdi, hr);
+
 	/* perform mapping with the FTL */
 	bdbm_hlm_for_each_llm_req (lr, hr, i) {
 		/* (1) get the physical locations through the FTL */
@@ -355,4 +391,5 @@ void hlm_nobuf_end_req (bdbm_drv_info_t* bdi, bdbm_llm_req_t* lr)
 		__hlm_nobuf_end_blkio_req (bdi, lr);
 	}
 }
+
 

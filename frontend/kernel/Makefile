@@ -77,6 +77,8 @@ robusta_drv-y := \
 	$(COMMON)/utils/uthread.o \
 	$(COMMON)/utils/umemory.o \
 	$(COMMON)/bdbm_main.o \
+	$(COMMON)/3rd/SOFDef.o \
+	$(COMMON)/3rd/IOContPare.o \
 
 obj-m := robusta_drv.o
 

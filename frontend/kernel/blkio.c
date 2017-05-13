@@ -288,6 +288,7 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 {
 	bdbm_blkio_private_t* p = (bdbm_blkio_private_t*)BDBM_HOST_PRIV(bdi);
 	bdbm_blkio_req_t* br = (bdbm_blkio_req_t*)hr->blkio_req;
+	int j;
 	/* end bio */
 	if (hr->ret == 0)
 		bio_endio ((struct bio*)br->bio);
@@ -295,7 +296,10 @@ void blkio_end_req (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 		bdbm_warning ("oops! make_req () failed with %d", hr->ret);
 		bio_io_error ((struct bio*)br->bio);
 	}
-
+	for(j = 0; j < br->bi_bvec_cnt; j++){
+		bdbm_free(br->bi_bvec_ptr[j]);
+	}
+	
 	/* free blkio_req */
 	__free_blkio_req (br);
 
