@@ -86,7 +86,7 @@ void SoF_Detect (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	pInfo = (struct BLKInfo*)kmalloc(sizeof(struct BLKInfo), GFP_KERNEL);
 
 	get_t = ktime_get();
-	time = ktime_to_ns(get_t);
+	time = ktime_to_ms(get_t);
 
 	if( bdbm_is_read(hr->req_type))
 	{
@@ -110,6 +110,8 @@ void SoF_Detect (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	SOF_addIOInfo(pInfo);
 	detect = SOF_DetectRansome();
 	pr_info("Detect value : %d\n",detect);
+	g_detect = SOF_DetectRansome_global();
+	pr_info("G_Detect value : %d\n",g_detect);
 	if(detect >= 1)
 	{
 		g_detect = SOF_DetectRansome_global();
@@ -122,17 +124,17 @@ void SoF_Detect (bdbm_drv_info_t* bdi, bdbm_hlm_req_t* hr)
 	getnstimeofday(&current_t);
 	sub = timespec_sub(current_t,tmp_time);
 	pr_info("CAL TIME %lld\n",(long long)sub.tv_sec);
-	if(sub.tv_sec >= 1)
+//	if(sub.tv_sec >= 1)
+//	{
+//		tmp_time = current_t;
+//		g_detect = SOF_DetectRansome_global();
+//		pr_info("Ransomware check\n");
+	if(g_detect >= 20)
 	{
-		tmp_time = current_t;
-		g_detect = SOF_DetectRansome_global();
-		pr_info("Ransomware check\n");
-		if(g_detect > 20)
-		{
-			pr_info("Global : Ransomware Detect\n");
-			ftl->recovery(bdi);
-		}
+		pr_info("Global : Ransomware Detect\n");
+		ftl->recovery(bdi);
 	}
+//	}
 	
 
 }
