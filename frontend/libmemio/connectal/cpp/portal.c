@@ -54,7 +54,7 @@
 int simulator_dump_vcd = 0;
 const char *simulator_vcd_name = "dump.vcd";
 // set this to 1 to suppress call to fpgajtag
-int noprogram = 0;
+int noprogram = 1;
 
 static int trace_portal;//= 1;
 
