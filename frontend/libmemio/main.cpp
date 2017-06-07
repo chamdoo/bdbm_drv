@@ -29,7 +29,45 @@ THE SOFTWARE.
 
 #include "libmemio.h"
 
+double timespec_diff_sec( timespec start, timespec end ) {
+	double t = end.tv_sec - start.tv_sec;
+	t += ((double)(end.tv_nsec - start.tv_nsec)/1000000000L);
+	return t;
+}
+
 int main (int argc, char** argv)
+{
+	// this test should be done after writing 256 MB from LPA 0 & using same table.dump.0
+	uint8_t *readBuffer;
+	memio_t* mio = NULL;
+
+	timespec start, now;
+
+	readBuffer = (uint8_t*)malloc(256*1024*1024);
+	if (readBuffer == NULL) {
+		printf("Could not allocate 256 MB buffer\n");
+		return -1;
+	}
+
+	if ((mio = memio_open()) == NULL) {
+		printf("could not open memio\n");
+		return -1;
+	}
+
+	for (int size=2; size <=256; size=size*2) {
+		clock_gettime(CLOCK_REALTIME, & start);
+		memio_read(mio, 0, size*1024*1024, readBuffer);
+		clock_gettime(CLOCK_REALTIME, & now);
+		printf("Read Size: %d MB, SPEED: %f MB/s\n", size, 1.0*size/timespec_diff_sec(start, now));
+		printf("time elapsed: %f s\n", timespec_diff_sec(start, now));
+	}
+
+	memio_close(mio);
+
+	return 0;
+}
+
+int main2 (int argc, char** argv)
 {
 	int i = 0, j = 0, tmplba = 0;
 	srand(time(NULL));

@@ -93,7 +93,7 @@ unsigned int* writeBuffers[NUM_TAGS];
 TagTableEntry readTagTable[NUM_TAGS];
 TagTableEntry writeTagTable[NUM_TAGS];
 TagTableEntry eraseTagTable[NUM_TAGS];
-FlashStatusT flashStatus[NUM_SEGMENTS*NUM_PAGES_PER_BLK*NUM_LOGBLKS];
+//FlashStatusT flashStatus[NUM_SEGMENTS*NUM_PAGES_PER_BLK*NUM_LOGBLKS];
 
 size_t blkmapAlloc_sz = sizeof(uint16_t) * NUM_SEGMENTS * NUM_LOGBLKS;
 int blkmapAlloc;
@@ -235,21 +235,16 @@ uint32_t __dm_nohost_init_device (
 
 	device = new FlashRequestProxy(IfcNames_FlashRequestS2H);
 	indication = new FlashIndication(IfcNames_FlashIndicationH2S);
-//    DmaManager *dma = platformInit();
 
 	fprintf(stderr, "Main::allocating memory...\n");
 	
 	// Memory for DMA
-//	srcAlloc = portalAlloc(srcAlloc_sz, 0);
-//	dstAlloc = portalAlloc(dstAlloc_sz, 0);
-//	srcBuffer = (unsigned int *)portalMmap(srcAlloc, srcAlloc_sz); // Host->Flash Write
-//	dstBuffer = (unsigned int *)portalMmap(dstAlloc, dstAlloc_sz); // Flash->Host Read
 #if defined(USE_ACP)
-	fprintf(stderr, "!!!!! USE_ACP\n");
+	fprintf(stderr, "USE_ACP = TRUE\n");
 	srcDmaBuffer = new DmaBuffer(srcAlloc_sz);
 	dstDmaBuffer = new DmaBuffer(dstAlloc_sz);
 #else
-	fprintf(stderr, "!!!!! NO USE_ACP\n");
+	fprintf(stderr, "USE_ACP = FALSE\n");
 	srcDmaBuffer = new DmaBuffer(srcAlloc_sz, false);
 	dstDmaBuffer = new DmaBuffer(dstAlloc_sz, false);
 #endif
@@ -258,10 +253,6 @@ uint32_t __dm_nohost_init_device (
 
 
 	// Memory for FTL
-//	blkmapAlloc = portalAlloc(blkmapAlloc_sz * 2, 0);
-//	ftlPtr = (char*)portalMmap(blkmapAlloc, blkmapAlloc_sz * 2);
-//	blkmap = (uint16_t(*)[NUM_LOGBLKS]) (ftlPtr);  // blkmap[Seg#][LogBlk#]
-//	blkmgr = (uint16_t(*)[NUM_CHIPS][NUM_BLOCKS])  (ftlPtr+blkmapAlloc_sz); // blkmgr[Bus][Chip][Block]
 #if defined(USE_ACP)
 	blkmapDmaBuffer = new DmaBuffer(blkmapAlloc_sz * 2);
 #else
@@ -273,10 +264,6 @@ uint32_t __dm_nohost_init_device (
 	
 	fprintf(stderr, "Main::allocating memory finished!\n");
 	
-//	portalCacheFlush(dstAlloc, dstBuffer, dstAlloc_sz, 1);
-//	portalCacheFlush(srcAlloc, srcBuffer, srcAlloc_sz, 1);
-//	portalCacheFlush(blkmapAlloc, blkmap, blkmapAlloc_sz*2, 1);
-
 	dstDmaBuffer->cacheInvalidate(0, 1);
 	srcDmaBuffer->cacheInvalidate(0, 1);
 	blkmapDmaBuffer->cacheInvalidate(0, 1);
@@ -299,9 +286,9 @@ uint32_t __dm_nohost_init_device (
 		writeBuffers[t] = srcBuffer + byteOffset/sizeof(unsigned int);
 	}
 
-	for (int lpa=0; lpa < NUM_SEGMENTS*NUM_LOGBLKS*NUM_PAGES_PER_BLK; lpa++) {
-		flashStatus[lpa] = UNINIT;
-	}
+	//for (int lpa=0; lpa < NUM_SEGMENTS*NUM_LOGBLKS*NUM_PAGES_PER_BLK; lpa++) {
+	//	flashStatus[lpa] = UNINIT;
+	//}
 
 	for (int t = 0; t < NUM_TAGS; t++) {
 		for ( unsigned int i = 0; i < FPAGE_SIZE/sizeof(unsigned int); i++ ) {

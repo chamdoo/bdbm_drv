@@ -194,8 +194,10 @@ static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 		if( --(*r->counter) <= 0 )
 			bdbm_cond_broadcast(r->cond);
 	}
+//	bool wasEmpty = mio->tagQ->empty();
 	mio->tagQ->push(r->tag);
-	bdbm_cond_broadcast(&mio->tagQCond); // wakes up threads waiting for a tag
+//	if (wasEmpty)
+		bdbm_cond_broadcast(&mio->tagQCond); // wakes up threads waiting for a tag
 	bdbm_mutex_unlock(&mio->tagQMutex);
 
 //	/* release semaphore */
