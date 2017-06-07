@@ -1,17 +1,25 @@
 # Makefile for a RISA Device Driver
 #
+BD?=zcu102
+ifeq ($(BD),zcu102)
+CC = aarch64-linux-gnu-g++
+AR = aarch64-linux-gnu-ar
+BOARD = zcu102
+CONNECTAL_DIR = connectal_zcu102
+else
 CC = arm-linux-gnueabihf-g++
 AR = arm-linux-gnueabihf-ar
+BOARD = zc706_ubuntu
+CONNECTAL_DIR = connectal_zc706
+endif
 
 ROOTDIR = ../..
 INCLUDE = $(ROOTDIR)/include
 COMMON = $(ROOTDIR)/common
 DM_COMMON = $(ROOTDIR)/devices/common
-BOARD = zc706_ubuntu
 BOARDDIR = $(BOARD)/jni
 
 OUT = nohost.a
-
 
 CFLAGS := -g -static
 CFLAGS += \
@@ -31,11 +39,11 @@ INCLUDES := \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(DM_COMMON) \
-	-I$(PWD)/connectal \
-	-I$(PWD)/connectal/cpp \
+	-I$(PWD)/$(CONNECTAL_DIR) \
+	-I$(PWD)/$(CONNECTAL_DIR)/cpp \
 	-I$(PWD)/$(BOARDDIR) \
-	-I$(PWD)/connectal/drivers/zynqportal \
-	-I$(PWD)/connectal/drivers/portalmem \
+	-I$(PWD)/$(CONNECTAL_DIR)/drivers/zynqportal \
+	-I$(PWD)/$(CONNECTAL_DIR)/drivers/portalmem \
 
 
 LIBSRC := \
@@ -48,14 +56,14 @@ LIBSRC := \
 	$(PWD)/$(BOARDDIR)/MMUIndication.c \
 	$(PWD)/$(BOARDDIR)/MemServerRequest.c \
 	$(PWD)/$(BOARDDIR)/MemServerIndication.c \
-	$(PWD)/connectal/cpp/portal.c \
-	$(PWD)/connectal/cpp/portalPrintf.c \
-	$(PWD)/connectal/cpp/transportHardware.c \
-	$(PWD)/connectal/cpp/poller.cpp \
-	$(PWD)/connectal/cpp/DmaBuffer.cpp \
-	$(PWD)/connectal/cpp/dmaManager.c \
-	$(PWD)/connectal/cpp/platformMemory.cpp \
-	$(PWD)/connectal/cpp/timer.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portal.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portalPrintf.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/transportHardware.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/poller.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/DmaBuffer.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/dmaManager.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/platformMemory.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/timer.c \
 	dm_nohost.cpp \
 
 LIBOBJ := \
@@ -68,14 +76,14 @@ LIBOBJ := \
 	$(PWD)/$(BOARDDIR)/MMUIndication.o \
 	$(PWD)/$(BOARDDIR)/MemServerRequest.o \
 	$(PWD)/$(BOARDDIR)/MemServerIndication.o \
-	$(PWD)/connectal/cpp/portal.o \
-	$(PWD)/connectal/cpp/portalPrintf.o \
-	$(PWD)/connectal/cpp/transportHardware.o \
-	$(PWD)/connectal/cpp/poller.o \
-	$(PWD)/connectal/cpp/DmaBuffer.o \
-	$(PWD)/connectal/cpp/dmaManager.o \
-	$(PWD)/connectal/cpp/platformMemory.o \
-	$(PWD)/connectal/cpp/timer.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portal.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portalPrintf.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/transportHardware.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/poller.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/DmaBuffer.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/dmaManager.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/platformMemory.o \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/timer.o \
 	dm_nohost.o \
 
 all: $(OUT)
@@ -93,5 +101,5 @@ clean:
 	@$(RM) *.o core *~ nohost.a
 	@$(RM) $(DM_COMMON)/*.o
 	@$(RM) $(PWD)/$(BOARDDIR)/*.o
-	@$(RM) $(PWD)/connectal/cpp/*.o
+	@$(RM) $(PWD)/$(CONNECTAL_DIR)/cpp/*.o
 

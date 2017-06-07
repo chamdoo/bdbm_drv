@@ -1,14 +1,23 @@
 # Makefile for a RISA Device Driver
 #
+BD?=zcu102
+ifeq ($(BD),zcu102)
+CC = aarch64-linux-gnu-g++
+AR = aarch64-linux-gnu-ar
+BOARD = zcu102
+CONNECTAL_DIR = connectal_zcu102
+else
 CC = arm-linux-gnueabihf-g++
 AR = arm-linux-gnueabihf-ar
+BOARD = zc706_ubuntu
+CONNECTAL_DIR = connectal_zc706
+endif
 
 ROOTDIR = ../..
 INCLUDE = $(ROOTDIR)/include
 COMMON = $(ROOTDIR)/common
 DM_COMMON = $(ROOTDIR)/devices/common
 DM_NOHOST = $(ROOTDIR)/devices/nohost
-BOARD = zc706_ubuntu
 BOARDDIR = $(BOARD)/jni
 
 CFLAGS += \
@@ -33,11 +42,11 @@ INCLUDES := \
 	-I$(PWD)/$(COMMON)/utils \
 	-I$(PWD)/$(COMMON)/3rd \
 	-I$(PWD)/$(DM_COMMON) \
-	-I$(PWD)/connectal \
-	-I$(PWD)/connectal/cpp \
+	-I$(PWD)/$(CONNECTAL_DIR) \
+	-I$(PWD)/$(CONNECTAL_DIR)/cpp \
 	-I$(PWD)/$(BOARDDIR) \
-	-I$(PWD)/connectal/drivers/zynqportal \
-	-I$(PWD)/connectal/drivers/portalmem \
+	-I$(PWD)/$(CONNECTAL_DIR)/drivers/zynqportal \
+	-I$(PWD)/$(CONNECTAL_DIR)/drivers/portalmem \
 
 LIBS := \
 	-lm -lpthread -lrt
@@ -50,14 +59,14 @@ SRCS := \
 	$(PWD)/$(BOARDDIR)/MMUIndication.c \
 	$(PWD)/$(BOARDDIR)/MemServerRequest.c \
 	$(PWD)/$(BOARDDIR)/MemServerIndication.c \
-	$(PWD)/connectal/cpp/portal.c \
-	$(PWD)/connectal/cpp/portalPrintf.c \
-	$(PWD)/connectal/cpp/transportHardware.c \
-	$(PWD)/connectal/cpp/poller.cpp \
-	$(PWD)/connectal/cpp/DmaBuffer.cpp \
-	$(PWD)/connectal/cpp/dmaManager.c \
-	$(PWD)/connectal/cpp/platformMemory.cpp \
-	$(PWD)/connectal/cpp/timer.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portal.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/portalPrintf.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/transportHardware.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/poller.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/DmaBuffer.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/dmaManager.c \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/platformMemory.cpp \
+	$(PWD)/$(CONNECTAL_DIR)/cpp/timer.c \
 	$(COMMON)/utils/umemory.c \
 	$(COMMON)/utils/uthread.c \
 	$(DM_COMMON)/dev_main.c \
@@ -88,5 +97,5 @@ clean:
 	@$(RM) $(DM_COMMON)/*.o
 	@$(RM) $(DM_NOHOST)/*.o
 	@$(RM) $(PWD)/$(BOARDDIR)/*.o
-	@$(RM) $(PWD)/connectal/cpp/*.o
+	@$(RM) $(PWD)/$(CONNECTAL_DIR)/cpp/*.o
 	@$(RM) $(COMMON)/utils/*.o
