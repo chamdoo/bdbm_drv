@@ -36,8 +36,6 @@ THE SOFTWARE.
 #include "uatomic64.h"
 #include "ulist.h"
 
-//#include "LR_inter.h"//koo
-
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
@@ -200,10 +198,6 @@ typedef struct {
 
 	/* extension for nohost */
 	int tag;
-	int async; //koo
-	int dmaTag; //koo
-	void (*end_req) (void);
-	//lsmtree_req_t *req; //koo
 	bdbm_cond_t* cond;
 	int* counter;
 } bdbm_llm_req_t;
