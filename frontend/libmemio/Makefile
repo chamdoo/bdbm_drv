@@ -1,6 +1,6 @@
 # Makefile for a RISA Device Driver
 #
-BD?=zcu102
+BD?=zcu706
 ifeq ($(BD),zcu102)
 CC = aarch64-linux-gnu-g++
 AR = aarch64-linux-gnu-ar
@@ -33,6 +33,7 @@ CFLAGS += \
 	-D USE_PMU \
 	-D USE_KTIMER \
 	-D USE_NEW_RMW \
+	-D NOHOST \
 	#-D USE_ACP \ # only valid for zc706. mkTop8k_ACP.exe should be used.
 	#-D ZYNQ=1 \ # Already defined in ConnectalProjectConfig.h:20 
 
@@ -47,6 +48,8 @@ INCLUDES := \
 	-I$(PWD)/$(BOARDDIR) \
 	-I$(PWD)/$(CONNECTAL_DIR)/drivers/zynqportal \
 	-I$(PWD)/$(CONNECTAL_DIR)/drivers/portalmem \
+	-I../../devices/nohost/ \
+	-I../../../redis-lsm/final_tmp \
 
 LIBS := \
 	-lm -lpthread -lrt
