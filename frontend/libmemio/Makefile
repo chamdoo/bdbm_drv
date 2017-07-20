@@ -49,7 +49,7 @@ INCLUDES := \
 	-I$(PWD)/$(CONNECTAL_DIR)/drivers/zynqportal \
 	-I$(PWD)/$(CONNECTAL_DIR)/drivers/portalmem \
 	-I../../devices/nohost/ \
-	-I../../../redis-lsm/final_tmp \
+#	-I../../../redis-lsm/final_tmp \
 
 LIBS := \
 	-lm -lpthread -lrt
