@@ -34,7 +34,7 @@ THE SOFTWARE.
 #include <string.h>
 //#include "../../devices/nohost/dm_nohost.h"
 #include "dm_nohost.h"
-#include "LR_inter.h"
+//#include "LR_inter.h"
 
 extern unsigned int* dstBuffer;
 extern unsigned int* srcBuffer;
@@ -63,29 +63,22 @@ static void __dm_intr_handler (
 	lsmtree_req_t *lsm_req;
 	lsmtree_gc_req_t *lsm_gc_req;
 	static int cnt = 0;
-	printf("libmemio_end_req start %d\n", ++cnt);
 	/* it is called by an interrupt handler */
-	__memio_free_llm_req ((memio_t*)bdi->private_data, r);
-printf("libmemio_end_req freellm end\n");
 //	call lsm_end_req
 	//if ( r->req ) r->req->end_req(r->req);
 	switch(r->req_type) {
 	case REQTYPE_READ:
 	case REQTYPE_WRITE:
 		lsm_req = (lsmtree_req_t*)(r->req);
-		printf("r->req start start %p\n", lsm_req->end_req);
 		if ( lsm_req->end_req ) lsm_req->end_req(lsm_req);
-		else printf("elseelse\n");
 		break;
 	case REQTYPE_META_READ:
 	case REQTYPE_META_WRITE:
 		lsm_gc_req = (lsmtree_gc_req_t*)(r->req);
-		printf("r->req start start %p\n", lsm_gc_req->end_req);
 		if ( lsm_gc_req->end_req ) lsm_gc_req->end_req(lsm_gc_req);
-		else printf("elseelse\n");
 		break;
 	}
-	printf("libmemio_end_req end\n");
+	__memio_free_llm_req ((memio_t*)bdi->private_data, r);
 }
 
 static int __memio_init_llm_reqs (memio_t* mio)
@@ -247,9 +240,7 @@ static void __memio_check_alignment (uint64_t length, uint64_t alignment)
 	}
 }
 
-//static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, lsmtree_req_t *req, int dmaTag) // async == 0 : sync,  == 1 : async
 static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag) // async == 0 : sync,  == 1 : async
-//static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void)) // async == 0 : sync,  == 1 : async
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
@@ -489,7 +480,6 @@ int memio_alloc_dma (int type, char** buf) {
 		break;
 	}
 //	printf("buf pointer : %p\n", *buf);
-	memset(*buf, 0, 8192);	
 	return dmaTag;
 }
 

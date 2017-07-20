@@ -4,7 +4,7 @@
 #include "devices.h" /* bdbm_dm_get_inf */
 #include "debug.h" /* bdbm_msg */
 #include <queue>
-#include "LR_inter.h"
+//#include "LR_inter.h"
 
 typedef struct memio {
 	bdbm_drv_info_t bdi;

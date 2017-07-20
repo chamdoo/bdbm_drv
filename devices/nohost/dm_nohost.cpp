@@ -526,7 +526,7 @@ void dm_nohost_end_req (
 {
 	bdbm_bug_on (r == NULL);
 
-		printf("dm_nohost_end_req start\n");
+//		printf("dm_nohost_end_req start\n");
 //	if (r->req_type == REQTYPE_READ || r->req_type == REQTYPE_GC_READ) {
 	if (r->req_type == REQTYPE_META_READ) {
 		bdbm_memcpy (r->fmain.kp_ptr[0], readBuffers[r->tag], 8192);
@@ -542,7 +542,7 @@ void dm_nohost_end_req (
 	//
 	//bdbm_msg ("dm_nohost_end_req done");
 	bdi->ptr_llm_inf->end_req (bdi, r);
-		printf("dm_nohost_end_req end\n");
+//		printf("dm_nohost_end_req end\n");
 }
 
 

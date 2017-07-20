@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include "uatomic64.h"
 #include "ulist.h"
 
-#include "LR_inter.h"//koo
+//#include "LR_inter.h"//koo
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #pragma GCC diagnostic ignored "-Wunused-variable"
