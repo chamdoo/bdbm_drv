@@ -31,13 +31,20 @@ THE SOFTWARE.
 
 #include "libmemio.h"
 #include <stdlib.h>
+#include<pthread.h>
 #include <string.h>
 //#include "../../devices/nohost/dm_nohost.h"
 #include "dm_nohost.h"
-//#include "LR_inter.h"
+#include "LR_inter.h"
+#include  "utils.h"
 
 extern unsigned int* dstBuffer;
 extern unsigned int* srcBuffer;
+extern MeasureTime mt;
+extern MeasureTime mem;
+extern MeasureTime buf;
+int cnt=0;
+extern pthread_mutex_t endR;
 
 static void __dm_intr_handler (bdbm_drv_info_t* bdi, bdbm_llm_req_t* r);
 
@@ -56,29 +63,47 @@ bdbm_llm_inf_t _bdbm_llm_inf = {
 static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio);
 static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r);
 
+pthread_mutex_t proc;
+int req_cnt=0;
 static void __dm_intr_handler (
 	bdbm_drv_info_t* bdi, 
 	bdbm_llm_req_t* r)
 {
+	pthread_mutex_lock(&proc);
+	/*
 	lsmtree_req_t *lsm_req;
 	lsmtree_gc_req_t *lsm_gc_req;
-	static int cnt = 0;
+	static int cnt = 0;*/
 	/* it is called by an interrupt handler */
 //	call lsm_end_req
 	//if ( r->req ) r->req->end_req(r->req);
+/*
 	switch(r->req_type) {
-	case REQTYPE_READ:
+	case REQTYPE_META_WRITE:
 	case REQTYPE_WRITE:
+	case REQTYPE_READ:
 		lsm_req = (lsmtree_req_t*)(r->req);
 		if ( lsm_req->end_req ) lsm_req->end_req(lsm_req);
 		break;
 	case REQTYPE_META_READ:
-	case REQTYPE_META_WRITE:
 		lsm_gc_req = (lsmtree_gc_req_t*)(r->req);
 		if ( lsm_gc_req->end_req ) lsm_gc_req->end_req(lsm_gc_req);
 		break;
+	}*/
+	lsmtree_req_t* lsm_req=(lsmtree_req_t*)r->req;
+	if(lsm_req->isgc){
+		lsmtree_gc_req_t *gc=(lsmtree_gc_req_t*)lsm_req;
+		gc->end_req(gc);
 	}
-	__memio_free_llm_req ((memio_t*)bdi->private_data, r);
+	else{
+		lsm_req->end_req(lsm_req);
+	}
+	__memio_free_llm_req((memio_t*)bdi->private_data,r);
+	//printf("unlock!\n");
+	//printf("lsm_req :%p \n",r->req);
+	
+	//printf("free llm\n");
+	pthread_mutex_unlock(&proc);
 }
 
 static int __memio_init_llm_reqs (memio_t* mio)
@@ -108,7 +133,8 @@ memio_t* memio_open ()
 	bdbm_dm_inf_t* dm = NULL;
 	memio_t* mio = NULL;
 	int ret;
-
+	
+	pthread_mutex_init(&proc,NULL);
 	/* allocate a memio data structure */
 	if ((mio = (memio_t*)bdbm_zmalloc (sizeof (memio_t))) == NULL) {
 		bdbm_error ("bdbm_zmalloc() failed");
@@ -178,7 +204,6 @@ static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio)
 {
 	int i = 0;
 	bdbm_llm_req_t* r = NULL;
-
 	// using std::queue & event
 	bdbm_mutex_lock(&mio->tagQMutex);
 	while (mio->tagQ->empty()) {
@@ -187,7 +212,6 @@ static bdbm_llm_req_t* __memio_alloc_llm_req (memio_t* mio)
 	r = (bdbm_llm_req_t*)&mio->rr[mio->tagQ->front()];
 	mio->tagQ->pop();
 	bdbm_mutex_unlock(&mio->tagQMutex);
-
 //	do {
 //		bdbm_mutex_lock(&mio->tagQMutex);
 //		if (!mio->tagQ->empty()) {
@@ -221,6 +245,7 @@ static void __memio_free_llm_req (memio_t* mio, bdbm_llm_req_t* r)
 			bdbm_cond_broadcast(r->cond);
 	}
 //	bool wasEmpty = mio->tagQ->empty();
+	r->req=NULL;
 	mio->tagQ->push(r->tag);
 //	if (wasEmpty)
 		bdbm_cond_broadcast(&mio->tagQCond); // wakes up threads waiting for a tag
@@ -240,7 +265,10 @@ static void __memio_check_alignment (uint64_t length, uint64_t alignment)
 	}
 }
 
-static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag) // async == 0 : sync,  == 1 : async
+bool flag=false;
+//static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, lsmtree_req_t *req, int dmaTag) // async == 0 : sync,  == 1 : async
+static int __memio_do_io (memio_t* mio, int dir, uint32_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag) // async == 0 : sync,  == 1 : async
+//static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void)) // async == 0 : sync,  == 1 : async
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
@@ -265,7 +293,15 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 
 		/* setup llm_req */
 		switch(dir) {
-		case 0:
+		case 0:/*
+			if(!flag){
+				flag=true;
+				MS(&mt);
+			}
+			else{
+				ME(&mt,"get req");
+				MS(&mt);
+			}*/
 			r->req_type = REQTYPE_READ;
 			break;
 		case 1:
@@ -289,21 +325,20 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 			r->cond = &readCond;
 			r->counter = &counter;
 		}
-
+		
+	//	printf("[%d] before locked!\n",cnt++);
 		/* send I/O requets to the device */
+		
 		if ((ret = dm->make_req (&mio->bdi, r)) != 0) {
 			bdbm_error ("dm->make_req() failed (ret = %d)", ret);
 			bdbm_bug_on (1);
 		}
-
 		/* go the next */
 		cur_lba += 1;
 		cur_buf += mio->io_size;
 		sent += mio->io_size;
 	}
-
 	//FIXME: if write, just return. if read, wait until my read request finishes	
-	
 	if ( dir == 0 && async == 0) {
 
 		bdbm_mutex_lock(&mio->tagQMutex);
@@ -315,6 +350,7 @@ static int __memio_do_io (memio_t* mio, int dir, uint64_t lba, uint64_t len, uin
 	bdbm_cond_free(&readCond);
 
 	/* return the length of bytes transferred */
+	//ME(&mt,"memio test");
 	return sent;
 }
 
@@ -325,8 +361,10 @@ void memio_wait (memio_t* mio)
 	do {
 		bdbm_mutex_lock(&mio->tagQMutex);
 		i = mio->tagQ->size();
+		//printf("iii:%d\n",i);
+		//sleep(0.1);
 		bdbm_mutex_unlock(&mio->tagQMutex);
-	} while ( i != mio->nr_tags );
+	} while ( i != mio->nr_tags-1 );
 
 //	int i, j=0;
 //	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
@@ -344,7 +382,7 @@ void memio_wait (memio_t* mio)
 //	}
 }
 
-int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
+int memio_read (memio_t* mio, uint32_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
 //int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void) )
 {
 //	if ( len > 8192*128 ) 
@@ -353,7 +391,7 @@ int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int asy
 	//return __memio_do_io (mio, 0, lba, len, data, async, dmaTag, end_req);
 }
 
-int memio_comp_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
+int memio_comp_read (memio_t* mio, uint32_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
 //int memio_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void) )
 {
 //	if ( len > 8192*128 ) 
@@ -362,7 +400,7 @@ int memio_comp_read (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, in
 	//return __memio_do_io (mio, 0, lba, len, data, async, dmaTag, end_req);
 }
 
-int memio_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
+int memio_write (memio_t* mio, uint32_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
 //int memio_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void) )
 {
 	//bdbm_msg ("memio_write: %zd, %zd", lba, len);
@@ -370,7 +408,7 @@ int memio_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int as
 	//return __memio_do_io (mio, 1, lba, len, data, async, dmaTag, end_req);
 }
 
-int memio_comp_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
+int memio_comp_write (memio_t* mio, uint32_t lba, uint64_t len, uint8_t* data, int async, void *req, int dmaTag)
 //int memio_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, int async, int dmaTag, void (*end_req)(void) )
 {
 	//bdbm_msg ("memio_write: %zd, %zd", lba, len);
@@ -378,7 +416,7 @@ int memio_comp_write (memio_t* mio, uint64_t lba, uint64_t len, uint8_t* data, i
 	//return __memio_do_io (mio, 1, lba, len, data, async, dmaTag, end_req);
 }
 
-int memio_trim (memio_t* mio, uint64_t lba, uint64_t len)
+int memio_trim (memio_t* mio, uint32_t lba, uint64_t len)
 {
 	bdbm_llm_req_t* r = NULL;
 	bdbm_dm_inf_t* dm = mio->bdi.ptr_dm_inf;
@@ -476,7 +514,9 @@ int memio_alloc_dma (int type, char** buf) {
 		break;
 	case 3:
 	case 4:
+		*buf  = (char*)(srcBuffer + byteOffset/sizeof(unsigned int));
 	case 5:
+		*buf  = (char*)(dstBuffer + byteOffset/sizeof(unsigned int));
 		break;
 	}
 //	printf("buf pointer : %p\n", *buf);
