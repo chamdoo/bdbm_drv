@@ -1,10 +1,10 @@
 
 include $(CLEAR_VARS)
-DTOP?=/home/cwchung/workspace/nohost2/projects/zcu_amf_8192/zcu102
+DTOP?=/home/cwchung/workspace/nohost2/projects/zcu_flash2.3/zcu102
 CONNECTALDIR?=/home/cwchung/workspace/nohost2/tools/connectal
 LOCAL_ARM_MODE := arm
 include $(CONNECTALDIR)/scripts/Makefile.connectal.application
-LOCAL_SRC_FILES := /home/cwchung/workspace/nohost2/projects/zcu_amf_8192/main_example.cpp /home/cwchung/workspace/nohost2/tools/connectal/cpp/dmaManager.c /home/cwchung/workspace/nohost2/tools/connectal/cpp/platformMemory.cpp $(PORTAL_SRC_FILES)
+LOCAL_SRC_FILES := /home/cwchung/workspace/nohost2/projects/zcu_flash2.3/main.cpp /home/cwchung/workspace/nohost2/tools/connectal/cpp/dmaManager.c /home/cwchung/workspace/nohost2/tools/connectal/cpp/platformMemory.cpp $(PORTAL_SRC_FILES)
 
 LOCAL_PATH :=
 LOCAL_MODULE := android.exe

@@ -2,24 +2,22 @@
 #ifdef PORTAL_JSON
 #include "jsoncpp/json/json.h"
 
-int FlashIndicationJson_readDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status )
+int FlashIndicationJson_readDone ( struct PortalInternal *p, const uint32_t tag )
 {
     Json::Value request;
     request.append(Json::Value("readDone"));
     request.append((Json::UInt64)tag);
-    request.append((Json::UInt64)status);
 
     std::string requestjson = Json::FastWriter().write(request);;
     connectalJsonSend(p, requestjson.c_str(), (int)CHAN_NUM_FlashIndication_readDone);
     return 0;
 };
 
-int FlashIndicationJson_writeDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status )
+int FlashIndicationJson_writeDone ( struct PortalInternal *p, const uint32_t tag )
 {
     Json::Value request;
     request.append(Json::Value("writeDone"));
     request.append((Json::UInt64)tag);
-    request.append((Json::UInt64)status);
 
     std::string requestjson = Json::FastWriter().write(request);;
     connectalJsonSend(p, requestjson.c_str(), (int)CHAN_NUM_FlashIndication_writeDone);
@@ -35,28 +33,6 @@ int FlashIndicationJson_eraseDone ( struct PortalInternal *p, const uint32_t tag
 
     std::string requestjson = Json::FastWriter().write(request);;
     connectalJsonSend(p, requestjson.c_str(), (int)CHAN_NUM_FlashIndication_eraseDone);
-    return 0;
-};
-
-int FlashIndicationJson_uploadDone ( struct PortalInternal *p )
-{
-    Json::Value request;
-    request.append(Json::Value("uploadDone"));
-    
-
-    std::string requestjson = Json::FastWriter().write(request);;
-    connectalJsonSend(p, requestjson.c_str(), (int)CHAN_NUM_FlashIndication_uploadDone);
-    return 0;
-};
-
-int FlashIndicationJson_downloadDone ( struct PortalInternal *p )
-{
-    Json::Value request;
-    request.append(Json::Value("downloadDone"));
-    
-
-    std::string requestjson = Json::FastWriter().write(request);;
-    connectalJsonSend(p, requestjson.c_str(), (int)CHAN_NUM_FlashIndication_downloadDone);
     return 0;
 };
 
@@ -81,14 +57,12 @@ FlashIndicationCb FlashIndicationJsonProxyReq = {
     FlashIndicationJson_readDone,
     FlashIndicationJson_writeDone,
     FlashIndicationJson_eraseDone,
-    FlashIndicationJson_uploadDone,
-    FlashIndicationJson_downloadDone,
     FlashIndicationJson_debugDumpResp,
 };
 FlashIndicationCb *pFlashIndicationJsonProxyReq = &FlashIndicationJsonProxyReq;
 const char * FlashIndicationJson_methodSignatures()
 {
-    return "{\"readDone\": [\"long\", \"long\"], \"uploadDone\": [], \"eraseDone\": [\"long\", \"long\"], \"debugDumpResp\": [\"long\", \"long\", \"long\", \"long\", \"long\", \"long\"], \"downloadDone\": [], \"writeDone\": [\"long\", \"long\"]}";
+    return "{\"writeDone\": [\"long\"], \"debugDumpResp\": [\"long\", \"long\", \"long\", \"long\", \"long\", \"long\"], \"readDone\": [\"long\"], \"eraseDone\": [\"long\", \"long\"]}";
 }
 
 int FlashIndicationJson_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd)
@@ -102,23 +76,15 @@ int FlashIndicationJson_handleMessage(struct PortalInternal *p, unsigned int cha
     switch (channel) {
     case CHAN_NUM_FlashIndication_readDone: {
         
-        ((FlashIndicationCb *)p->cb)->readDone(p, tempdata.readDone.tag, tempdata.readDone.status);
+        ((FlashIndicationCb *)p->cb)->readDone(p, tempdata.readDone.tag);
       } break;
     case CHAN_NUM_FlashIndication_writeDone: {
         
-        ((FlashIndicationCb *)p->cb)->writeDone(p, tempdata.writeDone.tag, tempdata.writeDone.status);
+        ((FlashIndicationCb *)p->cb)->writeDone(p, tempdata.writeDone.tag);
       } break;
     case CHAN_NUM_FlashIndication_eraseDone: {
         
         ((FlashIndicationCb *)p->cb)->eraseDone(p, tempdata.eraseDone.tag, tempdata.eraseDone.status);
-      } break;
-    case CHAN_NUM_FlashIndication_uploadDone: {
-        
-        ((FlashIndicationCb *)p->cb)->uploadDone(p);
-      } break;
-    case CHAN_NUM_FlashIndication_downloadDone: {
-        
-        ((FlashIndicationCb *)p->cb)->downloadDone(p);
       } break;
     case CHAN_NUM_FlashIndication_debugDumpResp: {
         

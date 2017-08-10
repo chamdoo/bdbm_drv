@@ -2,11 +2,11 @@
 #define _ConnectalProjectConfig_h
 
 #define DataBusWidth 128
-#define NumReadClients 9
-#define NumWriteClients 9
+#define NumReadClients 4
+#define NumWriteClients 4
 #define IMPORT_HOST_CLOCKS ""
 #define ConnectalVersion "17.01.2"
-#define NumberOfMasters 1
+#define NumberOfMasters 4
 #define PinType "Top_Pins"
 #define PinTypeInclude "Top_Pins"
 #define NumberOfUserTiles 1
@@ -15,7 +15,7 @@
 #define BurstLenSize 10
 #define project_dir "$(DTOP)"
 #define MainClockPeriod 5
-#define DerivedClockPeriod 5.000000
+#define DerivedClockPeriod 9.091000
 #define XILINX 1
 #define ZYNQ ""
 #define ZynqUltrascale ""

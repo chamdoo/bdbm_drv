@@ -209,33 +209,38 @@ int MMUIndicationJson_error ( struct PortalInternal *p, const uint32_t code, con
 int MMUIndicationJson_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd);
 extern MMUIndicationCb MMUIndicationJsonProxyReq;
 
-int FlashRequest_readPage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-int FlashRequest_writePage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-int FlashRequest_eraseBlock ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa );
+int FlashRequest_readPage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+int FlashRequest_writePage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+int FlashRequest_eraseBlock ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag );
 int FlashRequest_setDmaReadRef ( struct PortalInternal *p, const uint32_t sgId );
 int FlashRequest_setDmaWriteRef ( struct PortalInternal *p, const uint32_t sgId );
-int FlashRequest_setDmaMapRef ( struct PortalInternal *p, const uint32_t sgId );
-int FlashRequest_downloadMap ( struct PortalInternal *p );
-int FlashRequest_uploadMap ( struct PortalInternal *p );
 int FlashRequest_start ( struct PortalInternal *p, const uint32_t dummy );
 int FlashRequest_debugDumpReq ( struct PortalInternal *p, const uint32_t dummy );
 int FlashRequest_setDebugVals ( struct PortalInternal *p, const uint32_t flag, const uint32_t debugDelay );
-enum { CHAN_NUM_FlashRequest_readPage,CHAN_NUM_FlashRequest_writePage,CHAN_NUM_FlashRequest_eraseBlock,CHAN_NUM_FlashRequest_setDmaReadRef,CHAN_NUM_FlashRequest_setDmaWriteRef,CHAN_NUM_FlashRequest_setDmaMapRef,CHAN_NUM_FlashRequest_downloadMap,CHAN_NUM_FlashRequest_uploadMap,CHAN_NUM_FlashRequest_start,CHAN_NUM_FlashRequest_debugDumpReq,CHAN_NUM_FlashRequest_setDebugVals};
+enum { CHAN_NUM_FlashRequest_readPage,CHAN_NUM_FlashRequest_writePage,CHAN_NUM_FlashRequest_eraseBlock,CHAN_NUM_FlashRequest_setDmaReadRef,CHAN_NUM_FlashRequest_setDmaWriteRef,CHAN_NUM_FlashRequest_start,CHAN_NUM_FlashRequest_debugDumpReq,CHAN_NUM_FlashRequest_setDebugVals};
 extern const uint32_t FlashRequest_reqinfo;
 
 typedef struct {
+    uint32_t bus;
+    uint32_t chip;
+    uint32_t block;
+    uint32_t page;
     uint32_t tag;
-    uint32_t lpa;
     uint32_t offset;
 } FlashRequest_readPageData;
 typedef struct {
+    uint32_t bus;
+    uint32_t chip;
+    uint32_t block;
+    uint32_t page;
     uint32_t tag;
-    uint32_t lpa;
     uint32_t offset;
 } FlashRequest_writePageData;
 typedef struct {
+    uint32_t bus;
+    uint32_t chip;
+    uint32_t block;
     uint32_t tag;
-    uint32_t lpa;
 } FlashRequest_eraseBlockData;
 typedef struct {
     uint32_t sgId;
@@ -243,17 +248,6 @@ typedef struct {
 typedef struct {
     uint32_t sgId;
 } FlashRequest_setDmaWriteRefData;
-typedef struct {
-    uint32_t sgId;
-} FlashRequest_setDmaMapRefData;
-typedef struct {
-        int padding;
-
-} FlashRequest_downloadMapData;
-typedef struct {
-        int padding;
-
-} FlashRequest_uploadMapData;
 typedef struct {
     uint32_t dummy;
 } FlashRequest_startData;
@@ -270,9 +264,6 @@ typedef union {
     FlashRequest_eraseBlockData eraseBlock;
     FlashRequest_setDmaReadRefData setDmaReadRef;
     FlashRequest_setDmaWriteRefData setDmaWriteRef;
-    FlashRequest_setDmaMapRefData setDmaMapRef;
-    FlashRequest_downloadMapData downloadMap;
-    FlashRequest_uploadMapData uploadMap;
     FlashRequest_startData start;
     FlashRequest_debugDumpReqData debugDumpReq;
     FlashRequest_setDebugValsData setDebugVals;
@@ -280,63 +271,45 @@ typedef union {
 int FlashRequest_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd);
 typedef struct {
     PORTAL_DISCONNECT disconnect;
-    int (*readPage) (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-    int (*writePage) (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-    int (*eraseBlock) (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa );
+    int (*readPage) (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+    int (*writePage) (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+    int (*eraseBlock) (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag );
     int (*setDmaReadRef) (  struct PortalInternal *p, const uint32_t sgId );
     int (*setDmaWriteRef) (  struct PortalInternal *p, const uint32_t sgId );
-    int (*setDmaMapRef) (  struct PortalInternal *p, const uint32_t sgId );
-    int (*downloadMap) (  struct PortalInternal *p );
-    int (*uploadMap) (  struct PortalInternal *p );
     int (*start) (  struct PortalInternal *p, const uint32_t dummy );
     int (*debugDumpReq) (  struct PortalInternal *p, const uint32_t dummy );
     int (*setDebugVals) (  struct PortalInternal *p, const uint32_t flag, const uint32_t debugDelay );
 } FlashRequestCb;
 extern FlashRequestCb FlashRequestProxyReq;
 
-int FlashRequestJson_readPage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-int FlashRequestJson_writePage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset );
-int FlashRequestJson_eraseBlock ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa );
+int FlashRequestJson_readPage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+int FlashRequestJson_writePage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset );
+int FlashRequestJson_eraseBlock ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag );
 int FlashRequestJson_setDmaReadRef ( struct PortalInternal *p, const uint32_t sgId );
 int FlashRequestJson_setDmaWriteRef ( struct PortalInternal *p, const uint32_t sgId );
-int FlashRequestJson_setDmaMapRef ( struct PortalInternal *p, const uint32_t sgId );
-int FlashRequestJson_downloadMap ( struct PortalInternal *p );
-int FlashRequestJson_uploadMap ( struct PortalInternal *p );
 int FlashRequestJson_start ( struct PortalInternal *p, const uint32_t dummy );
 int FlashRequestJson_debugDumpReq ( struct PortalInternal *p, const uint32_t dummy );
 int FlashRequestJson_setDebugVals ( struct PortalInternal *p, const uint32_t flag, const uint32_t debugDelay );
 int FlashRequestJson_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd);
 extern FlashRequestCb FlashRequestJsonProxyReq;
 
-int FlashIndication_readDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-int FlashIndication_writeDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
+int FlashIndication_readDone ( struct PortalInternal *p, const uint32_t tag );
+int FlashIndication_writeDone ( struct PortalInternal *p, const uint32_t tag );
 int FlashIndication_eraseDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-int FlashIndication_uploadDone ( struct PortalInternal *p );
-int FlashIndication_downloadDone ( struct PortalInternal *p );
 int FlashIndication_debugDumpResp ( struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 );
-enum { CHAN_NUM_FlashIndication_readDone,CHAN_NUM_FlashIndication_writeDone,CHAN_NUM_FlashIndication_eraseDone,CHAN_NUM_FlashIndication_uploadDone,CHAN_NUM_FlashIndication_downloadDone,CHAN_NUM_FlashIndication_debugDumpResp};
+enum { CHAN_NUM_FlashIndication_readDone,CHAN_NUM_FlashIndication_writeDone,CHAN_NUM_FlashIndication_eraseDone,CHAN_NUM_FlashIndication_debugDumpResp};
 extern const uint32_t FlashIndication_reqinfo;
 
 typedef struct {
     uint32_t tag;
-    uint32_t status;
 } FlashIndication_readDoneData;
 typedef struct {
     uint32_t tag;
-    uint32_t status;
 } FlashIndication_writeDoneData;
 typedef struct {
     uint32_t tag;
     uint32_t status;
 } FlashIndication_eraseDoneData;
-typedef struct {
-        int padding;
-
-} FlashIndication_uploadDoneData;
-typedef struct {
-        int padding;
-
-} FlashIndication_downloadDoneData;
 typedef struct {
     uint32_t debug0;
     uint32_t debug1;
@@ -349,27 +322,21 @@ typedef union {
     FlashIndication_readDoneData readDone;
     FlashIndication_writeDoneData writeDone;
     FlashIndication_eraseDoneData eraseDone;
-    FlashIndication_uploadDoneData uploadDone;
-    FlashIndication_downloadDoneData downloadDone;
     FlashIndication_debugDumpRespData debugDumpResp;
 } FlashIndicationData;
 int FlashIndication_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd);
 typedef struct {
     PORTAL_DISCONNECT disconnect;
-    int (*readDone) (  struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-    int (*writeDone) (  struct PortalInternal *p, const uint32_t tag, const uint32_t status );
+    int (*readDone) (  struct PortalInternal *p, const uint32_t tag );
+    int (*writeDone) (  struct PortalInternal *p, const uint32_t tag );
     int (*eraseDone) (  struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-    int (*uploadDone) (  struct PortalInternal *p );
-    int (*downloadDone) (  struct PortalInternal *p );
     int (*debugDumpResp) (  struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 );
 } FlashIndicationCb;
 extern FlashIndicationCb FlashIndicationProxyReq;
 
-int FlashIndicationJson_readDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-int FlashIndicationJson_writeDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
+int FlashIndicationJson_readDone ( struct PortalInternal *p, const uint32_t tag );
+int FlashIndicationJson_writeDone ( struct PortalInternal *p, const uint32_t tag );
 int FlashIndicationJson_eraseDone ( struct PortalInternal *p, const uint32_t tag, const uint32_t status );
-int FlashIndicationJson_uploadDone ( struct PortalInternal *p );
-int FlashIndicationJson_downloadDone ( struct PortalInternal *p );
 int FlashIndicationJson_debugDumpResp ( struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 );
 int FlashIndicationJson_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd);
 extern FlashIndicationCb FlashIndicationJsonProxyReq;

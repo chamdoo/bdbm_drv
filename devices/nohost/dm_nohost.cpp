@@ -158,8 +158,9 @@ class FlashIndication: public FlashIndicationWrapper {
 	public:
 		FlashIndication (unsigned int id) : FlashIndicationWrapper (id) { }
 
-		virtual void readDone (unsigned int tag, unsigned int status) {
-			//printf ("LOG: readdone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
+		virtual void readDone (unsigned int tag){ //, unsigned int status) {
+			int status = 0;
+			//printf ("LOG: readdone: tag=%d status=%d\n", tag, status); fflush (stdout);
 			//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
@@ -169,8 +170,9 @@ class FlashIndication: public FlashIndicationWrapper {
 			dm_nohost_end_req (_bdi_dm, r);
 		}
 
-		virtual void writeDone (unsigned int tag, unsigned int status) {
-			//printf ("LOG: writedone: tag=%d/%d status=%d\n", tag, r->tag, status); fflush (stdout);
+		virtual void writeDone (unsigned int tag){ //, unsigned int status) {
+			int status = 0;
+			//printf ("LOG: writedone: tag=%d status=%d\n", tag, status); fflush (stdout);
 			//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
@@ -180,7 +182,7 @@ class FlashIndication: public FlashIndicationWrapper {
 		}
 
 		virtual void eraseDone (unsigned int tag, unsigned int status) {
-			//printf ("LOG: eraseDone, tag=%d/%d, status=%d\n", tag, r->tag, status); fflush(stdout);
+			//printf ("LOG: eraseDone, tag=%d, status=%d\n", tag, status); fflush(stdout);
 			//			bdbm_sema_lock (&global_lock);
 			bdbm_llm_req_t* r = _priv->llm_reqs[tag];
 			_priv->llm_reqs[tag] = NULL;
@@ -193,15 +195,15 @@ class FlashIndication: public FlashIndicationWrapper {
 			fprintf(stderr, "LOG: DEBUG DUMP: gearSend = %d, gearRec = %d, aurSend = %d, aurRec = %d, readSend=%d, writeSend=%d\n", debug0, debug1, debug2, debug3, debug4, debug5);
 		}
 
-		virtual void uploadDone () {
-			bdbm_msg ("[dm_nohost_probe] Map Upload(Host->FPGA) done!\n");
-			bdbm_sema_unlock (&ftl_table_lock);
-		}
-
-		virtual void downloadDone () {
-			bdbm_msg ("[dm_nohost_close] Map Download(FPGA->Host) done!\n");
-			bdbm_sema_unlock (&ftl_table_lock);
-		}
+//		virtual void uploadDone () {
+//			bdbm_msg ("[dm_nohost_probe] Map Upload(Host->FPGA) done!\n");
+//			bdbm_sema_unlock (&ftl_table_lock);
+//		}
+//
+//		virtual void downloadDone () {
+//			bdbm_msg ("[dm_nohost_close] Map Download(FPGA->Host) done!\n");
+//			bdbm_sema_unlock (&ftl_table_lock);
+//		}
 };
 
 int __readFTLfromFile (const char* path, void* ptr) {
@@ -297,7 +299,7 @@ uint32_t __dm_nohost_init_device (
 
 	device->setDmaWriteRef(ref_dstAlloc);
 	device->setDmaReadRef(ref_srcAlloc);
-	device->setDmaMapRef(ref_blkmapAlloc);
+//	device->setDmaMapRef(ref_blkmapAlloc);
 
 	for (int t = 0; t < NUM_TAGS; t++) {
 		readTagTable[t].busy = false;
@@ -382,16 +384,16 @@ uint32_t dm_nohost_probe (
 
 	bdbm_msg ("[dm_nohost_probe] PROBE DONE!");
 
-	if (__readFTLfromFile ("table.dump.0", ftlPtr) == 0) { //if exists, read from table.dump.0
-		bdbm_msg ("[dm_nohost_probe] MAP Upload to HW!" ); 
-		fflush(stdout);
-		device->uploadMap();
-		bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
-	} else {
-		bdbm_msg ("[dm_nohost_probe] MAP file not found" ); 
-		fflush(stdout);
-		goto fail;
-	}
+//	if (__readFTLfromFile ("table.dump.0", ftlPtr) == 0) { //if exists, read from table.dump.0
+//		bdbm_msg ("[dm_nohost_probe] MAP Upload to HW!" ); 
+//		fflush(stdout);
+//		device->uploadMap();
+//		bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
+//	} else {
+//		bdbm_msg ("[dm_nohost_probe] MAP file not found" ); 
+//		fflush(stdout);
+//		goto fail;
+//	}
 
 	//koo
 	if ( (writeDmaQ = new std::queue<int> ) == NULL ) {
@@ -433,17 +435,17 @@ void dm_nohost_close (bdbm_drv_info_t* bdi)
 
 	/* before closing, dump the table to table.dump.0 */
 	bdbm_msg ("[dm_nohost_close] MAP Download from HW!" ); 
-	device->downloadMap();
-	bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
-
-	if(__writeFTLtoFile ("table.dump.0", ftlPtr) == 0) {
-		bdbm_msg("[dm_nohost_close] MAP successfully dumped to table.dump.0!");
-		fflush(stdout);
-	} else {
-		bdbm_msg("[dm_nohost_close] Error dumping FTL map to table.dump.0!");
-		fflush(stdout);
-	}
-
+//	device->downloadMap();
+//	bdbm_sema_lock (&ftl_table_lock); // wait until Ack comes
+//
+//	if(__writeFTLtoFile ("table.dump.0", ftlPtr) == 0) {
+//		bdbm_msg("[dm_nohost_close] MAP successfully dumped to table.dump.0!");
+//		fflush(stdout);
+//	} else {
+//		bdbm_msg("[dm_nohost_close] Error dumping FTL map to table.dump.0!");
+//		fflush(stdout);
+//	}
+//
 	bdbm_msg ("[dm_nohost_close] closed!");
 
 	bdbm_free (p);
@@ -497,13 +499,20 @@ uint32_t dm_nohost_make_req (
 	//pthread_mutex_lock(&endR);
 	//printf("lock!!\n");
 	lsmtree_req_t * t;
+	uint32_t bus, chip, block, page;
 	switch (r->req_type) {
 		case REQTYPE_WRITE:
 		case REQTYPE_RMW_WRITE:
 		case REQTYPE_GC_WRITE:
 			// koo
 			//pthread_mutex_lock(&endR);
-			device->writePage (r->tag, r->logaddr.lpa[0], r->dmaTag * FPAGE_SIZE);
+			//printf ("LOG: device->writePage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+			//device->writePage (r->tag, r->logaddr.lpa[0], r->dmaTag * FPAGE_SIZE);
+			bus  = r->logaddr.lpa[0] & 0x7;
+			chip = (r->logaddr.lpa[0] >> 3) & 0x7;
+			page = (r->logaddr.lpa[0] >> 6) & 0xFF;
+			block = (r->logaddr.lpa[0] >> 14);
+			device->writePage(bus, chip, block, page, r->tag, r->dmaTag * FPAGE_SIZE);
 			//pthread_mutex_unlock(&endR);
 			//
 			break;
@@ -511,7 +520,13 @@ uint32_t dm_nohost_make_req (
 		case REQTYPE_META_WRITE:
 			//printf ("LOG: device->writePage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
 			bdbm_memcpy (writeBuffers[r->tag], r->fmain.kp_ptr[0], 8192);
-			device->writePage (r->tag, r->logaddr.lpa[0], (DMASIZE - NUM_TAGS + r->tag) * FPAGE_SIZE);
+			//device->writePage (r->tag, r->logaddr.lpa[0], (DMASIZE - NUM_TAGS + r->tag) * FPAGE_SIZE);
+
+			bus  = r->logaddr.lpa[0] & 0x7;
+			chip = (r->logaddr.lpa[0] >> 3) & 0x7;
+			page = (r->logaddr.lpa[0] >> 6) & 0xFF;
+			block = (r->logaddr.lpa[0] >> 14);
+			device->writePage(bus, chip, block, page, r->tag, r->dmaTag * FPAGE_SIZE);
 			//printf ("WRITE-LOG: %c %c\n", r->fmain.kp_ptr[0][0], r->fmain.kp_ptr[0][8191]); fflush(stdout);
 			break;
 
@@ -519,16 +534,35 @@ uint32_t dm_nohost_make_req (
 		case REQTYPE_READ_DUMMY:
 		case REQTYPE_RMW_READ:
 		case REQTYPE_GC_READ:
-			device->readPage (r->tag, r->logaddr.lpa[0], r->dmaTag * FPAGE_SIZE);
+			//printf ("LOG: device->readPage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+			//device->readPage (r->tag, r->logaddr.lpa[0], r->dmaTag * FPAGE_SIZE);
+
+			bus  = r->logaddr.lpa[0] & 0x7;
+			chip = (r->logaddr.lpa[0] >> 3) & 0x7;
+			page = (r->logaddr.lpa[0] >> 6) & 0xFF;
+			block = (r->logaddr.lpa[0] >> 14);
+			device->readPage(bus, chip, block, page, r->tag, r->dmaTag * FPAGE_SIZE);
 			break;
+
 		case REQTYPE_META_READ:
 			//printf ("LOG: device->readPage, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
-			device->readPage (r->tag, r->logaddr.lpa[0], (DMASIZE - NUM_TAGS + r->tag) * FPAGE_SIZE);
+			//device->readPage (r->tag, r->logaddr.lpa[0], (DMASIZE - NUM_TAGS + r->tag) * FPAGE_SIZE);
+
+			bus  = r->logaddr.lpa[0] & 0x7;
+			chip = (r->logaddr.lpa[0] >> 3) & 0x7;
+			page = (r->logaddr.lpa[0] >> 6) & 0xFF;
+			block = (r->logaddr.lpa[0] >> 14);
+			device->readPage(bus, chip, block, page, r->tag, r->dmaTag * FPAGE_SIZE);
 			break;
 
 		case REQTYPE_GC_ERASE:
-			//printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
-			device->eraseBlock (r->tag, r->logaddr.lpa[0]);
+			printf ("LOG: device->eraseBlock, tag=%d lpa=%d\n", r->tag, r->logaddr.lpa[0]); fflush(stdout);
+			//device->eraseBlock (r->tag, r->logaddr.lpa[0]);
+			bus  = r->logaddr.lpa[0] & 0x7;
+			chip = (r->logaddr.lpa[0] >> 3) & 0x7;
+			//page = (r->logaddr.lpa[0] >> 6) & 0xFF;
+			block = (r->logaddr.lpa[0] >> 14);
+			device->eraseBlock(bus, chip, block, r->tag);
 			break;
 
 		default:

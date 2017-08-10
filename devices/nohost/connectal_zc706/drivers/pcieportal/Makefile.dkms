@@ -1,3 +1,0 @@
-obj-m += pcieportal.o
-obj-m += portalmem.o
-EXTRA_CFLAGS = -DDRIVER_VERSION="KBUILD_STR(@VERSION@)"

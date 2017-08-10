@@ -1,37 +1,45 @@
 #include "GeneratedTypes.h"
 
-int FlashRequest_readPage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset )
+int FlashRequest_readPage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset )
 {
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_readPage, 4);
+    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_readPage, 7);
     volatile unsigned int* temp_working_addr = temp_working_addr_start;
     if (p->transport->busywait(p, CHAN_NUM_FlashRequest_readPage, "FlashRequest_readPage")) return 1;
+    p->transport->write(p, &temp_working_addr, bus);
+    p->transport->write(p, &temp_working_addr, chip);
+    p->transport->write(p, &temp_working_addr, block);
+    p->transport->write(p, &temp_working_addr, page);
     p->transport->write(p, &temp_working_addr, tag);
-    p->transport->write(p, &temp_working_addr, lpa);
     p->transport->write(p, &temp_working_addr, offset);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_readPage << 16) | 4, -1);
+    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_readPage << 16) | 7, -1);
     return 0;
 };
 
-int FlashRequest_writePage ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset )
+int FlashRequest_writePage ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset )
 {
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_writePage, 4);
+    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_writePage, 7);
     volatile unsigned int* temp_working_addr = temp_working_addr_start;
     if (p->transport->busywait(p, CHAN_NUM_FlashRequest_writePage, "FlashRequest_writePage")) return 1;
+    p->transport->write(p, &temp_working_addr, bus);
+    p->transport->write(p, &temp_working_addr, chip);
+    p->transport->write(p, &temp_working_addr, block);
+    p->transport->write(p, &temp_working_addr, page);
     p->transport->write(p, &temp_working_addr, tag);
-    p->transport->write(p, &temp_working_addr, lpa);
     p->transport->write(p, &temp_working_addr, offset);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_writePage << 16) | 4, -1);
+    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_writePage << 16) | 7, -1);
     return 0;
 };
 
-int FlashRequest_eraseBlock ( struct PortalInternal *p, const uint32_t tag, const uint32_t lpa )
+int FlashRequest_eraseBlock ( struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag )
 {
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_eraseBlock, 3);
+    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_eraseBlock, 5);
     volatile unsigned int* temp_working_addr = temp_working_addr_start;
     if (p->transport->busywait(p, CHAN_NUM_FlashRequest_eraseBlock, "FlashRequest_eraseBlock")) return 1;
+    p->transport->write(p, &temp_working_addr, bus);
+    p->transport->write(p, &temp_working_addr, chip);
+    p->transport->write(p, &temp_working_addr, block);
     p->transport->write(p, &temp_working_addr, tag);
-    p->transport->write(p, &temp_working_addr, lpa);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_eraseBlock << 16) | 3, -1);
+    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_eraseBlock << 16) | 5, -1);
     return 0;
 };
 
@@ -52,36 +60,6 @@ int FlashRequest_setDmaWriteRef ( struct PortalInternal *p, const uint32_t sgId 
     if (p->transport->busywait(p, CHAN_NUM_FlashRequest_setDmaWriteRef, "FlashRequest_setDmaWriteRef")) return 1;
     p->transport->write(p, &temp_working_addr, sgId);
     p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_setDmaWriteRef << 16) | 2, -1);
-    return 0;
-};
-
-int FlashRequest_setDmaMapRef ( struct PortalInternal *p, const uint32_t sgId )
-{
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_setDmaMapRef, 2);
-    volatile unsigned int* temp_working_addr = temp_working_addr_start;
-    if (p->transport->busywait(p, CHAN_NUM_FlashRequest_setDmaMapRef, "FlashRequest_setDmaMapRef")) return 1;
-    p->transport->write(p, &temp_working_addr, sgId);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_setDmaMapRef << 16) | 2, -1);
-    return 0;
-};
-
-int FlashRequest_downloadMap ( struct PortalInternal *p )
-{
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_downloadMap, 1);
-    volatile unsigned int* temp_working_addr = temp_working_addr_start;
-    if (p->transport->busywait(p, CHAN_NUM_FlashRequest_downloadMap, "FlashRequest_downloadMap")) return 1;
-    p->transport->write(p, &temp_working_addr, 0);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_downloadMap << 16) | 1, -1);
-    return 0;
-};
-
-int FlashRequest_uploadMap ( struct PortalInternal *p )
-{
-    volatile unsigned int* temp_working_addr_start = p->transport->mapchannelReq(p, CHAN_NUM_FlashRequest_uploadMap, 1);
-    volatile unsigned int* temp_working_addr = temp_working_addr_start;
-    if (p->transport->busywait(p, CHAN_NUM_FlashRequest_uploadMap, "FlashRequest_uploadMap")) return 1;
-    p->transport->write(p, &temp_working_addr, 0);
-    p->transport->send(p, temp_working_addr_start, (CHAN_NUM_FlashRequest_uploadMap << 16) | 1, -1);
     return 0;
 };
 
@@ -123,19 +101,16 @@ FlashRequestCb FlashRequestProxyReq = {
     FlashRequest_eraseBlock,
     FlashRequest_setDmaReadRef,
     FlashRequest_setDmaWriteRef,
-    FlashRequest_setDmaMapRef,
-    FlashRequest_downloadMap,
-    FlashRequest_uploadMap,
     FlashRequest_start,
     FlashRequest_debugDumpReq,
     FlashRequest_setDebugVals,
 };
 FlashRequestCb *pFlashRequestProxyReq = &FlashRequestProxyReq;
 
-const uint32_t FlashRequest_reqinfo = 0xb0010;
+const uint32_t FlashRequest_reqinfo = 0x8001c;
 const char * FlashRequest_methodSignatures()
 {
-    return "{\"setDebugVals\": [\"long\", \"long\"], \"setDmaMapRef\": [\"long\"], \"writePage\": [\"long\", \"long\", \"long\"], \"eraseBlock\": [\"long\", \"long\"], \"debugDumpReq\": [\"long\"], \"setDmaWriteRef\": [\"long\"], \"start\": [\"long\"], \"uploadMap\": [], \"setDmaReadRef\": [\"long\"], \"downloadMap\": [], \"readPage\": [\"long\", \"long\", \"long\"]}";
+    return "{\"setDebugVals\": [\"long\", \"long\"], \"writePage\": [\"long\", \"long\", \"long\", \"long\", \"long\", \"long\"], \"eraseBlock\": [\"long\", \"long\", \"long\", \"long\"], \"debugDumpReq\": [\"long\"], \"setDmaWriteRef\": [\"long\"], \"start\": [\"long\"], \"setDmaReadRef\": [\"long\"], \"readPage\": [\"long\", \"long\", \"long\", \"long\", \"long\", \"long\"]}";
 }
 
 int FlashRequest_handleMessage(struct PortalInternal *p, unsigned int channel, int messageFd)
@@ -149,34 +124,50 @@ int FlashRequest_handleMessage(struct PortalInternal *p, unsigned int channel, i
     switch (channel) {
     case CHAN_NUM_FlashRequest_readPage: {
         
-        p->transport->recv(p, temp_working_addr, 3, &tmpfd);
+        p->transport->recv(p, temp_working_addr, 6, &tmpfd);
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.readPage.bus = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.readPage.chip = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.readPage.block = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.readPage.page = (uint32_t)(((tmp)&0xfffffffful));
         tmp = p->transport->read(p, &temp_working_addr);
         tempdata.readPage.tag = (uint32_t)(((tmp)&0xfffffffful));
         tmp = p->transport->read(p, &temp_working_addr);
-        tempdata.readPage.lpa = (uint32_t)(((tmp)&0xfffffffful));
-        tmp = p->transport->read(p, &temp_working_addr);
         tempdata.readPage.offset = (uint32_t)(((tmp)&0xfffffffful));
-        ((FlashRequestCb *)p->cb)->readPage(p, tempdata.readPage.tag, tempdata.readPage.lpa, tempdata.readPage.offset);
+        ((FlashRequestCb *)p->cb)->readPage(p, tempdata.readPage.bus, tempdata.readPage.chip, tempdata.readPage.block, tempdata.readPage.page, tempdata.readPage.tag, tempdata.readPage.offset);
       } break;
     case CHAN_NUM_FlashRequest_writePage: {
         
-        p->transport->recv(p, temp_working_addr, 3, &tmpfd);
+        p->transport->recv(p, temp_working_addr, 6, &tmpfd);
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.writePage.bus = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.writePage.chip = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.writePage.block = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.writePage.page = (uint32_t)(((tmp)&0xfffffffful));
         tmp = p->transport->read(p, &temp_working_addr);
         tempdata.writePage.tag = (uint32_t)(((tmp)&0xfffffffful));
         tmp = p->transport->read(p, &temp_working_addr);
-        tempdata.writePage.lpa = (uint32_t)(((tmp)&0xfffffffful));
-        tmp = p->transport->read(p, &temp_working_addr);
         tempdata.writePage.offset = (uint32_t)(((tmp)&0xfffffffful));
-        ((FlashRequestCb *)p->cb)->writePage(p, tempdata.writePage.tag, tempdata.writePage.lpa, tempdata.writePage.offset);
+        ((FlashRequestCb *)p->cb)->writePage(p, tempdata.writePage.bus, tempdata.writePage.chip, tempdata.writePage.block, tempdata.writePage.page, tempdata.writePage.tag, tempdata.writePage.offset);
       } break;
     case CHAN_NUM_FlashRequest_eraseBlock: {
         
-        p->transport->recv(p, temp_working_addr, 2, &tmpfd);
+        p->transport->recv(p, temp_working_addr, 4, &tmpfd);
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.eraseBlock.bus = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.eraseBlock.chip = (uint32_t)(((tmp)&0xfffffffful));
+        tmp = p->transport->read(p, &temp_working_addr);
+        tempdata.eraseBlock.block = (uint32_t)(((tmp)&0xfffffffful));
         tmp = p->transport->read(p, &temp_working_addr);
         tempdata.eraseBlock.tag = (uint32_t)(((tmp)&0xfffffffful));
-        tmp = p->transport->read(p, &temp_working_addr);
-        tempdata.eraseBlock.lpa = (uint32_t)(((tmp)&0xfffffffful));
-        ((FlashRequestCb *)p->cb)->eraseBlock(p, tempdata.eraseBlock.tag, tempdata.eraseBlock.lpa);
+        ((FlashRequestCb *)p->cb)->eraseBlock(p, tempdata.eraseBlock.bus, tempdata.eraseBlock.chip, tempdata.eraseBlock.block, tempdata.eraseBlock.tag);
       } break;
     case CHAN_NUM_FlashRequest_setDmaReadRef: {
         
@@ -191,25 +182,6 @@ int FlashRequest_handleMessage(struct PortalInternal *p, unsigned int channel, i
         tmp = p->transport->read(p, &temp_working_addr);
         tempdata.setDmaWriteRef.sgId = (uint32_t)(((tmp)&0xfffffffful));
         ((FlashRequestCb *)p->cb)->setDmaWriteRef(p, tempdata.setDmaWriteRef.sgId);
-      } break;
-    case CHAN_NUM_FlashRequest_setDmaMapRef: {
-        
-        p->transport->recv(p, temp_working_addr, 1, &tmpfd);
-        tmp = p->transport->read(p, &temp_working_addr);
-        tempdata.setDmaMapRef.sgId = (uint32_t)(((tmp)&0xfffffffful));
-        ((FlashRequestCb *)p->cb)->setDmaMapRef(p, tempdata.setDmaMapRef.sgId);
-      } break;
-    case CHAN_NUM_FlashRequest_downloadMap: {
-        
-        p->transport->recv(p, temp_working_addr, 0, &tmpfd);
-        tmp = p->transport->read(p, &temp_working_addr);
-        ((FlashRequestCb *)p->cb)->downloadMap(p);
-      } break;
-    case CHAN_NUM_FlashRequest_uploadMap: {
-        
-        p->transport->recv(p, temp_working_addr, 0, &tmpfd);
-        tmp = p->transport->read(p, &temp_working_addr);
-        ((FlashRequestCb *)p->cb)->uploadMap(p);
       } break;
     case CHAN_NUM_FlashRequest_start: {
         

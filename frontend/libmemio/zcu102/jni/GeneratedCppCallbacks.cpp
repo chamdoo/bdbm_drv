@@ -135,16 +135,16 @@ int FlashRequestdisconnect_cb (struct PortalInternal *p) {
     (static_cast<FlashRequestWrapper *>(p->parent))->disconnect();
     return 0;
 };
-int FlashRequestreadPage_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->readPage ( tag, lpa, offset);
+int FlashRequestreadPage_cb (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) {
+    (static_cast<FlashRequestWrapper *>(p->parent))->readPage ( bus, chip, block, page, tag, offset);
     return 0;
 };
-int FlashRequestwritePage_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa, const uint32_t offset ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->writePage ( tag, lpa, offset);
+int FlashRequestwritePage_cb (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) {
+    (static_cast<FlashRequestWrapper *>(p->parent))->writePage ( bus, chip, block, page, tag, offset);
     return 0;
 };
-int FlashRequesteraseBlock_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t lpa ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->eraseBlock ( tag, lpa);
+int FlashRequesteraseBlock_cb (  struct PortalInternal *p, const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag ) {
+    (static_cast<FlashRequestWrapper *>(p->parent))->eraseBlock ( bus, chip, block, tag);
     return 0;
 };
 int FlashRequestsetDmaReadRef_cb (  struct PortalInternal *p, const uint32_t sgId ) {
@@ -153,18 +153,6 @@ int FlashRequestsetDmaReadRef_cb (  struct PortalInternal *p, const uint32_t sgI
 };
 int FlashRequestsetDmaWriteRef_cb (  struct PortalInternal *p, const uint32_t sgId ) {
     (static_cast<FlashRequestWrapper *>(p->parent))->setDmaWriteRef ( sgId);
-    return 0;
-};
-int FlashRequestsetDmaMapRef_cb (  struct PortalInternal *p, const uint32_t sgId ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->setDmaMapRef ( sgId);
-    return 0;
-};
-int FlashRequestdownloadMap_cb (  struct PortalInternal *p ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->downloadMap ( );
-    return 0;
-};
-int FlashRequestuploadMap_cb (  struct PortalInternal *p ) {
-    (static_cast<FlashRequestWrapper *>(p->parent))->uploadMap ( );
     return 0;
 };
 int FlashRequeststart_cb (  struct PortalInternal *p, const uint32_t dummy ) {
@@ -186,9 +174,6 @@ FlashRequestCb FlashRequest_cbTable = {
     FlashRequesteraseBlock_cb,
     FlashRequestsetDmaReadRef_cb,
     FlashRequestsetDmaWriteRef_cb,
-    FlashRequestsetDmaMapRef_cb,
-    FlashRequestdownloadMap_cb,
-    FlashRequestuploadMap_cb,
     FlashRequeststart_cb,
     FlashRequestdebugDumpReq_cb,
     FlashRequestsetDebugVals_cb,
@@ -200,24 +185,16 @@ int FlashIndicationdisconnect_cb (struct PortalInternal *p) {
     (static_cast<FlashIndicationWrapper *>(p->parent))->disconnect();
     return 0;
 };
-int FlashIndicationreadDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status ) {
-    (static_cast<FlashIndicationWrapper *>(p->parent))->readDone ( tag, status);
+int FlashIndicationreadDone_cb (  struct PortalInternal *p, const uint32_t tag ) {
+    (static_cast<FlashIndicationWrapper *>(p->parent))->readDone ( tag);
     return 0;
 };
-int FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status ) {
-    (static_cast<FlashIndicationWrapper *>(p->parent))->writeDone ( tag, status);
+int FlashIndicationwriteDone_cb (  struct PortalInternal *p, const uint32_t tag ) {
+    (static_cast<FlashIndicationWrapper *>(p->parent))->writeDone ( tag);
     return 0;
 };
 int FlashIndicationeraseDone_cb (  struct PortalInternal *p, const uint32_t tag, const uint32_t status ) {
     (static_cast<FlashIndicationWrapper *>(p->parent))->eraseDone ( tag, status);
-    return 0;
-};
-int FlashIndicationuploadDone_cb (  struct PortalInternal *p ) {
-    (static_cast<FlashIndicationWrapper *>(p->parent))->uploadDone ( );
-    return 0;
-};
-int FlashIndicationdownloadDone_cb (  struct PortalInternal *p ) {
-    (static_cast<FlashIndicationWrapper *>(p->parent))->downloadDone ( );
     return 0;
 };
 int FlashIndicationdebugDumpResp_cb (  struct PortalInternal *p, const uint32_t debug0, const uint32_t debug1, const uint32_t debug2, const uint32_t debug3, const uint32_t debug4, const uint32_t debug5 ) {
@@ -229,8 +206,6 @@ FlashIndicationCb FlashIndication_cbTable = {
     FlashIndicationreadDone_cb,
     FlashIndicationwriteDone_cb,
     FlashIndicationeraseDone_cb,
-    FlashIndicationuploadDone_cb,
-    FlashIndicationdownloadDone_cb,
     FlashIndicationdebugDumpResp_cb,
 };
 #endif //NO_CPP_PORTAL_CODE

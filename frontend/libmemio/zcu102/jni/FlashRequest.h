@@ -12,14 +12,11 @@ public:
         Portal(id, DEFAULT_TILE, bufsize, NULL, NULL, transport, param, this, poller), cb(cbarg) {};
     FlashRequestProxy(int id, PortalPoller *poller) :
         Portal(id, DEFAULT_TILE, FlashRequest_reqinfo, NULL, NULL, NULL, NULL, this, poller), cb(&FlashRequestProxyReq) {};
-    int readPage ( const uint32_t tag, const uint32_t lpa, const uint32_t offset ) { return cb->readPage (&pint, tag, lpa, offset); };
-    int writePage ( const uint32_t tag, const uint32_t lpa, const uint32_t offset ) { return cb->writePage (&pint, tag, lpa, offset); };
-    int eraseBlock ( const uint32_t tag, const uint32_t lpa ) { return cb->eraseBlock (&pint, tag, lpa); };
+    int readPage ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) { return cb->readPage (&pint, bus, chip, block, page, tag, offset); };
+    int writePage ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) { return cb->writePage (&pint, bus, chip, block, page, tag, offset); };
+    int eraseBlock ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag ) { return cb->eraseBlock (&pint, bus, chip, block, tag); };
     int setDmaReadRef ( const uint32_t sgId ) { return cb->setDmaReadRef (&pint, sgId); };
     int setDmaWriteRef ( const uint32_t sgId ) { return cb->setDmaWriteRef (&pint, sgId); };
-    int setDmaMapRef ( const uint32_t sgId ) { return cb->setDmaMapRef (&pint, sgId); };
-    int downloadMap (  ) { return cb->downloadMap (&pint); };
-    int uploadMap (  ) { return cb->uploadMap (&pint); };
     int start ( const uint32_t dummy ) { return cb->start (&pint, dummy); };
     int debugDumpReq ( const uint32_t dummy ) { return cb->debugDumpReq (&pint, dummy); };
     int setDebugVals ( const uint32_t flag, const uint32_t debugDelay ) { return cb->setDebugVals (&pint, flag, debugDelay); };
@@ -43,14 +40,11 @@ public:
     virtual void disconnect(void) {
         printf("FlashRequestWrapper.disconnect called %d\n", pint.client_fd_number);
     };
-    virtual void readPage ( const uint32_t tag, const uint32_t lpa, const uint32_t offset ) = 0;
-    virtual void writePage ( const uint32_t tag, const uint32_t lpa, const uint32_t offset ) = 0;
-    virtual void eraseBlock ( const uint32_t tag, const uint32_t lpa ) = 0;
+    virtual void readPage ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) = 0;
+    virtual void writePage ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t page, const uint32_t tag, const uint32_t offset ) = 0;
+    virtual void eraseBlock ( const uint32_t bus, const uint32_t chip, const uint32_t block, const uint32_t tag ) = 0;
     virtual void setDmaReadRef ( const uint32_t sgId ) = 0;
     virtual void setDmaWriteRef ( const uint32_t sgId ) = 0;
-    virtual void setDmaMapRef ( const uint32_t sgId ) = 0;
-    virtual void downloadMap (  ) = 0;
-    virtual void uploadMap (  ) = 0;
     virtual void start ( const uint32_t dummy ) = 0;
     virtual void debugDumpReq ( const uint32_t dummy ) = 0;
     virtual void setDebugVals ( const uint32_t flag, const uint32_t debugDelay ) = 0;
